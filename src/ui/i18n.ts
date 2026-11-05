@@ -79,6 +79,8 @@ const DICT = {
     'Przeciągnij plik na kartę albo na podgląd. Szablon to PNG 300 dpi z liniami cięcia i spadami.',
     'Drop a file on a card or on the preview. A template is a 300 dpi PNG with trim and bleed guides.',
   ],
+  /** Intro for models without print templates (screens, devices). */
+  imagesIntroNoTemplates: ['Przeciągnij plik na kartę albo na podgląd.', 'Drop a file on a card or on the preview.'],
   noImage: ['Brak grafiki – przeciągnij plik tutaj', 'No artwork – drop a file here'],
   choose: ['Wybierz…', 'Choose…'],
   chooseImageFor: ['Wybierz grafikę: {name}', 'Choose artwork: {name}'],

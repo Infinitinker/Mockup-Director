@@ -175,7 +175,9 @@ export function createImagesPanel(ctx: AppContext): { el: HTMLElement; render():
       el.appendChild(h('p', { class: 'empty-state', text: t('noSlots') }));
       return;
     }
-    el.appendChild(h('p', { class: 'panel-intro', text: t('imagesIntro') }));
+    // Mention print templates only when this model actually offers one (screens/devices do not).
+    const hasTemplates = model.slots.some((sl) => !!sl.template);
+    el.appendChild(h('p', { class: 'panel-intro', text: t(hasTemplates ? 'imagesIntro' : 'imagesIntroNoTemplates') }));
     for (const slot of model.slots) el.appendChild(card(slot, model.id));
   };
 

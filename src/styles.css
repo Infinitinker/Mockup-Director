@@ -189,12 +189,15 @@ body.is-busy * {
 }
 /* macOS traffic lights (Tauri titleBarStyle "Overlay"). Their vertical position comes from
    trafficLightPosition.y in src-tauri/tauri.conf.json: Tauri grows the system title bar to
-   (button height + y), so y = 26 centres the buttons in the 52 px toolbar (--toolbar-h). */
+   (button height + y). y = 28 was tuned on a real Mac so the buttons line up with the toolbar
+   items (52 px toolbar, --toolbar-h); the plain maths says 26 but the buttons then sit ~2 pt high. */
 .has-traffic-lights .toolbar {
   padding-left: 0;
 }
 .has-traffic-lights .tb-traffic {
-  width: 78px;
+  /* Space for the three buttons (they end at ~77 pt) plus a gap to the logo a bit wider than the
+     gap between the buttons themselves. */
+  width: 88px;
 }
 .tb-brand {
   display: flex;
