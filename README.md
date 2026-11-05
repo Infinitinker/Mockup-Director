@@ -121,7 +121,10 @@ npm run tauri build -- --target universal-apple-darwin   # macOS: build uniwersa
 cargo test --manifest-path src-tauri/Cargo.toml          # testy części Rust (po npm run build)
 ```
 
-Ikony aplikacji generuje się z `app-icon.svg`: `npx tauri icon app-icon.svg`.
+Ikonę aplikacji rysuje skrypt `tools/draw-icon.mjs` (pudełko, którego przód jest klapsem filmowym). `npm run icons` generuje z niego
+`app-icon.svg`, wszystkie pliki w `src-tauri/icons/` (`.icns` w kształcie zaokrąglonego kwadratu dla macOS, okrągłe `.ico`
+i PNG dla Windows) oraz małe logo `src/ui/app-logo.svg` w pasku narzędzi. Rozmiary do 32 px mają uproszczony rysunek.
+`npm run icons -- --preview podglad.png` zapisuje dodatkowo arkusz podglądu.
 
 ### Struktura projektu
 
@@ -144,7 +147,8 @@ src-tauri/     powłoka desktopowa Tauri v2 (Rust): okno, dialogi, komenda save_
   build-macos.yml   build .dmg (universal) + draft Release dla tagów v*
   ci.yml            kontrola części webowej i licencji (Linux), dla main, dev i pull requestów
 scripts/licenses.mjs   kontrola licencji pakietów npm + THIRD-PARTY-NOTICES (`npm run licenses`)
-app-icon.svg   źródło ikony aplikacji
+tools/draw-icon.mjs   rysuje ikonę aplikacji i generuje wszystkie pliki ikon (`npm run icons`)
+app-icon.svg   wygenerowany podgląd ikony (wersja macOS)
 ```
 
 Stack: Vite + TypeScript (strict) + three.js, bez frameworka UI. Aplikacja desktopowa korzysta

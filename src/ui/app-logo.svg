@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="mdlogo-bg1" gradientUnits="userSpaceOnUse" x1="150" y1="80" x2="880" y2="980">
+      <stop offset="0" stop-color="#62b2ff"/>
+      <stop offset="0.5" stop-color="#2f86f0"/>
+      <stop offset="1" stop-color="#1a52ad"/>
+    </linearGradient>
+    <radialGradient id="mdlogo-glow2" gradientUnits="userSpaceOnUse" cx="500" cy="470" r="430">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.30"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient><clipPath id="mdlogo-clip14"><circle cx="512" cy="512" r="500"/></clipPath></defs>
+  <g clip-path="url(#mdlogo-clip14)">
+    <circle cx="512" cy="512" r="500" fill="url(#mdlogo-bg1)"/><circle cx="512" cy="512" r="500" fill="url(#mdlogo-glow2)"/>
+    <g transform="translate(6.0 -8.1)">
+  <defs>
+    <clipPath id="mdlogo-band3"><polygon points="214.0,360.0 566.0,479.7 566.0,564.2 214.0,444.5"/></clipPath>
+    <clipPath id="mdlogo-arm4"><polygon points="168.5,277.0 469.1,176.5 511.6,254.0 211.0,354.5"/></clipPath>
+  </defs>
+  <polygon points="214.0,360.0 566.0,479.7 566.0,863.7 214.0,744.0" fill="#16181e"/>
+  <polygon points="566.0,479.7 798.0,387.7 798.0,771.7 566.0,863.7" fill="#0c0d11"/>
+  <polygon points="214.0,360.0 446.0,268.0 798.0,387.7 566.0,479.7" fill="#b8c7dc"/>
+  
+  <polygon points="214.0,360.0 566.0,479.7 566.0,564.2 214.0,444.5" fill="#eef3fa"/>
+  <g clip-path="url(#mdlogo-band3)"><polygon points="113.4,325.8 163.7,342.9 83.5,400.1 33.2,383.0" fill="#14161c"/><polygon points="214.0,360.0 264.3,377.1 184.0,434.3 133.7,417.2" fill="#14161c"/><polygon points="314.6,394.2 364.9,411.3 284.6,468.5 234.3,451.4" fill="#14161c"/><polygon points="415.1,428.4 465.4,445.5 385.2,502.7 334.9,485.6" fill="#14161c"/><polygon points="515.7,462.6 566.0,479.7 485.7,536.9 435.5,519.8" fill="#14161c"/><polygon points="616.3,496.8 666.6,513.9 586.3,571.1 536.0,554.0" fill="#14161c"/><polygon points="716.9,531.0 767.1,548.1 686.9,605.3 636.6,588.2" fill="#14161c"/></g>
+  
+  <defs>
+    <clipPath id="mdlogo-rc5"><path d="M214.0 360.0 L446.0 268.0 L798.0 387.7 L798.0 771.7 L566.0 863.7 L214.0 744.0 Z"/></clipPath>
+    <linearGradient id="mdlogo-rg7" gradientUnits="userSpaceOnUse" x1="0" y1="268.0" x2="0" y2="536.1">
+      <stop offset="0" stop-color="#fff" stop-opacity="1"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <mask id="mdlogo-rm6" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
+      <rect x="0" y="0" width="1024" height="1024" fill="url(#mdlogo-rg7)"/>
+    </mask>
+  </defs>
+  <g clip-path="url(#mdlogo-rc5)" mask="url(#mdlogo-rm6)">
+    <path d="M214.0 360.0 L446.0 268.0 L798.0 387.7 L798.0 771.7 L566.0 863.7 L214.0 744.0 Z" fill="none" stroke="#e3f2ff" stroke-opacity="1" stroke-width="32" stroke-linejoin="round"/>
+  </g>
+  
+  <defs>
+    <clipPath id="mdlogo-rc8"><path d="M214.0 360.0 L446.0 268.0 L798.0 387.7 L566.0 479.7 Z"/></clipPath>
+    <linearGradient id="mdlogo-rg10" gradientUnits="userSpaceOnUse" x1="0" y1="268.0" x2="0" y2="479.7">
+      <stop offset="0" stop-color="#fff" stop-opacity="1"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <mask id="mdlogo-rm9" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
+      <rect x="0" y="0" width="1024" height="1024" fill="url(#mdlogo-rg10)"/>
+    </mask>
+  </defs>
+  <g clip-path="url(#mdlogo-rc8)" mask="url(#mdlogo-rm9)">
+    <path d="M214.0 360.0 L446.0 268.0 L798.0 387.7 L566.0 479.7 Z" fill="none" stroke="#e3f2ff" stroke-opacity="0.5" stroke-width="20" stroke-linejoin="round"/>
+  </g>
+  <polygon points="168.5,277.0 469.1,176.5 511.6,254.0 211.0,354.5" fill="#eef3fa"/>
+  <g clip-path="url(#mdlogo-arm4)"><polygon points="85.1,304.9 126.8,291.0 109.4,388.5 67.7,402.4" fill="#14161c"/><polygon points="168.5,277.0 210.2,263.1 192.8,360.6 151.1,374.6" fill="#14161c"/><polygon points="251.9,249.1 293.5,235.2 276.2,332.7 234.5,346.7" fill="#14161c"/><polygon points="335.2,221.3 376.9,207.3 359.6,304.8 317.9,318.8" fill="#14161c"/><polygon points="418.6,193.4 460.3,179.4 442.9,276.9 401.2,290.9" fill="#14161c"/><polygon points="502.0,165.5 543.7,151.5 526.3,249.0 484.6,263.0" fill="#14161c"/><polygon points="585.4,137.6 627.1,123.6 609.7,221.2 568.0,235.1" fill="#14161c"/></g>
+  
+  <defs>
+    <clipPath id="mdlogo-rc11"><path d="M168.5 277.0 L469.1 176.5 L511.6 254.0 L211.0 354.5 Z"/></clipPath>
+    <linearGradient id="mdlogo-rg13" gradientUnits="userSpaceOnUse" x1="0" y1="176.5" x2="0" y2="318.9">
+      <stop offset="0" stop-color="#fff" stop-opacity="1"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <mask id="mdlogo-rm12" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
+      <rect x="0" y="0" width="1024" height="1024" fill="url(#mdlogo-rg13)"/>
+    </mask>
+  </defs>
+  <g clip-path="url(#mdlogo-rc11)" mask="url(#mdlogo-rm12)">
+    <path d="M168.5 277.0 L469.1 176.5 L511.6 254.0 L211.0 354.5 Z" fill="none" stroke="#e3f2ff" stroke-opacity="0.9" stroke-width="16" stroke-linejoin="round"/>
+  </g>
+  <circle cx="224.4" cy="304.2" r="20" fill="#14161c" stroke="#e3f2ff" stroke-opacity="0.85" stroke-width="6"/>
+  </g>
+  </g>
+  <circle cx="512" cy="512" r="493" fill="none" stroke="#123f86" stroke-opacity="0.85" stroke-width="14"/>
+</svg>
