@@ -187,7 +187,9 @@ body.is-busy * {
   align-self: stretch;
   flex: none;
 }
-/* macOS traffic lights (Tauri titleBarStyle "Overlay") */
+/* macOS traffic lights (Tauri titleBarStyle "Overlay"). Their vertical position comes from
+   trafficLightPosition.y in src-tauri/tauri.conf.json: Tauri grows the system title bar to
+   (button height + y), so y = 26 centres the buttons in the 52 px toolbar (--toolbar-h). */
 .has-traffic-lights .toolbar {
   padding-left: 0;
 }
@@ -462,10 +464,16 @@ body.is-busy * {
   box-shadow: var(--shadow-pop);
 }
 .viewbar {
+  /* Centred with auto margins, not left: 50% + translate: an absolutely positioned box with
+     left: 50% only gets HALF the viewport as its shrink-to-fit width and wraps far too early
+     (seen on macOS, where the system font is wider). */
   position: absolute;
-  left: 50%;
+  left: 12px;
+  right: 12px;
   bottom: 14px;
-  transform: translateX(-50%);
+  margin: 0 auto;
+  width: -webkit-fit-content;
+  width: fit-content;
   max-width: calc(100% - 24px);
   display: flex;
   flex-wrap: wrap;
@@ -1214,6 +1222,55 @@ body.is-busy * {
   display: none;
 }
 
+/* Image / Animation switch at the top of the Export panel */
+.export-mode {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 4px 0 6px;
+  background: var(--bg-inspector);
+}
+.export-mode .seg-btn {
+  height: 28px;
+  gap: 6px;
+}
+
+/* Animation export progress */
+.anim-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+}
+.anim-progress-text {
+  font-size: 12px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.anim-progress-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--track);
+  overflow: hidden;
+}
+.anim-progress-bar {
+  width: 0;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent);
+  transition: width 0.15s linear;
+}
+.anim-cancel {
+  align-self: flex-end;
+}
+@media (prefers-reduced-motion: reduce) {
+  .anim-progress-bar {
+    transition: none;
+  }
+}
+
 /* ------------------------------------------------------------------ */
 /* Styles (presets) panel                                              */
 /* ------------------------------------------------------------------ */
@@ -1479,5 +1536,143 @@ body.is-busy * {
   * {
     transition: none !important;
     animation-duration: 0.01ms !important;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Batch export dialog                                                 */
+/* ------------------------------------------------------------------ */
+.batch-btn {
+  width: 100%;
+  justify-content: center;
+}
+.dialog-batch {
+  width: min(520px, calc(100vw - 32px));
+  max-height: calc(100vh - var(--toolbar-h) - 80px);
+  overflow-y: auto;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.dialog-batch.is-drop-target {
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3), 0 0 0 2px var(--accent);
+}
+.batch-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.batch-mode .seg-btn {
+  height: 28px;
+}
+.batch-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.batch-model {
+  font-size: 12px;
+  font-weight: 600;
+}
+.batch-pick {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.batch-count {
+  font-size: 11.5px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.batch-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  max-height: 168px;
+  overflow-y: auto;
+  border-radius: var(--radius-sm);
+  background: var(--bg-field);
+  box-shadow: inset 0 0 0 0.5px var(--border-strong);
+}
+.batch-list-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  padding: 0 2px 0 6px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+.batch-list-item:hover {
+  background: var(--bg-hover);
+}
+.batch-list-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.batch-views {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 12px;
+}
+.batch-own {
+  margin-top: 2px;
+}
+.batch-output {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  background: var(--bg-seg);
+}
+.batch-output-text {
+  margin: 0;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.batch-progress-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.batch-status {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+.batch-notes-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.batch-notes {
+  margin: 0;
+  padding: 6px 8px 6px 22px;
+  max-height: 180px;
+  overflow-y: auto;
+  border-radius: var(--radius-sm);
+  font-size: 11.5px;
+  overflow-wrap: anywhere;
+}
+.batch-notes li + li {
+  margin-top: 3px;
+}
+.batch-notes.is-error {
+  background: rgba(229, 55, 43, 0.1);
+}
+.batch-notes.is-error strong {
+  color: var(--danger);
+}
+.batch-notes.is-warning {
+  background: var(--warn-soft);
+}
+@media (max-width: 480px) {
+  .batch-views {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

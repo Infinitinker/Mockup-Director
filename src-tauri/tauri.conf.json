@@ -23,18 +23,26 @@
         "dragDropEnabled": false,
         "titleBarStyle": "Overlay",
         "hiddenTitle": true,
-        "trafficLightPosition": { "x": 18, "y": 18 }
+        "trafficLightPosition": {
+          "x": 18,
+          "y": 26
+        }
       }
     ],
     "security": {
       "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost blob:; media-src 'self' blob:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none'",
       "devCsp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost blob: ws://localhost:1420 http://localhost:1420; media-src 'self' blob:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none'",
-      "dangerousDisableAssetCspModification": ["style-src"]
+      "dangerousDisableAssetCspModification": [
+        "style-src"
+      ]
     }
   },
   "bundle": {
     "active": true,
-    "targets": ["app", "dmg"],
+    "targets": [
+      "app",
+      "dmg"
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -45,8 +53,8 @@
     "category": "public.app-category.graphics-design",
     "copyright": "© 2026 Infinitinker",
     "publisher": "Infinitinker",
-    "shortDescription": "Fotorealistyczne mockupy 3D pudełek i płyt",
-    "longDescription": "Mockup Director zamienia płaskie projekty graficzne w fotorealistyczne mockupy 3D: pudełka produktowe, opakowania DVD / Blu-ray, pudełka CD i płyty – z oświetleniem, miękkim cieniem, odbiciem i eksportem przezroczystego PNG do 4000 × 4000 px.",
+    "shortDescription": "Fotorealistyczne mockupy 3D opakowań, książek, druków i urządzeń",
+    "longDescription": "Mockup Director zamienia płaskie projekty graficzne w fotorealistyczne mockupy 3D: pudełka produktowe, opakowania DVD / Blu-ray / CD i płyty, książki i notesy, druki (wizytówki, ulotki, broszury, kartki) oraz urządzenia i ekrany – z oświetleniem, miękkim cieniem i odbiciem. Eksport PNG/JPEG/WebP do 4000 × 4000 px, animacje GIF/WebP/MP4 i eksport wsadowy do ZIP.",
     "macOS": {
       "minimumSystemVersion": "12.0",
       "signingIdentity": "-"

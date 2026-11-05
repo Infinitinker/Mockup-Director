@@ -160,3 +160,123 @@ export function fitCamera(
     orthoHalfHeight: 0,
   };
 }
+
+/**
+ * Streaming version of fitCamera() for ONE camera framing that fits the UNION of many point clouds
+ * (turntable animations). Every cloud may be rotated around the vertical axis through the pivot
+ * before it is measured – rotating the points by +a in front of a fixed camera is exactly the same
+ * as orbiting the camera by -a, so one fit in the base camera's frame is valid for every frame.
+ *
+ * All the quantities fitCamera() needs are maxima / minima of LINEAR functions of the camera-frame
+ * coordinates, so they can be accumulated point by point without storing the union:
+ *   d     >= ( max(q.z + q.x/tx) + max(q.z - q.x/tx) ) / 2           (same for y)
+ *   loX    = max(q.x + tx*q.z) - tx*d,  hiX = min(q.x - tx*q.z) + tx*d   (same for y)
+ * The result is identical to fitCamera() on the concatenated (rotated) points.
+ */
+export class UnionFit {
+  private readonly basis: CameraBasis;
+  private readonly tx: number;
+  private readonly ty: number;
+  private readonly ortho: boolean;
+  private readonly slack: number;
+  private readonly aspect: number;
+  private n = 0;
+  private minX = Infinity; private maxX = -Infinity;
+  private minY = Infinity; private maxY = -Infinity;
+  private minZ = Infinity; private maxZ = -Infinity;
+  private ax = -Infinity; private bx = -Infinity; private ay = -Infinity; private by = -Infinity;
+  private lx = -Infinity; private hx = Infinity; private ly = -Infinity; private hy = Infinity;
+
+  constructor(
+    private readonly pivot: THREE.Vector3,
+    cam: Pick<CameraSettings, 'yaw' | 'pitch' | 'roll' | 'fov' | 'projection'>,
+    aspect: number,
+    slack: number,
+  ) {
+    this.basis = cameraBasis(cam);
+    this.ortho = cam.projection === 'orthographic';
+    this.slack = Math.max(1, slack);
+    this.aspect = Math.max(aspect, 1e-6);
+    const fov = THREE.MathUtils.clamp(cam.fov, 1, 120) * DEG;
+    this.ty = Math.tan(fov / 2) / this.slack;
+    this.tx = this.ty * this.aspect;
+  }
+
+  /**
+   * Add world-space points (flat xyz), rotated by `angleDeg` around the vertical axis through the
+   * pivot (+ = counter-clockwise seen from above, the same sense as THREE's rotation about +Y).
+   */
+  add(points: Float32Array | number[], angleDeg = 0, count = Math.floor(points.length / 3)): void {
+    const { right, up, back } = this.basis;
+    const { pivot, tx, ty } = this;
+    const c = Math.cos(angleDeg * DEG);
+    const s = Math.sin(angleDeg * DEG);
+    for (let i = 0; i < count; i++) {
+      const px0 = points[i * 3] - pivot.x;
+      const py = points[i * 3 + 1] - pivot.y;
+      const pz0 = points[i * 3 + 2] - pivot.z;
+      // Ry(angle): x' = x cos + z sin, z' = -x sin + z cos
+      const px = px0 * c + pz0 * s;
+      const pz = -px0 * s + pz0 * c;
+      const x = px * right.x + py * right.y + pz * right.z;
+      const y = px * up.x + py * up.y + pz * up.z;
+      const z = px * back.x + py * back.y + pz * back.z;
+      if (x < this.minX) this.minX = x; if (x > this.maxX) this.maxX = x;
+      if (y < this.minY) this.minY = y; if (y > this.maxY) this.maxY = y;
+      if (z < this.minZ) this.minZ = z; if (z > this.maxZ) this.maxZ = z;
+      const zx = x / tx, zy = y / ty;
+      if (z + zx > this.ax) this.ax = z + zx;
+      if (z - zx > this.bx) this.bx = z - zx;
+      if (z + zy > this.ay) this.ay = z + zy;
+      if (z - zy > this.by) this.by = z - zy;
+      const xz = tx * z, yz = ty * z;
+      if (x + xz > this.lx) this.lx = x + xz;
+      if (x - xz < this.hx) this.hx = x - xz;
+      if (y + yz > this.ly) this.ly = y + yz;
+      if (y - yz < this.hy) this.hy = y - yz;
+    }
+    this.n += Math.max(0, count);
+  }
+
+  /** The camera framing for the BASE camera (rotate it by the frame's camera yaw offset to use it). */
+  result(): FitResult {
+    const { right, up, back, quaternion } = this.basis;
+    const pivot = this.pivot;
+    let { minX, maxX, minY, maxY, minZ, maxZ } = this;
+    const n = this.n;
+    if (n === 0) {
+      minX = minY = minZ = -50;
+      maxX = maxY = maxZ = 50;
+    }
+    const extent = Math.max(maxX - minX, maxY - minY, maxZ - minZ, 1e-3);
+
+    if (this.ortho) {
+      const ox = (minX + maxX) / 2;
+      const oy = (minY + maxY) / 2;
+      const half = Math.max((maxY - minY) / 2, (maxX - minX) / 2 / this.aspect, extent * 1e-3) * this.slack;
+      const d = maxZ + extent + 10;
+      return {
+        position: pivot.clone().addScaledVector(right, ox).addScaledVector(up, oy).addScaledVector(back, d),
+        quaternion: quaternion.clone(),
+        near: Math.max(0.01, d - maxZ - extent * 0.5),
+        far: d - minZ + extent * 0.5,
+        orthoHalfHeight: half,
+      };
+    }
+
+    let d = n ? Math.max((this.ax + this.bx) / 2, (this.ay + this.by) / 2, maxZ + extent * 0.05) : 100;
+    if (!Number.isFinite(d)) d = extent * 3;
+    // Centre of the feasible interval [lx - tx*d, hx + tx*d] – the d terms cancel.
+    const ox = n ? (this.lx + this.hx) / 2 : 0;
+    const oy = n ? (this.ly + this.hy) / 2 : 0;
+    const minDepth = n ? d - maxZ : d * 0.5;
+    const maxDepth = n ? d - minZ : d * 1.5;
+    return {
+      position: pivot.clone().addScaledVector(right, ox).addScaledVector(up, oy).addScaledVector(back, d),
+      quaternion: quaternion.clone(),
+      near: Math.max(maxDepth * 1e-4, minDepth * 0.25),
+      far: maxDepth * 1.6 + extent,
+      orthoHalfHeight: 0,
+    };
+  }
+}

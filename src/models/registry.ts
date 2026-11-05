@@ -4,6 +4,12 @@ import { dvdModel, blurayModel } from './keepcase';
 import { cdCaseModel } from './jewelcase';
 import { discModel } from './disc';
 import { boxDiscModel, dvdDiscModel, blurayDiscModel, cdDiscModel, compositeModels } from './composites';
+import { bookModels } from './books';
+import { flatPrintModels } from './printFlat';
+import { foldedPrintModels } from './printFolded';
+import { handheldModels } from './handheld';
+import { computerModels } from './computer';
+import { screenModels } from './screen';
 
 /**
  * All models shown in the gallery, in display order (the gallery groups them by category and
@@ -20,6 +26,12 @@ export const MODELS: ModelDefinition[] = [
   cdCaseModel,
   cdDiscModel,
   discModel,
+  ...bookModels,
+  ...flatPrintModels,
+  ...foldedPrintModels,
+  ...handheldModels,
+  ...computerModels,
+  ...screenModels,
 ];
 
 // Safety net: any composite added later but not placed above is still listed.

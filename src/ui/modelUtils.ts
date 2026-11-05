@@ -53,6 +53,7 @@ export function resolveTemplate(slot: ImageSlotDef, params: ParamValues): PrintT
 
 /** Acceptable artwork aspect ratios for a slot: the slot's aspect and (if any) the full template incl. bleed. */
 export function expectedAspects(slot: ImageSlotDef, params: ParamValues): number[] {
+  if (slot.anyAspect) return [];
   const list: number[] = [];
   if (slot.aspect > 0 && Number.isFinite(slot.aspect)) list.push(slot.aspect);
   const t = resolveTemplate(slot, params);

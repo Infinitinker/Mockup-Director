@@ -1,7 +1,7 @@
 [package]
 name = "mockup-director"
 version = "0.1.0"
-description = "Mockup Director – fotorealistyczne mockupy 3D pudełek i płyt"
+description = "Mockup Director – fotorealistyczne mockupy 3D opakowań, książek, druków i urządzeń"
 authors = ["Infinitinker"]
 license = "MIT"
 repository = "https://github.com/Infinitinker/Mockup-Director"

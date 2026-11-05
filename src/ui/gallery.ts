@@ -2,13 +2,21 @@
  * Left sidebar: model gallery grouped by category.
  */
 import { h } from './dom';
-import { lt, t } from './i18n';
+import { lt, t, type DictKey } from './i18n';
 import type { AppContext } from './context';
 import { MODELS } from '../models/registry';
 import type { ModelCategory } from '../core/types';
 import { hasAny } from './state';
 
-const CATEGORY_ORDER: ModelCategory[] = ['box', 'disc'];
+const CATEGORY_ORDER: ModelCategory[] = ['box', 'disc', 'book', 'print', 'device'];
+
+const CATEGORY_LABEL: Record<ModelCategory, DictKey> = {
+  box: 'catBoxes',
+  disc: 'catDiscs',
+  book: 'catBooks',
+  print: 'catPrint',
+  device: 'catDevices',
+};
 
 export function createGallery(ctx: AppContext): { el: HTMLElement; render(): void } {
   const el = h('nav', { class: 'sidebar sidebar-left' });
@@ -42,7 +50,7 @@ export function createGallery(ctx: AppContext): { el: HTMLElement; render(): voi
         );
         list.appendChild(h('li', {}, btn));
       }
-      el.append(h('div', { class: 'sidebar-heading', text: cat === 'box' ? t('catBoxes') : cat === 'disc' ? t('catDiscs') : cat }), list);
+      el.append(h('div', { class: 'sidebar-heading', text: t(CATEGORY_LABEL[cat]) }), list);
     }
     if (hadFocus) el.querySelector<HTMLButtonElement>('.gallery-item.active')?.focus();
   };

@@ -1,23 +1,43 @@
 # Mockup Director
 
 **Mockup Director** to aplikacja na macOS i Windows, która zamienia płaskie projekty graficzne w fotorealistyczne
-mockupy 3D (tzw. boxshoty): pudełka produktowe, opakowania DVD / Blu-ray (keep case),
-pudełka CD (jewel case) i same płyty. Ustawiasz światło, miękki cień i odbicie od podłogi, a potem
-eksportujesz gotowy obraz – także jako przezroczysty PNG do 4000 × 4000 px.
+mockupy 3D: pudełka produktowe, opakowania DVD / Blu-ray / CD i płyty, książki i notesy, druki
+(wizytówki, ulotki, broszury, kartki) oraz urządzenia i ekrany (smartfon, tablet, laptop, monitor,
+zrzut ekranu). Ustawiasz światło, miękki cień i odbicie od podłogi, a potem eksportujesz gotowy
+obraz (także przezroczysty PNG do 4000 × 4000 px), obracającą się animację albo całą serię naraz.
 
 Mockup Director to otwartoźródłowy projekt, zainspirowany narzędziami dostępnymi tylko na Windows.
 Nie zawiera cudzych nazw, szablonów, grafik ani logotypów.
 
 ## Funkcje
 
-- **Modele:** pudełko produktowe (dowolne wymiary w mm, wariant slim i z siatki wykrojnika),
-  DVD i Blu-ray keep case, pudełko CD, płyta CD / DVD / BD.
+- **Pudełka i płyty:** pudełko produktowe (dowolne wymiary w mm, wariant slim i z siatki wykrojnika),
+  DVD i Blu-ray keep case, pudełko CD, płyta CD / DVD / BD, warianty z płytą.
+- **Książki i notesy:** oprawa twarda (prosty lub zaokrąglony grzbiet), oprawa miękka, notes na spirali
+  (Wire-O lub spirala, wiązanie z boku lub u góry).
+- **Druk:** wizytówka (90 × 50, 85 × 55, 89 × 51 lub własny rozmiar, także stos), ulotka (A6–A4, DL),
+  pocztówka, karta plastikowa, broszura zszywana, ulotka składana na 3 (falc zwijany lub Z),
+  kartka okolicznościowa, folder składany na pół.
+- **Urządzenia i ekrany:** smartfon, tablet, laptop (regulowany kąt otwarcia), monitor 24–34″
+  (także zakrzywiony ultrawide), zrzut ekranu (płaski lub zakrzywiony), okno przeglądarki.
+  Wygląd urządzeń jest uniwersalny – bez logotypów i kształtów konkretnych marek.
 - **Grafika:** przeciągnij pliki obrazów na okno albo wybierz je z dysku; każda ściana
   ma swój slot. Do każdego slotu można pobrać szablon PNG z wymiarami, spadami i liniami pomocniczymi.
 - **Scena:** obrót kamery, perspektywa / rzut ortogonalny, zoom i przesunięcie, presety oświetlenia,
   miękki cień, odbicie od podłogi, tło przezroczyste, jednolite lub gradientowe.
 - **Eksport:** PNG (z przezroczystością) lub JPEG, do 4000 × 4000 px, z marginesem
   i zapisaną rozdzielczością druku (DPI).
+- **Animacja:** eksport obrotowej animacji produktu („turntable”) jako GIF, animowany WebP lub MP4 (H.264):
+  pełny obrót 360° albo wahadło ±kąt, kierunek, płynne wygładzenie, czas 1–20 s, liczba klatek na sekundę.
+  Animacja startuje z bieżącego widoku, światło, cień i odbicie są zachowane, a kadr jest stały
+  (cała kompozycja mieści się we wszystkich klatkach). GIF ma własny koder (paleta 256 kolorów, dithering,
+  przezroczystość 1-bitowa); WebP jest dostępny tam, gdzie silnik koduje WebP (Windows), a MP4 wymaga
+  WebCodecs (Windows / WebView2 albo macOS 13.3+). Podczas eksportu widać postęp i można go anulować.
+- **Eksport wsadowy:** wiele mockupów naraz w jednym pliku ZIP (Eksport → *Eksport wsadowy…*):
+  wiele grafik w wybranym slocie jednego modelu, kilka widoków bieżącego projektu albo wiele plików
+  `.mockup` (z bieżącymi ustawieniami eksportu lub ustawieniami każdego projektu). Widać postęp, można
+  przerwać i zapisać to, co gotowe; błędy pojedynczych plików są wypisane w podsumowaniu, a dokument
+  i historia cofania pozostają nietknięte.
 - **Projekty:** zapis i otwieranie plików `.mockup`, cofnij / ponów.
 - Interfejs po polsku i angielsku.
 
@@ -227,8 +247,20 @@ Wszystkie nazwy handlowe należą do ich właścicieli.
 ## English (short)
 
 **Mockup Director** is a macOS and Windows app that turns flat artwork into photorealistic 3D product mockups:
-product boxes, DVD / Blu-ray keep cases, CD jewel cases and discs. It has lighting, soft shadows,
+product boxes, DVD / Blu-ray keep cases, CD jewel cases and discs, books and notebooks, print (business cards,
+flyers, postcards, plastic cards, brochures, tri-fold leaflets, greeting cards) and generic devices & screens
+(phone, tablet, laptop, monitor, screenshot, browser window). It has lighting, soft shadows,
 floor reflections and transparent PNG export up to 4000 × 4000 px. The UI is in Polish and English.
+
+- **Animation:** Export → *Animation* renders a turntable of the product (full 360° loop or a ±angle swing,
+  direction, sine easing, 1–20 s) as GIF (built-in encoder: 256-colour palette, dithering, 1-bit
+  transparency), animated WebP (where the engine can encode WebP, e.g. Windows) or MP4 / H.264 (WebCodecs:
+  WebView2 or macOS 13.3+, muxed with mediabunny). It starts from the current view with the same lighting,
+  shadow and reflection and uses one fixed framing for all frames, so nothing jumps or gets cropped.
+- **Batch export:** Export → *Batch export…* renders many stills into one ZIP: many images in one slot of the
+  current model, several camera views of the current project, or many `.mockup` / `.coverbox` projects
+  (current export settings or each project's own). Progress, cancel (keep or discard what is done) and a
+  per-item error summary; the open document and its undo history are never changed.
 
 - **Install on Windows:** download `*_x64-setup.exe` from *Releases* or from *Actions → Build Windows app →
   latest run → Artifacts* (a portable `.exe` is there too). Windows 10/11 x64. The build is unsigned, so on

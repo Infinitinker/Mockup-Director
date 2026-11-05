@@ -10,7 +10,8 @@ import type { AppState, ImageMap } from './state';
 import { sanitizeParam } from './modelUtils';
 import { clamp } from './dom';
 import { t } from './i18n';
-import { webpEncodingSupported } from './exportBridge';
+import { animationFormatSupport, webpEncodingSupported } from './exportBridge';
+import { normaliseAnimationSettings } from '../export/animation/settings';
 
 export const PROJECT_EXT = 'mockup';
 /** Older project files (before the rename) are still accepted when opening. */
@@ -83,6 +84,12 @@ export function sanitizeExport(raw: unknown): ExportSettings {
   if (e.format === 'webp' && !webpEncodingSupported()) e.format = 'png';
   if (e.sizing !== 'canvas' && e.sizing !== 'trim') e.sizing = DEFAULT_EXPORT.sizing;
   if (e.background !== 'transparent' && e.background !== 'scene') e.background = DEFAULT_EXPORT.background;
+  // Animation settings are optional (older projects have none); mergeKnown() skips the key because
+  // DEFAULT_EXPORT has no animation – validate it separately (formats this engine cannot encode fall
+  // back to GIF).
+  const anim = isPlain(raw) ? raw.animation : undefined;
+  if (isPlain(anim)) e.animation = normaliseAnimationSettings(anim, animationFormatSupport());
+  else delete e.animation;
   return e;
 }
 
@@ -105,7 +112,7 @@ export function toProjectFile(s: AppState): ProjectFile {
     params: JSON.parse(JSON.stringify(s.params)) as Record<string, ParamValues>,
     images,
     scene: cloneScene(s.scene),
-    export: { ...s.export },
+    export: { ...s.export, ...(s.export.animation ? { animation: { ...s.export.animation } } : {}) },
   };
 }
 

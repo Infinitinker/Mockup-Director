@@ -125,11 +125,14 @@ const MIME_BY_EXT: Record<string, string> = {
   jpg: 'image/jpeg',
   jpeg: 'image/jpeg',
   webp: 'image/webp',
+  gif: 'image/gif',
+  mp4: 'video/mp4',
   json: 'application/json',
   mockup: 'application/json',
   coverbox: 'application/json',
   svg: 'image/svg+xml',
   pdf: 'application/pdf',
+  zip: 'application/zip',
 };
 
 async function saveInBrowser(blob: Blob, suggestedName: string, filters: FileFilter[]): Promise<boolean> {

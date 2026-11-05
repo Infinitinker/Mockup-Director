@@ -3,7 +3,7 @@
  * models, export and project handling together.
  */
 import type { CameraSettings, ImageAsset, Lang, ModelContext, ParamValues, StageAPI } from '../core/types';
-import { DEFAULT_EXPORT, DEFAULT_SCENE, cloneScene } from '../core/defaults';
+import { DEFAULT_ANIMATION, DEFAULT_EXPORT, DEFAULT_SCENE, cloneScene } from '../core/defaults';
 import { getPlaceholderTexture } from '../core/placeholder';
 import { loadImageFile } from '../core/images';
 import { MODELS, getModel } from '../models/registry';
@@ -14,10 +14,22 @@ import { getLang, initLang, lt, setLang, t } from './i18n';
 import { Store, countImages, disposeImageMap, hasAny, type AppState, type ImageMap } from './state';
 import { VIEW_PRESETS, type Actions, type AppContext, type TabId } from './context';
 import { completeParams, slotFor } from './modelUtils';
-import { exportBlob, extensionFor, fileNameFor, templateBlob, webpEncodingSupported } from './exportBridge';
+import {
+  animationFileFilter,
+  animationFileName,
+  exportAnimationBlob,
+  exportBlob,
+  extensionFor,
+  fileNameFor,
+  isAnimationCancelled,
+  templateBlob,
+  webpEncodingSupported,
+  type AnimationProgress,
+} from './exportBridge';
 import { PROJECT_EXT, ProjectError, hydrateProject, loadAutosave, parseProjectFile, saveAutosave, toProjectFile } from './project';
 import { mountToasts, notify } from './toast';
 import { confirmDialog } from './dialog';
+import { openBatchDialog, type BatchHost } from './batch';
 import { createToolbar } from './toolbar';
 import { createGallery } from './gallery';
 import { createViewportShell } from './viewport';
@@ -92,6 +104,20 @@ export function startApp(root: HTMLElement): void {
   /* State ------------------------------------------------------------ */
   const store = new Store({ ...freshDocument(MODELS[0].id), lang: getLang() });
   const exportBusy = new Signal(false);
+  const animationProgress = new Signal<AnimationProgress | null>(null);
+  /** Aborts the running animation export. */
+  let animationAbort: AbortController | null = null;
+  /**
+   * While an animation renders, the stage must keep its model (the frames are rendered from it):
+   * rebuilds requested meanwhile are deferred and run right after the export.
+   */
+  let modelLocked = false;
+  let rebuildDeferred = false;
+  /**
+   * While a batch export runs it drives the stage with temporary models and scene settings; the
+   * document's scene must not be pushed to the stage meanwhile (it is restored when the batch ends).
+   */
+  let batchActive = false;
   const loadingSlots = new Signal<ReadonlySet<string>>(new Set());
   let projectName = '';
 
@@ -108,6 +134,10 @@ export function startApp(root: HTMLElement): void {
 
   /* Model rebuild (coalesced to one per frame) ------------------------ */
   const rebuild = frameCoalescer(() => {
+    if (modelLocked) {
+      rebuildDeferred = true;
+      return;
+    }
     const s = store.state;
     const model = getModel(s.modelId);
     const imgs = s.images[model.id] ?? {};
@@ -125,6 +155,7 @@ export function startApp(root: HTMLElement): void {
     }
   });
   const applyScene = frameCoalescer(() => {
+    if (batchActive) return; // re-applied by batchHost.end()
     try {
       stage.applySettings(store.state.scene);
     } catch (e) {
@@ -157,6 +188,10 @@ export function startApp(root: HTMLElement): void {
   window.addEventListener('pagehide', autosaveNow);
 
   store.subscribe((e) => {
+    // A new / opened / restored document disposes the old document's image textures, which the
+    // (locked) model of a running animation export still renders – stop the export before its next
+    // frame instead of encoding frames with blank artwork.
+    if (modelLocked && e.source === 'project') animationAbort?.abort();
     if (hasAny(e, 'model', 'params', 'images', 'lang')) rebuild.schedule();
     // Camera changes made in the viewport are already applied there – never push them back.
     if (e.kinds.has('scene') || (e.kinds.has('camera') && e.source !== 'stage')) applyScene.schedule();
@@ -305,6 +340,61 @@ export function startApp(root: HTMLElement): void {
       }
     },
 
+    async exportAnimation() {
+      if (exportBusy.value) return;
+      exportBusy.set(true);
+      const abort = new AbortController();
+      animationAbort = abort;
+      animationProgress.set({ phase: 'prepare', done: 0, total: 0 });
+      try {
+        rebuild.flush();
+        applyScene.flush();
+        await nextFrame();
+        await nextFrame();
+        const s = store.state;
+        const modelId = s.modelId;
+        const settings = { ...(s.export.animation ?? DEFAULT_ANIMATION) };
+        modelLocked = true;
+        let result;
+        try {
+          result = await exportAnimationBlob(stage, settings, { ...s.scene.background }, (p) => animationProgress.set(p), abort.signal);
+        } finally {
+          modelLocked = false;
+          if (rebuildDeferred) {
+            rebuildDeferred = false;
+            rebuild.schedule();
+          }
+        }
+        animationProgress.set(null);
+        const name = animationFileName(modelId, result.format);
+        const ok = await saveBlob(result.blob, name, [animationFileFilter(result.format)]);
+        if (ok) notify.success(t('saved'), name);
+      } catch (e) {
+        if (isAnimationCancelled(e)) {
+          notify.info(t('animCancelled'));
+        } else {
+          console.error('[mockup-director] animation export failed', e);
+          notify.error(t('errExportAnimation'), errorMessage(e));
+        }
+      } finally {
+        animationAbort = null;
+        animationProgress.set(null);
+        exportBusy.set(false);
+      }
+    },
+
+    cancelAnimation() {
+      animationAbort?.abort();
+    },
+
+    openBatchExport() {
+      if (exportBusy.value) {
+        notify.warning(t('batchBusy'));
+        return;
+      }
+      openBatchDialog(ctx, batchHost);
+    },
+
     undo() {
       store.undo();
     },
@@ -419,7 +509,40 @@ export function startApp(root: HTMLElement): void {
     },
   };
 
-  const ctx: AppContext = { store, stage, actions, exportBusy, loadingSlots };
+  const ctx: AppContext = { store, stage, actions, exportBusy, animationProgress, loadingSlots };
+
+  /**
+   * Exclusive stage access for the batch export (src/ui/batch.ts). The batch never touches the store:
+   * it renders temporary models / scene settings, and end() puts the document back on the stage –
+   * the exact scene settings and camera from the store plus a normal rebuild of the document's model.
+   */
+  const batchHost: BatchHost = {
+    begin() {
+      if (exportBusy.value || batchActive) return false;
+      // Make sure the stage shows the latest document before it is frozen.
+      rebuild.flush();
+      applyScene.flush();
+      exportBusy.set(true);
+      modelLocked = true;
+      batchActive = true;
+      return true;
+    },
+    end() {
+      if (!batchActive) return;
+      batchActive = false;
+      modelLocked = false;
+      rebuildDeferred = false;
+      try {
+        stage.applySettings(store.state.scene);
+      } catch (e) {
+        console.error('[mockup-director] applySettings failed', e);
+      }
+      // Rebuild the document's model right away (replaces – and disposes – the last temporary model).
+      rebuild.schedule();
+      rebuild.flush();
+      exportBusy.set(false);
+    },
+  };
 
   /* Layout -------------------------------------------------------------- */
   const toolbar = createToolbar(ctx);
