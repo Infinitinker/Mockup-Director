@@ -1,6 +1,6 @@
 # cargo-deny configuration – used in CI (.github/workflows/ci.yml, job "licenses") to make sure no
 # Rust dependency brings a copyleft license (GPL, AGPL, LGPL, …) into the app.
-#   cargo deny --manifest-path src-tauri/Cargo.toml check --config src-tauri/deny.toml licenses
+#   cargo deny --manifest-path src-tauri/Cargo.toml --config src-tauri/deny.toml check licenses
 
 [graph]
 # Only the platforms we ship. Linux-only crates (GTK/WebKitGTK bindings) are not part of our builds.

@@ -72,7 +72,7 @@ jobs:
       # Fails on any Rust crate (for the Windows and macOS targets) with a license outside the
       # allow list in src-tauri/deny.toml.
       - name: Check Rust licenses (cargo-deny)
-        run: cargo deny --manifest-path src-tauri/Cargo.toml check --config src-tauri/deny.toml licenses
+        run: cargo deny --manifest-path src-tauri/Cargo.toml --config src-tauri/deny.toml check licenses
 
       - name: Generate Rust license notices (cargo-about)
         run: |
