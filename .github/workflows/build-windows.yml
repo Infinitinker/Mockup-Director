@@ -9,9 +9,12 @@
 # run → "More info" → "Run anyway" (see README).
 name: Build Windows app
 
+# Runs on every push to dev and main (a merged pull request is a push to main), on release tags
+# and on demand. Its job name "Build (x86_64-pc-windows-msvc)" can be a required status check of
+# the main branch ruleset: the push to dev runs it on the same commit the pull request merges.
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
     tags: ['v*']
   workflow_dispatch:
 

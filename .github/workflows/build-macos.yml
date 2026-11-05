@@ -11,13 +11,14 @@
 #   APPLE_ID, APPLE_PASSWORD (app-specific password), APPLE_TEAM_ID   → notarisation
 name: Build macOS app
 
-# While the repository is private, macOS runner minutes are expensive (≈10× Linux), so this
-# workflow runs only on release tags and on demand (Actions → Build macOS app → Run workflow).
-# Once the repository is public (hosted runners are free there), add back:
-#   push:
-#     branches: [main]
+# Runs on every push to dev and main (a merged pull request is a push to main), on release tags
+# and on demand. Its job name "Build (universal-apple-darwin)" can be a required status check of
+# the main branch ruleset: the push to dev runs it on the same commit the pull request merges.
+# Note: in a PRIVATE repository macOS runner minutes count ≈10× Linux minutes against the
+# free Actions quota; in a public repository standard runners are free.
 on:
   push:
+    branches: [main, dev]
     tags: ['v*']
   workflow_dispatch:
 

@@ -65,9 +65,7 @@ Wystarczy zrobić to raz.
 
 1. Wejdź w repozytorium na GitHubie i pobierz plik `.dmg` na jeden z dwóch sposobów:
    - **Releases** (wersje oznaczone tagiem `v…`): pobierz `Mockup Director_x.y.z_universal.dmg`.
-   - **Actions → „Build macOS app” → ostatni zielony przebieg → sekcja Artifacts**
-     (dopóki repozytorium jest prywatne, ten build uruchamia się tylko przy tagach `v…`
-     albo ręcznie: **Run workflow**):
+   - **Actions → „Build macOS app” → ostatni zielony przebieg → sekcja Artifacts**:
      pobierz `MockupDirector-x.y.z-macos-dmg`. GitHub pakuje artefakty w ZIP – rozpakuj go,
      a w środku będzie `.dmg`. Potrzebne jest konto GitHub z dostępem do repozytorium.
 2. Otwórz `.dmg` i przeciągnij **Mockup Director** do folderu **Aplikacje**.
@@ -101,8 +99,17 @@ Wymagania: Node.js 22+ (npm). Do budowania aplikacji desktopowej potrzebny jest
   i WebView2 (jest w Windows 10/11),
 - **macOS:** Xcode Command Line Tools (`xcode-select --install`).
 
-Gałęzie: `main` to wersja stabilna (każdy push buduje aplikacje), codzienna praca odbywa się na `dev`.
-Build z `dev` można uruchomić ręcznie: **Actions → wybierz workflow → Run workflow → gałąź `dev`**.
+Gałęzie: `main` to wersja stabilna, codzienna praca odbywa się na `dev`. Każdy push na `dev` i na `main`
+(także scalenie pull requesta) automatycznie buduje aplikacje na Windows i macOS oraz uruchamia CI.
+Zmiany trafiają na `main` przez pull request z `dev`.
+
+**Ochrona gałęzi `main`** (Settings → Rules → Rulesets → New branch ruleset): cel *Include default branch*,
+reguły *Restrict deletions*, *Block force pushes*, *Require a pull request before merging* (0 zatwierdzeń,
+jeśli pracujesz sam) i *Require status checks to pass* z checkami `Type-check & build (web)`,
+`License check`, `Build (x86_64-pc-windows-msvc)` i `Build (universal-apple-darwin)`. Checki uruchamia push
+na `dev` na tym samym commicie, który scala pull request. Uwaga: w prywatnym repozytorium na darmowym
+koncie GitHub reguły nie są egzekwowane (potrzebne repo publiczne albo GitHub Pro), a minuty macOS
+liczą się do limitu ok. 10× drożej niż Linux.
 
 ```sh
 npm install          # zależności
@@ -134,7 +141,7 @@ src-tauri/     powłoka desktopowa Tauri v2 (Rust): okno, dialogi, komenda save_
   about.toml, about.hbs    generowanie listy licencji crate'ów Rust (cargo-about)
 .github/workflows/
   build-windows.yml build instalatora .exe (x64) + wersja przenośna + draft Release dla tagów v*
-  build-macos.yml   build .dmg (universal) + draft Release dla tagów v* (na razie tylko tagi i ręcznie)
+  build-macos.yml   build .dmg (universal) + draft Release dla tagów v*
   ci.yml            kontrola części webowej i licencji (Linux), dla main, dev i pull requestów
 scripts/licenses.mjs   kontrola licencji pakietów npm + THIRD-PARTY-NOTICES (`npm run licenses`)
 app-icon.svg   źródło ikony aplikacji
