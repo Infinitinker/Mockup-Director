@@ -1,0 +1,41 @@
+# Cheap validation of the web part (TypeScript type-check + Vite production build) on Linux.
+# The desktop apps are built by build-macos.yml and build-windows.yml.
+name: CI (web)
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-web-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    name: Type-check & build (web)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build (tsc --noEmit && vite build)
+        run: npm run build
+
+      - name: Validate Tauri JSON config
+        run: |
+          node -e "for (const f of ['src-tauri/tauri.conf.json','src-tauri/capabilities/default.json']) { JSON.parse(require('fs').readFileSync(f,'utf8')); console.log('OK', f); }"

@@ -1,0 +1,129 @@
+# Builds the Mockup Director macOS app (universal binary: Apple Silicon + Intel) and publishes
+#   - workflow artifacts: the .dmg and a zipped .app (Actions → run → Artifacts),
+#   - on tags v*: a DRAFT GitHub Release with the .dmg attached.
+#
+# Code signing / notarisation is optional. Without secrets the app is ad-hoc signed
+# (tauri.conf.json → bundle.macOS.signingIdentity "-") and must be allowed once in
+# System Settings → Privacy & Security (see README). To sign, add these repository secrets:
+#   APPLE_CERTIFICATE           base64 of the "Developer ID Application" .p12
+#   APPLE_CERTIFICATE_PASSWORD  password of the .p12
+#   APPLE_SIGNING_IDENTITY      e.g. "Developer ID Application: Your Name (TEAMID)"
+#   APPLE_ID, APPLE_PASSWORD (app-specific password), APPLE_TEAM_ID   → notarisation
+name: Build macOS app
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+concurrency:
+  group: build-macos-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-macos:
+    name: Build (universal-apple-darwin)
+    runs-on: macos-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write # needed to create the draft release on tags
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Setup Rust (both macOS targets for the universal binary)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      # The Tauri bundler treats a DEFINED-but-empty APPLE_* variable as "configured" and would
+      # try (and fail) to import an empty certificate or notarise with an empty Apple ID.
+      # So we export only the secrets that actually exist; missing ones stay undefined and the
+      # build falls back to an ad-hoc signed, non-notarised app.
+      - name: Export optional signing secrets
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          exported=""
+          # Signing needs certificate + password + identity together.
+          if [ -n "$APPLE_CERTIFICATE" ] && [ -n "$APPLE_CERTIFICATE_PASSWORD" ] && [ -n "$APPLE_SIGNING_IDENTITY" ]; then
+            names="APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY"
+            # Notarisation needs a real signature plus all three Apple ID values.
+            if [ -n "$APPLE_ID" ] && [ -n "$APPLE_PASSWORD" ] && [ -n "$APPLE_TEAM_ID" ]; then
+              names="$names APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID"
+            fi
+            for name in $names; do
+              delim="EOF_$(uuidgen)"
+              { echo "$name<<$delim"; printenv "$name"; echo "$delim"; } >> "$GITHUB_ENV"
+              exported="$exported $name"
+            done
+          fi
+          if [ -n "$exported" ]; then
+            echo "Signing configured:$exported"
+          else
+            echo "No signing secrets – building an ad-hoc signed (unsigned) app."
+          fi
+
+      - name: Build Tauri app
+        id: tauri
+        uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: --target universal-apple-darwin
+          # Release only for tags (empty inputs = build without uploading a release).
+          tagName: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+          releaseName: ${{ github.ref_type == 'tag' && format('Mockup Director {0}', github.ref_name) || '' }}
+          releaseBody: ${{ github.ref_type == 'tag' && 'Pobierz plik .dmg poniżej. Instrukcja pierwszego uruchomienia – zob. README.' || '' }}
+          releaseDraft: true
+          prerelease: false
+
+      # upload-artifact does not preserve file permissions or symlinks, so the .app bundle is
+      # zipped with ditto (keeps the executable bit, symlinks and extended attributes).
+      - name: Zip .app bundle
+        id: zip
+        run: |
+          bundle_dir="src-tauri/target/universal-apple-darwin/release/bundle"
+          version="${{ steps.tauri.outputs.appVersion }}"
+          [ -n "$version" ] || version="$(node -p "require('./src-tauri/tauri.conf.json').version")"
+          zip_path="$bundle_dir/MockupDirector_${version}_universal.app.zip"
+          ditto -c -k --sequesterRsrc --keepParent "$bundle_dir/macos/Mockup Director.app" "$zip_path"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          ls -la "$bundle_dir/dmg" "$zip_path"
+
+      - name: Upload .dmg
+        uses: actions/upload-artifact@v6
+        with:
+          name: MockupDirector-${{ steps.zip.outputs.version }}-macos-dmg
+          path: src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
+          if-no-files-found: error
+          compression-level: 0 # a .dmg is already compressed
+
+      - name: Upload zipped .app
+        uses: actions/upload-artifact@v6
+        with:
+          name: MockupDirector-${{ steps.zip.outputs.version }}-macos-app
+          path: src-tauri/target/universal-apple-darwin/release/bundle/MockupDirector_*_universal.app.zip
+          if-no-files-found: error
+          compression-level: 0

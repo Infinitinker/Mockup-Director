@@ -1,0 +1,14 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Uprawnienia głównego okna Mockup Director: domyślne API rdzenia, przeciąganie okna za pasek narzędzi (data-tauri-drag-region) oraz natywne okna dialogowe zapisu/otwierania.",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "core:window:allow-start-dragging",
+    "dialog:default",
+    "dialog:allow-save",
+    "dialog:allow-open",
+    "dialog:allow-message"
+  ]
+}

@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Mockup Director app icon (original artwork, 1024 x 1024).
+  macOS Big Sur+ grid: 824 x 824 rounded-square body centred with 100 px margins,
+  plus a soft drop shadow inside the margin. A stylised product box with a disc
+  sliding out behind it, standing on a soft floor shadow.
+  Source for `npx tauri icon app-icon.svg` (generates src-tauri/icons/*).
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <!-- Body background -->
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2B3A9E"/>
+      <stop offset="0.55" stop-color="#4B2FB8"/>
+      <stop offset="1" stop-color="#7A3BD6"/>
+    </linearGradient>
+    <radialGradient id="bgGlow" cx="0.32" cy="0.22" r="0.75">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.28"/>
+      <stop offset="0.6" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="bodyEdge" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.35"/>
+      <stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.25"/>
+    </linearGradient>
+
+    <!-- Disc -->
+    <radialGradient id="discBase" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0.18" stop-color="#E9EDF5"/>
+      <stop offset="0.62" stop-color="#C9D0DE"/>
+      <stop offset="1" stop-color="#F4F6FA"/>
+    </radialGradient>
+    <linearGradient id="discIri" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5EE7FF" stop-opacity="0.55"/>
+      <stop offset="0.35" stop-color="#FF7AE0" stop-opacity="0.35"/>
+      <stop offset="0.6" stop-color="#FFE66B" stop-opacity="0.40"/>
+      <stop offset="1" stop-color="#6BFFB8" stop-opacity="0.45"/>
+    </linearGradient>
+    <linearGradient id="discShine" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0.35" stop-color="#FFFFFF" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0.65"/>
+      <stop offset="0.65" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Box faces -->
+    <linearGradient id="front" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#FF9A55"/>
+      <stop offset="0.55" stop-color="#FF5577"/>
+      <stop offset="1" stop-color="#E23A86"/>
+    </linearGradient>
+    <linearGradient id="side" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#C8366A"/>
+      <stop offset="1" stop-color="#8E1F5C"/>
+    </linearGradient>
+    <linearGradient id="top" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFE0C2"/>
+      <stop offset="1" stop-color="#FFB58F"/>
+    </linearGradient>
+    <linearGradient id="frontSheen" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.30"/>
+      <stop offset="0.45" stop-color="#FFFFFF" stop-opacity="0.05"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+
+    <filter id="iconShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="14"/>
+    </filter>
+    <filter id="floorBlur" x="-30%" y="-100%" width="160%" height="300%">
+      <feGaussianBlur stdDeviation="18"/>
+    </filter>
+    <filter id="discShadowBlur" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="10"/>
+    </filter>
+
+    <clipPath id="bodyClip">
+      <rect x="100" y="100" width="824" height="824" rx="185" ry="185"/>
+    </clipPath>
+  </defs>
+
+  <!-- Soft drop shadow of the icon body (lives in the transparent margin) -->
+  <rect x="100" y="116" width="824" height="824" rx="185" ry="185" fill="#000000" opacity="0.30" filter="url(#iconShadow)"/>
+
+  <!-- Body -->
+  <rect x="100" y="100" width="824" height="824" rx="185" ry="185" fill="url(#bg)"/>
+
+  <g clip-path="url(#bodyClip)">
+    <rect x="100" y="100" width="824" height="824" fill="url(#bgGlow)"/>
+
+    <!-- Floor shadow under the box and disc -->
+    <ellipse cx="520" cy="770" rx="300" ry="54" fill="#0B0630" opacity="0.40" filter="url(#floorBlur)"/>
+    <!-- contact shadow: the box footprint, slightly blurred -->
+    <polygon points="250,706 472,812 616,744 394,640" fill="#0B0630" opacity="0.55" filter="url(#discShadowBlur)"/>
+
+    <!-- Disc sliding out behind the box -->
+    <circle cx="652" cy="452" r="204" fill="#120A3A" opacity="0.35" filter="url(#discShadowBlur)"/>
+    <circle cx="644" cy="440" r="200" fill="url(#discBase)"/>
+    <circle cx="644" cy="440" r="200" fill="url(#discIri)"/>
+    <circle cx="644" cy="440" r="200" fill="url(#discShine)" transform="rotate(-35 644 440)"/>
+    <!-- data-area rings -->
+    <circle cx="644" cy="440" r="186" fill="none" stroke="#FFFFFF" stroke-opacity="0.55" stroke-width="3"/>
+    <circle cx="644" cy="440" r="140" fill="none" stroke="#FFFFFF" stroke-opacity="0.25" stroke-width="2"/>
+    <!-- clamping area + centre hole -->
+    <circle cx="644" cy="440" r="74" fill="#DDE3EE" stroke="#FFFFFF" stroke-opacity="0.7" stroke-width="3"/>
+    <circle cx="644" cy="440" r="30" fill="#3A2A9A"/>
+    <circle cx="644" cy="440" r="30" fill="none" stroke="#1C1260" stroke-opacity="0.5" stroke-width="4"/>
+
+    <!-- Product box: front (cover) face, right (spine) face, top face -->
+    <!-- Top face -->
+    <polygon points="264,350 384,292 592,392 472,450" fill="url(#top)"/>
+    <!-- Right face (spine) -->
+    <polygon points="472,450 592,392 592,742 472,800" fill="url(#side)"/>
+    <!-- spine artwork: a few stripes, mapped onto the 120 x 350 spine plane -->
+    <g transform="matrix(1 -0.48333 0 1 472 450)">
+      <rect x="18" y="40" width="84" height="10" rx="5" fill="#FFFFFF" opacity="0.55"/>
+      <rect x="18" y="62" width="58" height="10" rx="5" fill="#FFFFFF" opacity="0.30"/>
+      <rect x="18" y="292" width="84" height="26" rx="6" fill="#FFFFFF" opacity="0.18"/>
+    </g>
+    <!-- Front face -->
+    <polygon points="264,350 472,450 472,800 264,700" fill="url(#front)"/>
+    <!-- front artwork, drawn in a 208 x 350 plane and sheared onto the face -->
+    <g transform="matrix(1 0.48077 0 1 264 350)">
+      <circle cx="104" cy="138" r="62" fill="#FFF3D6" opacity="0.92"/>
+      <path d="M0 236 L58 186 L104 222 L160 168 L208 206 L208 350 L0 350 Z" fill="#7B1F6B" opacity="0.55"/>
+      <path d="M0 270 L70 226 L130 262 L208 232 L208 350 L0 350 Z" fill="#4A1460" opacity="0.6"/>
+      <rect x="24" y="34" width="112" height="14" rx="7" fill="#FFFFFF" opacity="0.85"/>
+      <rect x="24" y="58" width="72" height="10" rx="5" fill="#FFFFFF" opacity="0.55"/>
+      <rect x="0" y="0" width="208" height="350" fill="url(#frontSheen)"/>
+    </g>
+    <!-- Edge highlights -->
+    <polyline points="264,700 264,350 384,292 592,392 592,742" fill="none" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="3" stroke-linejoin="round"/>
+    <polyline points="264,350 472,450 592,392" fill="none" stroke="#FFFFFF" stroke-opacity="0.75" stroke-width="3.5" stroke-linejoin="round"/>
+    <line x1="472" y1="450" x2="472" y2="800" stroke="#FFFFFF" stroke-opacity="0.45" stroke-width="3"/>
+
+    <!-- Subtle top light / bottom shade on the body -->
+    <rect x="100" y="100" width="824" height="824" fill="url(#bodyEdge)" opacity="0.5"/>
+  </g>
+
+  <!-- Hairline rim -->
+  <rect x="101.5" y="101.5" width="821" height="821" rx="183.5" ry="183.5" fill="none" stroke="#FFFFFF" stroke-opacity="0.18" stroke-width="3"/>
+</svg>

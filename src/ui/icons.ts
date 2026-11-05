@@ -1,0 +1,53 @@
+/**
+ * Original line icons (16x16, stroke = currentColor). Kept inline so the app works offline.
+ */
+const svg = (body: string, extra = '') =>
+  `<svg class="icon" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"${extra}>${body}</svg>`;
+
+export const ICONS = {
+  newDoc: svg('<path d="M4 1.75h5l3 3v9.5H4z"/><path d="M9 1.75v3h3"/><path d="M8 7.5v4M6 9.5h4"/>'),
+  open: svg('<path d="M1.75 4.25V12.5h12.5V5.75H7.5L6 4.25z"/><path d="M1.75 4.25V3.5h4.5"/>'),
+  save: svg('<path d="M8 2v7.5"/><path d="M5 6.75 8 9.75l3-3"/><path d="M2.5 10.5v3h11v-3"/>'),
+  undo: svg('<path d="M5.5 4 2.5 7l3 3"/><path d="M2.75 7H10a3.25 3.25 0 0 1 0 6.5H7"/>'),
+  redo: svg('<path d="m10.5 4 3 3-3 3"/><path d="M13.25 7H6a3.25 3.25 0 0 0 0 6.5h3"/>'),
+  exportImg: svg('<path d="M8 10V2"/><path d="M5 5 8 2l3 3"/><path d="M3.5 7.5H2.5v6h11v-6h-1"/>'),
+  reset: svg('<path d="M2.75 8a5.25 5.25 0 1 0 1.6-3.78"/><path d="M2.5 2.5v2.75h2.75"/>'),
+  perspective: svg('<path d="M3 4.5 8 2l5 2.5v7L8 14l-5-2.5z"/><path d="M3 4.5 8 7l5-2.5M8 7v7"/>'),
+  ortho: svg('<rect x="3" y="3" width="10" height="10" rx="1"/><path d="M3 8h10M8 3v10" stroke-dasharray="1.5 1.5"/>'),
+  checker: svg('<rect x="2.5" y="2.5" width="11" height="11" rx="1.5"/><path d="M2.5 8h11M8 2.5v11" /><rect x="2.5" y="2.5" width="5.5" height="5.5" fill="currentColor" stroke="none" opacity=".5"/><rect x="8" y="8" width="5.5" height="5.5" fill="currentColor" stroke="none" opacity=".5"/>'),
+  fill: svg('<rect x="2.5" y="2.5" width="11" height="11" rx="1.5" fill="currentColor" fill-opacity=".55"/>'),
+  gradient: svg(
+    '<defs><linearGradient id="cbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="currentColor" stop-opacity=".1"/><stop offset="1" stop-color="currentColor" stop-opacity=".8"/></linearGradient></defs><rect x="2.5" y="2.5" width="11" height="11" rx="1.5" fill="url(#cbg)"/>',
+  ),
+  image: svg('<rect x="2" y="3" width="12" height="10" rx="1.5"/><circle cx="5.75" cy="6.25" r="1.1"/><path d="m2.5 12 3.75-3.5 2.5 2.25L10.5 9l3 2.75"/>'),
+  trash: svg('<path d="M2.75 4.25h10.5M6.25 4.25V2.75h3.5v1.5"/><path d="M4 4.25l.6 9h6.8l.6-9"/>'),
+  template: svg('<rect x="2" y="2.5" width="12" height="11" rx="1"/><path d="M6 2.5v11M10 2.5v11" stroke-dasharray="1.5 1.3"/>'),
+  chevron: svg('<path d="m4.5 6 3.5 3.5L11.5 6"/>'),
+  lock: svg('<rect x="3.5" y="7" width="9" height="6.5" rx="1.25"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/>'),
+  unlock: svg('<rect x="3.5" y="7" width="9" height="6.5" rx="1.25"/><path d="M5.5 7V5a2.5 2.5 0 0 1 4.9-.7"/>'),
+  warn: svg('<path d="M8 2 1.75 13.25h12.5z"/><path d="M8 6.5v3.25M8 11.6v.1"/>'),
+  check: svg('<path d="m3.5 8.5 3 3 6-7"/>'),
+  plus: svg('<path d="M8 3v10M3 8h10"/>'),
+  pencil: svg('<path d="M10.5 2.75 13.25 5.5 5.5 13.25H2.75V10.5z"/>'),
+  download: svg('<path d="M8 2.5v8"/><path d="M5 7.5l3 3 3-3"/><path d="M3 13.5h10"/>'),
+  upload: svg('<path d="M8 10.5v-8"/><path d="M5 5.5l3-3 3 3"/><path d="M3 13.5h10"/>'),
+  folderImg: svg('<path d="M1.75 4.25V12.5h12.5V5.75H7.5L6 4.25z"/><path d="M5.5 10.5 7.5 8.5l1.5 1.25 1.5-1.25"/>'),
+  close: svg('<path d="m4 4 8 8M12 4l-8 8"/>'),
+  sparkle: svg('<path d="M8 2v3M8 11v3M2 8h3M11 8h3M4 4l1.8 1.8M10.2 10.2 12 12M12 4l-1.8 1.8M5.8 10.2 4 12"/>'),
+  info: svg('<circle cx="8" cy="8" r="6"/><path d="M8 7.25v4M8 4.9v.1"/>'),
+} as const;
+
+export type IconName = keyof typeof ICONS;
+
+/** App logo mark – an original isometric box with a disc peeking out. */
+export const LOGO_SVG = `<svg viewBox="0 0 32 32" width="22" height="22" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="cb-logo-a" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5ab0ff"/><stop offset="1" stop-color="#1f6fe5"/></linearGradient>
+    <linearGradient id="cb-logo-b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a5fc9"/><stop offset="1" stop-color="#173f99"/></linearGradient>
+  </defs>
+  <path d="M16 3 28 9v14l-12 6-12-6V9z" fill="url(#cb-logo-a)"/>
+  <path d="M16 15v14l12-6V9z" fill="url(#cb-logo-b)"/>
+  <path d="M4 9l12 6 12-6" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.2" stroke-linejoin="round"/>
+  <ellipse cx="10" cy="17.5" rx="3.2" ry="4.4" transform="rotate(-27 10 17.5)" fill="none" stroke="#fff" stroke-opacity=".85" stroke-width="1.3"/>
+  <circle cx="10" cy="17.5" r="0.9" fill="#fff" fill-opacity=".85"/>
+</svg>`;

@@ -1,0 +1,95 @@
+# Builds the Mockup Director Windows app (x64) and publishes
+#   - workflow artifacts: the NSIS installer (.exe) and a portable .exe (Actions → run → Artifacts),
+#   - on tags v*: a DRAFT GitHub Release with the installer attached (the macOS workflow attaches its
+#     .dmg to the same draft release).
+#
+# Windows-specific bundle settings live in src-tauri/tauri.windows.conf.json (merged automatically
+# by Tauri on Windows): NSIS installer only, per-user install (no admin rights needed).
+# The app is not code-signed, so Windows SmartScreen shows "Windows protected your PC" on first
+# run → "More info" → "Run anyway" (see README).
+name: Build Windows app
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+concurrency:
+  group: build-windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-windows:
+    name: Build (x86_64-pc-windows-msvc)
+    runs-on: windows-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write # needed to create the draft release on tags
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build Tauri app
+        id: tauri
+        uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # Release only for tags (empty inputs = build without uploading a release).
+          tagName: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+          releaseName: ${{ github.ref_type == 'tag' && format('Mockup Director {0}', github.ref_name) || '' }}
+          releaseBody: ${{ github.ref_type == 'tag' && 'Windows: pobierz plik *_x64-setup.exe. macOS: pobierz plik .dmg. Instrukcja pierwszego uruchomienia – zob. README.' || '' }}
+          releaseDraft: true
+          prerelease: false
+
+      # The release binary embeds the whole frontend, so it also runs without installing
+      # (needs the Microsoft Edge WebView2 runtime, which ships with Windows 10/11).
+      - name: Collect build outputs
+        id: collect
+        run: |
+          version="${{ steps.tauri.outputs.appVersion }}"
+          [ -n "$version" ] || version="$(node -p "require('./src-tauri/tauri.conf.json').version")"
+          out="windows-dist"
+          mkdir -p "$out/installer" "$out/portable"
+          cp src-tauri/target/release/bundle/nsis/*-setup.exe "$out/installer/"
+          exe="src-tauri/target/release/mockup-director.exe"
+          [ -f "$exe" ] || exe="$(ls src-tauri/target/release/*.exe | head -n 1)"
+          cp "$exe" "$out/portable/MockupDirector_${version}_x64_portable.exe"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          ls -la "$out"/*
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v6
+        with:
+          name: MockupDirector-${{ steps.collect.outputs.version }}-windows-setup
+          path: windows-dist/installer/*.exe
+          if-no-files-found: error
+
+      - name: Upload portable exe
+        uses: actions/upload-artifact@v6
+        with:
+          name: MockupDirector-${{ steps.collect.outputs.version }}-windows-portable
+          path: windows-dist/portable/*.exe
+          if-no-files-found: error
