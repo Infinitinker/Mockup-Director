@@ -45,7 +45,9 @@ Wystarczy zrobić to raz.
 
 1. Wejdź w repozytorium na GitHubie i pobierz plik `.dmg` na jeden z dwóch sposobów:
    - **Releases** (wersje oznaczone tagiem `v…`): pobierz `Mockup Director_x.y.z_universal.dmg`.
-   - **Actions → „Build macOS app” → ostatni zielony przebieg → sekcja Artifacts**:
+   - **Actions → „Build macOS app” → ostatni zielony przebieg → sekcja Artifacts**
+     (dopóki repozytorium jest prywatne, ten build uruchamia się tylko przy tagach `v…`
+     albo ręcznie: **Run workflow**):
      pobierz `MockupDirector-x.y.z-macos-dmg`. GitHub pakuje artefakty w ZIP – rozpakuj go,
      a w środku będzie `.dmg`. Potrzebne jest konto GitHub z dostępem do repozytorium.
 2. Otwórz `.dmg` i przeciągnij **Mockup Director** do folderu **Aplikacje**.
@@ -108,10 +110,13 @@ src-tauri/     powłoka desktopowa Tauri v2 (Rust): okno, dialogi, komenda save_
   tauri.conf.json          wspólna konfiguracja
   tauri.windows.conf.json  dodatki dla Windows (instalator NSIS), scalane automatycznie przez Tauri
   capabilities/default.json, icons/
+  deny.toml                dozwolone licencje zależności Rust (cargo-deny)
+  about.toml, about.hbs    generowanie listy licencji crate'ów Rust (cargo-about)
 .github/workflows/
   build-windows.yml build instalatora .exe (x64) + wersja przenośna + draft Release dla tagów v*
-  build-macos.yml   build .dmg (universal) + draft Release dla tagów v*
-  ci.yml            szybka kontrola części webowej (Linux), dla main, dev i pull requestów
+  build-macos.yml   build .dmg (universal) + draft Release dla tagów v* (na razie tylko tagi i ręcznie)
+  ci.yml            kontrola części webowej i licencji (Linux), dla main, dev i pull requestów
+scripts/licenses.mjs   kontrola licencji pakietów npm + THIRD-PARTY-NOTICES (`npm run licenses`)
 app-icon.svg   źródło ikony aplikacji
 ```
 
@@ -194,6 +199,23 @@ kolejnych. Brakujące sekrety są pomijane, więc build bez nich nadal przechodz
    dołączą instalator `.exe` i plik `.dmg` do jednego **szkicu** Release. Sprawdź go i opublikuj
    ręcznie na GitHubie.
 
+## Licencja
+
+Kod jest udostępniony na licencji [MIT](LICENSE).
+
+Zależności mają wyłącznie licencje liberalne (MIT, Apache-2.0, BSD, ISC, Zlib, Unicode) oraz
+MPL-2.0 – słaby copyleft obejmujący tylko pliki samej biblioteki, nie kod aplikacji. Pilnuje tego CI:
+job **„License check”** przerywa się, gdy jakakolwiek zależność npm lub Rust ma licencję spoza listy
+(np. GPL, AGPL, LGPL). Listy dozwolonych licencji są w `scripts/licenses.mjs` (npm)
+i `src-tauri/deny.toml` (Rust). Przy zmianie trzeba je aktualizować razem z `src-tauri/about.toml`.
+
+Ten sam job generuje plik **THIRD-PARTY-NOTICES.md** z pełnymi tekstami licencji wszystkich bibliotek
+dołączonych do aplikacji (Actions → przebieg „CI” → Artifacts → `third-party-notices`). Licencje MIT
+i Apache wymagają dołączenia tych informacji do dystrybuowanej aplikacji, więc przed wydaniem
+wersji warto dołączyć ten plik do Release.
+
+Lokalnie część npm sprawdzisz poleceniem `npm run licenses`.
+
 ## Znaki towarowe
 
 Mockup Director nie zawiera logotypów ani znaków towarowych osób trzecich (np. logo DVD Video, Blu-ray Disc,
@@ -221,4 +243,6 @@ floor reflections and transparent PNG export up to 4000 × 4000 px. The UI is in
 - **New model:** export a `ModelDefinition` (see `src/core/types.ts`) and add it to `MODELS` in
   `src/models/registry.ts`.
 - **Signing:** set the `APPLE_*` repository secrets listed above. Builds without them stay ad-hoc signed.
+- **License:** [MIT](LICENSE). CI ("License check") fails if any npm or Rust dependency has a license outside
+  the allow list (no GPL/AGPL/LGPL) and produces `THIRD-PARTY-NOTICES.md` as an artifact.
 - **Trademarks:** no third-party logos are included. All trademarks belong to their owners.

@@ -2,12 +2,14 @@
   "name": "mockup-director",
   "private": true,
   "version": "0.1.0",
+  "license": "MIT",
   "description": "Mockup Director – generator mockupów 3D (pudełka, płyty) na macOS i Windows",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
+    "licenses": "node scripts/licenses.mjs",
     "preview": "vite preview",
     "tauri": "tauri"
   },

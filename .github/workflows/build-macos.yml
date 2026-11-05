@@ -11,9 +11,13 @@
 #   APPLE_ID, APPLE_PASSWORD (app-specific password), APPLE_TEAM_ID   → notarisation
 name: Build macOS app
 
+# While the repository is private, macOS runner minutes are expensive (≈10× Linux), so this
+# workflow runs only on release tags and on demand (Actions → Build macOS app → Run workflow).
+# Once the repository is public (hosted runners are free there), add back:
+#   push:
+#     branches: [main]
 on:
   push:
-    branches: [main]
     tags: ['v*']
   workflow_dispatch:
 
