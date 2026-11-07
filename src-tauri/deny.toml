@@ -7,7 +7,7 @@
 # pulls in the GTK / WebKitGTK binding crates (gtk-rs, webkit2gtk-rs); the C libraries themselves
 # come from the system (or the AppImage) and are not Rust dependencies.
 targets = [
-  "x86_64-pc-windows-msvc",
+  "x86_64-pc-windows-gnu",
   "x86_64-apple-darwin",
   "aarch64-apple-darwin",
   "x86_64-unknown-linux-gnu",
