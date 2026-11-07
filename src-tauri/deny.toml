@@ -3,11 +3,14 @@
 #   cargo deny --manifest-path src-tauri/Cargo.toml --config src-tauri/deny.toml check licenses
 
 [graph]
-# Only the platforms we ship. Linux-only crates (GTK/WebKitGTK bindings) are not part of our builds.
+# Only the platforms we ship (keep in sync with `targets` in src-tauri/about.toml). The Linux target
+# pulls in the GTK / WebKitGTK binding crates (gtk-rs, webkit2gtk-rs); the C libraries themselves
+# come from the system (or the AppImage) and are not Rust dependencies.
 targets = [
   "x86_64-pc-windows-msvc",
   "x86_64-apple-darwin",
   "aarch64-apple-darwin",
+  "x86_64-unknown-linux-gnu",
 ]
 
 [licenses]

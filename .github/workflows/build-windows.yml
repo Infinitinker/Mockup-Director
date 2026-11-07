@@ -1,7 +1,7 @@
 # Builds the Mockup Director Windows app (x64) and publishes
 #   - workflow artifacts: the NSIS installer (.exe) and a portable .exe (Actions → run → Artifacts),
-#   - on tags v*: a DRAFT GitHub Release with the installer attached (the macOS workflow attaches its
-#     .dmg to the same draft release).
+#   - on tags v*: a DRAFT GitHub Release with the installer attached (the macOS and Linux workflows
+#     attach their .dmg / .AppImage / .deb / .rpm to the same draft release).
 #
 # Windows-specific bundle settings live in src-tauri/tauri.windows.conf.json (merged automatically
 # by Tauri on Windows): NSIS installer only, per-user install (no admin rights needed).
@@ -63,8 +63,11 @@ jobs:
           # Release only for tags (empty inputs = build without uploading a release).
           tagName: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
           releaseName: ${{ github.ref_type == 'tag' && format('Mockup Director {0}', github.ref_name) || '' }}
+          # Same text in all three build workflows: whichever finishes first creates the draft release.
+          # tauri-action has no lock: if two builds finish within seconds of each other, it can create
+          # two drafts for the same tag. Then move the assets into one draft and delete the other.
           # Quoted: a plain YAML scalar must not contain ": " (as in "Windows: ...").
-          releaseBody: "${{ github.ref_type == 'tag' && 'Windows: pobierz plik *_x64-setup.exe. macOS: pobierz plik .dmg. Instrukcja pierwszego uruchomienia – zob. README.' || '' }}"
+          releaseBody: "${{ github.ref_type == 'tag' && 'Windows: download the *_x64-setup.exe file. macOS: download the .dmg file. Linux: download the .AppImage (any distribution), the .deb (Debian, Ubuntu) or the .rpm (Fedora, openSUSE). First launch: see the README.' || '' }}"
           releaseDraft: true
           prerelease: false
 

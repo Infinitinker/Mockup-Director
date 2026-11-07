@@ -1,0 +1,129 @@
+# Builds the Mockup Director Linux app (x86_64) and publishes
+#   - workflow artifacts: the AppImage, the .deb and the .rpm package (Actions → run → Artifacts),
+#   - on tags v*: a DRAFT GitHub Release with all three attached (the Windows and macOS workflows
+#     attach their installers to the same draft release).
+#
+# Linux-specific bundle settings live in src-tauri/tauri.linux.conf.json (merged automatically by
+# Tauri on Linux): AppImage + .deb + .rpm.
+#   - AppImage: one file for any distribution; it carries its own GTK / WebKitGTK libraries.
+#   - .deb (Debian, Ubuntu, Mint …) and .rpm (Fedora, openSUSE …): use the system's WebKitGTK 4.1,
+#     declared as package dependencies, so the package manager installs it.
+#
+# The build runs in an ubuntu:22.04 CONTAINER: a Linux binary only runs on systems with the same or
+# a newer glibc than the one it was built against, so the container (glibc 2.35), not the runner
+# image, sets the oldest supported system: Ubuntu 22.04+, Debian 12+, Fedora 36+ and similar.
+# The hosted ubuntu-22.04 runner image itself is deprecated (removed on 2027-04-17), hence the
+# container on a current ubuntu-24.04 host. Raise the container image only when dropping old distros
+# (and update the glibc / distro list in README.md and docs/releasing.md).
+name: Build Linux app
+
+# Runs on every push to dev and main (a merged pull request is a push to main), on release tags
+# and on demand. Its job name "Build (x86_64-unknown-linux-gnu)" can be a required status check of
+# the main branch ruleset: the push to dev runs it on the same commit the pull request merges.
+on:
+  push:
+    branches: [main, dev]
+    tags: ['v*']
+  workflow_dispatch:
+
+concurrency:
+  group: build-linux-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-linux:
+    name: Build (x86_64-unknown-linux-gnu)
+    runs-on: ubuntu-24.04
+    container: ubuntu:22.04
+    timeout-minutes: 60
+    permissions:
+      contents: write # needed to create the draft release on tags
+    env:
+      DEBIAN_FRONTEND: noninteractive # tzdata (pulled in by WebKitGTK) must not prompt for a timezone
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      # Runs before checkout: the bare container has no git (checkout needs it for a real clone).
+      # The container runs as root, so no sudo. Build dependencies follow the Tauri v2 prerequisites
+      # for Debian/Ubuntu; the app has no tray icon, so libayatana-appindicator3-dev is not needed.
+      # The hosted runner image would have git, curl, pkg-config and xz preinstalled; the container
+      # does not. `file` is used by the AppImage bundler, pkg-config by the gtk-rs build scripts.
+      - name: Install system dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            ca-certificates git curl wget file xz-utils pkg-config build-essential \
+            libwebkit2gtk-4.1-dev libxdo-dev libssl-dev librsvg2-dev
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build Tauri app
+        id: tauri
+        uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # Release only for tags (empty inputs = build without uploading a release).
+          tagName: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+          releaseName: ${{ github.ref_type == 'tag' && format('Mockup Director {0}', github.ref_name) || '' }}
+          # Same text in all three build workflows: whichever finishes first creates the draft release.
+          # tauri-action has no lock: if two builds finish within seconds of each other, it can create
+          # two drafts for the same tag. Then move the assets into one draft and delete the other.
+          # Quoted: a plain YAML scalar must not contain ": " (as in "Windows: ...").
+          releaseBody: "${{ github.ref_type == 'tag' && 'Windows: download the *_x64-setup.exe file. macOS: download the .dmg file. Linux: download the .AppImage (any distribution), the .deb (Debian, Ubuntu) or the .rpm (Fedora, openSUSE). First launch: see the README.' || '' }}"
+          releaseDraft: true
+          prerelease: false
+
+      - name: Collect build outputs
+        id: collect
+        run: |
+          version="${{ steps.tauri.outputs.appVersion }}"
+          [ -n "$version" ] || version="$(node -p "require('./src-tauri/tauri.conf.json').version")"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          ls -la src-tauri/target/release/bundle/appimage src-tauri/target/release/bundle/deb src-tauri/target/release/bundle/rpm
+
+      # upload-artifact does not keep the executable bit, so after downloading the AppImage the
+      # user runs `chmod +x` once (see README) – the same as for an AppImage from a release page.
+      - name: Upload AppImage
+        uses: actions/upload-artifact@v6
+        with:
+          name: MockupDirector-${{ steps.collect.outputs.version }}-linux-appimage
+          path: src-tauri/target/release/bundle/appimage/*.AppImage
+          if-no-files-found: error
+          compression-level: 0 # an AppImage is already compressed (squashfs)
+
+      - name: Upload .deb
+        uses: actions/upload-artifact@v6
+        with:
+          name: MockupDirector-${{ steps.collect.outputs.version }}-linux-deb
+          path: src-tauri/target/release/bundle/deb/*.deb
+          if-no-files-found: error
+          compression-level: 0
+
+      - name: Upload .rpm
+        uses: actions/upload-artifact@v6
+        with:
+          name: MockupDirector-${{ steps.collect.outputs.version }}-linux-rpm
+          path: src-tauri/target/release/bundle/rpm/*.rpm
+          if-no-files-found: error
+          compression-level: 0
