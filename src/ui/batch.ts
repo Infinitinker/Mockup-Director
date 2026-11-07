@@ -5,7 +5,7 @@
  *  - images   – many artwork files → one model: every file replaces ONE chosen slot of the current
  *               model; all other slots, params and the scene stay as they are;
  *  - views    – the current project from several camera views (preset views + the current view);
- *  - projects – many *.mockup (and legacy *.coverbox) files, each with its own model, params, images
+ *  - projects – many *.mdproj files, each with its own model, params, images
  *               and scene; exported with the current export settings or each project's own.
  *
  * Correctness rules:
@@ -34,7 +34,7 @@ import { ICONS } from './icons';
 import { segmentedControl, selectControl } from './controls';
 import { completeParams, slotFor } from './modelUtils';
 import { exportBlob, extensionFor, webpEncodingSupported } from './exportBridge';
-import { PROJECT_EXT, ProjectError, hydrateProject, parseProjectFile } from './project';
+import { PROJECT_EXT, ProjectError, hydrateProject, isProjectFileName, parseProjectFile } from './project';
 import { disposeImageMap } from './state';
 import { notify } from './toast';
 
@@ -201,7 +201,6 @@ async function runBatch(
 
 const MODE_KEY = 'mockup-director.ui.batchMode';
 const IMAGE_RE = /\.(png|jpe?g|webp|gif|svg|avif|heic|heif|bmp|tiff?)$/i;
-const PROJECT_RE = /\.(mockup|coverbox|json)$/i;
 
 /** Selections survive closing and reopening the dialog (within the session). */
 const memory = {
@@ -217,7 +216,7 @@ const memory = {
 let dialogOpen = false;
 
 const isImageFile = (f: File) => f.type.startsWith('image/') || IMAGE_RE.test(f.name);
-const isProjectFile = (f: File) => PROJECT_RE.test(f.name);
+const isProjectFile = (f: File) => isProjectFileName(f.name);
 const fileKey = (f: File) => `${f.name}|${f.size}|${f.lastModified}`;
 
 function addUnique(list: File[], files: File[]): File[] {
@@ -345,7 +344,7 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
       const files =
         which === 'images'
           ? (await pickFiles(IMAGE_ACCEPT, true)).filter(isImageFile)
-          : (await pickFiles(`.${PROJECT_EXT},.coverbox,application/json`, true)).filter(isProjectFile);
+          : (await pickFiles(`.${PROJECT_EXT}`, true)).filter(isProjectFile);
       if (!files.length) return;
       if (which === 'images') memory.imageFiles = addUnique(memory.imageFiles, files);
       else memory.projectFiles = addUnique(memory.projectFiles, files);

@@ -9,6 +9,7 @@ import { loadImageFile } from '../core/images';
 import { MODELS, getModel } from '../models/registry';
 import { createStage } from '../scene/stage';
 import { inDesktopApp, pickFiles, saveBlob } from '../platform/files';
+import { handleOpenedFiles } from '../platform/launch';
 import { Signal, errorMessage, frameCoalescer, h, isMac, nextFrame, safeStorage } from './dom';
 
 /** localStorage key of the interface language the user picked. */
@@ -29,7 +30,7 @@ import {
   webpEncodingSupported,
   type AnimationProgress,
 } from './exportBridge';
-import { PROJECT_EXT, ProjectError, hydrateProject, loadAutosave, parseProjectFile, saveAutosave, toProjectFile } from './project';
+import { PROJECT_EXT, ProjectError, hydrateProject, loadAutosave, parseProjectFile, projectNameOf, saveAutosave, toProjectFile } from './project';
 import { mountToasts, notify } from './toast';
 import { confirmDialog } from './dialog';
 import { openBatchDialog, type BatchHost } from './batch';
@@ -279,7 +280,7 @@ export function startApp(root: HTMLElement): void {
       try {
         let f = file;
         if (!f) {
-          const files = await pickFiles(`.${PROJECT_EXT},.coverbox,application/json`, false);
+          const files = await pickFiles(`.${PROJECT_EXT}`, false);
           f = files[0];
         }
         if (!f) return;
@@ -293,7 +294,7 @@ export function startApp(root: HTMLElement): void {
         document.body.classList.add('is-busy');
         const { state, failed } = await hydrateProject(parsed);
         store.replace(state, 'project');
-        projectName = f.name.replace(/\.(mockup|coverbox|json)$/i, '');
+        projectName = projectNameOf(f.name);
         notify.success(t('projectOpened'), f.name);
         if (failed) notify.warning(t('imagesFailed', { n: failed }));
       } catch (e) {
@@ -308,10 +309,10 @@ export function startApp(root: HTMLElement): void {
         const file = toProjectFile(store.state);
         const blob = new Blob([JSON.stringify(file)], { type: 'application/json' });
         const name = `${projectName || t('defaultProjectName')}.${PROJECT_EXT}`;
-        const ok = await saveBlob(blob, name, [{ name: 'Mockup Director', extensions: [PROJECT_EXT] }]);
+        const ok = await saveBlob(blob, name, [{ name: t('projectFileType'), extensions: [PROJECT_EXT] }]);
         if (ok) {
           notify.success(t('projectSaved'), name);
-          projectName = name.replace(/\.mockup$/i, '');
+          projectName = projectNameOf(name);
         }
       } catch (e) {
         notify.error(t('errSave'), errorMessage(e));
@@ -605,5 +606,11 @@ export function startApp(root: HTMLElement): void {
       restoring = false;
       // Edits made during the restore window were only marked dirty – save them now.
       if (autosaveDirty) scheduleAutosave();
+      // A project the operating system asked to open (double-clicked .mdproj) replaces the restored
+      // work, as opening it from the toolbar does. The app shows one project: the first file wins.
+      void handleOpenedFiles(
+        (files) => void actions.openProject(files[0]),
+        (e) => notify.error(t('errOpen'), errorMessage(e)),
+      );
     });
 }

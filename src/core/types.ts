@@ -336,7 +336,7 @@ export interface ImageAsset {
   texture: THREE.Texture;
 }
 
-/** Serialisable project file (*.mockup, JSON). */
+/** Serialisable project file (*.mdproj, JSON). */
 export interface ProjectFile {
   app: 'mockup-director';
   version: 1;

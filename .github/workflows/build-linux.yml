@@ -102,6 +102,23 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
           ls -la src-tauri/target/release/bundle/appimage src-tauri/target/release/bundle/deb src-tauri/target/release/bundle/rpm
 
+      # Double-clicking a .mdproj file opens the app only if the package installs the MIME definition
+      # (src-tauri/linux/mockup-director-mime.xml) and its .desktop entry takes files (%F) of that type.
+      - name: Check the .mdproj file association in the .deb
+        run: |
+          deb="$(ls src-tauri/target/release/bundle/deb/*.deb | head -n 1)"
+          rm -rf deb-check && mkdir deb-check && dpkg-deb -x "$deb" deb-check
+          if [ ! -f deb-check/usr/share/mime/packages/mockup-director.xml ]; then
+            echo "::error::$deb does not install the MIME definition of .mdproj files"
+            exit 1
+          fi
+          desktop="$(ls deb-check/usr/share/applications/*.desktop | head -n 1)"
+          cat "$desktop"
+          if ! grep -q '^Exec=.* %F$' "$desktop" || ! grep -q '^MimeType=application/x-mockup-director-project' "$desktop"; then
+            echo "::error::$desktop does not open .mdproj files"
+            exit 1
+          fi
+
       # upload-artifact does not keep the executable bit, so after downloading the AppImage the
       # user runs `chmod +x` once (see README) – the same as for an AppImage from a release page.
       - name: Upload AppImage

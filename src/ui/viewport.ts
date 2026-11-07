@@ -6,6 +6,7 @@ import { ICONS } from './icons';
 import { t } from '../i18n';
 import { VIEW_PRESETS, type AppContext } from './context';
 import { hasAny } from './state';
+import { isProjectFileName } from './project';
 import type { BackgroundSettings, CameraSettings } from '../core/types';
 import { applyCssBackground } from '../scene/background';
 import { segmentedControl, type Control } from './controls';
@@ -30,7 +31,7 @@ function isImageFile(f: File): boolean {
   return f.type.startsWith('image/') || /\.(png|jpe?g|webp|gif|bmp|tiff?|avif|heic|svg)$/i.test(f.name);
 }
 function isProjectFile(f: File): boolean {
-  return /\.(mockup|coverbox)$/i.test(f.name);
+  return isProjectFileName(f.name);
 }
 
 export function createViewportShell(): ViewportShell {

@@ -107,7 +107,7 @@ On macOS use ⌘ instead of Ctrl.
 
 ## Projects and your data
 
-- **Projects** are saved as `.mockup` files, which hold the model, your artwork, the scene and the export settings. Older `.coverbox` projects open too.
+- **Projects** are saved as `.mdproj` files, which hold the model, your artwork, the scene and the export settings. Double-click one to open it in Mockup Director (the installer and the Linux packages register the file type; with the AppImage, use the app's **Open** button).
 - **Your current work is saved automatically** while you work and comes back the next time you start the app, even if you did not save a project.
 - **Looks** and the interface language are remembered by the app.
 

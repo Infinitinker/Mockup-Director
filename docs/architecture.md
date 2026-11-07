@@ -15,13 +15,16 @@ src/
                 registry.ts, the list shown in the gallery
   scene/        the three.js scene: stage, light presets, shadow, reflection, background, camera framing
   export/       still image export (PNG / JPEG / WebP), print templates, ZIP, and animation/ (GIF, WebP, MP4)
-  platform/     reading and saving files (Tauri dialogs in the desktop app, the browser otherwise)
+  platform/     reading and saving files (Tauri dialogs in the desktop app, the browser otherwise), and
+                project files the operating system asks the app to open
   ui/           the interface (vanilla TypeScript + CSS): app, toolbar, gallery, viewport, panels/,
                 state and undo history, projects, looks, batch export, shortcuts
-src-tauri/      the Tauri v2 shell (Rust): window, dialogs, the save_file command
+src-tauri/      the Tauri v2 shell (Rust): window, dialogs, writing files (files.rs), opened project
+                files (opened.rs); tests in src-tauri/tests/
   tauri.conf.json           shared configuration
   tauri.windows.conf.json   Windows additions (NSIS installer), merged by Tauri automatically
   tauri.linux.conf.json     Linux additions (AppImage, .deb, .rpm), merged by Tauri automatically
+  linux/                    the .mdproj MIME definition and the .desktop template for the Linux packages
   capabilities/default.json what the window may do
   deny.toml                 allowed licenses of Rust dependencies (cargo-deny)
   about.toml, about.hbs     the Rust part of the third-party notices (cargo-about)
@@ -54,7 +57,8 @@ All texts are written in English; other languages are one file each in `src/i18n
 
 ## Files and data
 
-- Projects are JSON files with the `.mockup` extension (older `.coverbox` files open too); `src/ui/project.ts` writes, reads and sanitises them.
+- Projects are JSON files with the `.mdproj` extension, the only one the app saves and opens; `src/ui/project.ts` writes, reads and sanitises them.
+- The installers register `.mdproj` (`bundle.fileAssociations` in `src-tauri/tauri.conf.json`; on Linux also `src-tauri/linux/`: a MIME definition and a `.desktop` template). A double-clicked project reaches the app as a command-line argument (Windows, Linux) or an event (macOS); `src-tauri/src/opened.rs` queues it, and `src/platform/launch.ts` opens it once the app has started.
 - The current document is saved automatically to the web engine's IndexedDB and restored on the next start.
 - User looks and the interface language are kept in the web engine's localStorage.
 - On the desktop, files are written by the Rust `save_file` command (`src-tauri/src/lib.rs`), atomically, to a path the user chose in the native save dialog.

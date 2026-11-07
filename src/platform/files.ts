@@ -25,7 +25,7 @@ export async function saveBlob(blob: Blob, suggestedName: string, filters: FileF
   return saveInBrowser(blob, suggestedName, filters);
 }
 
-/** Let the user pick file(s). `accept` like "image/*" or ".mockup,application/json". */
+/** Let the user pick file(s). `accept` like "image/*" or ".mdproj". */
 export function pickFiles(accept: string, multiple = false): Promise<File[]> {
   return new Promise<File[]>((resolve) => {
     const input = document.createElement('input');
@@ -128,8 +128,7 @@ const MIME_BY_EXT: Record<string, string> = {
   gif: 'image/gif',
   mp4: 'video/mp4',
   json: 'application/json',
-  mockup: 'application/json',
-  coverbox: 'application/json',
+  mdproj: 'application/json',
   svg: 'image/svg+xml',
   pdf: 'application/pdf',
   zip: 'application/zip',

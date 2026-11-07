@@ -10,7 +10,7 @@ A desktop app that turns flat artwork into photorealistic 3D mockups (boxes, dis
 - Polish (and any later language) exists only as a translation in `src/i18n/<code>.ts`. Never write Polish anywhere else, except deliberate test data (such as the UTF-8 path in `src-tauri/src/lib.rs`).
 - Interface texts: messages go in `src/i18n/en.ts` and are shown with `t(key)`; labels and hints of models and presets are written in English with `L('…')` / `Lctx(context, '…')`. Values go into `{placeholders}`, never into concatenated strings, so translations can reorder them. Every new text needs its translation in every locale: `npm run build` checks messages, `npm run check:i18n` checks texts. See `docs/translations.md`.
 - Errors that reach the user carry a `Message` (`msg(key, vars)`) in `.text`; their `message` is the English text.
-- The name is **Mockup Director** in prose and UI, `mockup-director` for the npm package, the binary and storage keys (`mockup-director.*`), and `io.github.infinitinker.mockupdirector` as the app identifier. The repository is `Infinitinker/Mockup-Director`.
+- The name is **Mockup Director** in prose and UI, `mockup-director` for the npm package, the binary and storage keys (`mockup-director.*`), and `io.github.infinitinker.mockupdirector` as the app identifier. Project files use the `.mdproj` extension, and only that one. The repository is `Infinitinker/Mockup-Director`.
 
 ## Open source
 

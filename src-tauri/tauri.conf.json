@@ -58,6 +58,27 @@
     "macOS": {
       "minimumSystemVersion": "12.0",
       "signingIdentity": "-"
-    }
+    },
+    "fileAssociations": [
+      {
+        "ext": [
+          "mdproj"
+        ],
+        "name": "Mockup Director project",
+        "description": "Mockup Director project",
+        "role": "Editor",
+        "rank": "Owner",
+        "mimeType": "application/x-mockup-director-project",
+        "contentTypes": [
+          "io.github.infinitinker.mockupdirector.project"
+        ],
+        "exportedType": {
+          "identifier": "io.github.infinitinker.mockupdirector.project",
+          "conformsTo": [
+            "public.json"
+          ]
+        }
+      }
+    ]
   }
 }

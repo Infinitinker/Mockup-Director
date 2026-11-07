@@ -1,6 +1,6 @@
 /**
- * Project files (*.mockup, JSON; legacy *.coverbox) – serialisation, validation and hydration – plus the
- * IndexedDB autosave of the current project.
+ * Project files (*.mdproj, JSON) – serialisation, validation and hydration – plus the IndexedDB
+ * autosave of the current project.
  */
 import type { ExportSettings, ImageAsset, ParamValues, ProjectFile, SceneSettings } from '../core/types';
 import { DEFAULT_EXPORT, DEFAULT_SCENE, MAX_EXPORT_SIZE, cloneScene } from '../core/defaults';
@@ -13,9 +13,17 @@ import { t } from '../i18n';
 import { animationFormatSupport, webpEncodingSupported } from './exportBridge';
 import { normaliseAnimationSettings } from '../export/animation/settings';
 
-export const PROJECT_EXT = 'mockup';
-/** Older project files (before the rename) are still accepted when opening. */
-const LEGACY_APP_IDS: readonly string[] = ['coverbox'];
+/** The extension of project files, the only one the app saves and opens. */
+export const PROJECT_EXT = 'mdproj';
+
+export function isProjectFileName(name: string): boolean {
+  return name.toLowerCase().endsWith(`.${PROJECT_EXT}`);
+}
+
+/** The file name without the project extension, e.g. "Box.mdproj" → "Box". */
+export function projectNameOf(fileName: string): string {
+  return isProjectFileName(fileName) ? fileName.slice(0, -PROJECT_EXT.length - 1) : fileName;
+}
 
 /* ------------------------------------------------------------------ */
 /* Generic deep merge that only accepts values of the same type        */
@@ -124,7 +132,7 @@ export class ProjectError extends Error {}
 
 /** Validate untrusted JSON and return a clean ProjectFile. Throws ProjectError with a localized message. */
 export function parseProjectFile(json: unknown): ProjectFile {
-  if (!isPlain(json) || (json.app !== 'mockup-director' && !LEGACY_APP_IDS.includes(json.app as string))) throw new ProjectError(t('errNotProject'));
+  if (!isPlain(json) || json.app !== 'mockup-director') throw new ProjectError(t('errNotProject'));
   if (typeof json.version !== 'number' || json.version > 1) throw new ProjectError(t('errProjectVersion'));
 
   const modelId = typeof json.modelId === 'string' && MODELS.some((m) => m.id === json.modelId) ? json.modelId : MODELS[0].id;
