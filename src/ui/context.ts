@@ -12,9 +12,16 @@ export type TabId = 'images' | 'model' | 'scene' | 'export' | 'styles';
 export interface Actions {
   selectModel(id: string): void;
   setLang(lang: Lang): void;
+  /** A new project in a new tab. */
   newProject(): Promise<void>;
+  /** Opens project files, each in its own tab (an untouched new tab is reused). Without files: asks for one. */
   openProject(file?: File): Promise<void>;
-  saveProject(): Promise<void>;
+  /** Saves a tab's project (the active one by default). Resolves true when it was saved. */
+  saveProject(tabId?: string): Promise<boolean>;
+  /** Closes a project tab (the active one by default), asking first when it has unsaved changes. */
+  closeProject(tabId?: string): Promise<void>;
+  /** Switches to the next (+1) or previous (-1) project tab. */
+  switchProject(step: 1 | -1): void;
   exportImage(): Promise<void>;
   /** Render + save the turntable animation (Export panel → Animation). */
   exportAnimation(): Promise<void>;

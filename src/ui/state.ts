@@ -8,12 +8,17 @@
  * History: the first change of a "burst" (changes less than BURST_MS apart, e.g. dragging a slider)
  * records ONE snapshot of the state before the burst. Image assets are shared by reference between
  * snapshots; an asset is disposed only when neither the state nor any snapshot references it.
+ *
+ * Documents: every open project (a tab) is a StoreDocument – its state, its undo history and the
+ * images it owns. The store works on one at a time; swap() puts another one in its place, and the
+ * listeners see that as a change of everything (source 'document'). A document's `revision` changes
+ * with every edit and comes back with undo, so "changed since saved" is a revision comparison.
  */
 import type { ExportSettings, ImageAsset, Lang, ParamValues, SceneSettings } from '../core/types';
 import { disposeImageAsset } from '../core/images';
 
 export type ChangeKind = 'model' | 'params' | 'images' | 'scene' | 'camera' | 'export' | 'lang';
-export type ChangeSource = 'ui' | 'stage' | 'history' | 'project' | 'init';
+export type ChangeSource = 'ui' | 'stage' | 'history' | 'project' | 'init' | 'document';
 
 /** modelId -> slotId -> image */
 export type ImageMap = Record<string, Record<string, ImageAsset>>;
@@ -39,12 +44,45 @@ export interface UpdateOptions {
   history?: boolean;
 }
 
+/** The document part of the state (everything but the interface language). */
+export type DocumentState = Omit<AppState, 'lang'>;
+
 interface Snapshot {
   modelId: string;
   params: Record<string, ParamValues>;
   images: ImageMap;
   scene: SceneSettings;
   export: ExportSettings;
+  revision: number;
+}
+
+/** One open project, as the store holds it: state, undo history and owned images. */
+export interface StoreDocument {
+  readonly state: DocumentState;
+  readonly revision: number;
+  readonly undoStack: Snapshot[];
+  readonly redoStack: Snapshot[];
+  readonly tracked: Set<ImageAsset>;
+}
+
+/** Revisions are unique across all documents, so two different states never share one. */
+let lastRevision = 0;
+const nextRevision = () => ++lastRevision;
+
+const ALL_KINDS: ChangeKind[] = ['model', 'params', 'images', 'scene', 'camera', 'export'];
+
+function collectImages(m: ImageMap, into: Set<ImageAsset>): void {
+  for (const slots of Object.values(m)) for (const a of Object.values(slots)) if (a) into.add(a);
+}
+
+function disposeAll(assets: Iterable<ImageAsset>): void {
+  for (const a of assets) {
+    try {
+      disposeImageAsset(a);
+    } catch {
+      /* ignore – disposal must never break the UI */
+    }
+  }
 }
 
 const HISTORY_LIMIT = 80;
@@ -75,13 +113,56 @@ export class Store {
   private historyListeners = new Set<() => void>();
   private undoStack: Snapshot[] = [];
   private redoStack: Snapshot[] = [];
-  private burstTimer: number | null = null;
+  private burstTimer: ReturnType<typeof setTimeout> | null = null;
   /** Every image asset that ever entered the state and has not been disposed yet. */
   private tracked = new Set<ImageAsset>();
+  private rev = nextRevision();
 
   constructor(initial: AppState) {
     this.s = initial;
     this.track();
+  }
+
+  /** A new document holding `state` (its images become owned by it), ready for swap(). */
+  static createDocument(state: DocumentState): StoreDocument {
+    const tracked = new Set<ImageAsset>();
+    collectImages(state.images, tracked);
+    return { state, revision: nextRevision(), undoStack: [], redoStack: [], tracked };
+  }
+
+  /** Frees a document that was swapped out and will not come back (its tab was closed). */
+  static disposeDocument(doc: StoreDocument): void {
+    disposeAll(doc.tracked);
+    doc.tracked.clear();
+  }
+
+  /** Changes with every edit of the current document; undo brings back the earlier value. */
+  get revision(): number {
+    return this.rev;
+  }
+
+  /**
+   * Puts `next` in place of the current document and returns the current one (state, history and
+   * images move with it, nothing is disposed). Listeners get a change of everything.
+   */
+  swap(next: StoreDocument): StoreDocument {
+    this.endBurst();
+    const { lang, ...state } = this.s;
+    const out: StoreDocument = {
+      state,
+      revision: this.rev,
+      undoStack: this.undoStack,
+      redoStack: this.redoStack,
+      tracked: this.tracked,
+    };
+    this.s = { ...next.state, lang };
+    this.rev = next.revision;
+    this.undoStack = next.undoStack;
+    this.redoStack = next.redoStack;
+    this.tracked = next.tracked;
+    this.emitHistory();
+    this.emit(new Set<ChangeKind>(ALL_KINDS), 'document');
+    return out;
   }
 
   /** Current state. Treat as read-only – mutate only inside update(). */
@@ -105,20 +186,22 @@ export class Store {
     const record = opts.history ?? !onlyLang;
     if (record) this.checkpoint();
     mutate(this.s);
+    if (!onlyLang) this.rev = nextRevision();
     this.track();
     this.emit(new Set(kinds), source);
   }
 
   /** Replace the whole document (new / open project / restore). Clears the undo history. */
-  replace(next: Omit<AppState, 'lang'>, source: ChangeSource = 'project'): void {
+  replace(next: DocumentState, source: ChangeSource = 'project'): void {
     this.endBurst();
     this.undoStack = [];
     this.redoStack = [];
     this.s = { ...next, lang: this.s.lang };
+    this.rev = nextRevision();
     this.track();
     this.gc();
     this.emitHistory();
-    this.emit(new Set<ChangeKind>(['model', 'params', 'images', 'scene', 'camera', 'export']), source);
+    this.emit(new Set<ChangeKind>(ALL_KINDS), source);
   }
 
   get canUndo(): boolean {
@@ -164,7 +247,7 @@ export class Store {
     } else {
       clearTimeout(this.burstTimer);
     }
-    this.burstTimer = window.setTimeout(() => {
+    this.burstTimer = setTimeout(() => {
       this.burstTimer = null;
     }, BURST_MS);
   }
@@ -176,6 +259,7 @@ export class Store {
       images: cloneImages(this.s.images),
       scene: jsonClone(this.s.scene),
       export: jsonClone(this.s.export),
+      revision: this.rev,
     };
   }
 
@@ -200,6 +284,7 @@ export class Store {
       export: snap.export,
       lang: cur.lang,
     };
+    this.rev = snap.revision;
     this.track();
     this.gc();
     this.emitHistory();
@@ -215,21 +300,12 @@ export class Store {
   /** Dispose assets no longer referenced by the state or by any history snapshot. */
   private gc(): void {
     const live = new Set<ImageAsset>();
-    const collect = (m: ImageMap) => {
-      for (const slots of Object.values(m)) for (const a of Object.values(slots)) if (a) live.add(a);
-    };
-    collect(this.s.images);
-    this.undoStack.forEach((s) => collect(s.images));
-    this.redoStack.forEach((s) => collect(s.images));
-    for (const a of [...this.tracked]) {
-      if (live.has(a)) continue;
-      this.tracked.delete(a);
-      try {
-        disposeImageAsset(a);
-      } catch {
-        /* ignore – disposal must never break the UI */
-      }
-    }
+    collectImages(this.s.images, live);
+    this.undoStack.forEach((s) => collectImages(s.images, live));
+    this.redoStack.forEach((s) => collectImages(s.images, live));
+    const dead = [...this.tracked].filter((a) => !live.has(a));
+    dead.forEach((a) => this.tracked.delete(a));
+    disposeAll(dead);
   }
 
   private emit(kinds: ReadonlySet<ChangeKind>, source: ChangeSource): void {
@@ -274,11 +350,4 @@ export function disposeImageMap(m: ImageMap): void {
       }
     }
   }
-}
-
-/** Number of user images across all models. */
-export function countImages(s: AppState): number {
-  let n = 0;
-  for (const slots of Object.values(s.images)) n += Object.values(slots).filter(Boolean).length;
-  return n;
 }

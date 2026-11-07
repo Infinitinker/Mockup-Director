@@ -93,13 +93,15 @@ Some formats depend on your system's web engine: WebP export is available where 
 
 ## Keyboard shortcuts
 
-On macOS use ⌘ instead of Ctrl.
+On macOS use ⌘ instead of Ctrl, except for switching tabs (Ctrl+Tab / Ctrl+Shift+Tab and Ctrl+PageDown / Ctrl+PageUp), which uses Ctrl on every system.
 
 | Shortcut | Action |
 | --- | --- |
-| Ctrl+N | New project |
-| Ctrl+O | Open a project |
-| Ctrl+S | Save the project |
+| Ctrl+N or Ctrl+T | New project, in a new tab |
+| Ctrl+O | Open projects, each in its own tab |
+| Ctrl+S | Save the project in the active tab |
+| Ctrl+W | Close the active tab |
+| Ctrl+Tab / Ctrl+Shift+Tab (also Ctrl+PageDown / Ctrl+PageUp) | Next / previous tab (on macOS also ⇧⌘] / ⇧⌘[) |
 | Ctrl+E | Export an image |
 | Ctrl+Z | Undo |
 | Ctrl+Shift+Z (or Ctrl+Y on Windows and Linux) | Redo |
@@ -108,10 +110,11 @@ On macOS use ⌘ instead of Ctrl.
 ## Projects and your data
 
 - **Projects** are saved as `.mdproj` files, which hold the model, your artwork, the scene and the export settings. Double-click one to open it in Mockup Director (the installer and the Linux packages register the file type; with the AppImage, use the app's **Open** button).
-- **Your current work is saved automatically** while you work and comes back the next time you start the app, even if you did not save a project.
+- **Tabs:** every open project is a tab above the 3D view, with its own undo history. **New** opens a new tab; **Open** opens each project in its own tab, taking the place of an untouched new tab. A project you double-click while the app is open arrives as a new tab in the same window (during an export, it opens when the export ends). A • marks a tab with unsaved changes; closing it asks whether to save them.
+- **Your open tabs are saved automatically** a moment after each change and when you close the window, unsaved changes included, and come back the next time you start the app. So closing the window does not ask. On macOS, quitting the app (⌘Q, **Quit** in the Dock, logging out) skips that last save, so changes from the last second or two may be missing: close the window first, or save the project.
 - **Looks** and the interface language are remembered by the app.
 
-The automatic save and the looks are kept by the app's web engine in your user profile, in a folder named after the app's identifier, `io.github.infinitinker.mockupdirector` (on Windows in `%LOCALAPPDATA%`, on Linux in `~/.local/share`, on macOS in `~/Library/WebKit`). Uninstalling the app keeps this folder (on Windows, unless you tick "Delete the application data" in the uninstaller); delete it to remove everything.
+The open tabs and the looks are kept by the app's web engine in your user profile, in a folder named after the app's identifier, `io.github.infinitinker.mockupdirector` (on Windows in `%LOCALAPPDATA%`, on Linux in `~/.local/share`, on macOS in `~/Library/WebKit`). Uninstalling the app keeps this folder (on Windows, unless you tick "Delete the application data" in the uninstaller); delete it to remove everything.
 
 ## Interface language
 

@@ -9,7 +9,7 @@
     2. Install Rust with the GNU toolchain as the default: `rustup-init --default-host x86_64-pc-windows-gnu`.
     3. Put `C:\msys64\mingw64\bin` at the end of your `PATH`: Rust links with its `gcc`, and Tauri compiles the app's icon and manifest with its `windres`.
 
-    Tauri supports only Microsoft's MSVC toolchain officially, but builds, tests and `npm run tauri dev` work with GNU. A GNU build loads `WebView2Loader.dll` at run time: the build puts it next to the executable, and the installer includes it. The Microsoft C++ Build Tools with Rust's default MSVC toolchain work too.
+    Tauri supports only Microsoft's MSVC toolchain officially, but builds, tests and `npm run app:dev` work with GNU. A GNU build loads `WebView2Loader.dll` at run time: the build puts it next to the executable, and the installer includes it. The Microsoft C++ Build Tools with Rust's default MSVC toolchain work too.
   - **macOS:** Xcode Command Line Tools (`xcode-select --install`).
   - **Linux (Debian / Ubuntu):** the WebKitGTK development packages:
 
@@ -21,7 +21,9 @@
 
 ## Running from source
 
-From the repository root:
+The quickest way: double-click `start.bat` (Windows) or run `./start.sh` (macOS, Linux) in the repository root. It checks for Node.js and Rust, installs the npm packages on the first start and again whenever `package-lock.json` changes, and runs the desktop app with hot reload (`npm run app:dev`). On Windows it also finds MSYS2's compiler in its standard folder, `C:\msys64`.
+
+The same by hand, from the repository root:
 
 ```bash
 npm install
@@ -36,8 +38,10 @@ npm run dev
 The desktop app, with hot reload:
 
 ```bash
-npm run tauri dev
+npm run app:dev
 ```
+
+This is `tauri dev` with `src-tauri/tauri.dev.conf.json` merged in, which gives the app run from source its own identifier, `io.github.infinitinker.mockupdirector.dev`. Only one copy of the app runs at a time, and the lock that ensures this is named after the identifier, so without it an installed Mockup Director that is already running would take over: the build from source would hand its files to the installed app and quit. The separate identifier also gives it its own data folder, so its open tabs and looks never mix with those of an installed app. Plain `npm run tauri dev` uses the installed app's identifier.
 
 ## Checks
 
@@ -46,6 +50,14 @@ Type-check and production build of the web part:
 ```bash
 npm run build
 ```
+
+The unit tests, in `tests/` (their folders mirror `src/`, e.g. `tests/ui/state.test.ts` tests `src/ui/state.ts`). They use [Vitest](https://vitest.dev/) and run in Node without a browser, so they cover code that needs no DOM or WebGL:
+
+```bash
+npm test
+```
+
+`npx vitest` runs them in watch mode while you work.
 
 Every text in the code has a translation in every interface language (see [translations.md](translations.md)):
 
@@ -65,7 +77,17 @@ The Rust tests, in `src-tauri/tests/` (after `npm run build`, which the Tauri bu
 cargo test --manifest-path src-tauri/Cargo.toml
 ```
 
-CI runs the type-check, the build, the translation check and the license checks for every push to `main` and `dev` and for every pull request (`.github/workflows/ci.yml`).
+Before committing Rust changes, also check the formatting and the lints:
+
+```bash
+cargo fmt --check --manifest-path src-tauri/Cargo.toml
+```
+
+```bash
+cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+```
+
+CI runs the type-check, the build, the unit tests, the translation check and the license checks for every push to `main` and `dev` and for every pull request (`.github/workflows/ci.yml`).
 
 ## Building the desktop app
 

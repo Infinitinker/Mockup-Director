@@ -667,11 +667,11 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
     btn.disabled = true;
     try {
       const name = zipFileName();
-      const ok = await saveBlob(r.zip.finish(), name, [{ name: 'ZIP', extensions: ['zip'] }]);
-      if (!ok) return; // save panel cancelled – keep the results
-      savedName = name;
+      const saved = await saveBlob(r.zip.finish(), name, [{ name: 'ZIP', extensions: ['zip'] }]);
+      if (!saved) return; // save panel cancelled – keep the results
+      savedName = saved;
       phase = 'saved';
-      notify.success(t('batchSaved'), name);
+      notify.success(t('batchSaved'), saved);
       render();
       actions.querySelector<HTMLButtonElement>('.btn-primary')?.focus();
     } catch (e) {

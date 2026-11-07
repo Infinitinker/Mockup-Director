@@ -1,12 +1,12 @@
 /**
- * Project files (*.mdproj, JSON) – serialisation, validation and hydration – plus the IndexedDB
- * autosave of the current project.
+ * Project files (*.mdproj, JSON): serialisation, validation and hydration. The session autosave
+ * (src/ui/session.ts) stores the open tabs in this format too.
  */
 import type { ExportSettings, ImageAsset, ParamValues, ProjectFile, SceneSettings } from '../core/types';
 import { DEFAULT_EXPORT, DEFAULT_SCENE, MAX_EXPORT_SIZE, cloneScene } from '../core/defaults';
 import { loadImageDataUrl } from '../core/images';
 import { MODELS, getModel } from '../models/registry';
-import type { AppState, ImageMap } from './state';
+import type { DocumentState, ImageMap } from './state';
 import { sanitizeParam } from './modelUtils';
 import { clamp } from './dom';
 import { t } from '../i18n';
@@ -30,7 +30,7 @@ export function projectNameOf(fileName: string): string {
 /* ------------------------------------------------------------------ */
 
 type Plain = Record<string, unknown>;
-const isPlain = (v: unknown): v is Plain => typeof v === 'object' && v !== null && !Array.isArray(v);
+export const isPlain = (v: unknown): v is Plain => typeof v === 'object' && v !== null && !Array.isArray(v);
 
 /**
  * Returns a copy of `base` where every key whose value in `src` has the SAME primitive type
@@ -105,7 +105,7 @@ export function sanitizeExport(raw: unknown): ExportSettings {
 /* Serialise                                                           */
 /* ------------------------------------------------------------------ */
 
-export function toProjectFile(s: AppState): ProjectFile {
+export function toProjectFile(s: DocumentState): ProjectFile {
   const images: ProjectFile['images'] = {};
   for (const [modelId, slots] of Object.entries(s.images)) {
     const entries = Object.entries(slots).filter(([, a]) => !!a);
@@ -176,7 +176,7 @@ export function parseProjectFile(json: unknown): ProjectFile {
 }
 
 /** Decode all images of a project. Broken images are skipped and counted. */
-export async function hydrateProject(file: ProjectFile): Promise<{ state: Omit<AppState, 'lang'>; failed: number }> {
+export async function hydrateProject(file: ProjectFile): Promise<{ state: DocumentState; failed: number }> {
   const images: ImageMap = {};
   let failed = 0;
   const jobs: Promise<void>[] = [];
@@ -201,63 +201,4 @@ export async function hydrateProject(file: ProjectFile): Promise<{ state: Omit<A
     state: { modelId, params: file.params, images, scene: file.scene, export: file.export },
     failed,
   };
-}
-
-/* ------------------------------------------------------------------ */
-/* IndexedDB autosave                                                  */
-/* ------------------------------------------------------------------ */
-
-const DB_NAME = 'mockup-director';
-const DB_STORE = 'autosave';
-const DB_KEY = 'current';
-
-function openDb(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    if (typeof indexedDB === 'undefined') {
-      reject(new Error('IndexedDB unavailable'));
-      return;
-    }
-    const req = indexedDB.open(DB_NAME, 1);
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains(DB_STORE)) db.createObjectStore(DB_STORE);
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error ?? new Error('IndexedDB open failed'));
-    req.onblocked = () => reject(new Error('IndexedDB blocked'));
-  });
-}
-
-let dbPromise: Promise<IDBDatabase> | null = null;
-function db(): Promise<IDBDatabase> {
-  if (!dbPromise) {
-    dbPromise = openDb().catch((e) => {
-      dbPromise = null;
-      throw e;
-    });
-  }
-  return dbPromise;
-}
-
-export async function saveAutosave(file: ProjectFile): Promise<void> {
-  const d = await db();
-  await new Promise<void>((resolve, reject) => {
-    const tx = d.transaction(DB_STORE, 'readwrite');
-    tx.objectStore(DB_STORE).put({ savedAt: Date.now(), file }, DB_KEY);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error ?? new Error('autosave failed'));
-    tx.onabort = () => reject(tx.error ?? new Error('autosave aborted'));
-  });
-}
-
-export async function loadAutosave(): Promise<ProjectFile | null> {
-  const d = await db();
-  const raw = await new Promise<unknown>((resolve, reject) => {
-    const tx = d.transaction(DB_STORE, 'readonly');
-    const req = tx.objectStore(DB_STORE).get(DB_KEY);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error ?? new Error('autosave read failed'));
-  });
-  if (!isPlain(raw) || !isPlain(raw.file)) return null;
-  return parseProjectFile(raw.file);
 }

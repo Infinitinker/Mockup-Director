@@ -1,11 +1,13 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Permissions of the Mockup Director main window: the default core API, dragging the window by the toolbar (data-tauri-drag-region) and the native save/open dialogs.",
+  "description": "Permissions of the Mockup Director main window: the default core API, dragging the window by the toolbar (data-tauri-drag-region), the window title (the active tab's name), closing the window after saving the session (onCloseRequested destroys it) and the native save/open dialogs.",
   "windows": ["main"],
   "permissions": [
     "core:default",
     "core:window:allow-start-dragging",
+    "core:window:allow-set-title",
+    "core:window:allow-destroy",
     "dialog:default",
     "dialog:allow-save",
     "dialog:allow-open",

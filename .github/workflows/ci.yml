@@ -1,5 +1,5 @@
 # Cheap checks on Linux for every push to main/dev and every pull request:
-#   - web:      TypeScript type-check + Vite production build + translation check,
+#   - web:      TypeScript type-check + Vite production build + unit tests + translation check,
 #   - licenses: no copyleft (GPL/AGPL/LGPL…) dependency in npm or Rust, plus generated
 #               THIRD-PARTY-NOTICES.md (license texts of everything shipped in the app) as an artifact.
 # The desktop apps are built by build-windows.yml, build-macos.yml and build-linux.yml.
@@ -38,6 +38,10 @@ jobs:
 
       - name: Build (tsc --noEmit && vite build)
         run: npm run build
+
+      # Unit tests (Vitest) in tests/.
+      - name: Test
+        run: npm test
 
       # Every text written in English in the code has a translation in every interface language.
       - name: Check translations

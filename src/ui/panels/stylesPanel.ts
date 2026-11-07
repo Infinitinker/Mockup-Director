@@ -160,8 +160,8 @@ export function createStylesPanel(ctx: AppContext): { el: HTMLElement; render():
         return;
       }
       const blob = new Blob([JSON.stringify({ app: 'mockup-director', kind: 'presets', presets }, null, 2)], { type: 'application/json' });
-      const ok = await saveBlob(blob, 'mockup-director-style.json', [{ name: 'JSON', extensions: ['json'] }]);
-      if (ok) notify.success(t('saved'), 'mockup-director-style.json');
+      const saved = await saveBlob(blob, 'mockup-director-style.json', [{ name: 'JSON', extensions: ['json'] }]);
+      if (saved) notify.success(t('saved'), saved);
     } catch (e) {
       notify.error(t('errExportStyles'), errorMessage(e));
     }

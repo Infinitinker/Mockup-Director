@@ -1,0 +1,3 @@
+# Line endings that must not depend on a contributor's git settings.
+*.sh  text eol=lf
+*.bat text eol=crlf
