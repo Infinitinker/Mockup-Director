@@ -4,7 +4,9 @@
 
 - [Node.js](https://nodejs.org/) 22 or newer, with npm.
 - For the desktop app: [Rust](https://rustup.rs/) (stable), plus:
-  - **Windows:** Microsoft C++ Build Tools (the "Desktop development with C++" workload) and WebView2, which comes with Windows 10 and 11.
+  - **Windows:** WebView2 (it comes with Windows 10 and 11) and one of two C toolchains:
+    - the Microsoft C++ Build Tools (the "Desktop development with C++" workload) with Rust's default MSVC toolchain. This is what Tauri supports officially, and what the release builds use;
+    - or [MSYS2](https://www.msys2.org/) with Rust's GNU toolchain, without Microsoft's tools. In an MSYS2 shell, install the MINGW64 compiler (`pacman -S --needed mingw-w64-x86_64-toolchain`); install Rust with `rustup-init --default-host x86_64-pc-windows-gnu`, and put `C:\msys64\mingw64\bin` at the end of your `PATH` (Rust links with its `gcc`, and Tauri compiles the app's icon and manifest with its `windres`). The checks, the Rust tests and `npm run tauri dev` / `build` work this way, but Tauri does not support it officially: if a local build fails, check with the MSVC build in CI.
   - **macOS:** Xcode Command Line Tools (`xcode-select --install`).
   - **Linux (Debian / Ubuntu):** the WebKitGTK development packages:
 
@@ -54,7 +56,7 @@ The licenses of the npm dependencies (see [licenses.md](licenses.md)):
 npm run licenses
 ```
 
-The Rust tests (after `npm run build`, which the Tauri build step needs):
+The Rust tests, in `src-tauri/tests/` (after `npm run build`, which the Tauri build step needs):
 
 ```bash
 cargo test --manifest-path src-tauri/Cargo.toml
