@@ -1,5 +1,5 @@
 # Builds the Mockup Director Windows app (x64) and publishes
-#   - workflow artifacts: the NSIS installer (.exe) and a portable .exe (Actions → run → Artifacts),
+#   - workflow artifacts: the NSIS installer (.exe) and a portable ZIP (Actions → run → Artifacts),
 #   - on tags v*: a DRAFT GitHub Release with the installer attached (the macOS and Linux workflows
 #     attach their .dmg / .AppImage / .deb / .rpm to the same draft release).
 #
@@ -7,10 +7,17 @@
 # by Tauri on Windows): NSIS installer only, per-user install (no admin rights needed).
 # The app is not code-signed, so Windows SmartScreen shows "Windows protected your PC" on first
 # run → "More info" → "Run anyway" (see README).
+#
+# It is built with MSYS2 (MINGW64) and Rust's GNU toolchain, not with Microsoft's C++ tools: the
+# same toolchain as a developer's machine (docs/development.md). Tauri supports only MSVC
+# officially, so this job also checks what a GNU build could get wrong. A GNU build loads
+# WebView2Loader.dll at run time instead of linking it in: the installer must contain it, and the
+# portable version is a ZIP with the DLL next to the executable. To go back to MSVC, replace the
+# MSYS2 and Rust setup steps with `dtolnay/rust-toolchain@stable`, and package the portable .exe alone.
 name: Build Windows app
 
 # Runs on every push to dev and main (a merged pull request is a push to main), on release tags
-# and on demand. Its job name "Build (x86_64-pc-windows-msvc)" can be a required status check of
+# and on demand. Its job name "Build (x86_64-pc-windows-gnu)" can be a required status check of
 # the main branch ruleset: the push to dev runs it on the same commit the pull request merges.
 on:
   push:
@@ -24,7 +31,7 @@ concurrency:
 
 jobs:
   build-windows:
-    name: Build (x86_64-pc-windows-msvc)
+    name: Build (x86_64-pc-windows-gnu)
     runs-on: windows-latest
     timeout-minutes: 60
     permissions:
@@ -43,8 +50,27 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+      # gcc links the app, windres compiles its icon and manifest. GITHUB_PATH puts MINGW64 first,
+      # ahead of other MinGW copies on the runner (e.g. Strawberry Perl's).
+      - name: Setup MSYS2 (MINGW64)
+        id: msys2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: false
+          install: mingw-w64-x86_64-gcc
+
+      - name: Put MINGW64 on PATH
+        run: echo "${{ steps.msys2.outputs.msys2-location }}/mingw64/bin" >> "$GITHUB_PATH"
+
+      # The GNU toolchain as the HOST toolchain, so build scripts are built with it too (a GNU
+      # target on the runner's default MSVC toolchain would still use Microsoft's linker).
+      - name: Setup Rust (GNU toolchain)
+        run: |
+          rustup toolchain install stable-x86_64-pc-windows-gnu --profile minimal --no-self-update
+          rustup default stable-x86_64-pc-windows-gnu
+          rustc -vV
+          which gcc windres
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
@@ -71,21 +97,36 @@ jobs:
           releaseDraft: true
           prerelease: false
 
-      # The release binary embeds the whole frontend, so it also runs without installing
-      # (needs the Microsoft Edge WebView2 runtime, which ships with Windows 10/11).
+      # A GNU build cannot start without WebView2Loader.dll; tauri-bundler puts it into the NSIS
+      # installer (fixed for GNU builds in tauri-bundler 2.2.2). 7-Zip can list NSIS installers.
+      - name: Check the installer contains WebView2Loader.dll
+        run: |
+          installer="$(ls src-tauri/target/release/bundle/nsis/*-setup.exe | head -n 1)"
+          7z l "$installer" > installer-contents.txt
+          if ! grep -qi 'WebView2Loader\.dll' installer-contents.txt; then
+            cat installer-contents.txt
+            echo "::error::$installer does not contain WebView2Loader.dll"
+            exit 1
+          fi
+
+      # The release binary embeds the whole frontend, so it also runs without installing. It needs
+      # the Microsoft Edge WebView2 runtime (part of Windows 10/11) and, as a GNU build, the
+      # WebView2Loader.dll next to it, so the portable version is a ZIP of both.
       - name: Collect build outputs
         id: collect
         run: |
           version="${{ steps.tauri.outputs.appVersion }}"
           [ -n "$version" ] || version="$(node -p "require('./src-tauri/tauri.conf.json').version")"
           out="windows-dist"
-          mkdir -p "$out/installer" "$out/portable"
-          cp src-tauri/target/release/bundle/nsis/*-setup.exe "$out/installer/"
-          exe="src-tauri/target/release/mockup-director.exe"
-          [ -f "$exe" ] || exe="$(ls src-tauri/target/release/*.exe | head -n 1)"
-          cp "$exe" "$out/portable/MockupDirector_${version}_x64_portable.exe"
+          release="src-tauri/target/release"
+          mkdir -p "$out/installer" "$out/portable/MockupDirector"
+          cp "$release"/bundle/nsis/*-setup.exe "$out/installer/"
+          cp "$release/mockup-director.exe" "$out/portable/MockupDirector/Mockup Director.exe"
+          cp "$release/WebView2Loader.dll" "$out/portable/MockupDirector/"
+          cp LICENSE "$out/portable/MockupDirector/LICENSE.txt"
+          (cd "$out/portable" && 7z a -tzip "MockupDirector_${version}_x64_portable.zip" MockupDirector > /dev/null)
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          ls -la "$out"/*
+          ls -la "$out"/installer "$out"/portable
 
       - name: Upload installer
         uses: actions/upload-artifact@v6
@@ -94,9 +135,10 @@ jobs:
           path: windows-dist/installer/*.exe
           if-no-files-found: error
 
-      - name: Upload portable exe
+      - name: Upload portable ZIP
         uses: actions/upload-artifact@v6
         with:
           name: MockupDirector-${{ steps.collect.outputs.version }}-windows-portable
-          path: windows-dist/portable/*.exe
+          path: windows-dist/portable/*.zip
           if-no-files-found: error
+          compression-level: 0 # already a ZIP

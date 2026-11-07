@@ -27,7 +27,7 @@ src-tauri/      the Tauri v2 shell (Rust): window, dialogs, the save_file comman
   about.toml, about.hbs     the Rust part of the third-party notices (cargo-about)
 .github/workflows/
   ci.yml             web checks, translation check and license checks, for main, dev and pull requests
-  build-windows.yml  the NSIS installer (x64) and a portable .exe; a draft release for v* tags
+  build-windows.yml  the NSIS installer (x64) and a portable ZIP, built with MSYS2; a draft release for v* tags
   build-macos.yml    a universal .dmg; a draft release for v* tags
   build-linux.yml    .AppImage, .deb and .rpm (x86_64); a draft release for v* tags
 scripts/licenses.mjs        license check of npm packages and third-party notices (npm run licenses)

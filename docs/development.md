@@ -4,9 +4,12 @@
 
 - [Node.js](https://nodejs.org/) 22 or newer, with npm.
 - For the desktop app: [Rust](https://rustup.rs/) (stable), plus:
-  - **Windows:** WebView2 (it comes with Windows 10 and 11) and one of two C toolchains:
-    - the Microsoft C++ Build Tools (the "Desktop development with C++" workload) with Rust's default MSVC toolchain. This is what Tauri supports officially, and what the release builds use;
-    - or [MSYS2](https://www.msys2.org/) with Rust's GNU toolchain, without Microsoft's tools. In an MSYS2 shell, install the MINGW64 compiler (`pacman -S --needed mingw-w64-x86_64-toolchain`); install Rust with `rustup-init --default-host x86_64-pc-windows-gnu`, and put `C:\msys64\mingw64\bin` at the end of your `PATH` (Rust links with its `gcc`, and Tauri compiles the app's icon and manifest with its `windres`). The checks, the Rust tests and `npm run tauri dev` / `build` work this way, but Tauri does not support it officially: if a local build fails, check with the MSVC build in CI.
+  - **Windows:** WebView2 (it comes with Windows 10 and 11) and a C toolchain. The project uses [MSYS2](https://www.msys2.org/) with Rust's GNU toolchain, with no Microsoft build tools; the release builds in CI use the same:
+    1. In an MSYS2 shell, install the MINGW64 compiler: `pacman -S --needed mingw-w64-x86_64-toolchain`.
+    2. Install Rust with the GNU toolchain as the default: `rustup-init --default-host x86_64-pc-windows-gnu`.
+    3. Put `C:\msys64\mingw64\bin` at the end of your `PATH`: Rust links with its `gcc`, and Tauri compiles the app's icon and manifest with its `windres`.
+
+    Tauri supports only Microsoft's MSVC toolchain officially, but builds, tests and `npm run tauri dev` work with GNU. A GNU build loads `WebView2Loader.dll` at run time: the build puts it next to the executable, and the installer includes it. The Microsoft C++ Build Tools with Rust's default MSVC toolchain work too.
   - **macOS:** Xcode Command Line Tools (`xcode-select --install`).
   - **Linux (Debian / Ubuntu):** the WebKitGTK development packages:
 
@@ -86,7 +89,7 @@ GitHub Actions builds all three systems on every push to `dev` and `main` (`buil
 
 `main` is the stable version; day-to-day work happens on `dev`. Changes reach `main` through a pull request from `dev`. Every push to `dev` and `main` (merging a pull request too) builds the apps and runs CI.
 
-To protect `main` (**Settings → Rules → Rulesets → New branch ruleset**): target *Include default branch*, with the rules *Restrict deletions*, *Block force pushes*, *Require a pull request before merging* (0 approvals if you work alone) and *Require status checks to pass* with the checks `Type-check & build (web)`, `License check`, `Build (x86_64-pc-windows-msvc)`, `Build (universal-apple-darwin)` and `Build (x86_64-unknown-linux-gnu)`. The push to `dev` runs the checks on the same commit the pull request merges. In a private repository on a free GitHub plan, rulesets are not enforced (they need a public repository or GitHub Pro), and macOS runner minutes count about 10× Linux minutes against the free quota.
+To protect `main` (**Settings → Rules → Rulesets → New branch ruleset**): target *Include default branch*, with the rules *Restrict deletions*, *Block force pushes*, *Require a pull request before merging* (0 approvals if you work alone) and *Require status checks to pass* with the checks `Type-check & build (web)`, `License check`, `Build (x86_64-pc-windows-gnu)`, `Build (universal-apple-darwin)` and `Build (x86_64-unknown-linux-gnu)`. The push to `dev` runs the checks on the same commit the pull request merges. In a private repository on a free GitHub plan, rulesets are not enforced (they need a public repository or GitHub Pro), and macOS runner minutes count about 10× Linux minutes against the free quota.
 
 ## The app icon
 

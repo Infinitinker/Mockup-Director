@@ -18,6 +18,10 @@ npm run licenses
 
 The same job writes **THIRD-PARTY-NOTICES.md** with the full license texts of every library shipped in the app (**Actions → the "CI" run → Artifacts → `third-party-notices`**). The MIT and Apache licenses require these notices to come with the distributed app, so attach the file to every release.
 
+## WebView2Loader.dll (Windows)
+
+The Windows app is built with Rust's GNU toolchain, so it loads Microsoft's `WebView2Loader.dll` at run time, and the installer and the portable ZIP ship it next to the executable. The DLL comes from Microsoft's WebView2 SDK (through the MIT-licensed `webview2-com-sys` crate) under the SDK's BSD-style license, which allows redistribution in binary form when its copyright notice and disclaimer come with the app: include that license in the third-party notices.
+
 ## The Linux AppImage
 
 The `.deb` and `.rpm` packages use the GTK and WebKitGTK libraries installed on the system. The AppImage instead contains copies of GTK 3, WebKitGTK and their dependencies (among them GLib/GIO, libsoup 3, GStreamer, pango, cairo, gdk-pixbuf, ICU and libgcrypt). These are mostly LGPL-2.0+/2.1+ libraries, dynamically linked, so the app's own code is not covered by them; some have permissive licenses (MIT, BSD, ICU).
