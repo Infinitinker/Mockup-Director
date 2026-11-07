@@ -1,15 +1,15 @@
 /**
- * "Eksport" tab with two modes:
- *  - Obraz / Image: output size, margin, sizing mode, format, quality and background (the toolbar's
- *    Export button always exports this still image) plus "Eksport wsadowy…", which opens the batch
+ * "Export" tab with two modes:
+ *  - Image: output size, margin, sizing mode, format, quality and background (the toolbar's
+ *    Export button always exports this still image) plus "Batch export…", which opens the batch
  *    export dialog (src/ui/batch.ts: many mockups with these settings → one ZIP);
- *  - Animacja / Animation: turntable motion, size, GIF / WebP / MP4 options, its own Export button
+ *  - Animation: turntable motion, size, GIF / WebP / MP4 options, its own Export button
  *    and a progress indicator with Cancel while the animation is rendered.
  */
 import type { AnimationFormat, AnimationSettings, ExportFormat, ExportSettings } from '../../core/types';
 import { DEFAULT_ANIMATION, MAX_ANIMATION_DURATION, MAX_EXPORT_SIZE, MIN_ANIMATION_DURATION, MIN_ANIMATION_SIZE } from '../../core/defaults';
 import type { AppContext } from '../context';
-import { formatNumber, t, type DictKey } from '../i18n';
+import { formatNumber, t, type MessageKey } from '../../i18n';
 import { clamp, h, nextId, safeStorage, shortcutLabel } from '../dom';
 import { ICONS } from '../icons';
 import { numberControl, section, segmentedControl, selectControl, switchControl, type Control } from '../controls';
@@ -494,7 +494,7 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
     if (!support.webp) unsupportedNotes.push(h('p', { class: 'ctl-note', text: t('animWebpUnsupported') }));
     if (!support.mp4) unsupportedNotes.push(h('p', { class: 'ctl-note', text: t('animMp4Unsupported') }));
 
-    const qualityKeys: Record<AnimationSettings['quality'], DictKey> = { low: 'animQualityLow', medium: 'animQualityMedium', high: 'animQualityHigh' };
+    const qualityKeys: Record<AnimationSettings['quality'], MessageKey> = { low: 'animQualityLow', medium: 'animQualityMedium', high: 'animQualityHigh' };
     const quality = add(
       segmentedControl<AnimationSettings['quality']>({
         label: t('quality'),

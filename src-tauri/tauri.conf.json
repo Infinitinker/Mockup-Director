@@ -53,8 +53,8 @@
     "category": "public.app-category.graphics-design",
     "copyright": "© 2026 Infinitinker",
     "publisher": "Infinitinker",
-    "shortDescription": "Fotorealistyczne mockupy 3D opakowań, książek, druków i urządzeń",
-    "longDescription": "Mockup Director zamienia płaskie projekty graficzne w fotorealistyczne mockupy 3D: pudełka produktowe, opakowania DVD / Blu-ray / CD i płyty, książki i notesy, druki (wizytówki, ulotki, broszury, kartki) oraz urządzenia i ekrany – z oświetleniem, miękkim cieniem i odbiciem. Eksport PNG/JPEG/WebP do 4000 × 4000 px, animacje GIF/WebP/MP4 i eksport wsadowy do ZIP.",
+    "shortDescription": "Photorealistic 3D mockups of packaging, books, print and devices",
+    "longDescription": "Mockup Director turns flat artwork into photorealistic 3D mockups: product boxes, DVD / Blu-ray / CD cases and discs, books and notebooks, print (business cards, flyers, brochures, cards) and devices and screens – with lighting, soft shadows and reflections. Export to PNG/JPEG/WebP up to 4000 × 4000 px, GIF/WebP/MP4 animations and batch export to ZIP.",
     "macOS": {
       "minimumSystemVersion": "12.0",
       "signingIdentity": "-"

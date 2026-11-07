@@ -4,7 +4,7 @@
 import type { Lang, StageAPI } from '../core/types';
 import type { Signal } from './dom';
 import type { Store } from './state';
-import type { DictKey } from './i18n';
+import type { MessageKey } from '../i18n';
 import type { AnimationProgress } from './exportBridge';
 
 export type TabId = 'images' | 'model' | 'scene' | 'export' | 'styles';
@@ -48,7 +48,7 @@ export interface AppContext {
 }
 
 export interface ViewPreset {
-  key: DictKey;
+  key: MessageKey;
   yaw: number;
   pitch: number;
 }

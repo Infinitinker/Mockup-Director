@@ -9,8 +9,11 @@ import { loadImageFile } from '../core/images';
 import { MODELS, getModel } from '../models/registry';
 import { createStage } from '../scene/stage';
 import { inDesktopApp, pickFiles, saveBlob } from '../platform/files';
-import { Signal, errorMessage, frameCoalescer, h, isMac, nextFrame } from './dom';
-import { getLang, initLang, lt, setLang, t } from './i18n';
+import { Signal, errorMessage, frameCoalescer, h, isMac, nextFrame, safeStorage } from './dom';
+
+/** localStorage key of the interface language the user picked. */
+const LANG_KEY = 'mockup-director.lang';
+import { getLang, initLang, lt, setLang, t } from '../i18n';
 import { Store, countImages, disposeImageMap, hasAny, type AppState, type ImageMap } from './state';
 import { VIEW_PRESETS, type Actions, type AppContext, type TabId } from './context';
 import { completeParams, slotFor } from './modelUtils';
@@ -89,7 +92,7 @@ function createNullStage(): StageAPI {
 }
 
 export function startApp(root: HTMLElement): void {
-  initLang();
+  initLang(safeStorage.get(LANG_KEY), navigator.languages ?? [navigator.language]);
   document.documentElement.lang = getLang();
   root.classList.add('app');
   try {
@@ -222,7 +225,7 @@ export function startApp(root: HTMLElement): void {
       const model = getModel(id);
       const prevId = store.state.modelId;
       // Carry artwork and matching params over to a related model the user has not touched yet
-      // (e.g. "Pudełko DVD" -> "DVD z płytą"): same slot/param ids mean the same thing.
+      // (e.g. "DVD case" -> "DVD with disc"): same slot/param ids mean the same thing.
       // Assets are shared by reference; the store's GC keeps them alive while any model uses them.
       const prevImages = store.state.images[prevId] ?? {};
       const inheritImages: Record<string, ImageAsset> = {};
@@ -252,6 +255,7 @@ export function startApp(root: HTMLElement): void {
     setLang(lang: Lang) {
       if (lang === store.state.lang) return;
       setLang(lang);
+      safeStorage.set(LANG_KEY, lang);
       store.update(['lang'], (s) => {
         s.lang = lang;
       }, { history: false });

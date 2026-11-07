@@ -1,291 +1,150 @@
 # Mockup Director
 
-**Mockup Director** to aplikacja na macOS i Windows, która zamienia płaskie projekty graficzne w fotorealistyczne
-mockupy 3D: pudełka produktowe, opakowania DVD / Blu-ray / CD i płyty, książki i notesy, druki
-(wizytówki, ulotki, broszury, kartki) oraz urządzenia i ekrany (smartfon, tablet, laptop, monitor,
-zrzut ekranu). Ustawiasz światło, miękki cień i odbicie od podłogi, a potem eksportujesz gotowy
-obraz (także przezroczysty PNG do 4000 × 4000 px), obracającą się animację albo całą serię naraz.
+Turn flat artwork into photorealistic 3D mockups: product boxes, DVD, Blu-ray and CD cases, discs, books, business cards, flyers, brochures, phones, laptops and screens. Set the light, a soft shadow and a reflection on the floor, then export a still image (also a transparent PNG up to 4000 × 4000 px), a turntable animation, or a whole series at once.
 
-Mockup Director to otwartoźródłowy projekt, zainspirowany narzędziami dostępnymi tylko na Windows.
-Nie zawiera cudzych nazw, szablonów, grafik ani logotypów.
+Mockup Director runs on Windows, macOS and Linux and works offline. It is free and open source, inspired by tools that exist only for Windows, and contains no third-party names, templates, artwork or logos.
 
-## Funkcje
+## What you can make
 
-- **Pudełka i płyty:** pudełko produktowe (dowolne wymiary w mm, wariant slim i z siatki wykrojnika),
-  DVD i Blu-ray keep case, pudełko CD, płyta CD / DVD / BD, warianty z płytą.
-- **Książki i notesy:** oprawa twarda (prosty lub zaokrąglony grzbiet), oprawa miękka, notes na spirali
-  (Wire-O lub spirala, wiązanie z boku lub u góry).
-- **Druk:** wizytówka (90 × 50, 85 × 55, 89 × 51 lub własny rozmiar, także stos), ulotka (A6–A4, DL),
-  pocztówka, karta plastikowa, broszura zszywana, ulotka składana na 3 (falc zwijany lub Z),
-  kartka okolicznościowa, folder składany na pół.
-- **Urządzenia i ekrany:** smartfon, tablet, laptop (regulowany kąt otwarcia), monitor 24–34″
-  (także zakrzywiony ultrawide), zrzut ekranu (płaski lub zakrzywiony), okno przeglądarki.
-  Wygląd urządzeń jest uniwersalny – bez logotypów i kształtów konkretnych marek.
-- **Grafika:** przeciągnij pliki obrazów na okno albo wybierz je z dysku; każda ściana
-  ma swój slot. Do każdego slotu można pobrać szablon PNG z wymiarami, spadami i liniami pomocniczymi.
-- **Scena:** obrót kamery, perspektywa / rzut ortogonalny, zoom i przesunięcie, presety oświetlenia,
-  miękki cień, odbicie od podłogi, tło przezroczyste, jednolite lub gradientowe.
-- **Eksport:** PNG (z przezroczystością) lub JPEG, do 4000 × 4000 px, z marginesem
-  i zapisaną rozdzielczością druku (DPI).
-- **Animacja:** eksport obrotowej animacji produktu („turntable”) jako GIF, animowany WebP lub MP4 (H.264):
-  pełny obrót 360° albo wahadło ±kąt, kierunek, płynne wygładzenie, czas 1–20 s, liczba klatek na sekundę.
-  Animacja startuje z bieżącego widoku, światło, cień i odbicie są zachowane, a kadr jest stały
-  (cała kompozycja mieści się we wszystkich klatkach). GIF ma własny koder (paleta 256 kolorów, dithering,
-  przezroczystość 1-bitowa); WebP jest dostępny tam, gdzie silnik koduje WebP (Windows), a MP4 wymaga
-  WebCodecs (Windows / WebView2 albo macOS 13.3+). Podczas eksportu widać postęp i można go anulować.
-- **Eksport wsadowy:** wiele mockupów naraz w jednym pliku ZIP (Eksport → *Eksport wsadowy…*):
-  wiele grafik w wybranym slocie jednego modelu, kilka widoków bieżącego projektu albo wiele plików
-  `.mockup` (z bieżącymi ustawieniami eksportu lub ustawieniami każdego projektu). Widać postęp, można
-  przerwać i zapisać to, co gotowe; błędy pojedynczych plików są wypisane w podsumowaniu, a dokument
-  i historia cofania pozostają nietknięte.
-- **Projekty:** zapis i otwieranie plików `.mockup`, cofnij / ponów.
-- Interfejs po polsku i angielsku.
+- **Boxes and discs:** a product box of any size in millimetres (also slim, or built from a die-cut net), DVD and Blu-ray keep cases, CD jewel cases, CD / DVD / BD discs, and cases shown with their disc.
+- **Books and notebooks:** hardcover (flat or rounded spine), paperback, and spiral-bound notebooks (Wire-O or coil, bound on the side or at the top).
+- **Print:** business cards (90 × 50, 85 × 55, 89 × 51 mm or your own size, also as a stack), flyers (A6–A4, DL), postcards, plastic cards, stapled brochures, tri-fold leaflets (roll or Z fold), greeting cards and folders.
+- **Devices and screens:** phone, tablet, laptop (with an adjustable lid angle), 24–34″ monitors (also curved ultrawide), a flat or curved screenshot, and a browser window. The devices are generic, with no brand logos or shapes.
 
-## Instalacja
+## Download and install
 
-Aplikację buduje GitHub Actions. Nie trzeba niczego kompilować.
+Download the app from the **Releases** page of this repository. Every release has a file for each system.
 
 ### Windows
 
-1. Pobierz instalator na jeden z dwóch sposobów:
-   - **Releases** (wersje oznaczone tagiem `v…`): pobierz `Mockup Director_x.y.z_x64-setup.exe`.
-   - **Actions → „Build Windows app” → ostatni zielony przebieg → sekcja Artifacts**:
-     pobierz `MockupDirector-x.y.z-windows-setup` (ZIP z instalatorem w środku). Jest też
-     `MockupDirector-x.y.z-windows-portable` – sam plik `.exe`, który działa bez instalacji.
-2. Uruchom instalator. Instaluje aplikację tylko dla bieżącego użytkownika, więc nie wymaga
-   uprawnień administratora.
-3. Wymagany jest Windows 10 lub 11 (64-bit) z Microsoft Edge WebView2 – jest wbudowany w system,
-   a w razie braku instalator pobierze go sam.
+1. Download `Mockup Director_x.y.z_x64-setup.exe` and run it. It installs for your user only, so it needs no administrator rights.
+2. Windows 10 or 11 (64-bit) with Microsoft Edge WebView2 is required. WebView2 comes with Windows; if it is missing, the installer downloads it.
 
-**Pierwsze uruchomienie:** aplikacja nie jest podpisana certyfikatem, więc Windows SmartScreen
-pokaże komunikat „System Windows ochronił ten komputer”. Kliknij **„Więcej informacji” → „Uruchom mimo to”**.
-Wystarczy zrobić to raz.
+**First launch:** the app is not signed with a certificate, so Windows SmartScreen says "Windows protected your PC". Click **More info → Run anyway**. You only need to do this once.
 
 ### macOS
 
-1. Wejdź w repozytorium na GitHubie i pobierz plik `.dmg` na jeden z dwóch sposobów:
-   - **Releases** (wersje oznaczone tagiem `v…`): pobierz `Mockup Director_x.y.z_universal.dmg`.
-   - **Actions → „Build macOS app” → ostatni zielony przebieg → sekcja Artifacts**:
-     pobierz `MockupDirector-x.y.z-macos-dmg`. GitHub pakuje artefakty w ZIP – rozpakuj go,
-     a w środku będzie `.dmg`. Potrzebne jest konto GitHub z dostępem do repozytorium.
-2. Otwórz `.dmg` i przeciągnij **Mockup Director** do folderu **Aplikacje**.
-3. Aplikacja jest uniwersalna: działa na Macach z Apple Silicon (M1–M4…) i Intel, macOS 12 (Monterey) lub nowszym – podgląd 3D wymaga silnika Safari 15+ (WebGL 2).
+1. Download `Mockup Director_x.y.z_universal.dmg`, open it and drag **Mockup Director** to **Applications**.
+2. The app runs on Apple Silicon and Intel Macs with macOS 12 (Monterey) or later.
 
-#### Pierwsze uruchomienie aplikacji niepodpisanej (macOS 14 Sonoma / 15 Sequoia i nowsze)
+**First launch:** if the app was not signed with an Apple Developer ID, macOS blocks it the first time ("Apple could not verify…"). To allow it once:
 
-Jeśli build nie był podpisany certyfikatem Apple Developer ID, macOS za pierwszym razem
-zablokuje aplikację („Apple nie może sprawdzić…”). Wystarczy jednorazowo:
+1. Open Mockup Director and close the message.
+2. Open **System Settings → Privacy & Security**, scroll down, and next to the message about Mockup Director click **Open Anyway**. Confirm with your password or Touch ID.
 
-1. Uruchom Mockup Director (dwuklik) i zamknij komunikat.
-2. Otwórz **Ustawienia systemowe → Prywatność i ochrona**, przewiń w dół
-   i przy komunikacie o Mockup Director kliknij **„Otwórz mimo to”**. Potwierdź hasłem lub Touch ID.
-3. Od tej pory aplikacja uruchamia się normalnie.
+Or, in Terminal:
 
-Alternatywnie w Terminalu (usuwa atrybut kwarantanny pobranego pliku):
-
-```sh
+```bash
 xattr -dr com.apple.quarantine "/Applications/Mockup Director.app"
 ```
 
-> Na macOS 15 nie działa już stary trik „prawy klik → Otwórz”. Trzeba skorzystać
-> z „Otwórz mimo to” albo z polecenia powyżej.
+On macOS 15 and later, the old "right-click → Open" trick no longer works.
 
-## Dla programistów
+### Linux
 
-Wymagania: Node.js 22+ (npm). Do budowania aplikacji desktopowej potrzebny jest
-[Rust](https://rustup.rs/) (stable), a do tego:
+Mockup Director needs 64-bit Linux (x86_64) with glibc 2.35 or newer: Ubuntu 22.04+, Debian 12+, Linux Mint 21+, Fedora 36+, openSUSE Tumbleweed / Leap 16 and similar. Download one of these files:
 
-- **Windows:** Microsoft C++ Build Tools (składnik „Programowanie aplikacji klasycznych w języku C++”)
-  i WebView2 (jest w Windows 10/11),
-- **macOS:** Xcode Command Line Tools (`xcode-select --install`).
+- `.AppImage`: runs on any distribution without installing.
+- `.deb`: for Debian, Ubuntu and Mint.
+- `.rpm`: for Fedora and openSUSE.
 
-Gałęzie: `main` to wersja stabilna, codzienna praca odbywa się na `dev`. Każdy push na `dev` i na `main`
-(także scalenie pull requesta) automatycznie buduje aplikacje na Windows i macOS oraz uruchamia CI.
-Zmiany trafiają na `main` przez pull request z `dev`.
+On the Releases page, the file names have a dot instead of the space (`Mockup.Director_…`). The commands below work either way. Run them in the folder with the downloaded file.
 
-**Ochrona gałęzi `main`** (Settings → Rules → Rulesets → New branch ruleset): cel *Include default branch*,
-reguły *Restrict deletions*, *Block force pushes*, *Require a pull request before merging* (0 zatwierdzeń,
-jeśli pracujesz sam) i *Require status checks to pass* z checkami `Type-check & build (web)`,
-`License check`, `Build (x86_64-pc-windows-msvc)` i `Build (universal-apple-darwin)`. Checki uruchamia push
-na `dev` na tym samym commicie, który scala pull request. Uwaga: w prywatnym repozytorium na darmowym
-koncie GitHub reguły nie są egzekwowane (potrzebne repo publiczne albo GitHub Pro), a minuty macOS
-liczą się do limitu ok. 10× drożej niż Linux.
+AppImage:
 
-```sh
-npm install          # zależności
-npm run dev          # wersja przeglądarkowa: http://localhost:1420
-npm run build        # tsc --noEmit + produkcyjny build do dist/
-npm run tauri dev    # aplikacja desktopowa z hot-reloadem (wymaga Rusta)
-npm run tauri build  # Windows: instalator NSIS, macOS: .app + .dmg – w src-tauri/target/release/bundle/
-npm run tauri build -- --target universal-apple-darwin   # macOS: build uniwersalny (wymaga obu targetów rustup)
-cargo test --manifest-path src-tauri/Cargo.toml          # testy części Rust (po npm run build)
+```bash
+chmod +x ./Mockup*Director_*_amd64.AppImage && ./Mockup*Director_*_amd64.AppImage
 ```
 
-Ikonę aplikacji rysuje skrypt `tools/draw-icon.mjs` (pudełko, którego przód jest klapsem filmowym). `npm run icons` generuje z niego
-`app-icon.svg`, wszystkie pliki w `src-tauri/icons/` (`.icns` w kształcie zaokrąglonego kwadratu dla macOS, okrągłe `.ico`
-i PNG dla Windows) oraz małe logo `src/ui/app-logo.svg` w pasku narzędzi. Rozmiary do 32 px mają uproszczony rysunek.
-`npm run icons -- --preview podglad.png` zapisuje dodatkowo arkusz podglądu.
+Debian, Ubuntu, Mint:
 
-### Struktura projektu
-
-```
-src/
-  core/        wspólny kontrakt: typy (types.ts), wartości domyślne, obrazy, placeholdery
-  models/      modele 3D (box, keepcase, jewelcase, disc …) + registry.ts (lista w galerii)
-  scene/       scena three.js: światło, cień, odbicie, kadrowanie kamery
-  export/      eksport PNG/JPEG, szablony druku
-  platform/    zapis/odczyt plików (Tauri lub przeglądarka)
-  ui/          interfejs (vanilla TS + CSS), tłumaczenia PL/EN
-src-tauri/     powłoka desktopowa Tauri v2 (Rust): okno, dialogi, komenda save_file
-  tauri.conf.json          wspólna konfiguracja
-  tauri.windows.conf.json  dodatki dla Windows (instalator NSIS), scalane automatycznie przez Tauri
-  capabilities/default.json, icons/
-  deny.toml                dozwolone licencje zależności Rust (cargo-deny)
-  about.toml, about.hbs    generowanie listy licencji crate'ów Rust (cargo-about)
-.github/workflows/
-  build-windows.yml build instalatora .exe (x64) + wersja przenośna + draft Release dla tagów v*
-  build-macos.yml   build .dmg (universal) + draft Release dla tagów v*
-  ci.yml            kontrola części webowej i licencji (Linux), dla main, dev i pull requestów
-scripts/licenses.mjs   kontrola licencji pakietów npm + THIRD-PARTY-NOTICES (`npm run licenses`)
-tools/draw-icon.mjs   rysuje ikonę aplikacji i generuje wszystkie pliki ikon (`npm run icons`)
-app-icon.svg   wygenerowany podgląd ikony (wersja macOS)
+```bash
+sudo apt install ./Mockup*Director_*_amd64.deb
 ```
 
-Stack: Vite + TypeScript (strict) + three.js, bez frameworka UI. Aplikacja desktopowa korzysta
-z systemowego silnika WWW: na macOS to WKWebView (Safari), na Windows WebView2 (Chromium/Edge).
-Kod musi więc działać w Safari 15+.
+Fedora:
 
-### Konwencje 3D (skrót z `src/core/types.ts`)
+```bash
+sudo dnf install ./Mockup*Director-*.x86_64.rpm
+```
 
-- Jednostki świata to **milimetry**.
-- Model stoi na podłodze (najniższy punkt `y = 0`), jest wyśrodkowany w `x`/`z`,
-  front jest skierowany do `+Z`, góra do `+Y`.
-- Tekstur z `ctx.getTexture()` nie wolno modyfikować (repeat/offset/flipY). Obszary obrazu
-  mapuje się przez UV. Grafika nigdy nie może być odbita lustrzanie ani do góry nogami.
-- Materiały: `MeshStandardMaterial` / `MeshPhysicalMaterial`; siatki rzucające cień mają `castShadow = true`.
+openSUSE (the package is not signed, so zypper would ask about it):
 
-### Jak dodać nowy model
+```bash
+sudo zypper install --allow-unsigned-rpm ./Mockup*Director-*.x86_64.rpm
+```
 
-1. Utwórz plik w `src/models/`, np. `poster.ts`, i wyeksportuj obiekt `ModelDefinition`:
+The `.deb` and `.rpm` packages install the system's WebKitGTK and add Mockup Director to the applications menu; the AppImage carries its own copy. If the AppImage reports that FUSE is missing ("No suitable fusermount binary found"), install the `fuse3` package, or start it with `--appimage-extract-and-run`.
 
-   ```ts
-   import * as THREE from 'three';
-   import type { ModelDefinition } from '../core/types';
-   import { L, castShadows, mmParam, num, placeOnGround, printMaterial, solidPlastic } from './shared';
+## Getting started
 
-   export const posterModel: ModelDefinition = {
-     id: 'poster',
-     category: 'box',
-     name: L('Plakat na podkładzie', 'Mounted poster'),
-     icon: '<svg viewBox="0 0 64 64"><rect x="16" y="8" width="32" height="48" fill="none" stroke="currentColor" stroke-width="3"/></svg>',
-     slots: [{ id: 'front', label: L('Przód', 'Front'), aspect: 210 / 297 }],
-     params: [
-       mmParam('w', L('Szerokość', 'Width'), 210, 50, 1000),
-       mmParam('h', L('Wysokość', 'Height'), 297, 50, 1000),
-       mmParam('t', L('Grubość', 'Thickness'), 5, 1, 30, 0.5),
-     ],
-     build(ctx) {
-       const w = num(ctx.params, 'w', 210), h = num(ctx.params, 'h', 297), t = num(ctx.params, 't', 5);
-       // BoxGeometry material order: +X, -X, +Y, -Y, +Z (front), -Z (back).
-       const edge = solidPlastic('#f2f2f2', 0.6);
-       const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, t), [
-         edge, edge, edge, edge, printMaterial(ctx.getTexture('front')), edge,
-       ]);
-       return placeOnGround(castShadows(mesh));
-     },
-   };
-   ```
+1. **Pick a model** in the gallery on the left.
+2. **Add your artwork** in the **Artwork** tab: drop image files on a card or on the preview, or choose them from disk. Each face of the model has its own slot. PNG, JPEG, WebP, GIF, SVG and AVIF are supported. Print models (boxes, cases, discs, books and print) offer a **print template** for each slot: a 300 dpi PNG with the exact size, bleed and guide lines, to design your artwork on. Phones and tablets get a template of the screen without bleed; laptops, monitors, screenshots and browser windows have none.
+3. **Shape the model** in the **Model** tab: dimensions, materials, finish and colours.
+4. **Set the scene** in the **Scene** tab: a light preset, light direction and colour, a soft shadow, a floor reflection, and a transparent, solid or gradient background. Drag in the preview to turn the camera, Shift-drag to pan, scroll or pinch to zoom, and double-click to reset the view. Switch between perspective and orthographic view.
+5. **Export** from the **Export** tab:
+   - **Image:** PNG (with transparency), JPEG or WebP, up to 4000 × 4000 px, with a margin; PNG and JPEG also store the print resolution (DPI) in the file.
+   - **Animation:** the product turning a full 360° or swinging back and forth, as a GIF, animated WebP or MP4 (H.264), 1–20 seconds long. It starts from the current view and keeps the light, shadow and reflection, with one fixed framing so nothing is cropped. You can follow the progress and cancel.
+   - **Batch export:** many mockups in one ZIP file: many images in one slot of a model, several views of the current project, or many project files at once.
 
-2. Dopisz go do tablicy `MODELS` w `src/models/registry.ts` – pojawi się w galerii,
-   a panel parametrów i sloty obrazów zbuduje się automatycznie z `params` i `slots`.
-3. Opcjonalnie dodaj `template` do slotu (szablon druku z wymiarami i spadami)
-   i `defaultCamera` (kadr startowy).
+The **Looks** tab has a few built-in looks (named scene settings: light, shadow, reflection, background, optionally the camera) and saves your own, to use them again in other projects. Your looks can be exported to a file and imported on another computer.
 
-### Podpisywanie i notaryzacja (opcjonalnie)
+Some formats depend on your system's web engine: WebP export is available where the engine can encode WebP (Windows), and MP4 needs WebCodecs (Windows, or macOS 13.3 and later; on Linux it depends on the WebKitGTK version). Formats your system cannot make are shown greyed out, with a note explaining why.
 
-Bez sekretów workflow buduje aplikację podpisaną ad-hoc (`signingIdentity: "-"`). Taka aplikacja
-działa, ale przy pierwszym uruchomieniu trzeba ją odblokować (patrz wyżej). Żeby GitHub Actions
-budował aplikację podpisaną i znotaryzowaną, dodaj w **Settings → Secrets and variables → Actions**:
+## Keyboard shortcuts
 
-| Sekret | Opis |
+On macOS use ⌘ instead of Ctrl.
+
+| Shortcut | Action |
 | --- | --- |
-| `APPLE_CERTIFICATE` | certyfikat „Developer ID Application” wyeksportowany do `.p12`, zakodowany base64 (`base64 -i cert.p12 \| pbcopy`) |
-| `APPLE_CERTIFICATE_PASSWORD` | hasło do pliku `.p12` |
-| `APPLE_SIGNING_IDENTITY` | np. `Developer ID Application: Imię Nazwisko (TEAMID)` |
-| `APPLE_ID` | Apple ID konta deweloperskiego (notaryzacja) |
-| `APPLE_PASSWORD` | hasło aplikacji (app-specific password) dla tego Apple ID |
-| `APPLE_TEAM_ID` | identyfikator zespołu (Team ID) |
+| Ctrl+N | New project |
+| Ctrl+O | Open a project |
+| Ctrl+S | Save the project |
+| Ctrl+E | Export an image |
+| Ctrl+Z | Undo |
+| Ctrl+Shift+Z (or Ctrl+Y on Windows and Linux) | Redo |
+| 1–6 | Preset camera views (front, 3/4 left, 3/4 right, side, top, back) |
 
-Podpisywanie włącza się, gdy ustawione są trzy pierwsze sekrety. Notaryzacja wymaga dodatkowo trzech
-kolejnych. Brakujące sekrety są pomijane, więc build bez nich nadal przechodzi.
+## Projects and your data
 
-### Wydanie nowej wersji
+- **Projects** are saved as `.mockup` files, which hold the model, your artwork, the scene and the export settings. Older `.coverbox` projects open too.
+- **Your current work is saved automatically** while you work and comes back the next time you start the app, even if you did not save a project.
+- **Looks** and the interface language are remembered by the app.
 
-1. Podnieś wersję w `package.json` i `src-tauri/tauri.conf.json` (oraz `src-tauri/Cargo.toml`).
-   Aktualizując Tauri, podnoś razem pakiety npm (`@tauri-apps/api`, `@tauri-apps/plugin-dialog`,
-   `@tauri-apps/cli`) i zakresy `~2.x` w `src-tauri/Cargo.toml` – CLI przerywa build, gdy wersje
-   `major.minor` crate'ów Rust i pakietów npm się różnią. Po pierwszym lokalnym buildzie zacommituj
-   `src-tauri/Cargo.lock`.
-2. Scal `dev` do `main`, a potem `git tag v0.2.0 && git push --tags`. Workflowy dla Windows i macOS
-   dołączą instalator `.exe` i plik `.dmg` do jednego **szkicu** Release. Sprawdź go i opublikuj
-   ręcznie na GitHubie.
+The automatic save and the looks are kept by the app's web engine in your user profile, in a folder named after the app's identifier, `io.github.infinitinker.mockupdirector` (on Windows in `%LOCALAPPDATA%`, on Linux in `~/.local/share`, on macOS in `~/Library/WebKit`). Uninstalling the app keeps this folder (on Windows, unless you tick "Delete the application data" in the uninstaller); delete it to remove everything.
 
-## Licencja
+## Interface language
 
-Kod jest udostępniony na licencji [MIT](LICENSE).
+Mockup Director speaks English and Polish. On the first start it follows your system language (Polish systems get Polish, everyone else English); switch it any time with **EN / PL** in the toolbar. Want the app in your language? See [docs/translations.md](docs/translations.md).
 
-Zależności mają wyłącznie licencje liberalne (MIT, Apache-2.0, BSD, ISC, Zlib, Unicode) oraz
-MPL-2.0 – słaby copyleft obejmujący tylko pliki samej biblioteki, nie kod aplikacji. Pilnuje tego CI:
-job **„License check”** przerywa się, gdy jakakolwiek zależność npm lub Rust ma licencję spoza listy
-(np. GPL, AGPL, LGPL). Listy dozwolonych licencji są w `scripts/licenses.mjs` (npm)
-i `src-tauri/deny.toml` (Rust). Przy zmianie trzeba je aktualizować razem z `src-tauri/about.toml`.
+## Troubleshooting
 
-Ten sam job generuje plik **THIRD-PARTY-NOTICES.md** z pełnymi tekstami licencji wszystkich bibliotek
-dołączonych do aplikacji (Actions → przebieg „CI” → Artifacts → `third-party-notices`). Licencje MIT
-i Apache wymagają dołączenia tych informacji do dystrybuowanej aplikacji, więc przed wydaniem
-wersji warto dołączyć ten plik do Release.
+- **Linux: the window stays blank or white, or the 3D preview is missing.** This is a known WebKitGTK problem with DMA-BUF rendering, common with NVIDIA graphics and Wayland. Start the app with:
 
-Lokalnie część npm sprawdzisz poleceniem `npm run licenses`.
+  ```bash
+  WEBKIT_DISABLE_DMABUF_RENDERER=1 mockup-director
+  ```
 
-## Znaki towarowe
+  For the AppImage, put the same `WEBKIT_DISABLE_DMABUF_RENDERER=1` before `./Mockup*Director_*_amd64.AppImage`.
+- **"3D preview unavailable – WebGL does not work on this computer".** Update your graphics driver; on a virtual machine, enable 3D acceleration.
+- **WebP or MP4 is greyed out.** Your system's web engine cannot encode that format; see the note under the format choice and pick another one.
+- **Windows SmartScreen or macOS blocks the first launch.** See the first-launch notes in [Download and install](#download-and-install).
 
-Mockup Director nie zawiera logotypów ani znaków towarowych osób trzecich (np. logo DVD Video, Blu-ray Disc,
-Apple). Jeśli Twój projekt ich wymaga, umieść je we własnej grafice zgodnie z licencją właściciela znaku.
-Wszystkie nazwy handlowe należą do ich właścicieli.
+## Documentation
 
----
+For developers and translators:
 
-## English (short)
+- [docs/development.md](docs/development.md): building and running from source, checks, branches.
+- [docs/architecture.md](docs/architecture.md): how the app is built and where the code lives.
+- [docs/models.md](docs/models.md): adding a new 3D model.
+- [docs/translations.md](docs/translations.md): how translations work, and adding a language.
+- [docs/releasing.md](docs/releasing.md): versions, releases and code signing.
+- [docs/licenses.md](docs/licenses.md): the dependency license policy and third-party notices.
 
-**Mockup Director** is a macOS and Windows app that turns flat artwork into photorealistic 3D product mockups:
-product boxes, DVD / Blu-ray keep cases, CD jewel cases and discs, books and notebooks, print (business cards,
-flyers, postcards, plastic cards, brochures, tri-fold leaflets, greeting cards) and generic devices & screens
-(phone, tablet, laptop, monitor, screenshot, browser window). It has lighting, soft shadows,
-floor reflections and transparent PNG export up to 4000 × 4000 px. The UI is in Polish and English.
+## License
 
-- **Animation:** Export → *Animation* renders a turntable of the product (full 360° loop or a ±angle swing,
-  direction, sine easing, 1–20 s) as GIF (built-in encoder: 256-colour palette, dithering, 1-bit
-  transparency), animated WebP (where the engine can encode WebP, e.g. Windows) or MP4 / H.264 (WebCodecs:
-  WebView2 or macOS 13.3+, muxed with mediabunny). It starts from the current view with the same lighting,
-  shadow and reflection and uses one fixed framing for all frames, so nothing jumps or gets cropped.
-- **Batch export:** Export → *Batch export…* renders many stills into one ZIP: many images in one slot of the
-  current model, several camera views of the current project, or many `.mockup` / `.coverbox` projects
-  (current export settings or each project's own). Progress, cancel (keep or discard what is done) and a
-  per-item error summary; the open document and its undo history are never changed.
+Mockup Director is released under the [MIT license](LICENSE). Its dependencies use permissive licenses (MIT, Apache-2.0, BSD, ISC, Zlib, Unicode) and MPL-2.0; see [docs/licenses.md](docs/licenses.md). The Linux AppImage also contains system libraries under the LGPL (GTK, WebKitGTK and their dependencies).
 
-- **Install on Windows:** download `*_x64-setup.exe` from *Releases* or from *Actions → Build Windows app →
-  latest run → Artifacts* (a portable `.exe` is there too). Windows 10/11 x64. The build is unsigned, so on
-  first launch click *More info → Run anyway* in the SmartScreen dialog.
-- **Install on macOS:** download the `.dmg` from *Releases* (tags `v*`) or from *Actions → Build macOS app →
-  latest run → Artifacts* (it comes zipped). Then drag Mockup Director to Applications. It is a universal
-  binary (Apple Silicon + Intel) and needs macOS 12+ (Safari 15+ WebKit for WebGL 2).
-- **Unsigned build, first launch:** open the app once, then go to *System Settings → Privacy & Security
-  → Open Anyway*. Or run `xattr -dr com.apple.quarantine "/Applications/Mockup Director.app"`.
-- **Develop:** `npm install`, `npm run dev` (browser), `npm run tauri dev` / `npm run tauri build`
-  (Rust + MSVC Build Tools on Windows, Rust + Xcode CLT on macOS). Branches: `main` = stable, `dev` = daily work.
-- **New model:** export a `ModelDefinition` (see `src/core/types.ts`) and add it to `MODELS` in
-  `src/models/registry.ts`.
-- **Signing:** set the `APPLE_*` repository secrets listed above. Builds without them stay ad-hoc signed.
-- **License:** [MIT](LICENSE). CI ("License check") fails if any npm or Rust dependency has a license outside
-  the allow list (no GPL/AGPL/LGPL) and produces `THIRD-PARTY-NOTICES.md` as an artifact.
-- **Trademarks:** no third-party logos are included. All trademarks belong to their owners.
+## Trademarks
+
+Mockup Director contains no third-party logos or trademarks (for example the DVD Video, Blu-ray Disc or Apple logos). If your design needs them, add them to your own artwork under the trademark owner's terms. All trademarks belong to their owners.

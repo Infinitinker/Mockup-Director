@@ -12,6 +12,7 @@
  * The stage is always restored (try/finally), also on errors and cancellation.
  */
 import type { AnimationFormat, AnimationSettings, BackgroundSettings, StageAPI } from '../../core/types';
+import { msg } from '../../i18n';
 import { paintBackground } from '../exporter';
 import { AnimationCancelled, AnimationError } from './errors';
 import { GifAnimationEncoder } from './gif';
@@ -77,10 +78,7 @@ export async function exportAnimation(stage: StageAPI, raw: AnimationSettings, o
     throw raw.format === 'webp' ? webpUnsupported() : mp4Unsupported();
   }
   if (!stage.beginAnimation) {
-    throw new AnimationError('unsupported', {
-      pl: 'Eksport animacji wymaga podglądu 3D (WebGL).',
-      en: 'Animation export needs the 3D view (WebGL).',
-    });
+    throw new AnimationError('unsupported', msg('errAnimationNeedsWebgl'));
   }
   const signal = opts.signal;
   const checkAbort = () => {
@@ -148,7 +146,7 @@ export async function exportAnimation(stage: StageAPI, raw: AnimationSettings, o
       try {
         mp4 = await Mp4Writer.create(W, H, fps, s.quality);
       } catch (e) {
-        throw new AnimationError('mp4-unsupported', mp4UnsupportedText(), e);
+        throw new AnimationError('mp4-unsupported', msg('errMp4Unsupported'), e);
       }
       if (!mp4) throw mp4Unsupported();
     }
@@ -215,10 +213,7 @@ export async function exportAnimation(stage: StageAPI, raw: AnimationSettings, o
     if (e instanceof AnimationError || e instanceof AnimationCancelled) throw e;
     if (e && typeof e === 'object' && 'text' in e) throw e; // localized stage errors
     console.error('[mockup-director] animation export failed', e);
-    throw new AnimationError('encode-failed', {
-      pl: `Nie udało się utworzyć animacji (${errorText(e)}).`,
-      en: `Could not create the animation (${errorText(e)}).`,
-    }, e);
+    throw new AnimationError('encode-failed', msg('errAnimationFailed', { error: errorText(e) }), e);
   } finally {
     session?.end();
     if (mp4 && !finished) void mp4.cancel();
@@ -275,10 +270,7 @@ function createCanvas(w: number, h: number): HTMLCanvasElement {
 function get2d(c: HTMLCanvasElement, willReadFrequently = false): CanvasRenderingContext2D {
   const g = c.getContext('2d', willReadFrequently ? { willReadFrequently: true } : undefined);
   if (!g) {
-    throw new AnimationError('render-failed', {
-      pl: 'Za mało pamięci na animację tej wielkości. Zmniejsz rozmiar.',
-      en: 'Not enough memory for an animation this large. Reduce the size.',
-    });
+    throw new AnimationError('render-failed', msg('errAnimationTooLarge'));
   }
   return g;
 }
@@ -300,28 +292,15 @@ function errorText(e: unknown): string {
 }
 
 function encodeFailed(): AnimationError {
-  return new AnimationError('encode-failed', {
-    pl: 'Nie udało się zakodować animacji (za mało pamięci?).',
-    en: 'Could not encode the animation (out of memory?).',
-  });
+  return new AnimationError('encode-failed', msg('errAnimationEncode'));
 }
 
 function webpUnsupported(): AnimationError {
-  return new AnimationError('webp-unsupported', {
-    pl: 'Ten system nie potrafi zapisać formatu WebP. Wybierz GIF lub MP4.',
-    en: 'WebP encoding is not supported on this system. Please choose GIF or MP4.',
-  });
-}
-
-function mp4UnsupportedText() {
-  return {
-    pl: 'Ten system nie potrafi zakodować wideo H.264 (MP4) w tym rozmiarze. Wymagany jest WebView2 / Chromium lub Safari 16.4+ (macOS 13.3+). Wybierz GIF lub zmniejsz rozmiar.',
-    en: 'This system cannot encode H.264 video (MP4) at this size. WebView2 / Chromium or Safari 16.4+ (macOS 13.3+) is required. Choose GIF or a smaller size.',
-  };
+  return new AnimationError('webp-unsupported', msg('errWebpAnimation'));
 }
 
 function mp4Unsupported(): AnimationError {
-  return new AnimationError('mp4-unsupported', mp4UnsupportedText());
+  return new AnimationError('mp4-unsupported', msg('errMp4Unsupported'));
 }
 
 /** Frame count shown in the UI (same rule as the exporter). */

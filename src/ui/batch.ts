@@ -1,5 +1,5 @@
 /**
- * Batch export ("Eksport wsadowy"): many still mockups at once, packed into ONE ZIP file.
+ * Batch export: many still mockups at once, packed into ONE ZIP file.
  *
  * Modes:
  *  - images   – many artwork files → one model: every file replaces ONE chosen slot of the current
@@ -29,7 +29,7 @@ import { slugify } from '../export/exporter';
 import { ZipLimitError, ZipWriter } from '../export/zip';
 import { VIEW_PRESETS, type AppContext } from './context';
 import { append, errorMessage, h, nextFrame, nextId, safeStorage, type Child } from './dom';
-import { lt, t, type DictKey } from './i18n';
+import { lt, t, type MessageKey } from '../i18n';
 import { ICONS } from './icons';
 import { segmentedControl, selectControl } from './controls';
 import { completeParams, slotFor } from './modelUtils';
@@ -459,7 +459,7 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
     if (startBtn) startBtn.disabled = n === 0;
   };
 
-  const MODE_HINT: Record<BatchMode, DictKey> = { images: 'batchModeImagesHint', views: 'batchModeViewsHint', projects: 'batchModeProjectsHint' };
+  const MODE_HINT: Record<BatchMode, MessageKey> = { images: 'batchModeImagesHint', views: 'batchModeViewsHint', projects: 'batchModeProjectsHint' };
 
   const renderSetup = () => {
     const modeCtl = segmentedControl<BatchMode>({

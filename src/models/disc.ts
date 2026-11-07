@@ -17,7 +17,7 @@
  */
 import * as THREE from 'three';
 import type { ImageSlotDef, ModelContext, ModelDefinition, ParamDef, ParamValues } from '../core/types';
-import { L, bool, castShadows, clearPlastic, num, str } from './shared';
+import { L, Lctx, bool, castShadows, clearPlastic, num, round1, str } from './shared';
 
 /* ------------------------------------------------------------------ */
 /* Dimensions (mm)                                                     */
@@ -48,19 +48,15 @@ const SEG = 160;
 /** The disc-label image slot (id 'disc'), reused by composite "... with disc" models. */
 export const discSlot: ImageSlotDef = {
   id: 'disc',
-  label: L('Nadruk płyty', 'Disc label'),
-  hint: L(
-    'Kwadrat 120 × 120 mm, środek obrazu = środek płyty. Nadruk obejmuje Ø 118 mm (od Ø 36 mm lub wg ustawień) – tło przeciągnij do krawędzi 120 mm, to działa jak spad. Przezroczyste miejsca PNG pokazują srebro płyty.',
-    'A 120 × 120 mm square, image centre = disc centre. The print covers Ø 118 mm (from Ø 36 mm or as set) – extend the background to the 120 mm edge, it acts as bleed. Transparent PNG areas show the silver disc.',
-  ),
+  label: L('Disc label'),
+  hint: L('A 120 × 120 mm square, image centre = disc centre. The print covers Ø 118 mm (from Ø 36 mm or as set) – extend the background to the 120 mm edge, it acts as bleed. Transparent PNG areas show the silver disc.'),
   aspect: 1,
   // A function of the params, so the downloaded template follows 'discInner' / 'discFullFace'
   // exactly like the 3D label does (placeholder.ts resolves it with defaults for the round
   // placeholder).
   template: (params: ParamValues) => {
     const { inner, outer } = discPrintArea(params);
-    const d = fmtMm(outer);
-    const label = L(`Nadruk Ø ${d.replace('.', ',')}`, `Print Ø ${d}`);
+    const label = L('Print Ø {d}', { d: round1(outer) });
     const lo = (DISC_DIAMETER - outer) / 2;
     const hi = (DISC_DIAMETER + outer) / 2;
     return {
@@ -79,12 +75,7 @@ export const discSlot: ImageSlotDef = {
   },
 };
 
-/** Millimetres for labels: up to one decimal, no trailing ".0". */
-function fmtMm(v: number): string {
-  return String(Math.round(v * 10) / 10);
-}
-
-const G_DISC = L('Płyta', 'Disc');
+const G_DISC = L('Disc');
 
 /**
  * Disc params, all prefixed 'disc' so composite models can merge them with their own params.
@@ -94,18 +85,18 @@ export const discParams: ParamDef[] = [
   {
     id: 'discFinish',
     type: 'select',
-    label: L('Wykończenie nadruku', 'Label finish'),
+    label: L('Label finish'),
     group: G_DISC,
     options: [
-      { value: 'matte', label: L('Matowe', 'Matte') },
-      { value: 'glossy', label: L('Błyszczące', 'Glossy') },
+      { value: 'matte', label: L('Matte') },
+      { value: 'glossy', label: L('Glossy') },
     ],
     default: 'matte',
   },
   {
     id: 'discInner',
     type: 'number',
-    label: L('Wewn. średnica nadruku', 'Label inner diameter'),
+    label: L('Label inner diameter'),
     group: G_DISC,
     min: 15,
     max: 46,
@@ -116,31 +107,31 @@ export const discParams: ParamDef[] = [
   {
     id: 'discFullFace',
     type: 'boolean',
-    label: L('Pełny nadruk (Ø 22–119,5 mm)', 'Full-face print (Ø 22–119.5 mm)'),
+    label: L('Full-face print (Ø 22–119.5 mm)'),
     group: G_DISC,
     default: false,
   },
   {
     id: 'discLabelBase',
     type: 'select',
-    label: L('Przezroczyste miejsca nadruku', 'Transparent label areas'),
+    label: L('Transparent label areas'),
     group: G_DISC,
     options: [
-      { value: 'silver', label: L('Srebro (bez podkładu)', 'Silver (no base)') },
-      { value: 'white', label: L('Biały podkład', 'White base coat') },
+      { value: 'silver', label: L('Silver (no base)') },
+      { value: 'white', label: L('White base coat') },
     ],
     default: 'silver',
   },
   {
     id: 'discDataSide',
     type: 'select',
-    label: L('Strona z danymi', 'Data side'),
+    label: L('Data side'),
     group: G_DISC,
     options: [
-      { value: 'silver', label: L('Srebrna (tłoczona CD/DVD)', 'Silver (pressed CD/DVD)') },
-      { value: 'gold', label: L('Złota (CD-R)', 'Gold (CD-R)') },
-      { value: 'violet', label: L('Fioletowa (DVD±R)', 'Violet (DVD±R)') },
-      { value: 'dark', label: L('Ciemna (BD-R)', 'Dark (BD-R)') },
+      { value: 'silver', label: L('Silver (pressed CD/DVD)') },
+      { value: 'gold', label: L('Gold (CD-R)') },
+      { value: 'violet', label: L('Violet (DVD±R)') },
+      { value: 'dark', label: L('Dark (BD-R)') },
     ],
     default: 'silver',
   },
@@ -429,13 +420,13 @@ function buildDiscModel(ctx: ModelContext): THREE.Object3D {
   return root;
 }
 
-const G_POSE = L('Ułożenie', 'Pose');
+const G_POSE = L('Pose');
 
 export const discModel: ModelDefinition = {
   id: 'disc',
   category: 'disc',
-  name: L('Płyta CD/DVD', 'Disc'),
-  description: L('Płyta 120 mm z nadrukiem, przezroczystym hubem i tęczową stroną z danymi.', '120 mm disc with printed label, clear hub and rainbow data side.'),
+  name: Lctx('model name', 'Disc'),
+  description: L('120 mm disc with printed label, clear hub and rainbow data side.'),
   icon:
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">' +
     '<circle cx="32" cy="32" r="25"/><circle cx="32" cy="32" r="9"/><circle cx="32" cy="32" r="3.5"/>' +
@@ -445,20 +436,20 @@ export const discModel: ModelDefinition = {
     {
       id: 'pose',
       type: 'select',
-      label: L('Ułożenie płyty', 'Disc pose'),
+      label: L('Disc pose'),
       group: G_POSE,
       options: [
-        { value: 'tilted', label: L('Stojąca, lekko odchylona', 'Standing, slightly tilted') },
-        { value: 'upright', label: L('Stojąca pionowo', 'Standing upright') },
-        { value: 'leaning', label: L('Oparta pod kątem', 'Leaning at an angle') },
-        { value: 'flat', label: L('Leżąca płasko', 'Lying flat') },
+        { value: 'tilted', label: L('Standing, slightly tilted') },
+        { value: 'upright', label: L('Standing upright') },
+        { value: 'leaning', label: L('Leaning at an angle') },
+        { value: 'flat', label: L('Lying flat') },
       ],
       default: 'tilted',
     },
     {
       id: 'spin',
       type: 'number',
-      label: L('Obrót nadruku', 'Label rotation'),
+      label: L('Label rotation'),
       group: G_POSE,
       min: -180,
       max: 180,

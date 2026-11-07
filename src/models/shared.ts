@@ -139,7 +139,11 @@ export function str(params: ParamValues, id: string, fallback: string): string {
   return typeof v === 'string' ? v : fallback;
 }
 
-export const L = (pl: string, en: string): LocalizedText => ({ pl, en });
+/** Labels and hints are written in English; see src/i18n for how they are translated. */
+export { L, Lctx } from '../i18n';
+
+/** Rounds to one decimal place for a `{name}` placeholder (shown as "129.5", or "129,5" in Polish). */
+export const round1 = (v: number): number => Math.round(v * 10) / 10;
 
 export function mmParam(id: string, label: LocalizedText, def: number, min: number, max: number, step = 1, group?: LocalizedText): NumberParamDef {
   return { id, label, type: 'number', min, max, step, default: def, unit: 'mm', group };

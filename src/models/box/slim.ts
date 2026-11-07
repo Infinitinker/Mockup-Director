@@ -50,7 +50,7 @@ const DEFAULTS = { w: 180, h: 240, d: 40, cover: 67 } as const;
 
 const lidCoverParam: NumberParamDef = {
   id: 'lidCover',
-  label: L('Wysokość wieczka', 'Lid height'),
+  label: L('Lid height'),
   type: 'number',
   min: 30,
   max: 100,
@@ -62,17 +62,17 @@ const lidCoverParam: NumberParamDef = {
 
 const orientationParam: SelectParamDef = {
   id: 'orientation',
-  label: L('Ułożenie', 'Placement'),
+  label: L('Placement'),
   type: 'select',
   options: [
-    { value: 'flat', label: L('Leży (wieczko u góry)', 'Lying flat (lid up)') },
-    { value: 'upright', label: L('Stoi (wieczko z przodu)', 'Standing (lid facing front)') },
+    { value: 'flat', label: L('Lying flat (lid up)') },
+    { value: 'upright', label: L('Standing (lid facing front)') },
   ],
   default: 'flat',
   group: G_DIM,
 };
 
-const baseColorParam = colorParam('baseColor', L('Kolor spodu (bez grafiki)', 'Base colour (without artwork)'), '#d8d4cc');
+const baseColorParam = colorParam('baseColor', L('Base colour (without artwork)'), '#d8d4cc');
 
 /* ------------------------------------------------------------------ */
 /* Dimensions & templates                                              */
@@ -99,7 +99,7 @@ function slimDims(params: ParamValues): SlimDims {
   return { W, H, D, lidH, baseVis: D - lidH, t: Math.min(1.5, Math.min(W, H) * 0.05) };
 }
 
-const LID_LABEL = L('Wieczko – wierzch', 'Lid – top');
+const LID_LABEL = L('Lid – top');
 
 function lidTemplate(params: ParamValues): PrintTemplate {
   const { W, H } = slimDims(params);
@@ -109,10 +109,10 @@ function lidTemplate(params: ParamValues): PrintTemplate {
 /** Band panels in wrap order (front | right | back | left) for a w x l footprint. */
 function wallPanels(w: number, l: number) {
   return [
-    { w, label: L('Przód', 'Front') },
-    { w: l, label: L('Prawy bok', 'Right side') },
-    { w, label: L('Tył', 'Back') },
-    { w: l, label: L('Lewy bok', 'Left side') },
+    { w, label: L('Front') },
+    { w: l, label: L('Right side') },
+    { w, label: L('Back') },
+    { w: l, label: L('Left side') },
   ];
 }
 /** Faces matching wallPanels() order. */
@@ -233,11 +233,8 @@ const DEF_DIMS = slimDims({});
 export const slimBoxModel: ModelDefinition = {
   id: 'box-slim',
   category: 'box',
-  name: L('Pudełko płaskie', 'Slim box'),
-  description: L(
-    'Płaskie pudełko z nakładanym wieczkiem (gra planszowa, prezent, smartfon, kosmetyki). Może leżeć lub stać.',
-    'Flat two-piece box with a lid over a base (board game, gift, phone, cosmetics). Lying flat or standing.',
-  ),
+  name: L('Slim box'),
+  description: L('Flat two-piece box with a lid over a base (board game, gift, phone, cosmetics). Lying flat or standing.'),
   icon: icon(
     '<path d="M8 30 L22 20 H56 L42 30 Z"/><path d="M8 30 V44 H42 V30"/><path d="M42 44 L56 34 V20"/>' +
       '<path d="M8 39 H42 L56 29" stroke-width="2"/>',
@@ -246,21 +243,21 @@ export const slimBoxModel: ModelDefinition = {
     {
       id: 'lid',
       label: LID_LABEL,
-      hint: L('Główna grafika na wieczku.', 'Main artwork on the lid.'),
+      hint: L('Main artwork on the lid.'),
       aspect: aspectOf(faceTemplate(DEF_DIMS.W, DEF_DIMS.H, BLEED_MM, LID_LABEL)),
       template: lidTemplate,
     },
     {
       id: 'lidSides',
-      label: L('Wieczko – boki', 'Lid – sides'),
-      hint: L('Pas: przód | prawy bok | tył | lewy bok.', 'Band: front | right | back | left.'),
+      label: L('Lid – sides'),
+      hint: L('Band: front | right | back | left.'),
       aspect: aspectOf(bandTemplate(wallPanels(DEF_DIMS.W, DEF_DIMS.H), DEF_DIMS.lidH, BLEED_MM)),
       template: lidSidesTemplate,
     },
     {
       id: 'base',
-      label: L('Spód – boki', 'Base – sides'),
-      hint: L('Widoczna część spodu pod wieczkiem, ten sam układ pasa.', 'Visible part of the base below the lid, same band layout.'),
+      label: L('Base – sides'),
+      hint: L('Visible part of the base below the lid, same band layout.'),
       aspect: aspectOf(
         bandTemplate(wallPanels(DEF_DIMS.W - 2 * DEF_DIMS.t, DEF_DIMS.H - 2 * DEF_DIMS.t), DEF_DIMS.baseVis, BLEED_MM),
       ),
@@ -269,8 +266,8 @@ export const slimBoxModel: ModelDefinition = {
   ],
   params: [
     widthParam(DEFAULTS.w, 20),
-    heightParam(DEFAULTS.h, 20, 600, L('Długość', 'Length')),
-    depthParam(DEFAULTS.d, 5, 200, L('Grubość', 'Thickness')),
+    heightParam(DEFAULTS.h, 20, 600, L('Length')),
+    depthParam(DEFAULTS.d, 5, 200, L('Thickness')),
     lidCoverParam,
     orientationParam,
     bevelParam,

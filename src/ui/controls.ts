@@ -5,7 +5,7 @@
  */
 import { clamp, h, nextId, safeStorage } from './dom';
 import { ICONS } from './icons';
-import { formatNumber, parseNumber } from './i18n';
+import { formatNumber, parseNumber } from '../i18n';
 
 export interface Control {
   el: HTMLElement;

@@ -3,7 +3,7 @@
  */
 import { h } from './dom';
 import { ICONS } from './icons';
-import { t } from './i18n';
+import { t } from '../i18n';
 import { VIEW_PRESETS, type AppContext } from './context';
 import { hasAny } from './state';
 import type { BackgroundSettings, CameraSettings } from '../core/types';

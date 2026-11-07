@@ -9,7 +9,7 @@ import { MODELS, getModel } from '../models/registry';
 import type { AppState, ImageMap } from './state';
 import { sanitizeParam } from './modelUtils';
 import { clamp } from './dom';
-import { t } from './i18n';
+import { t } from '../i18n';
 import { animationFormatSupport, webpEncodingSupported } from './exportBridge';
 import { normaliseAnimationSettings } from '../export/animation/settings';
 

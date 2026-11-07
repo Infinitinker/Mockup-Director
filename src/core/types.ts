@@ -16,12 +16,9 @@
  *    towards +X (front + RIGHT side visible). Pitch: positive = camera above, looking down.
  */
 import type * as THREE from 'three';
+import type { LocalizedText } from '../i18n/types';
 
-export type Lang = 'pl' | 'en';
-export interface LocalizedText {
-  pl: string;
-  en: string;
-}
+export type { Lang, LocalizedText } from '../i18n/types';
 
 /* ------------------------------------------------------------------ */
 /* Models                                                              */
@@ -33,7 +30,7 @@ export type ParamValues = Record<string, ParamValue>;
 interface ParamBase {
   id: string;
   label: LocalizedText;
-  /** Optional grouping label for the UI ("Wymiary", "Materiał", ...). */
+  /** Optional grouping label for the UI ("Dimensions", "Material", ...). */
   group?: LocalizedText;
 }
 export interface NumberParamDef extends ParamBase {

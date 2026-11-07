@@ -4,7 +4,7 @@
  */
 import { h } from './dom';
 import { ICONS } from './icons';
-import { t } from './i18n';
+import { t } from '../i18n';
 
 export type ToastKind = 'info' | 'success' | 'error' | 'warning';
 

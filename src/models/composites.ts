@@ -29,19 +29,19 @@ import { discPose, type DiscPlacement } from './composites/placement';
 /* Composition params                                                  */
 /* ------------------------------------------------------------------ */
 
-const G_COMP = L('Kompozycja', 'Composition');
+const G_COMP = L('Composition');
 
 const PLACEMENTS: readonly DiscPlacement[] = ['behind', 'front', 'flat'];
 
 const placementParam: SelectParamDef = {
   id: 'discPlacement',
   type: 'select',
-  label: L('Położenie płyty', 'Disc placement'),
+  label: L('Disc placement'),
   group: G_COMP,
   options: [
-    { value: 'behind', label: L('Za pudełkiem, wysunięta w prawo', 'Behind the case, peeking out on the right') },
-    { value: 'front', label: L('Oparta o przód pudełka', 'Leaning against the front') },
-    { value: 'flat', label: L('Leżąca przed pudełkiem', 'Lying flat in front') },
+    { value: 'behind', label: L('Behind the case, peeking out on the right') },
+    { value: 'front', label: L('Leaning against the front') },
+    { value: 'flat', label: L('Lying flat in front') },
   ],
   default: 'behind',
 };
@@ -49,7 +49,7 @@ const placementParam: SelectParamDef = {
 const offsetParam: NumberParamDef = {
   id: 'discOffset',
   type: 'number',
-  label: L('Wysunięcie poza prawą krawędź', 'Overhang past the right edge'),
+  label: L('Overhang past the right edge'),
   group: G_COMP,
   min: 0,
   max: 100,
@@ -63,7 +63,7 @@ function angleParam(def: number): NumberParamDef {
   return {
     id: 'discAngle',
     type: 'number',
-    label: L('Obrót płyty', 'Disc turn'),
+    label: L('Disc turn'),
     group: G_COMP,
     min: -45,
     max: 45,
@@ -230,11 +230,8 @@ const ICON_CD_DISC = icon(
 export const boxDiscModel: ModelDefinition = {
   id: 'box-disc',
   category: 'box',
-  name: L('Pudełko z płytą', 'Box with disc'),
-  description: L(
-    'Pudełko produktowe z płytą stojącą za nim, opartą o przód lub leżącą przed nim.',
-    'Product box with a disc standing behind it, leaning against the front or lying in front.',
-  ),
+  name: L('Box with disc'),
+  description: L('Product box with a disc standing behind it, leaning against the front or lying in front.'),
   icon: ICON_BOX_DISC,
   slots: compositeSlots(boxModel.slots),
   params: compositeParams(boxModel.params, 15),
@@ -245,11 +242,8 @@ export const boxDiscModel: ModelDefinition = {
 export const dvdDiscModel: ModelDefinition = {
   id: 'dvd-case-disc',
   category: 'disc',
-  name: L('DVD z płytą', 'DVD case with disc'),
-  description: L(
-    'Pudełko DVD z płytą wysuniętą zza pudełka, opartą o przód lub leżącą przed nim.',
-    'DVD keep case with a disc peeking out from behind, leaning against the front or lying in front.',
-  ),
+  name: L('DVD case with disc'),
+  description: L('DVD keep case with a disc peeking out from behind, leaning against the front or lying in front.'),
   icon: ICON_DVD_DISC,
   slots: compositeSlots(dvdModel.slots),
   // The keep-case camera looks from the front-left (printed spine): turn the label that way too.
@@ -261,11 +255,8 @@ export const dvdDiscModel: ModelDefinition = {
 export const blurayDiscModel: ModelDefinition = {
   id: 'bluray-case-disc',
   category: 'disc',
-  name: L('Blu-ray z płytą', 'Blu-ray case with disc'),
-  description: L(
-    'Pudełko Blu-ray z płytą wysuniętą zza pudełka, opartą o przód lub leżącą przed nim.',
-    'Blu-ray keep case with a disc peeking out from behind, leaning against the front or lying in front.',
-  ),
+  name: L('Blu-ray case with disc'),
+  description: L('Blu-ray keep case with a disc peeking out from behind, leaning against the front or lying in front.'),
   icon: ICON_BLURAY_DISC,
   slots: compositeSlots(blurayModel.slots),
   params: compositeParams(blurayModel.params, -12),
@@ -276,11 +267,8 @@ export const blurayDiscModel: ModelDefinition = {
 export const cdDiscModel: ModelDefinition = {
   id: 'cd-case-disc',
   category: 'disc',
-  name: L('CD z płytą', 'CD case with disc'),
-  description: L(
-    'Pudełko CD z płytą wysuniętą zza pudełka, opartą o przód lub leżącą przed nim.',
-    'CD jewel case with a disc peeking out from behind, leaning against the front or lying in front.',
-  ),
+  name: L('CD case with disc'),
+  description: L('CD jewel case with a disc peeking out from behind, leaning against the front or lying in front.'),
   icon: ICON_CD_DISC,
   slots: compositeSlots(cdCaseModel.slots),
   params: compositeParams(cdCaseModel.params, 15),

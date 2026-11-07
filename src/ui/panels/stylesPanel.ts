@@ -3,7 +3,7 @@
  */
 import type { ScenePreset } from '../../core/types';
 import type { AppContext } from '../context';
-import { lt, t } from '../i18n';
+import { lt, t } from '../../i18n';
 import { errorMessage, h, nextId } from '../dom';
 import { ICONS } from '../icons';
 import { iconButton, section } from '../controls';

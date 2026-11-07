@@ -1,8 +1,8 @@
 /**
- * Errors of the animation export. `text` carries a LocalizedText so the UI's errorMessage() shows
- * the message in the interface language (same convention as ExportError in ../exporter.ts).
+ * Errors of the animation export. `text` carries a Message so the UI's errorMessage() shows it in
+ * the interface language; `message` is the English text (same convention as ExportError in ../exporter.ts).
  */
-import type { LocalizedText } from '../../core/types';
+import { mtIn, type Message } from '../../i18n';
 
 export type AnimationErrorCode =
   | 'unsupported'
@@ -13,9 +13,9 @@ export type AnimationErrorCode =
 
 export class AnimationError extends Error {
   readonly code: AnimationErrorCode;
-  readonly text: LocalizedText;
-  constructor(code: AnimationErrorCode, text: LocalizedText, cause?: unknown) {
-    super(`${text.pl} / ${text.en}`);
+  readonly text: Message;
+  constructor(code: AnimationErrorCode, text: Message, cause?: unknown) {
+    super(mtIn('en', text));
     this.name = 'AnimationError';
     this.code = code;
     this.text = text;

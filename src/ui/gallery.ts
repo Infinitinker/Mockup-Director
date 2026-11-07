@@ -2,7 +2,7 @@
  * Left sidebar: model gallery grouped by category.
  */
 import { h } from './dom';
-import { lt, t, type DictKey } from './i18n';
+import { lt, t, type MessageKey } from '../i18n';
 import type { AppContext } from './context';
 import { MODELS } from '../models/registry';
 import type { ModelCategory } from '../core/types';
@@ -10,7 +10,7 @@ import { hasAny } from './state';
 
 const CATEGORY_ORDER: ModelCategory[] = ['box', 'disc', 'book', 'print', 'device'];
 
-const CATEGORY_LABEL: Record<ModelCategory, DictKey> = {
+const CATEGORY_LABEL: Record<ModelCategory, MessageKey> = {
   box: 'catBoxes',
   disc: 'catDiscs',
   book: 'catBooks',

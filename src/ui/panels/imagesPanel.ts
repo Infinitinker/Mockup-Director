@@ -4,7 +4,7 @@
 import type { ImageAsset, ImageSlotDef } from '../../core/types';
 import { getModel } from '../../models/registry';
 import type { AppContext } from '../context';
-import { formatNumber, lt, t } from '../i18n';
+import { formatNumber, lt, t } from '../../i18n';
 import { h } from '../dom';
 import { ICONS } from '../icons';
 import { aspectMismatch, completeParams, expectedAspects } from '../modelUtils';

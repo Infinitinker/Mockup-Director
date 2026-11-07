@@ -30,7 +30,7 @@ import type {
   ParamValues,
   PrintTemplate,
 } from '../core/types';
-import { L, bool, castShadows, mmParam, num, placeOnGround, planarUVs, str } from './shared';
+import { L, Lctx, bool, castShadows, mmParam, num, placeOnGround, planarUVs, round1, str } from './shared';
 
 /* ------------------------------------------------------------------ */
 /* Specs                                                               */
@@ -160,22 +160,16 @@ interface FinishDef {
 }
 
 const FINISHES: Record<string, FinishDef> = {
-  graphite: { label: L('Grafitowy', 'Graphite'), frame: '#3b3c40', metalness: 0.85, roughness: 0.32, back: '#2f3034' },
-  black: { label: L('Czarny', 'Black'), frame: '#151517', metalness: 0.55, roughness: 0.38, back: '#141416' },
-  silver: { label: L('Srebrny', 'Silver'), frame: '#d3d5d8', metalness: 1, roughness: 0.26, back: '#e4e5e4' },
-  white: { label: L('Biały (ceramika)', 'White (ceramic)'), frame: '#e9e8e4', metalness: 0, roughness: 0.3, back: '#f3f2ee' },
-  gold: { label: L('Złoty (szampański)', 'Gold (champagne)'), frame: '#d8c29b', metalness: 1, roughness: 0.28, back: '#ece1cc' },
-  blue: { label: L('Granatowy', 'Navy blue'), frame: '#3c5374', metalness: 0.8, roughness: 0.32, back: '#46607f' },
-  custom: { label: L('Własny kolor', 'Custom colour'), frame: '#7a7f88', metalness: 0.6, roughness: 0.34, back: '#7a7f88' },
+  graphite: { label: L('Graphite'), frame: '#3b3c40', metalness: 0.85, roughness: 0.32, back: '#2f3034' },
+  black: { label: L('Black'), frame: '#151517', metalness: 0.55, roughness: 0.38, back: '#141416' },
+  silver: { label: L('Silver'), frame: '#d3d5d8', metalness: 1, roughness: 0.26, back: '#e4e5e4' },
+  white: { label: L('White (ceramic)'), frame: '#e9e8e4', metalness: 0, roughness: 0.3, back: '#f3f2ee' },
+  gold: { label: L('Gold (champagne)'), frame: '#d8c29b', metalness: 1, roughness: 0.28, back: '#ece1cc' },
+  blue: { label: L('Navy blue'), frame: '#3c5374', metalness: 0.8, roughness: 0.32, back: '#46607f' },
+  custom: { label: L('Custom colour'), frame: '#7a7f88', metalness: 0.6, roughness: 0.34, back: '#7a7f88' },
 };
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
-
-/** "67,9" (PL) / "67.9" (EN). */
-const fmt = (v: number, lang: 'pl' | 'en') => {
-  const s = (Math.round(v * 10) / 10).toString();
-  return lang === 'pl' ? s.replace('.', ',') : s;
-};
 
 /* ------------------------------------------------------------------ */
 /* Resolved dimensions (shared by build() and the slot template)       */
@@ -245,11 +239,11 @@ function toTemplate(d: Dims, x: number, y: number): [number, number] {
 function screenTemplate(spec: DeviceSpec, p: ParamValues): PrintTemplate {
   const d = resolveDims(spec, p);
   const [ow, oh] = orientedScreen(d);
-  const regions = [{ xMm: 0, yMm: 0, wMm: ow, hMm: oh, label: L('Ekran', 'Screen') }];
+  const regions = [{ xMm: 0, yMm: 0, wMm: ow, hMm: oh, label: L('Screen') }];
   if (d.cam?.inScreen) {
     const [cx, cy] = toTemplate(d, d.cam.x, d.cam.y);
     const s = d.cam.r * 2 + 1;
-    regions.push({ xMm: cx - s / 2, yMm: cy - s / 2, wMm: s, hMm: s, label: L('Kamera', 'Camera') });
+    regions.push({ xMm: cx - s / 2, yMm: cy - s / 2, wMm: s, hMm: s, label: L('Camera') });
   }
   // No bleed: a screen image is not printed, the template only shows the exact screen frame.
   return { widthMm: ow, heightMm: oh, regions };
@@ -261,25 +255,24 @@ function makeSlot(spec: DeviceSpec): ImageSlotDef {
   const [ow, oh] = orientedScreen(d);
   const px = (mm: number) => Math.round((mm / 25.4) * spec.ppi);
   const portrait = !d.landscape;
-  const sizePl = `${px(ow)} × ${px(oh)} px`;
-  const orientPl = portrait ? 'w pionie' : 'w poziomie';
-  const orientEn = portrait ? 'portrait' : 'landscape';
-  const otherPl = portrait ? 'poziomego' : 'pionowego';
-  const otherEn = portrait ? 'landscape' : 'portrait';
-  const example =
-    spec.kind === 'phone'
-      ? L('Typowy zrzut ekranu (np. 1179 × 2556 px) też pasuje – zostanie lekko przycięty.', 'A typical screenshot (e.g. 1179 × 2556 px) fits too – it is cropped slightly.')
-      : L('Typowy zrzut ekranu (np. 2388 × 1668 px) też pasuje – zostanie lekko przycięty.', 'A typical screenshot (e.g. 2388 × 1668 px) fits too – it is cropped slightly.');
+  // A typical screenshot size of such a device, quoted in the hint.
+  const [exampleW, exampleH] = spec.kind === 'phone' ? [1179, 2556] : [2388, 1668];
   return {
     id: 'screen',
-    label: L('Ekran', 'Screen'),
+    label: L('Screen'),
     hint: L(
-      `Obraz wyświetlany na ekranie (zrzut aplikacji, strony, grafika). Zalecane ${sizePl} ${orientPl} ` +
-        `(ekran ${fmt(ow, 'pl')} × ${fmt(oh, 'pl')} mm); dla układu ${otherPl} zamień wymiary. ${example.pl} ` +
-        'Obraz o innych proporcjach wypełnia ekran z przycięciem, zaokrąglone narożniki go obcinają.',
-      `The image shown on the screen (app or web screenshot, artwork). Recommended ${px(ow)} × ${px(oh)} px ${orientEn} ` +
-        `(screen ${fmt(ow, 'en')} × ${fmt(oh, 'en')} mm); for ${otherEn} swap the sizes. ${example.en} ` +
+      'The image shown on the screen (app or web screenshot, artwork). Recommended {pxW} × {pxH} px {orientation} ' +
+        '(screen {w} × {h} mm); for {other} swap the sizes. {example} ' +
         'Other aspect ratios fill the screen with cropping; the rounded corners clip it.',
+      {
+        pxW: px(ow),
+        pxH: px(oh),
+        orientation: portrait ? Lctx('recommended image orientation', 'portrait') : Lctx('recommended image orientation', 'landscape'),
+        w: round1(ow),
+        h: round1(oh),
+        other: portrait ? Lctx('image layout to swap to', 'landscape') : Lctx('image layout to swap to', 'portrait'),
+        example: L('A typical screenshot (e.g. {w} × {h} px) fits too – it is cropped slightly.', { w: exampleW, h: exampleH }),
+      },
     ),
     aspect: ow / oh,
     template: (params) => screenTemplate(spec, params),
@@ -290,33 +283,33 @@ function makeSlot(spec: DeviceSpec): ImageSlotDef {
 /* Params                                                              */
 /* ------------------------------------------------------------------ */
 
-const G_DIM = L('Wymiary', 'Dimensions');
-const G_MAT = L('Materiał', 'Material');
-const G_SCREEN = L('Ekran', 'Screen');
-const G_DET = L('Szczegóły', 'Details');
+const G_DIM = L('Dimensions');
+const G_MAT = L('Material');
+const G_SCREEN = L('Screen');
+const G_DET = L('Details');
 
 function makeParams(spec: DeviceSpec): ParamDef[] {
   const out: ParamDef[] = [
-    mmParam('width', L('Szerokość', 'Width'), spec.width.def, spec.width.min, spec.width.max, spec.width.step, G_DIM),
-    mmParam('height', L('Wysokość', 'Height'), spec.height.def, spec.height.min, spec.height.max, spec.height.step, G_DIM),
-    mmParam('thickness', L('Grubość', 'Thickness'), spec.thickness.def, spec.thickness.min, spec.thickness.max, spec.thickness.step, G_DIM),
-    mmParam('bezel', L('Ramka wokół ekranu', 'Screen bezel'), spec.bezel.def, spec.bezel.min, spec.bezel.max, spec.bezel.step, G_DIM),
-    mmParam('cornerRadius', L('Zaokrąglenie narożników', 'Corner radius'), spec.radius.def, spec.radius.min, spec.radius.max, spec.radius.step, G_DIM),
+    mmParam('width', L('Width'), spec.width.def, spec.width.min, spec.width.max, spec.width.step, G_DIM),
+    mmParam('height', L('Height'), spec.height.def, spec.height.min, spec.height.max, spec.height.step, G_DIM),
+    mmParam('thickness', L('Thickness'), spec.thickness.def, spec.thickness.min, spec.thickness.max, spec.thickness.step, G_DIM),
+    mmParam('bezel', L('Screen bezel'), spec.bezel.def, spec.bezel.min, spec.bezel.max, spec.bezel.step, G_DIM),
+    mmParam('cornerRadius', L('Corner radius'), spec.radius.def, spec.radius.min, spec.radius.max, spec.radius.step, G_DIM),
     {
       id: 'orientation',
       type: 'select',
-      label: L('Orientacja', 'Orientation'),
+      label: L('Orientation'),
       group: G_DIM,
       options: [
-        { value: 'portrait', label: L('Pionowo', 'Portrait') },
-        { value: 'landscape', label: L('Poziomo', 'Landscape') },
+        { value: 'portrait', label: L('Portrait') },
+        { value: 'landscape', label: L('Landscape') },
       ],
       default: spec.defaultOrientation,
     },
     {
       id: 'frame',
       type: 'select',
-      label: L('Wykończenie obudowy', 'Body finish'),
+      label: L('Body finish'),
       group: G_MAT,
       options: Object.entries(FINISHES).map(([value, f]) => ({ value, label: f.label })),
       default: spec.defaultFrame,
@@ -324,14 +317,14 @@ function makeParams(spec: DeviceSpec): ParamDef[] {
     {
       id: 'frameColor',
       type: 'color',
-      label: L('Własny kolor obudowy', 'Custom body colour'),
+      label: L('Custom body colour'),
       group: G_MAT,
       default: '#7a7f88',
     },
     {
       id: 'brightness',
       type: 'number',
-      label: L('Jasność ekranu', 'Screen brightness'),
+      label: L('Screen brightness'),
       group: G_SCREEN,
       min: 0,
       max: 150,
@@ -342,24 +335,24 @@ function makeParams(spec: DeviceSpec): ParamDef[] {
     {
       id: 'screenFinish',
       type: 'select',
-      label: L('Szkło ekranu', 'Screen glass'),
+      label: L('Screen glass'),
       group: G_SCREEN,
       options: [
-        { value: 'glossy', label: L('Błyszczące', 'Glossy') },
-        { value: 'matte', label: L('Matowe (antyrefleks)', 'Matte (anti-glare)') },
+        { value: 'glossy', label: L('Glossy') },
+        { value: 'matte', label: Lctx('phone or tablet', 'Matte (anti-glare)') },
       ],
       default: 'glossy',
     },
     {
       id: 'frontCamera',
       type: 'select',
-      label: L('Kamera przednia', 'Front camera'),
+      label: L('Front camera'),
       group: G_DET,
       options: [
-        { value: 'none', label: L('Brak', 'None') },
+        { value: 'none', label: L('None') },
         {
           value: 'punch',
-          label: spec.kind === 'phone' ? L('Otwór w ekranie', 'Punch-hole') : L('Kamera w ramce', 'Camera in the bezel'),
+          label: spec.kind === 'phone' ? L('Punch-hole') : L('Camera in the bezel'),
         },
       ],
       default: 'punch',
@@ -367,14 +360,14 @@ function makeParams(spec: DeviceSpec): ParamDef[] {
     {
       id: 'rearCamera',
       type: 'boolean',
-      label: L('Aparat z tyłu', 'Rear camera'),
+      label: L('Rear camera'),
       group: G_DET,
       default: true,
     },
     {
       id: 'buttons',
       type: 'boolean',
-      label: L('Przyciski boczne', 'Side buttons'),
+      label: L('Side buttons'),
       group: G_DET,
       default: true,
     },
@@ -383,7 +376,7 @@ function makeParams(spec: DeviceSpec): ParamDef[] {
     out.push({
       id: 'stylus',
       type: 'boolean',
-      label: L('Rysik obok', 'Stylus next to it'),
+      label: L('Stylus next to it'),
       group: G_DET,
       default: false,
     });
@@ -898,11 +891,8 @@ const DEVICE_CAMERA = { yaw: 28, pitch: 10 };
 export const phoneModel: ModelDefinition = {
   id: 'device-phone',
   category: 'device',
-  name: L('Smartfon', 'Smartphone'),
-  description: L(
-    'Uniwersalny smartfon 71,5 × 147 × 8 mm ze świecącym ekranem, otworem na kamerę i aparatem z tyłu.',
-    'Generic smartphone 71.5 × 147 × 8 mm with a lit screen, punch-hole camera and rear camera module.',
-  ),
+  name: L('Smartphone'),
+  description: L('Generic smartphone 71.5 × 147 × 8 mm with a lit screen, punch-hole camera and rear camera module.'),
   icon: ICON_PHONE,
   slots: [makeSlot(SPECS.phone)],
   params: makeParams(SPECS.phone),
@@ -913,11 +903,8 @@ export const phoneModel: ModelDefinition = {
 export const tabletModel: ModelDefinition = {
   id: 'device-tablet',
   category: 'device',
-  name: L('Tablet', 'Tablet'),
-  description: L(
-    'Uniwersalny tablet 179,5 × 247,6 × 6,3 mm (domyślnie poziomo) ze świecącym ekranem i opcjonalnym rysikiem.',
-    'Generic tablet 179.5 × 247.6 × 6.3 mm (landscape by default) with a lit screen and an optional stylus.',
-  ),
+  name: L('Tablet'),
+  description: L('Generic tablet 179.5 × 247.6 × 6.3 mm (landscape by default) with a lit screen and an optional stylus.'),
   icon: ICON_TABLET,
   slots: [makeSlot(SPECS.tablet)],
   params: makeParams(SPECS.tablet),

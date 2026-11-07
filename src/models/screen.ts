@@ -22,7 +22,7 @@
  * so no print template is offered – the artwork itself defines the size.
  */
 import * as THREE from 'three';
-import type { ImageSlotDef, ModelContext, ModelDefinition, ParamDef, ParamValues } from '../core/types';
+import type { ImageSlotDef, LocalizedText, ModelContext, ModelDefinition, ParamDef, ParamValues } from '../core/types';
 import { L, castShadows, num, placeOnGround, printMaterial, str } from './shared';
 
 /* ------------------------------------------------------------------ */
@@ -367,17 +367,17 @@ function finishPanel(panel: THREE.Group, tiltDeg: number): THREE.Object3D {
 /* Params                                                              */
 /* ------------------------------------------------------------------ */
 
-const G_DIM = L('Wymiary', 'Dimensions');
-const G_SHAPE = L('Kształt i ustawienie', 'Shape & placement');
-const G_FRAME = L('Ramka', 'Frame');
-const G_WIN = L('Okno', 'Window');
-const G_MAT = L('Materiał', 'Material');
+const G_DIM = L('Dimensions');
+const G_SHAPE = L('Shape & placement');
+const G_FRAME = L('Frame');
+const G_WIN = L('Window');
+const G_MAT = L('Material');
 
 function widthParam(def: number): ParamDef {
   return {
     id: 'width',
     type: 'number',
-    label: L('Szerokość panelu', 'Panel width'),
+    label: L('Panel width'),
     group: G_DIM,
     min: 40,
     max: 2000,
@@ -392,7 +392,7 @@ function commonParams(defRadius: number): ParamDef[] {
     {
       id: 'thickness',
       type: 'number',
-      label: L('Grubość', 'Thickness'),
+      label: L('Thickness'),
       group: G_DIM,
       min: 0.5,
       max: 10,
@@ -403,7 +403,7 @@ function commonParams(defRadius: number): ParamDef[] {
     {
       id: 'cornerRadius',
       type: 'number',
-      label: L('Zaokrąglenie narożników', 'Corner radius'),
+      label: L('Corner radius'),
       group: G_DIM,
       min: 0,
       max: 60,
@@ -414,7 +414,7 @@ function commonParams(defRadius: number): ParamDef[] {
     {
       id: 'curvature',
       type: 'number',
-      label: L('Wygięcie (− wypukłe, + wklęsłe)', 'Curvature (− convex, + concave)'),
+      label: L('Curvature (− convex, + concave)'),
       group: G_SHAPE,
       min: -100,
       max: 100,
@@ -425,7 +425,7 @@ function commonParams(defRadius: number): ParamDef[] {
     {
       id: 'tilt',
       type: 'number',
-      label: L('Odchylenie do tyłu', 'Lean back'),
+      label: L('Lean back'),
       group: G_SHAPE,
       min: 0,
       max: 75,
@@ -441,20 +441,20 @@ function finishParams(): ParamDef[] {
     {
       id: 'finish',
       type: 'select',
-      label: L('Wykończenie', 'Finish'),
+      label: L('Finish'),
       group: G_MAT,
       options: [
-        { value: 'screen', label: L('Ekran błyszczący (świecący)', 'Glossy screen (lit)') },
-        { value: 'screenMatte', label: L('Ekran matowy (świecący)', 'Matte screen (lit)') },
-        { value: 'printMatte', label: L('Wydruk matowy', 'Matte print') },
-        { value: 'printGloss', label: L('Wydruk błyszczący', 'Glossy print') },
+        { value: 'screen', label: L('Glossy screen (lit)') },
+        { value: 'screenMatte', label: L('Matte screen (lit)') },
+        { value: 'printMatte', label: L('Matte print') },
+        { value: 'printGloss', label: L('Glossy print') },
       ],
       default: 'screen',
     },
     {
       id: 'glow',
       type: 'number',
-      label: L('Jasność ekranu', 'Screen brightness'),
+      label: L('Screen brightness'),
       group: G_MAT,
       min: 0,
       max: 200,
@@ -465,12 +465,12 @@ function finishParams(): ParamDef[] {
     {
       id: 'bodyFinish',
       type: 'select',
-      label: L('Krawędzie i tył', 'Edges & back'),
+      label: L('Edges & back'),
       group: G_MAT,
       options: [
-        { value: 'plastic', label: L('Plastik satynowy', 'Satin plastic') },
-        { value: 'gloss', label: L('Plastik błyszczący', 'Glossy plastic') },
-        { value: 'metal', label: L('Metal (aluminium)', 'Metal (aluminium)') },
+        { value: 'plastic', label: L('Satin plastic') },
+        { value: 'gloss', label: L('Glossy plastic') },
+        { value: 'metal', label: L('Metal (aluminium)') },
       ],
       default: 'plastic',
     },
@@ -490,10 +490,10 @@ const finishOf = (p: ParamValues): Finish => {
  * 'screen' accepts ANY aspect ratio – the panel height follows the image. `aspect` (16:10) is only
  * the placeholder shape used without an image.
  */
-function screenSlot(hint: { pl: string; en: string }): ImageSlotDef {
+function screenSlot(hint: LocalizedText): ImageSlotDef {
   return {
     id: 'screen',
-    label: L('Ekran', 'Screen'),
+    label: L('Screen'),
     hint,
     aspect: DEFAULT_ASPECT,
     anyAspect: true,
@@ -576,18 +576,12 @@ const ICON_SCREENSHOT =
 export const screenshotModel: ModelDefinition = {
   id: 'device-screenshot',
   category: 'device',
-  name: L('Zrzut ekranu', 'Screenshot'),
-  description: L(
-    'Cienki „pływający” panel ze zrzutem ekranu – płaski lub wygięty, z opcjonalną ramką; wysokość dopasowuje się do obrazu.',
-    'A thin floating panel showing a screenshot – flat or curved, with an optional frame; the height follows the image.',
-  ),
+  name: L('Screenshot'),
+  description: L('A thin floating panel showing a screenshot – flat or curved, with an optional frame; the height follows the image.'),
   icon: ICON_SCREENSHOT,
   slots: [
     screenSlot(
-      L(
-        'Zrzut ekranu lub dowolna grafika – proporcje dowolne (wysokość panelu dopasuje się do obrazu). Bez obrazu: 16:10.',
-        'A screenshot or any artwork – any aspect ratio (the panel height follows the image). Without an image: 16:10.',
-      ),
+      L('A screenshot or any artwork – any aspect ratio (the panel height follows the image). Without an image: 16:10.'),
     ),
   ],
   params: [
@@ -596,19 +590,19 @@ export const screenshotModel: ModelDefinition = {
     {
       id: 'frame',
       type: 'select',
-      label: L('Ramka', 'Frame'),
+      label: L('Frame'),
       group: G_FRAME,
       options: [
-        { value: 'none', label: L('Brak', 'None') },
-        { value: 'light', label: L('Cienka jasna', 'Thin light') },
-        { value: 'dark', label: L('Cienka ciemna', 'Thin dark') },
+        { value: 'none', label: L('None') },
+        { value: 'light', label: L('Thin light') },
+        { value: 'dark', label: L('Thin dark') },
       ],
       default: 'none',
     },
     {
       id: 'frameWidth',
       type: 'number',
-      label: L('Szerokość ramki', 'Frame width'),
+      label: L('Frame width'),
       group: G_FRAME,
       min: 1,
       max: 40,
@@ -620,7 +614,7 @@ export const screenshotModel: ModelDefinition = {
     {
       id: 'bodyColor',
       type: 'color',
-      label: L('Kolor krawędzi i tyłu (bez ramki)', 'Edge & back colour (no frame)'),
+      label: L('Edge & back colour (no frame)'),
       group: G_MAT,
       default: '#2a2b2f',
     },
@@ -856,18 +850,12 @@ const ICON_BROWSER =
 export const browserWindowModel: ModelDefinition = {
   id: 'device-browser',
   category: 'device',
-  name: L('Okno przeglądarki', 'Browser window'),
-  description: L(
-    'Okno przeglądarki / aplikacji z ogólnym paskiem tytułu (przyciski, pasek adresu) – płaskie lub wygięte; wysokość dopasowuje się do obrazu.',
-    'A browser / app window with a generic title bar (buttons, address bar) – flat or curved; the height follows the image.',
-  ),
+  name: L('Browser window'),
+  description: L('A browser / app window with a generic title bar (buttons, address bar) – flat or curved; the height follows the image.'),
   icon: ICON_BROWSER,
   slots: [
     screenSlot(
-      L(
-        'Zawartość okna pod paskiem (np. zrzut strony) – proporcje dowolne, wysokość okna dopasuje się do obrazu. Bez obrazu: 16:10.',
-        'Window content under the bar (e.g. a page screenshot) – any aspect ratio, the window height follows the image. Without an image: 16:10.',
-      ),
+      L('Window content under the bar (e.g. a page screenshot) – any aspect ratio, the window height follows the image. Without an image: 16:10.'),
     ),
   ],
   params: [
@@ -876,42 +864,43 @@ export const browserWindowModel: ModelDefinition = {
     {
       id: 'theme',
       type: 'select',
-      label: L('Motyw paska', 'Bar theme'),
+      label: L('Bar theme'),
       group: G_WIN,
       options: [
-        { value: 'light', label: L('Jasny', 'Light') },
-        { value: 'dark', label: L('Ciemny', 'Dark') },
+        { value: 'light', label: L('Light') },
+        { value: 'dark', label: L('Dark') },
       ],
       default: 'light',
     },
     {
       id: 'buttons',
       type: 'select',
-      label: L('Przyciski okna', 'Window buttons'),
+      label: L('Window buttons'),
       group: G_WIN,
       options: [
-        { value: 'color', label: L('Kolorowe', 'Coloured') },
-        { value: 'grey', label: L('Szare', 'Grey') },
-        { value: 'none', label: L('Brak', 'None') },
+        { value: 'color', label: L('Coloured') },
+        { value: 'grey', label: L('Grey') },
+        { value: 'none', label: L('None') },
       ],
       default: 'color',
     },
     {
       id: 'address',
       type: 'select',
-      label: L('Pasek adresu', 'Address bar'),
+      label: L('Address bar'),
       group: G_WIN,
       options: [
-        ...ADDRESS_OPTIONS.map((a) => ({ value: a, label: L(a, a) })),
-        { value: 'empty', label: L('Pusty', 'Empty') },
-        { value: 'none', label: L('Brak', 'None') },
+        // Domain names read the same in every language: they have no translations.
+        ...ADDRESS_OPTIONS.map((a) => ({ value: a, label: L(a) })),
+        { value: 'empty', label: L('Empty') },
+        { value: 'none', label: L('None') },
       ],
       default: 'example.com',
     },
     {
       id: 'barScale',
       type: 'number',
-      label: L('Wysokość paska', 'Bar height'),
+      label: L('Bar height'),
       group: G_WIN,
       min: 50,
       max: 200,

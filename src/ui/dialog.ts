@@ -3,7 +3,7 @@
  * implement them), so we draw our own sheet-like dialogs.
  */
 import { h } from './dom';
-import { t } from './i18n';
+import { t } from '../i18n';
 
 interface DialogOptions {
   title: string;

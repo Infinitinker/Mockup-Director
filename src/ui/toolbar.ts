@@ -3,7 +3,7 @@
  */
 import { h, shortcutLabel } from './dom';
 import { ICONS, LOGO_SVG } from './icons';
-import { t } from './i18n';
+import { LOCALES, t } from '../i18n';
 import type { AppContext } from './context';
 import { segmentedControl } from './controls';
 import type { Lang } from '../core/types';
@@ -54,10 +54,7 @@ export function createToolbar(ctx: AppContext): { el: HTMLElement; render(): voi
     const lang = segmentedControl<Lang>({
       compact: true,
       ariaLabel: t('language'),
-      options: [
-        { value: 'pl', label: 'PL', title: 'Polski' },
-        { value: 'en', label: 'EN', title: 'English' },
-      ],
+      options: LOCALES.map((l) => ({ value: l.code, label: l.code.toUpperCase(), title: l.name })),
       get: () => ctx.store.state.lang,
       set: (v) => a.setLang(v),
     });

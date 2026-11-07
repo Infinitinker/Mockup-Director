@@ -18,7 +18,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { ImageSlotDef, LocalizedText, ModelContext, ModelDefinition, ParamDef, ParamValues, PrintTemplate, TemplateGuide } from '../core/types';
-import { L, bool, castShadows, mmParam, num, placeOnGround, planarUVs, printMaterial, roundedRectShape, str } from './shared';
+import { L, Lctx, bool, castShadows, mmParam, num, placeOnGround, planarUVs, printMaterial, round1, roundedRectShape, str } from './shared';
 
 /* ------------------------------------------------------------------ */
 /* Common constants / helpers                                          */
@@ -28,21 +28,15 @@ const PI = Math.PI;
 /** Print bleed on every side of every artwork. */
 const BLEED = 3;
 
-const G_DIM = L('Wymiary', 'Dimensions');
-const G_MAT = L('Materiał', 'Material');
-const G_ART = L('Grafika', 'Artwork');
+const G_DIM = L('Dimensions');
+const G_MAT = L('Material');
+const G_ART = L('Artwork');
 
-const TRIM = L('Linia cięcia', 'Trim line');
-const FOLD = L('Zgięcie grzbietu', 'Spine fold');
-const GROOVE = L('Rowek zawiasu', 'Hinge groove');
+const TRIM = L('Trim line');
+const FOLD = L('Spine fold');
+const GROOVE = L('Hinge groove');
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
-
-/** "129,5" (PL) / "129.5" (EN). */
-const fmt = (v: number, lang: 'pl' | 'en') => {
-  const s = (Math.round(v * 10) / 10).toString();
-  return lang === 'pl' ? s.replace('.', ',') : s;
-};
 
 function colorOf(params: ParamValues, id: string, fallback: string): string {
   const c = str(params, id, fallback);
@@ -60,12 +54,12 @@ function finishParam(def: Finish): ParamDef {
   return {
     id: 'coverFinish',
     type: 'select',
-    label: L('Wykończenie okładki', 'Cover finish'),
+    label: L('Cover finish'),
     group: G_MAT,
     options: [
-      { value: 'matte', label: L('Mat (folia matowa)', 'Matte laminate') },
-      { value: 'satin', label: L('Satyna (półmat)', 'Satin') },
-      { value: 'gloss', label: L('Połysk (folia błyszcząca)', 'Gloss laminate') },
+      { value: 'matte', label: L('Matte laminate') },
+      { value: 'satin', label: L('Satin') },
+      { value: 'gloss', label: L('Gloss laminate') },
     ],
     default: def,
   };
@@ -564,9 +558,9 @@ function bookWrapTemplate(p: ParamValues, kind: BookKind): PrintTemplate {
     bleedMm: b,
     guides,
     regions: [
-      { xMm: b, yMm: b, wMm: w.s0, hMm: hc, label: L('Tył', 'Back') },
-      { xMm: b + w.s0, yMm: b, wMm: w.s1 - w.s0, hMm: hc, label: L('Grzbiet', 'Spine') },
-      { xMm: b + w.s1, yMm: b, wMm: w.L - w.s1, hMm: hc, label: L('Przód', 'Front') },
+      { xMm: b, yMm: b, wMm: w.s0, hMm: hc, label: L('Back') },
+      { xMm: b + w.s0, yMm: b, wMm: w.s1 - w.s0, hMm: hc, label: L('Spine') },
+      { xMm: b + w.s1, yMm: b, wMm: w.L - w.s1, hMm: hc, label: L('Front') },
     ],
   };
 }
@@ -574,14 +568,14 @@ function bookWrapTemplate(p: ParamValues, kind: BookKind): PrintTemplate {
 function bookPanelTemplate(p: ParamValues, kind: BookKind, panel: 'front' | 'spine' | 'back'): PrintTemplate {
   const w = wrapLayout(p, kind);
   const hc = w.g.Hc;
-  if (panel === 'spine') return panelTemplate(w.s1 - w.s0, hc, L('Grzbiet', 'Spine'));
+  if (panel === 'spine') return panelTemplate(w.s1 - w.s0, hc, L('Spine'));
   if (panel === 'front') {
     const extra: TemplateGuide[] = w.sgF >= 0 ? [{ orientation: 'v', posMm: BLEED + w.sgF - w.s1, label: GROOVE }] : [];
-    return panelTemplate(w.L - w.s1, hc, L('Przód', 'Front'), extra);
+    return panelTemplate(w.L - w.s1, hc, L('Front'), extra);
   }
   // Back panel: its left edge is the fore-edge (seen from behind the spine is on the right).
   const extra: TemplateGuide[] = w.sgB >= 0 ? [{ orientation: 'v', posMm: BLEED + w.sgB, label: GROOVE }] : [];
-  return panelTemplate(w.s0, hc, L('Tył', 'Back'), extra);
+  return panelTemplate(w.s0, hc, L('Back'), extra);
 }
 
 function bookSlots(kind: BookKind): ImageSlotDef[] {
@@ -592,58 +586,49 @@ function bookSlots(kind: BookKind): ImageSlotDef[] {
   const bw = w.s0;
   const aspect = (x: number) => (x + 2 * BLEED) / (hc + 2 * BLEED);
   const hard = kind === 'hard';
-  const onlyIfNoCover = L('Używane tylko, gdy nie dodano obrazu „Okładka (całość)”.', 'Used only when no “Cover wrap” image is added.');
+  const onlyIfNoCover = L('Used only when no “Cover wrap” image is added.');
+  // Appended to the wrap hint of the hardcover only (it starts with a space).
   const hardNote = hard
-    ? L(
-        ' Okładka obejmuje wystające krawędzie tektury i rowki zawiasu (zaznaczone na szablonie). Do druku oprawy twardej drukarnie zwykle wymagają 15–20 mm zawinięcia – szablon odpowiada makiecie ze spadem 3 mm.',
-        ' The wrap covers the overhanging boards and the hinge grooves (marked on the template). Printers usually need a 15–20 mm turn-in for real case binding – the template matches the mockup with a 3 mm bleed.',
-      )
-    : L('', '');
+    ? L(' The wrap covers the overhanging boards and the hinge grooves (marked on the template). Printers usually need a 15–20 mm turn-in for real case binding – the template matches the mockup with a 3 mm bleed.')
+    : '';
+  const h = round1(hc);
   return [
     {
       id: 'cover',
-      label: L('Okładka (całość)', 'Cover wrap'),
+      label: L('Cover wrap'),
       hint: L(
-        `Cała okładka, od lewej: Tył | Grzbiet | Przód. Domyślnie ${fmt(w.L, 'pl')} × ${fmt(hc, 'pl')} mm + 3 mm spadu ` +
-          `(grzbiet ${fmt(sp, 'pl')} mm – zmienia się z grubością bloku; pobierz szablon). ` +
-          'Ma pierwszeństwo przed osobnymi polami Przód / Grzbiet / Tył.' +
-          hardNote.pl,
-        `The whole cover, left to right: Back | Spine | Front. By default ${fmt(w.L, 'en')} × ${fmt(hc, 'en')} mm + 3 mm bleed ` +
-          `(spine ${fmt(sp, 'en')} mm – it changes with the page block thickness; download the template). ` +
-          'Takes priority over the separate Front / Spine / Back slots.' +
-          hardNote.en,
+        'The whole cover, left to right: Back | Spine | Front. By default {w} × {h} mm + 3 mm bleed ' +
+          '(spine {spine} mm – it changes with the page block thickness; download the template). ' +
+          'Takes priority over the separate Front / Spine / Back slots.{hardcoverNote}',
+        { w: round1(w.L), h, spine: round1(sp), hardcoverNote: hardNote },
       ),
       aspect: aspect(w.L),
       template: (params) => bookWrapTemplate(params, kind),
     },
     {
       id: 'front',
-      label: L('Przód', 'Front'),
-      hint: L(
-        `${onlyIfNoCover.pl} Domyślnie ${fmt(fw, 'pl')} × ${fmt(hc, 'pl')} mm + 3 mm spadu (lewa krawędź = grzbiet).`,
-        `${onlyIfNoCover.en} By default ${fmt(fw, 'en')} × ${fmt(hc, 'en')} mm + 3 mm bleed (left edge = spine).`,
-      ),
+      label: L('Front'),
+      hint: L('{onlyIfNoCover} By default {w} × {h} mm + 3 mm bleed (left edge = spine).', { onlyIfNoCover, w: round1(fw), h }),
       aspect: aspect(fw),
       template: (params) => bookPanelTemplate(params, kind, 'front'),
     },
     {
       id: 'spine',
-      label: L('Grzbiet', 'Spine'),
+      label: L('Spine'),
       hint: L(
-        `${onlyIfNoCover.pl} Pionowy pasek: domyślnie ${fmt(sp, 'pl')} × ${fmt(hc, 'pl')} mm + 3 mm spadu (lewa krawędź = strona tylnej okładki). ` +
-          'Bez obrazu grzbiet ma kolor „Kolor grzbietu i tyłu”.',
-        `${onlyIfNoCover.en} A vertical strip: by default ${fmt(sp, 'en')} × ${fmt(hc, 'en')} mm + 3 mm bleed (left edge = back cover side). ` +
+        '{onlyIfNoCover} A vertical strip: by default {w} × {h} mm + 3 mm bleed (left edge = back cover side). ' +
           'Without an image the spine uses “Spine & back colour”.',
+        { onlyIfNoCover, w: round1(sp), h },
       ),
       aspect: aspect(sp),
       template: (params) => bookPanelTemplate(params, kind, 'spine'),
     },
     {
       id: 'back',
-      label: L('Tył', 'Back'),
+      label: L('Back'),
       hint: L(
-        `${onlyIfNoCover.pl} Domyślnie ${fmt(bw, 'pl')} × ${fmt(hc, 'pl')} mm + 3 mm spadu (prawa krawędź = grzbiet). Bez obrazu tył ma kolor „Kolor grzbietu i tyłu”.`,
-        `${onlyIfNoCover.en} By default ${fmt(bw, 'en')} × ${fmt(hc, 'en')} mm + 3 mm bleed (right edge = spine). Without an image the back uses “Spine & back colour”.`,
+        '{onlyIfNoCover} By default {w} × {h} mm + 3 mm bleed (right edge = spine). Without an image the back uses “Spine & back colour”.',
+        { onlyIfNoCover, w: round1(bw), h },
       ),
       aspect: aspect(bw),
       template: (params) => bookPanelTemplate(params, kind, 'back'),
@@ -868,22 +853,22 @@ function bookParams(kind: BookKind): ParamDef[] {
   const d = BOOK_DEFAULTS[kind];
   const hard = kind === 'hard';
   const out: ParamDef[] = [
-    mmParam('width', L('Szerokość (format bloku)', 'Width (page block)'), d.w, 60, 450, 1, G_DIM),
-    mmParam('height', L('Wysokość (format bloku)', 'Height (page block)'), d.h, 80, 600, 1, G_DIM),
-    mmParam('thickness', L('Grubość bloku stron', 'Page block thickness'), d.t, 2, hard ? 120 : 90, 0.5, G_DIM),
+    mmParam('width', L('Width (page block)'), d.w, 60, 450, 1, G_DIM),
+    mmParam('height', L('Height (page block)'), d.h, 80, 600, 1, G_DIM),
+    mmParam('thickness', L('Page block thickness'), d.t, 2, hard ? 120 : 90, 0.5, G_DIM),
   ];
   if (hard) {
     out.push(
-      mmParam('boardThickness', L('Grubość tektury', 'Board thickness'), 2.5, 1.5, 4, 0.1, G_DIM),
-      mmParam('squares', L('Wystawanie okładki nad blok', 'Cover overhang (squares)'), 3, 1, 6, 0.5, G_DIM),
+      mmParam('boardThickness', L('Board thickness'), 2.5, 1.5, 4, 0.1, G_DIM),
+      mmParam('squares', L('Cover overhang (squares)'), 3, 1, 6, 0.5, G_DIM),
       {
         id: 'spine',
         type: 'select',
-        label: L('Grzbiet', 'Spine'),
+        label: L('Spine'),
         group: G_DIM,
         options: [
-          { value: 'rounded', label: L('Zaokrąglony', 'Rounded') },
-          { value: 'flat', label: L('Prosty (płaski)', 'Flat (square)') },
+          { value: 'rounded', label: L('Rounded') },
+          { value: 'flat', label: L('Flat (square)') },
         ],
         default: 'rounded',
       },
@@ -892,7 +877,7 @@ function bookParams(kind: BookKind): ParamDef[] {
     out.push({
       id: 'hingeScore',
       type: 'boolean',
-      label: L('Bigowanie przy grzbiecie', 'Hinge score lines'),
+      label: L('Hinge score lines'),
       group: G_DIM,
       default: false,
     });
@@ -900,20 +885,20 @@ function bookParams(kind: BookKind): ParamDef[] {
   out.push(finishParam(hard ? 'matte' : 'gloss'), {
     id: 'pageColor',
     type: 'color',
-    label: L('Kolor stron', 'Page colour'),
+    label: L('Page colour'),
     group: G_MAT,
     default: hard ? '#f3ecdc' : '#f1ead8',
   });
   if (hard) {
     out.push(
-      { id: 'headband', type: 'boolean', label: L('Kapitałka', 'Headband'), group: G_MAT, default: true },
-      { id: 'headbandColor', type: 'color', label: L('Kolor kapitałki', 'Headband colour'), group: G_MAT, default: '#8a1c22' },
+      { id: 'headband', type: 'boolean', label: L('Headband'), group: G_MAT, default: true },
+      { id: 'headbandColor', type: 'color', label: L('Headband colour'), group: G_MAT, default: '#8a1c22' },
     );
   }
   out.push({
     id: 'sideColor',
     type: 'color',
-    label: L('Kolor grzbietu i tyłu (bez grafiki)', 'Spine & back colour (no artwork)'),
+    label: L('Spine & back colour (no artwork)'),
     group: G_ART,
     default: hard ? '#2c3445' : '#ece9e2',
   });
@@ -1000,12 +985,12 @@ function noteTemplate(p: ParamValues, face: 'front' | 'back'): PrintTemplate {
   const g = noteGeom(p);
   const b = BLEED;
   const zone = g.hd + g.holeAcross / 2 + 1.5;
-  const zoneLabel = L('Strefa otworów', 'Hole zone');
+  const zoneLabel = L('Hole zone');
   let extra: TemplateGuide;
   if (g.binding === 'top') extra = { orientation: 'h', posMm: b + zone, label: zoneLabel };
   // Left binding: seen from behind the binding edge is on the RIGHT of the back cover.
   else extra = { orientation: 'v', posMm: face === 'front' ? b + zone : b + g.W - zone, label: zoneLabel };
-  return panelTemplate(g.W, g.H, face === 'front' ? L('Przód', 'Front') : L('Tył', 'Back'), [extra]);
+  return panelTemplate(g.W, g.H, face === 'front' ? L('Front') : L('Back'), [extra]);
 }
 
 /** Wire colours: bare metal or powder-coated. */
@@ -1234,22 +1219,19 @@ function notebookSlots(): ImageSlotDef[] {
   return [
     {
       id: 'front',
-      label: L('Przód', 'Front'),
+      label: L('Front'),
       hint: L(
-        `Okładka przednia: ${fmt(g.W, 'pl')} × ${fmt(g.H, 'pl')} mm + 3 mm spadu (format zmienia się z wymiarami). ` +
-          'Przy krawędzi oprawy zostaw wolną strefę otworów – zaznaczona na szablonie.',
-        `Front cover: ${fmt(g.W, 'en')} × ${fmt(g.H, 'en')} mm + 3 mm bleed (follows the dimensions). ` +
+        'Front cover: {w} × {h} mm + 3 mm bleed (follows the dimensions). ' +
           'Keep the hole zone along the binding edge free of important content – it is marked on the template.',
+        { w: round1(g.W), h: round1(g.H) },
       ),
       aspect,
       template: (params) => noteTemplate(params, 'front'),
     },
     {
       id: 'back',
-      label: L('Tył', 'Back'),
+      label: L('Back'),
       hint: L(
-        'Okładka tylna widziana od tyłu (przy oprawie z lewej strony otwory są po PRAWEJ stronie obrazu). ' +
-          'Bez obrazu tył ma kolor „Kolor tyłu (bez grafiki)”.',
         'Back cover as seen from behind (with left binding the holes are on the RIGHT of the image). ' +
           'Without an image the back uses “Back colour (no artwork)”.',
       ),
@@ -1261,48 +1243,48 @@ function notebookSlots(): ImageSlotDef[] {
 
 function notebookParams(): ParamDef[] {
   return [
-    mmParam('width', L('Szerokość', 'Width'), 148, 60, 420, 1, G_DIM),
-    mmParam('height', L('Wysokość', 'Height'), 210, 60, 600, 1, G_DIM),
-    mmParam('thickness', L('Grubość bloku kartek', 'Page block thickness'), 10, 2, 40, 0.5, G_DIM),
-    mmParam('coverThickness', L('Grubość okładek', 'Cover thickness'), 0.8, 0.2, 3, 0.1, G_DIM),
-    mmParam('cornerRadius', L('Zaokrąglenie narożników', 'Corner radius'), 3, 0, 15, 0.5, G_DIM),
+    mmParam('width', L('Width'), 148, 60, 420, 1, G_DIM),
+    mmParam('height', L('Height'), 210, 60, 600, 1, G_DIM),
+    mmParam('thickness', Lctx('notebook', 'Page block thickness'), 10, 2, 40, 0.5, G_DIM),
+    mmParam('coverThickness', L('Cover thickness'), 0.8, 0.2, 3, 0.1, G_DIM),
+    mmParam('cornerRadius', L('Corner radius'), 3, 0, 15, 0.5, G_DIM),
     {
       id: 'binding',
       type: 'select',
-      label: L('Krawędź oprawy', 'Binding edge'),
+      label: L('Binding edge'),
       group: G_DIM,
       options: [
-        { value: 'left', label: L('Lewa (notes)', 'Left (notebook)') },
-        { value: 'top', label: L('Górna (kalendarz / bloczek)', 'Top (calendar / pad)') },
+        { value: 'left', label: L('Left (notebook)') },
+        { value: 'top', label: L('Top (calendar / pad)') },
       ],
       default: 'left',
     },
     {
       id: 'coil',
       type: 'select',
-      label: L('Rodzaj spirali', 'Binding type'),
+      label: L('Binding type'),
       group: G_MAT,
       options: [
-        { value: 'wireo', label: L('Podwójna (Wire-O)', 'Double loop (wire-o)') },
-        { value: 'spiral', label: L('Pojedyncza spirala', 'Single coil') },
+        { value: 'wireo', label: L('Double loop (wire-o)') },
+        { value: 'spiral', label: L('Single coil') },
       ],
       default: 'wireo',
     },
     {
       id: 'coilColor',
       type: 'select',
-      label: L('Kolor spirali', 'Coil colour'),
+      label: L('Coil colour'),
       group: G_MAT,
       options: [
-        { value: 'silver', label: L('Srebrny', 'Silver') },
-        { value: 'black', label: L('Czarny', 'Black') },
-        { value: 'white', label: L('Biały', 'White') },
+        { value: 'silver', label: L('Silver') },
+        { value: 'black', label: L('Black') },
+        { value: 'white', label: L('White') },
       ],
       default: 'silver',
     },
     finishParam('satin'),
-    { id: 'pageColor', type: 'color', label: L('Kolor kartek', 'Page colour'), group: G_MAT, default: '#f7f5ef' },
-    { id: 'backColor', type: 'color', label: L('Kolor tyłu (bez grafiki)', 'Back colour (no artwork)'), group: G_ART, default: '#8e8678' },
+    { id: 'pageColor', type: 'color', label: Lctx('notebook', 'Page colour'), group: G_MAT, default: '#f7f5ef' },
+    { id: 'backColor', type: 'color', label: L('Back colour (no artwork)'), group: G_ART, default: '#8e8678' },
   ];
 }
 
@@ -1338,11 +1320,8 @@ const BOOK_CAMERA = { yaw: -32, pitch: 12 };
 export const hardcoverModel: ModelDefinition = {
   id: 'book-hardcover',
   category: 'book',
-  name: L('Książka w twardej oprawie', 'Hardcover book'),
-  description: L(
-    'Oprawa twarda (tektura 2,5 mm) z wystającą okładką, rowkami zawiasu, prostym lub zaokrąglonym grzbietem i blokiem stron.',
-    'Case-bound hardcover (2.5 mm boards) with overhanging covers, hinge grooves, a flat or rounded spine and a page block.',
-  ),
+  name: L('Hardcover book'),
+  description: L('Case-bound hardcover (2.5 mm boards) with overhanging covers, hinge grooves, a flat or rounded spine and a page block.'),
   icon: ICON_HARDCOVER,
   slots: bookSlots('hard'),
   params: bookParams('hard'),
@@ -1353,11 +1332,8 @@ export const hardcoverModel: ModelDefinition = {
 export const paperbackModel: ModelDefinition = {
   id: 'book-paperback',
   category: 'book',
-  name: L('Książka w miękkiej oprawie', 'Paperback book'),
-  description: L(
-    'Oprawa miękka klejona: cienka okładka równo z blokiem stron, lekko zaokrąglone krawędzie grzbietu.',
-    'Perfect-bound paperback: a thin cover flush with the page block and slightly rounded spine edges.',
-  ),
+  name: L('Paperback book'),
+  description: L('Perfect-bound paperback: a thin cover flush with the page block and slightly rounded spine edges.'),
   icon: ICON_PAPERBACK,
   slots: bookSlots('soft'),
   params: bookParams('soft'),
@@ -1368,11 +1344,8 @@ export const paperbackModel: ModelDefinition = {
 export const spiralNotebookModel: ModelDefinition = {
   id: 'notebook-spiral',
   category: 'book',
-  name: L('Notes na spirali', 'Spiral notebook'),
-  description: L(
-    'Notes / kalendarz A5 na spirali (Wire-O lub pojedynczej) przy lewej lub górnej krawędzi, z okładkami i blokiem kartek.',
-    'A5 notebook / calendar with a wire-o or single coil binding on the left or top edge, covers and a page block.',
-  ),
+  name: L('Spiral notebook'),
+  description: L('A5 notebook / calendar with a wire-o or single coil binding on the left or top edge, covers and a page block.'),
   icon: ICON_NOTEBOOK,
   slots: notebookSlots(),
   params: notebookParams(),

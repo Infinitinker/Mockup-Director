@@ -23,12 +23,12 @@ import type {
   AnimationFramingOptions,
   AnimationRenderSession,
   CameraSettings,
-  LocalizedText,
   RenderOptions,
   SceneSettings,
   StageAPI,
 } from '../core/types';
 import { DEFAULT_SCENE, cloneScene } from '../core/defaults';
+import { msg, mtIn, type Message } from '../i18n';
 import { disposeObject } from '../models/shared';
 import { UnionFit, fitCamera, type FitResult } from './framing';
 import { GroundShadow, computeShadowLayout, type ShadowLayout } from './shadows';
@@ -175,11 +175,11 @@ function cameraEquals(a: CameraSettings, b: CameraSettings): boolean {
     a.projection === b.projection && eq(a.zoom, b.zoom) && eq(a.panX, b.panX) && eq(a.panY, b.panY);
 }
 
-/** Stage failure with a localized message (errorMessage() in the UI shows `text`). */
+/** Stage failure with a user-presentable message (errorMessage() in the UI shows `text`; `message` is the English text). */
 class StageError extends Error {
-  readonly text: LocalizedText;
-  constructor(text: LocalizedText) {
-    super(`${text.pl} / ${text.en}`);
+  readonly text: Message;
+  constructor(text: Message) {
+    super(mtIn('en', text));
     this.name = 'StageError';
     this.text = text;
   }
@@ -663,7 +663,7 @@ export function createStage(container: HTMLElement): StageAPI {
    * valid for all frames – the composition is fixed and never cropped.
    */
   function startAnimation(o: AnimationFramingOptions): AnimationRenderSession {
-    if (disposed || contextLost) throw new StageError({ pl: 'Podgląd 3D jest niedostępny.', en: 'The 3D view is not available.' });
+    if (disposed || contextLost) throw new StageError(msg('errStageUnavailable'));
     anim?.end();
 
     const angles = (Array.isArray(o.angles) ? o.angles : []).map((a) => finite(a, 0));
@@ -767,10 +767,7 @@ export function createStage(container: HTMLElement): StageAPI {
       renderFrame(index: number, target: HTMLCanvasElement) {
         if (ended) throw new Error('The animation session has ended.');
         if (disposed || contextLost || model !== startModel) {
-          throw new StageError({
-            pl: 'Scena zmieniła się podczas renderowania animacji. Spróbuj ponownie.',
-            en: 'The scene changed while the animation was being rendered. Please try again.',
-          });
+          throw new StageError(msg('errSceneChanged'));
         }
         const i = THREE.MathUtils.clamp(Math.round(finite(index, 0)), 0, angles.length - 1);
         const a = angles[i];
@@ -778,7 +775,7 @@ export function createStage(container: HTMLElement): StageAPI {
         if (target.height !== H) target.height = H;
         const outCtx = target.getContext('2d');
         if (!outCtx) {
-          throw new StageError({ pl: 'Za mało pamięci na klatkę animacji.', en: 'Not enough memory for an animation frame.' });
+          throw new StageError(msg('errFrameMemory'));
         }
         outCtx.clearRect(0, 0, W, H);
         let ctx = outCtx;

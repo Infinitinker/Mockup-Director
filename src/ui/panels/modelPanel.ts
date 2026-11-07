@@ -5,7 +5,7 @@ import type { ParamDef, ParamValue } from '../../core/types';
 import { defaultParams } from '../../core/defaults';
 import { getModel } from '../../models/registry';
 import type { AppContext } from '../context';
-import { lt, t } from '../i18n';
+import { lt, t } from '../../i18n';
 import { h } from '../dom';
 import { ICONS } from '../icons';
 import { colorControl, numberControl, section, segmentedControl, selectControl, switchControl, type Control } from '../controls';
@@ -79,7 +79,7 @@ export function createModelPanel(ctx: AppContext): { el: HTMLElement; render(): 
     // Group params, keeping the order of first appearance.
     const groups = new Map<string, { title: string; defs: ParamDef[] }>();
     for (const def of model.params) {
-      const key = def.group ? def.group.pl : '__general';
+      const key = def.group ? def.group.en : '__general';
       const title = def.group ? lt(def.group) : t('general');
       if (!groups.has(key)) groups.set(key, { title, defs: [] });
       groups.get(key)!.defs.push(def);

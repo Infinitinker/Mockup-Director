@@ -3,13 +3,14 @@
   "private": true,
   "version": "0.1.0",
   "license": "MIT",
-  "description": "Mockup Director – generator mockupów 3D (opakowania, książki, druki, urządzenia) na macOS i Windows",
+  "description": "Mockup Director – photorealistic 3D mockups of packaging, books, print and devices for Windows, macOS and Linux",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
     "licenses": "node scripts/licenses.mjs",
+    "check:i18n": "node tools/check-i18n.mjs",
     "preview": "vite preview",
     "tauri": "tauri",
     "icons": "node tools/draw-icon.mjs"

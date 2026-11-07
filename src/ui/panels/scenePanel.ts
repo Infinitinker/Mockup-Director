@@ -4,7 +4,7 @@
 import type { BackgroundSettings, CameraSettings, LightSettings, SceneSettings } from '../../core/types';
 import { LIGHT_PRESETS } from '../../scene/lightPresets';
 import type { AppContext } from '../context';
-import { lt, t } from '../i18n';
+import { lt, t } from '../../i18n';
 import { h } from '../dom';
 import { colorControl, headerSwitch, numberControl, section, segmentedControl, selectControl, type Control } from '../controls';
 import { hasAny } from '../state';

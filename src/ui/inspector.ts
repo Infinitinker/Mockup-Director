@@ -1,8 +1,8 @@
 /**
- * Right sidebar: tabbed inspector (Grafiki / Model / Scena / Eksport / Style).
+ * Right sidebar: tabbed inspector (Artwork / Model / Scene / Export / Looks).
  */
 import { h, safeStorage } from './dom';
-import { t, type DictKey } from './i18n';
+import { t, type MessageKey } from '../i18n';
 import type { AppContext, TabId } from './context';
 import { createImagesPanel } from './panels/imagesPanel';
 import { createModelPanel } from './panels/modelPanel';
@@ -13,7 +13,7 @@ import { getModel } from '../models/registry';
 import { hasAny } from './state';
 
 const TAB_KEY = 'mockup-director.ui.tab';
-const TABS: { id: TabId; label: DictKey }[] = [
+const TABS: { id: TabId; label: MessageKey }[] = [
   { id: 'images', label: 'tabImages' },
   { id: 'model', label: 'tabModel' },
   { id: 'scene', label: 'tabScene' },

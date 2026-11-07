@@ -1,13 +1,14 @@
 import * as THREE from 'three';
 import type { ImageSlotDef, Lang } from './types';
+import { ltIn } from '../i18n';
 
 const cache = new Map<string, THREE.Texture>();
 
 /**
- * Neutral placeholder artwork for an empty image slot: soft gradient, thin frame and the slot name.
- * Cached per slot+lang; owned by this module (never disposed by models).
+ * Neutral placeholder artwork for an empty image slot: soft gradient, thin frame and the slot name
+ * (in `lang`). Cached per slot+lang; owned by this module (never disposed by models).
  */
-export function getPlaceholderTexture(slot: ImageSlotDef, lang: Lang = 'pl'): THREE.Texture {
+export function getPlaceholderTexture(slot: ImageSlotDef, lang: Lang = 'en'): THREE.Texture {
   const circle = isCircularTemplate(slot);
   const key = `${slot.id}|${slot.aspect.toFixed(3)}|${lang}|${circle ? 'c' : 'r'}`;
   const hit = cache.get(key);
@@ -40,7 +41,7 @@ export function getPlaceholderTexture(slot: ImageSlotDef, lang: Lang = 'pl'): TH
     g.strokeRect(inset, inset, canvas.width - inset * 2, canvas.height - inset * 2);
   }
 
-  const label = slot.label[lang] ?? slot.id;
+  const label = ltIn(lang, slot.label) || slot.id;
   g.fillStyle = 'rgba(55,65,85,0.75)';
   g.textAlign = 'center';
   g.textBaseline = 'middle';

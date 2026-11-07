@@ -1,8 +1,8 @@
 # Cheap checks on Linux for every push to main/dev and every pull request:
-#   - web:      TypeScript type-check + Vite production build,
+#   - web:      TypeScript type-check + Vite production build + translation check,
 #   - licenses: no copyleft (GPL/AGPL/LGPL…) dependency in npm or Rust, plus generated
 #               THIRD-PARTY-NOTICES.md (license texts of everything shipped in the app) as an artifact.
-# The desktop apps are built by build-windows.yml and build-macos.yml.
+# The desktop apps are built by build-windows.yml, build-macos.yml and build-linux.yml.
 name: CI
 
 on:
@@ -39,9 +39,13 @@ jobs:
       - name: Build (tsc --noEmit && vite build)
         run: npm run build
 
+      # Every text written in English in the code has a translation in every interface language.
+      - name: Check translations
+        run: npm run check:i18n
+
       - name: Validate Tauri JSON config
         run: |
-          node -e "for (const f of ['src-tauri/tauri.conf.json','src-tauri/tauri.windows.conf.json','src-tauri/capabilities/default.json']) { JSON.parse(require('fs').readFileSync(f,'utf8')); console.log('OK', f); }"
+          node -e "for (const f of ['src-tauri/tauri.conf.json','src-tauri/tauri.windows.conf.json','src-tauri/tauri.linux.conf.json','src-tauri/capabilities/default.json']) { JSON.parse(require('fs').readFileSync(f,'utf8')); console.log('OK', f); }"
 
   licenses:
     name: License check
@@ -69,8 +73,8 @@ jobs:
         with:
           tool: cargo-deny,cargo-about
 
-      # Fails on any Rust crate (for the Windows and macOS targets) with a license outside the
-      # allow list in src-tauri/deny.toml.
+      # Fails on any Rust crate (for the Windows, macOS and Linux targets) with a license outside
+      # the allow list in src-tauri/deny.toml.
       - name: Check Rust licenses (cargo-deny)
         run: cargo deny --manifest-path src-tauri/Cargo.toml --config src-tauri/deny.toml check licenses
 
