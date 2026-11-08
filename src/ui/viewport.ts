@@ -71,7 +71,13 @@ export function createViewportShell(): ViewportShell {
     });
     const reset = h(
       'button',
-      { class: 'vb-btn vb-icon', title: t('resetView'), label: t('resetView'), attrs: { type: 'button' }, on: { click: () => c.actions.resetView() } },
+      {
+        class: 'vb-btn vb-icon',
+        title: t('resetView'),
+        label: t('resetView'),
+        attrs: { type: 'button' },
+        on: { click: () => c.actions.resetView() },
+      },
       h('span', { class: 'btn-icon', html: ICONS.reset }),
     );
     const proj = segmentedControl<CameraSettings['projection']>({
@@ -101,9 +107,24 @@ export function createViewportShell(): ViewportShell {
     proj.el.title = t('projection');
     bg.el.title = t('previewBackground');
     controls = [proj, bg];
-    bar.append(views, h('div', { class: 'vb-sep' }), reset, h('div', { class: 'vb-sep' }), proj.el, h('div', { class: 'vb-sep' }), bg.el);
+    bar.append(
+      views,
+      h('div', { class: 'vb-sep' }),
+      reset,
+      h('div', { class: 'vb-sep' }),
+      proj.el,
+      h('div', { class: 'vb-sep' }),
+      bg.el,
+    );
     hint.textContent = t('viewportHint');
-    overlay.replaceChildren(h('div', { class: 'drop-card' }, h('span', { class: 'drop-icon', html: ICONS.image }), h('div', { text: t('dropHere') })));
+    overlay.replaceChildren(
+      h(
+        'div',
+        { class: 'drop-card' },
+        h('span', { class: 'drop-icon', html: ICONS.image }),
+        h('div', { text: t('dropHere') }),
+      ),
+    );
   };
 
   const sync = () => {

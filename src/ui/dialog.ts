@@ -33,7 +33,11 @@ function openDialog<T>(
     const defaultButton = buttons.find((b) => b.isDefault);
     const buttonEls = buttons.map((b) => {
       const kind = b.danger ? ' btn-danger' : b.primary ? ' btn-primary' : '';
-      const el = h('button', { class: `btn${kind}`, text: b.label, attrs: { type: b === defaultButton ? 'submit' : 'button' } });
+      const el = h('button', {
+        class: `btn${kind}`,
+        text: b.label,
+        attrs: { type: b === defaultButton ? 'submit' : 'button' },
+      });
       if (b !== defaultButton) el.addEventListener('click', () => close(b.result()));
       return el;
     });
@@ -67,7 +71,9 @@ function openDialog<T>(
         close(cancelResult);
       } else if (e.key === 'Tab') {
         // Simple focus trap.
-        const focusables = Array.from(form.querySelectorAll<HTMLElement>('button, input, select, textarea')).filter((x) => !x.hasAttribute('disabled'));
+        const focusables = Array.from(form.querySelectorAll<HTMLElement>('button, input, select, textarea')).filter(
+          (x) => !x.hasAttribute('disabled'),
+        );
         if (focusables.length === 0) return;
         const first = focusables[0];
         const last = focusables[focusables.length - 1];
@@ -109,14 +115,28 @@ function okCancel<T>(opts: DialogOptions, ok: () => T, cancel: T): DialogButton<
 }
 
 export function confirmDialog(opts: DialogOptions): Promise<boolean> {
-  return openDialog(opts, okCancel(opts, () => true, false), false);
+  return openDialog(
+    opts,
+    okCancel(opts, () => true, false),
+    false,
+  );
 }
 
-export function promptDialog(opts: DialogOptions & { label: string; value?: string; placeholder?: string }): Promise<string | null> {
+export function promptDialog(
+  opts: DialogOptions & { label: string; value?: string; placeholder?: string },
+): Promise<string | null> {
   const id = `dlg-in-${Math.random().toString(36).slice(2)}`;
   const input = h('input', {
     class: 'text-input',
-    attrs: { id, type: 'text', value: opts.value ?? '', placeholder: opts.placeholder ?? '', maxlength: 80, autocomplete: 'off', spellcheck: 'false' },
+    attrs: {
+      id,
+      type: 'text',
+      value: opts.value ?? '',
+      placeholder: opts.placeholder ?? '',
+      maxlength: 80,
+      autocomplete: 'off',
+      spellcheck: 'false',
+    },
   });
   const body = h('div', { class: 'dialog-field' }, h('label', { text: opts.label, attrs: { for: id } }), input);
   const value = () => {
@@ -138,9 +158,19 @@ export interface DialogChoice {
  * A dialog with its own buttons, shown in the given order. Resolves with the id of the chosen
  * button, or null when the dialog is dismissed (Escape or a click outside it).
  */
-export function choiceDialog(opts: { title: string; message?: string; choices: DialogChoice[] }): Promise<string | null> {
+export function choiceDialog(opts: {
+  title: string;
+  message?: string;
+  choices: DialogChoice[];
+}): Promise<string | null> {
   const buttons = opts.choices.map(
-    (c): DialogButton<string | null> => ({ label: c.label, primary: c.primary, danger: c.danger, isDefault: c.primary, result: () => c.id }),
+    (c): DialogButton<string | null> => ({
+      label: c.label,
+      primary: c.primary,
+      danger: c.danger,
+      isDefault: c.primary,
+      result: () => c.id,
+    }),
   );
   return openDialog(opts, buttons, null);
 }

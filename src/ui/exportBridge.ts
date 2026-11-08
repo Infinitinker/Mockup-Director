@@ -42,7 +42,10 @@ export async function templateBlob(
 ): Promise<{ blob: Blob; name: string } | null> {
   const res = await renderTemplateDetailed(slot, lang, dpi, params);
   if (!res) return null;
-  const name = templateFileName(slot, lang, res.dpi, params).replace(/^mockup-director-/, `mockup-director-${modelId}-`);
+  const name = templateFileName(slot, lang, res.dpi, params).replace(
+    /^mockup-director-/,
+    `mockup-director-${modelId}-`,
+  );
   return { blob: res.blob, name };
 }
 

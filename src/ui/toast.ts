@@ -34,7 +34,12 @@ export function toast(kind: ToastKind, title: string, detail?: string): void {
     'div',
     { class: `toast toast-${kind}`, attrs: { role: kind === 'error' ? 'alert' : 'status' } },
     h('span', { class: 'toast-icon', html: icon }),
-    h('div', { class: 'toast-body' }, h('div', { class: 'toast-title', text: title }), detail ? h('div', { class: 'toast-detail', text: detail }) : null),
+    h(
+      'div',
+      { class: 'toast-body' },
+      h('div', { class: 'toast-title', text: title }),
+      detail ? h('div', { class: 'toast-detail', text: detail }) : null,
+    ),
   );
   const close = h('button', {
     class: 'toast-close',

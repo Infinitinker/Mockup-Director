@@ -228,9 +228,13 @@ export function startApp(root: HTMLElement): void {
   stage.onCameraChange((cam) => {
     const c = normalizeCamera(cam);
     if (cameraEquals(c, store.state.scene.camera)) return;
-    store.update(['camera'], (s) => {
-      s.scene.camera = c;
-    }, { source: 'stage' });
+    store.update(
+      ['camera'],
+      (s) => {
+        s.scene.camera = c;
+      },
+      { source: 'stage' },
+    );
   });
 
   /* Actions ------------------------------------------------------------ */
@@ -331,9 +335,13 @@ export function startApp(root: HTMLElement): void {
       if (lang === store.state.lang) return;
       setLang(lang);
       safeStorage.set(LANG_KEY, lang);
-      store.update(['lang'], (s) => {
-        s.lang = lang;
-      }, { history: false });
+      store.update(
+        ['lang'],
+        (s) => {
+          s.lang = lang;
+        },
+        { history: false },
+      );
     },
 
     async newProject() {
@@ -419,7 +427,9 @@ export function startApp(root: HTMLElement): void {
         if (!blob || blob.size === 0) throw new Error(t('errExportEmpty'));
         const name = fileNameFor(s.modelId, settings.format);
         const ext = extensionFor(settings.format);
-        const saved = await saveBlob(blob, name, [{ name: settings.format === 'jpeg' ? 'JPEG' : settings.format.toUpperCase(), extensions: [ext] }]);
+        const saved = await saveBlob(blob, name, [
+          { name: settings.format === 'jpeg' ? 'JPEG' : settings.format.toUpperCase(), extensions: [ext] },
+        ]);
         if (saved) notify.success(t('saved'), saved);
       } catch (e) {
         console.error('[mockup-director] export failed', e);
@@ -446,7 +456,13 @@ export function startApp(root: HTMLElement): void {
         modelLocked = true;
         let result;
         try {
-          result = await exportAnimationBlob(stage, settings, { ...s.scene.background }, (p) => animationProgress.set(p), abort.signal);
+          result = await exportAnimationBlob(
+            stage,
+            settings,
+            { ...s.scene.background },
+            (p) => animationProgress.set(p),
+            abort.signal,
+          );
         } finally {
           modelLocked = false;
           if (rebuildDeferred) {
@@ -655,7 +671,13 @@ export function startApp(root: HTMLElement): void {
   viewport.mount(ctx);
   root.replaceChildren(
     toolbar.el,
-    h('div', { class: 'workspace' }, gallery.el, h('div', { class: 'workspace-center' }, tabBar.el, viewport.el), inspector.el),
+    h(
+      'div',
+      { class: 'workspace' },
+      gallery.el,
+      h('div', { class: 'workspace-center' }, tabBar.el, viewport.el),
+      inspector.el,
+    ),
   );
 
   /** The window title names the active project, with a • when it has unsaved changes. */
@@ -733,7 +755,8 @@ export function startApp(root: HTMLElement): void {
     // The user may already have started working in the first tab while we were loading: keep it.
     const initial = docs.activeId;
     const replaceInitial = docs.activeIsPristine() && restored.length > 0;
-    for (const r of restored) docs.add(r.state, { id: r.id, name: r.name, dirty: r.dirty, activate: false, position: 'end' });
+    for (const r of restored)
+      docs.add(r.state, { id: r.id, name: r.name, dirty: r.dirty, activate: false, position: 'end' });
     // Tab records that were not restored (damaged ones) are not the saver's to delete.
     session.adopt(restored.map((r) => r.id));
     if (replaceInitial) {

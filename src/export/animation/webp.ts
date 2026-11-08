@@ -32,7 +32,9 @@ export function parseWebp(bytes: Uint8Array): ParsedFrame {
   }
   const end = Math.min(bytes.length, 8 + u32(bytes, 4));
   const keep: Uint8Array[] = [];
-  let width = 0, height = 0, hasAlpha = false;
+  let width = 0,
+    height = 0,
+    hasAlpha = false;
   let o = 12;
   while (o + 8 <= end) {
     const id = fourcc(bytes, o);
@@ -69,7 +71,12 @@ export function parseWebp(bytes: Uint8Array): ParsedFrame {
     // ICCP / EXIF / XMP / ANIM are not needed for animation frames.
     o += total;
   }
-  if (!keep.some((c) => { const id = fourcc(c, 0); return id === 'VP8 ' || id === 'VP8L'; })) {
+  if (
+    !keep.some((c) => {
+      const id = fourcc(c, 0);
+      return id === 'VP8 ' || id === 'VP8L';
+    })
+  ) {
     throw new Error('WebP without image data');
   }
   return { data: concat(keep), width, height, hasAlpha };
@@ -100,12 +107,30 @@ class Writer {
   constructor(size: number) {
     this.b = new Uint8Array(size);
   }
-  ascii(s: string) { for (let i = 0; i < s.length; i++) this.b[this.o++] = s.charCodeAt(i); }
-  u8(v: number) { this.b[this.o++] = v & 0xff; }
-  u16(v: number) { this.u8(v); this.u8(v >>> 8); }
-  u24(v: number) { this.u8(v); this.u8(v >>> 8); this.u8(v >>> 16); }
-  u32(v: number) { this.u8(v); this.u8(v >>> 8); this.u8(v >>> 16); this.u8(v >>> 24); }
-  bytes() { return this.b; }
+  ascii(s: string) {
+    for (let i = 0; i < s.length; i++) this.b[this.o++] = s.charCodeAt(i);
+  }
+  u8(v: number) {
+    this.b[this.o++] = v & 0xff;
+  }
+  u16(v: number) {
+    this.u8(v);
+    this.u8(v >>> 8);
+  }
+  u24(v: number) {
+    this.u8(v);
+    this.u8(v >>> 8);
+    this.u8(v >>> 16);
+  }
+  u32(v: number) {
+    this.u8(v);
+    this.u8(v >>> 8);
+    this.u8(v >>> 16);
+    this.u8(v >>> 24);
+  }
+  bytes() {
+    return this.b;
+  }
 }
 
 export class AnimatedWebpWriter {
@@ -113,7 +138,11 @@ export class AnimatedWebpWriter {
   private alpha = false;
   private bytes = 0;
 
-  constructor(private readonly width: number, private readonly height: number, private readonly loopCount = 0) {}
+  constructor(
+    private readonly width: number,
+    private readonly height: number,
+    private readonly loopCount = 0,
+  ) {}
 
   /** Add one frame (a complete still WebP file of exactly width × height). */
   addFrame(webp: Uint8Array, durationMs: number): void {

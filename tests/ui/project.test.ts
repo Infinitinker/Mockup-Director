@@ -48,7 +48,11 @@ describe('parseProjectFile', () => {
       modelId: 'no-such-model',
       params: { box: { width: 1e9, unknown: 1, finish: 42 }, 'no-such-model': { width: 10 } },
       images: {
-        box: { front: { name: 'front.png', dataUrl: PNG }, nowhere: { name: 'x.png', dataUrl: PNG }, back: { dataUrl: 'https://example.com/x.png' } },
+        box: {
+          front: { name: 'front.png', dataUrl: PNG },
+          nowhere: { name: 'x.png', dataUrl: PNG },
+          back: { dataUrl: 'https://example.com/x.png' },
+        },
         'no-such-model': { front: { name: 'front.png', dataUrl: PNG } },
       },
     });

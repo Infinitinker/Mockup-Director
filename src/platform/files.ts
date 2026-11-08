@@ -8,7 +8,10 @@
  */
 import { isTauri, invoke } from '@tauri-apps/api/core';
 
-export interface FileFilter { name: string; extensions: string[] }
+export interface FileFilter {
+  name: string;
+  extensions: string[];
+}
 
 /** True when running inside the Tauri desktop shell. */
 export function inDesktopApp(): boolean {
@@ -121,7 +124,10 @@ interface SavePickerWindow {
   showSaveFilePicker?: (options: {
     suggestedName?: string;
     types?: { description?: string; accept: Record<string, string[]> }[];
-  }) => Promise<{ name: string; createWritable(): Promise<{ write(data: Blob): Promise<void>; close(): Promise<void> }> }>;
+  }) => Promise<{
+    name: string;
+    createWritable(): Promise<{ write(data: Blob): Promise<void>; close(): Promise<void> }>;
+  }>;
 }
 
 const MIME_BY_EXT: Record<string, string> = {

@@ -29,7 +29,19 @@ import type {
   PrintTemplate,
   SelectParamDef,
 } from '../core/types';
-import { L, Lctx, bool, castShadows, mmParam, num, placeOnGround, planarUVs, printMaterial, roundedRectShape, str } from './shared';
+import {
+  L,
+  Lctx,
+  bool,
+  castShadows,
+  mmParam,
+  num,
+  placeOnGround,
+  planarUVs,
+  printMaterial,
+  roundedRectShape,
+  str,
+} from './shared';
 
 /* ------------------------------------------------------------------ */
 /* Common constants / helpers                                          */
@@ -187,7 +199,11 @@ function solidMat(color: string, f: FinishDef): THREE.MeshPhysicalMaterial {
 
 /** Cut edge of paper / board / plastic core – slightly darker than the face. */
 function edgeMat(color: string, roughness = 0.9): THREE.MeshStandardMaterial {
-  return new THREE.MeshStandardMaterial({ color: new THREE.Color(color).multiplyScalar(0.92), roughness, metalness: 0 });
+  return new THREE.MeshStandardMaterial({
+    color: new THREE.Color(color).multiplyScalar(0.92),
+    roughness,
+    metalness: 0,
+  });
 }
 
 /* ------------------------------------------------------------------ */
@@ -294,7 +310,14 @@ function edgeFromOutline(outline: THREE.Vector2[], t: number): THREE.BufferGeome
  * Flat card / sheet w x h x t with rounded corners r, centred on the origin, front facing +Z.
  * `frontRect` / `backRect` give the image area mapped onto the trim of each face.
  */
-function flatSheetGeometries(w: number, h: number, t: number, r: number, frontRect: UVRect, backRect: UVRect): SheetGeometries {
+function flatSheetGeometries(
+  w: number,
+  h: number,
+  t: number,
+  r: number,
+  frontRect: UVRect,
+  backRect: UVRect,
+): SheetGeometries {
   const shape = roundedRectShape(w, h, r);
   const segs = 8;
   // FRONT (+Z): u grows with +x, v with +y -> upright and not mirrored when seen from the front.
@@ -318,7 +341,14 @@ const MAX_BEND = deg(45);
  * 0 = flat. The front is the concave side, so a sheet lying flat lifts its ends a little (like a
  * freshly unpacked flyer). Arc length is preserved, so the artwork is not stretched.
  */
-function bentSheetGeometries(w: number, h: number, t: number, bend: number, frontRect: UVRect, backRect: UVRect): SheetGeometries {
+function bentSheetGeometries(
+  w: number,
+  h: number,
+  t: number,
+  bend: number,
+  frontRect: UVRect,
+  backRect: UVRect,
+): SheetGeometries {
   const longY = h >= w;
   const len = longY ? h : w;
   const theta = clamp(bend, 0, 1) * MAX_BEND;
@@ -343,8 +373,18 @@ function bentSheetGeometries(w: number, h: number, t: number, bend: number, fron
     const along = R * s;
     const z = R * (1 - c);
     return longY
-      ? { p: new THREE.Vector3(x, along, z), n: new THREE.Vector3(0, -s, c), tx: new THREE.Vector3(1, 0, 0), ty: new THREE.Vector3(0, c, s) }
-      : { p: new THREE.Vector3(along, y, z), n: new THREE.Vector3(-s, 0, c), tx: new THREE.Vector3(c, 0, s), ty: new THREE.Vector3(0, 1, 0) };
+      ? {
+          p: new THREE.Vector3(x, along, z),
+          n: new THREE.Vector3(0, -s, c),
+          tx: new THREE.Vector3(1, 0, 0),
+          ty: new THREE.Vector3(0, c, s),
+        }
+      : {
+          p: new THREE.Vector3(along, y, z),
+          n: new THREE.Vector3(-s, 0, c),
+          tx: new THREE.Vector3(c, 0, s),
+          ty: new THREE.Vector3(0, 1, 0),
+        };
   };
   const X = (i: number) => -w / 2 + (w * i) / nu;
   const Y = (j: number) => -h / 2 + (h * j) / nv;
@@ -391,11 +431,24 @@ function bentSheetGeometries(w: number, h: number, t: number, bend: number, fron
     }
     eb.strip(f, b);
   };
-  const along = (count: number, f: (k: number) => [number, number]) => Array.from({ length: count + 1 }, (_, k) => f(k));
-  edgeRows(along(nu, (i) => [X(i), -h / 2]), (m) => m.ty.clone().negate());
-  edgeRows(along(nu, (i) => [X(i), h / 2]), (m) => m.ty.clone());
-  edgeRows(along(nv, (j) => [-w / 2, Y(j)]), (m) => m.tx.clone().negate());
-  edgeRows(along(nv, (j) => [w / 2, Y(j)]), (m) => m.tx.clone());
+  const along = (count: number, f: (k: number) => [number, number]) =>
+    Array.from({ length: count + 1 }, (_, k) => f(k));
+  edgeRows(
+    along(nu, (i) => [X(i), -h / 2]),
+    (m) => m.ty.clone().negate(),
+  );
+  edgeRows(
+    along(nu, (i) => [X(i), h / 2]),
+    (m) => m.ty.clone(),
+  );
+  edgeRows(
+    along(nv, (j) => [-w / 2, Y(j)]),
+    (m) => m.tx.clone().negate(),
+  );
+  edgeRows(
+    along(nv, (j) => [w / 2, Y(j)]),
+    (m) => m.tx.clone(),
+  );
 
   return { front: fb.build(), back: bb.build(), edge: eb.build() };
 }
@@ -466,7 +519,14 @@ const LEAN = deg(12);
  *  pair    – two items lying side by side: left shows the front, right is turned over (around its
  *            vertical axis, like a page) and shows the back – upright and not mirrored.
  */
-function arrange(make: () => THREE.Object3D, layout: Layout, w: number, h: number, t: number, count: number): THREE.Group {
+function arrange(
+  make: () => THREE.Object3D,
+  layout: Layout,
+  w: number,
+  h: number,
+  t: number,
+  count: number,
+): THREE.Group {
   const root = new THREE.Group();
   const lay = (flipped: boolean) => {
     const flip = new THREE.Group();
@@ -516,7 +576,8 @@ function arrange(make: () => THREE.Object3D, layout: Layout, w: number, h: numbe
       // (w/2)·cos θ + (h/2)·sin θ towards the other one, plus a visible gap.
       const ra = deg(4);
       const rb = deg(6);
-      const d = (w / 2) * (Math.cos(ra) + Math.cos(rb)) + (h / 2) * (Math.sin(ra) + Math.sin(rb)) + Math.max(6, 0.06 * w);
+      const d =
+        (w / 2) * (Math.cos(ra) + Math.cos(rb)) + (h / 2) * (Math.sin(ra) + Math.sin(rb)) + Math.max(6, 0.06 * w);
       const a = lay(false);
       a.position.set(-d / 2, 0, -0.04 * h);
       a.rotation.y = ra;
@@ -583,7 +644,10 @@ function presetDims(
   const size = str(params, 'size', def);
   if (size === 'custom') {
     const [d0, d1] = presets[def];
-    return [clamp(num(params, 'width', d0), customLimits[0], customLimits[1]), clamp(num(params, 'height', d1), customLimits[0], customLimits[1])];
+    return [
+      clamp(num(params, 'width', d0), customLimits[0], customLimits[1]),
+      clamp(num(params, 'height', d1), customLimits[0], customLimits[1]),
+    ];
   }
   const [a, b] = presets[size] ?? presets[def];
   const o = str(params, 'orientation', baseOrientation);
@@ -603,11 +667,14 @@ function twoSidedSlots(
     {
       id: 'front',
       label: L('Front'),
-      hint: L('{item} – front side. Default {w} × {h} mm + 3 mm bleed on every side (the template follows the chosen size).', {
-        item: noun,
-        w: round2(defW),
-        h: round2(defH),
-      }),
+      hint: L(
+        '{item} – front side. Default {w} × {h} mm + 3 mm bleed on every side (the template follows the chosen size).',
+        {
+          item: noun,
+          w: round2(defW),
+          h: round2(defH),
+        },
+      ),
       aspect,
       template: (p) => {
         const [w, h] = dims(p);
@@ -617,9 +684,12 @@ function twoSidedSlots(
     {
       id: 'back',
       label: L('Back'),
-      hint: L('Back in the same format, laid out as when turning the sheet over like a page (top stays at the top). {fallback}', {
-        fallback: backFallback,
-      }),
+      hint: L(
+        'Back in the same format, laid out as when turning the sheet over like a page (top stays at the top). {fallback}',
+        {
+          fallback: backFallback,
+        },
+      ),
       aspect,
       template: (p) => {
         const [w, h] = dims(p);
@@ -651,7 +721,9 @@ export const businessCardModel: ModelDefinition = {
   id: 'print-business-card',
   category: 'print',
   name: L('Business card'),
-  description: L('Business card 90 × 50 / 85 × 55 / 89 × 51 mm or a custom size – single, standing, in a stack or front and back side by side.'),
+  description: L(
+    'Business card 90 × 50 / 85 × 55 / 89 × 51 mm or a custom size – single, standing, in a stack or front and back side by side.',
+  ),
   icon: ICON_BUSINESS_CARD,
   slots: twoSidedSlots(
     businessCardDims,
@@ -699,7 +771,14 @@ export const businessCardModel: ModelDefinition = {
       back: ctx.hasImage('back') ? printedMat(ctx.getTexture('back'), f) : solidMat(paper, f),
       edge: edgeMat(paper),
     };
-    const root = arrange(() => sheetMeshes(geos, mats), layoutOf(p, CARD_LAYOUTS, 'flat'), w, h, t, num(p, 'stackCount', 6));
+    const root = arrange(
+      () => sheetMeshes(geos, mats),
+      layoutOf(p, CARD_LAYOUTS, 'flat'),
+      w,
+      h,
+      t,
+      num(p, 'stackCount', 6),
+    );
     return finishRoot(root, 'Business card');
   },
 };
@@ -727,15 +806,11 @@ export const flyerModel: ModelDefinition = {
   id: 'print-flyer',
   category: 'print',
   name: L('Flyer'),
-  description: L('Single-sheet flyer / leaflet A6 / A5 / A4 / DL or a custom size, with an optional gentle sheet bend.'),
-  icon: ICON_FLYER,
-  slots: twoSidedSlots(
-    flyerDims,
-    148,
-    210,
-    L('Flyer'),
-    L('Without an image the back shows the paper colour.'),
+  description: L(
+    'Single-sheet flyer / leaflet A6 / A5 / A4 / DL or a custom size, with an optional gentle sheet bend.',
   ),
+  icon: ICON_FLYER,
+  slots: twoSidedSlots(flyerDims, 148, 210, L('Flyer'), L('Without an image the back shows the paper colour.')),
   params: [
     {
       id: 'size',
@@ -959,9 +1034,22 @@ function chipMeshes(colors: ChipColors, t: number): THREE.Object3D {
   shapes.push(roundedRectAt(mx, y0 + inset, mx + midW, yTop - inset, 0.45));
   const pads = new THREE.ShapeGeometry(shapes, 4);
   pads.translate(0, 0, t / 2 + 0.06);
-  const baseMesh = new THREE.Mesh(base, new THREE.MeshStandardMaterial({ color: colors.gap, metalness: 0.85, roughness: 0.45, ...DECAL_OFFSET }));
+  const baseMesh = new THREE.Mesh(
+    base,
+    new THREE.MeshStandardMaterial({ color: colors.gap, metalness: 0.85, roughness: 0.45, ...DECAL_OFFSET }),
+  );
   baseMesh.name = 'chip-base';
-  const padMesh = new THREE.Mesh(pads, new THREE.MeshStandardMaterial({ color: colors.pad, metalness: 1, roughness: 0.28, ...DECAL_OFFSET, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+  const padMesh = new THREE.Mesh(
+    pads,
+    new THREE.MeshStandardMaterial({
+      color: colors.pad,
+      metalness: 1,
+      roughness: 0.28,
+      ...DECAL_OFFSET,
+      polygonOffsetFactor: -2,
+      polygonOffsetUnits: -2,
+    }),
+  );
   padMesh.name = 'chip-contacts';
   g.add(baseMesh, padMesh);
   return g;
@@ -979,7 +1067,9 @@ export const plasticCardModel: ModelDefinition = {
   id: 'print-plastic-card',
   category: 'print',
   name: L('Plastic card'),
-  description: L('Gift, loyalty or ID card in the ID-1 format (85.6 × 53.98 × 0.76 mm) with a printed plastic surface.'),
+  description: L(
+    'Gift, loyalty or ID card in the ID-1 format (85.6 × 53.98 × 0.76 mm) with a printed plastic surface.',
+  ),
   icon: ICON_PLASTIC_CARD,
   slots: [
     {
@@ -992,7 +1082,9 @@ export const plasticCardModel: ModelDefinition = {
     {
       id: 'back',
       label: L('Back'),
-      hint: L('Card back in the same format (turned over like a page – top stays at the top). Without an image the back shows the core colour.'),
+      hint: L(
+        'Card back in the same format (turned over like a page – top stays at the top). Without an image the back shows the core colour.',
+      ),
       aspect: (PLASTIC_TEMPLATE_W + 2 * BLEED) / (PLASTIC_TEMPLATE_H + 2 * BLEED),
       template: panelTemplate(PLASTIC_TEMPLATE_W, PLASTIC_TEMPLATE_H, L('Back')),
     },
@@ -1046,7 +1138,16 @@ export const plasticCardModel: ModelDefinition = {
       const geo = new THREE.PlaneGeometry(w - 0.02, sh);
       geo.rotateY(Math.PI);
       geo.translate(0, h / 2 - 5.54 - sh / 2, -t / 2 - 0.03);
-      stripe = new THREE.Mesh(geo, new THREE.MeshPhysicalMaterial({ color: '#1c1815', roughness: 0.38, metalness: 0.25, clearcoat: 0.6, ...DECAL_OFFSET }));
+      stripe = new THREE.Mesh(
+        geo,
+        new THREE.MeshPhysicalMaterial({
+          color: '#1c1815',
+          roughness: 0.38,
+          metalness: 0.25,
+          clearcoat: 0.6,
+          ...DECAL_OFFSET,
+        }),
+      );
       stripe.name = 'magnetic-stripe';
     }
 
@@ -1156,7 +1257,9 @@ export const brochureModel: ModelDefinition = {
   id: 'print-brochure',
   category: 'print',
   name: L('Brochure / catalogue'),
-  description: L('Closed saddle-stitched brochure (A5 / A4 / Letter or custom); its thickness follows the page count and paper weight.'),
+  description: L(
+    'Closed saddle-stitched brochure (A5 / A4 / Letter or custom); its thickness follows the page count and paper weight.',
+  ),
   icon: ICON_BROCHURE,
   slots: [
     {
@@ -1182,7 +1285,9 @@ export const brochureModel: ModelDefinition = {
     {
       id: 'back',
       label: L('Back'),
-      hint: L('Used only when no “Cover wrap” image is added. The back as seen from behind (top stays at the top). Without an image – paper colour.'),
+      hint: L(
+        'Used only when no “Cover wrap” image is added. The back as seen from behind (top stays at the top). Without an image – paper colour.',
+      ),
       aspect: (210 + 2 * BLEED) / (297 + 2 * BLEED),
       template: (p) => {
         const [W, H] = brochureDims(p);
@@ -1308,7 +1413,11 @@ export const brochureModel: ModelDefinition = {
       // WRAP (Back | Front): u runs with s. Seen from behind, s = 0 (back fore-edge, +X) is on the
       // viewer's left, so the back panel reads normally; the front panel starts at the spine (-X),
       // i.e. on the left when seen from the front. v grows with +y (image bottom at the bottom).
-      addMesh(coverRibbon(0, sec.length - 1, (s) => (b + (s / S) * 2 * W) / (2 * W + 2 * b)), printedMat(ctx.getTexture('cover'), f), 'cover');
+      addMesh(
+        coverRibbon(0, sec.length - 1, (s) => (b + (s / S) * 2 * W) / (2 * W + 2 * b)),
+        printedMat(ctx.getTexture('cover'), f),
+        'cover',
+      );
     } else {
       const panelU = (s0: number) => (s: number) => (b + ((s - s0) / (S / 2)) * W) / (W + 2 * b);
       // FRONT: s from the spine apex (left, -X) to the front fore-edge (right, +X) -> not mirrored.
@@ -1322,7 +1431,11 @@ export const brochureModel: ModelDefinition = {
     }
 
     /* ---- page block: top / bottom faces show the nested folded sheets, the fore-edge the leaves ---- */
-    const pageMat = new THREE.MeshStandardMaterial({ map: pageEdgeTexture(sheets, paper), roughness: 0.92, metalness: 0 });
+    const pageMat = new THREE.MeshStandardMaterial({
+      map: pageEdgeTexture(sheets, paper),
+      roughness: 0.92,
+      metalness: 0,
+    });
     const blockB = new MeshBuilder();
     for (const [y, ny] of [
       [H, 1],
@@ -1332,7 +1445,11 @@ export const brochureModel: ModelDefinition = {
       // is linear along every quad edge, so the stripes follow the U-shaped folds exactly.
       const n = new THREE.Vector3(0, ny, 0);
       const outer: Vtx[] = sec.map((q) => ({ p: new THREE.Vector3(q.x, y, q.z), n, uv: [0.5, 0] }));
-      const inner: Vtx[] = sec.map((q) => ({ p: new THREE.Vector3(q.x - q.nx * rS, y, q.z - q.nz * rS), n, uv: [0.5, 1] }));
+      const inner: Vtx[] = sec.map((q) => ({
+        p: new THREE.Vector3(q.x - q.nx * rS, y, q.z - q.nz * rS),
+        n,
+        uv: [0.5, 1],
+      }));
       blockB.strip(outer, inner);
     }
     // Fore-edge (+X): split at z = 0 so v = depth / (T/2) stays linear on each half.
@@ -1375,4 +1492,10 @@ export const brochureModel: ModelDefinition = {
 /* Gallery order                                                       */
 /* ------------------------------------------------------------------ */
 
-export const flatPrintModels: ModelDefinition[] = [businessCardModel, flyerModel, postcardModel, plasticCardModel, brochureModel];
+export const flatPrintModels: ModelDefinition[] = [
+  businessCardModel,
+  flyerModel,
+  postcardModel,
+  plasticCardModel,
+  brochureModel,
+];

@@ -48,12 +48,16 @@ export const polish: Locale = {
     restoredTabs: 'Przywrócono otwarte projekty: {n}',
     tabUnsaved: '{name} (niezapisane zmiany)',
     openAfterExport: 'Projekty do otwarcia: {n}. Otworzą się po zakończeniu eksportu.',
-    errAutosave: 'Nie udało się zachować otwartych projektów do następnego uruchomienia. Nadal są otwarte – zapisz je, aby ich nie stracić.',
-    errRestore: 'Nie udało się ponownie otworzyć projektów, które były otwarte ostatnio. Zostają zachowane do następnego uruchomienia; do tego czasu otwarte projekty nie są zapisywane automatycznie, więc zapisz je do plików.',
+    errAutosave:
+      'Nie udało się zachować otwartych projektów do następnego uruchomienia. Nadal są otwarte – zapisz je, aby ich nie stracić.',
+    errRestore:
+      'Nie udało się ponownie otworzyć projektów, które były otwarte ostatnio. Zostają zachowane do następnego uruchomienia; do tego czasu otwarte projekty nie są zapisywane automatycznie, więc zapisz je do plików.',
     restoreSkipped: 'Projekty, których nie udało się ponownie otworzyć: {n}. Otwórz je ponownie z plików.',
-    errSessionDamaged: 'Zapis projektów, które były otwarte, jest uszkodzony. Otwórz projekty ponownie z ich plików; zmian niezapisanych do pliku nie da się odzyskać.',
+    errSessionDamaged:
+      'Zapis projektów, które były otwarte, jest uszkodzony. Otwórz projekty ponownie z ich plików; zmian niezapisanych do pliku nie da się odzyskać.',
     errSessionNewer: 'Otwarte projekty zapisała nowsza wersja Mockup Director. Zaktualizuj aplikację, aby je odzyskać.',
-    errStorageUnavailable: 'Ten system nie pozwala Mockup Director przechowywać danych między uruchomieniami, więc otwarte projekty nie zostaną ponownie otwarte po restarcie.',
+    errStorageUnavailable:
+      'Ten system nie pozwala Mockup Director przechowywać danych między uruchomieniami, więc otwarte projekty nie zostaną ponownie otwarte po restarcie.',
     /* gallery */
     models: 'Modele',
     catBoxes: 'Pudełka',
@@ -79,7 +83,8 @@ export const polish: Locale = {
     bgTransparentShort: 'Przezroczyste',
     bgColor: 'Kolor',
     bgGradient: 'Gradient',
-    viewportHint: 'Przeciągnij, by obracać · ⇧ + przeciągnij, by przesunąć · przewiń lub uszczypnij, by przybliżyć · dwuklik resetuje widok',
+    viewportHint:
+      'Przeciągnij, by obracać · ⇧ + przeciągnij, by przesunąć · przewiń lub uszczypnij, by przybliżyć · dwuklik resetuje widok',
     dropHere: 'Upuść grafiki – trafią do pustych miejsc modelu',
     /* inspector */
     inspector: 'Inspektor',
@@ -101,7 +106,8 @@ export const polish: Locale = {
     templateFilePrefix: 'szablon',
     noTemplate: 'Ten element nie ma szablonu.',
     aspectBadge: 'Proporcje',
-    aspectWarning: 'Proporcje grafiki ({actual}) różnią się od oczekiwanych ({expected}) o więcej niż 3% – obraz może zostać zniekształcony.',
+    aspectWarning:
+      'Proporcje grafiki ({actual}) różnią się od oczekiwanych ({expected}) o więcej niż 3% – obraz może zostać zniekształcony.',
     noSlots: 'Ten model nie ma miejsc na grafiki.',
     unsupportedFile: 'Nieobsługiwany plik – wybierz obraz (PNG, JPEG, WebP…).',
     tooManyFiles: 'Pominięto plików: {n} (brak wolnych miejsc).',
@@ -183,8 +189,10 @@ export const polish: Locale = {
     animDuration: 'Czas trwania',
     animFps: 'Klatki na sekundę',
     animUseView: 'Zoom i przesunięcie z podglądu',
-    animUseViewHint: 'Wyłączone: cała kompozycja zawsze mieści się w kadrze. Włączone: zoom i przesunięcie z podglądu są nakładane na stały kadr (może przycinać).',
-    animStartNote: 'Animacja zaczyna się od bieżącego widoku – kąt kamery, światło, cień i odbicie zostają zachowane, a kadr jest stały dla wszystkich klatek.',
+    animUseViewHint:
+      'Wyłączone: cała kompozycja zawsze mieści się w kadrze. Włączone: zoom i przesunięcie z podglądu są nakładane na stały kadr (może przycinać).',
+    animStartNote:
+      'Animacja zaczyna się od bieżącego widoku – kąt kamery, światło, cień i odbicie zostają zachowane, a kadr jest stały dla wszystkich klatek.',
     animSizePresets: 'Gotowe rozmiary (kwadrat)',
     animMaxSize: 'Maksymalnie {n} px na bok ({fmt}).',
     animMp4Even: 'MP4 wymaga parzystych wymiarów – plik będzie miał {w} × {h} px.',
@@ -198,10 +206,13 @@ export const polish: Locale = {
     animPalette: 'Paleta kolorów',
     animPaletteGlobal: 'Wspólna',
     animPaletteFrame: 'Na klatkę',
-    animPaletteHint: 'Wspólna paleta: stabilne kolory i mniejszy plik. Paleta na klatkę: wierniejsze kolory, większy plik.',
+    animPaletteHint:
+      'Wspólna paleta: stabilne kolory i mniejszy plik. Paleta na klatkę: wierniejsze kolory, większy plik.',
     animWebpUnsupported: 'Animowany WebP jest niedostępny – silnik WWW tego systemu nie koduje WebP.',
-    animMp4Unsupported: 'MP4 wymaga WebCodecs (Windows z WebView2, Safari 16.4+ / macOS 13.3+ albo nowszy WebKitGTK na Linuksie) – niedostępne w tym systemie.',
-    animGifAlphaNote: 'GIF ma tylko 1-bitową przezroczystość: miękki cień i odbicie znikną, a krawędzie mogą być postrzępione. Lepiej wybrać tło jak w podglądzie albo WebP.',
+    animMp4Unsupported:
+      'MP4 wymaga WebCodecs (Windows z WebView2, Safari 16.4+ / macOS 13.3+ albo nowszy WebKitGTK na Linuksie) – niedostępne w tym systemie.',
+    animGifAlphaNote:
+      'GIF ma tylko 1-bitową przezroczystość: miękki cień i odbicie znikną, a krawędzie mogą być postrzępione. Lepiej wybrać tło jak w podglądzie albo WebP.',
     animMp4NoAlpha: 'MP4 nie obsługuje przezroczystości – tło będzie białe.',
     animSummary: '{w} × {h} px · {fmt} · {d} s · liczba klatek: {n}',
     exportAnimationDots: 'Eksportuj animację…',
@@ -219,12 +230,14 @@ export const polish: Locale = {
     batchModeImages: 'Wiele grafik',
     batchModeViews: 'Wiele widoków',
     batchModeProjects: 'Wiele projektów',
-    batchModeImagesHint: 'Wiele grafik → jeden model: każdy plik trafia do wybranego slotu i powstaje z niego osobny mockup. Pozostałe sloty, parametry i scena zostają bez zmian.',
+    batchModeImagesHint:
+      'Wiele grafik → jeden model: każdy plik trafia do wybranego slotu i powstaje z niego osobny mockup. Pozostałe sloty, parametry i scena zostają bez zmian.',
     batchModeViewsHint: 'Bieżący projekt z kilku ujęć kamery – po jednym obrazie na każdy zaznaczony widok.',
     batchModeProjectsHint: 'Każdy plik projektu (.mdproj) jest renderowany z własnym modelem, grafikami i sceną.',
     batchModel: 'Model: {name}',
     batchSlot: 'Zmieniany slot',
-    batchSlotHint: 'Jeśli ustawiona jest grafika owijki (okładka całości), może ona zasłaniać osobne ściany – wtedy wybierz slot owijki.',
+    batchSlotHint:
+      'Jeśli ustawiona jest grafika owijki (okładka całości), może ona zasłaniać osobne ściany – wtedy wybierz slot owijki.',
     batchPickImages: 'Wybierz grafiki…',
     batchPickProjects: 'Wybierz projekty…',
     batchClear: 'Wyczyść listę',
@@ -319,54 +332,54 @@ export const polish: Locale = {
   },
   texts: {
     /* shared by several files */
-    'Fold': 'Zgięcie',
+    Fold: 'Zgięcie',
     'Fold line': 'Linia zgięcia',
-    'Disc': 'Płyta',
-    'Dimensions': 'Wymiary',
-    'Material': 'Materiał',
-    'Artwork': 'Grafika',
+    Disc: 'Płyta',
+    Dimensions: 'Wymiary',
+    Material: 'Materiał',
+    Artwork: 'Grafika',
     'Trim line': 'Linia cięcia',
     'Cover finish': 'Wykończenie okładki',
-    'Satin': 'Satyna (półmat)',
+    Satin: 'Satyna (półmat)',
     'Gloss laminate': 'Połysk (folia błyszcząca)',
-    'Back': 'Tył',
-    'Spine': 'Grzbiet',
-    'Front': 'Przód',
+    Back: 'Tył',
+    Spine: 'Grzbiet',
+    Front: 'Przód',
     'Used only when no “Cover wrap” image is added.': 'Używane tylko, gdy nie dodano obrazu „Okładka (całość)”.',
     'Cover wrap': 'Okładka (całość)',
     'Spine & back colour (no artwork)': 'Kolor grzbietu i tyłu (bez grafiki)',
-    'Width': 'Szerokość',
-    'Height': 'Wysokość',
+    Width: 'Szerokość',
+    Height: 'Wysokość',
     'Corner radius': 'Zaokrąglenie narożników',
-    'Silver': 'Srebrny',
-    'Black': 'Czarny',
-    'White': 'Biały',
-    'Finish': 'Wykończenie',
-    'Top': 'Góra',
+    Silver: 'Srebrny',
+    Black: 'Czarny',
+    White: 'Biały',
+    Finish: 'Wykończenie',
+    Top: 'Góra',
     'Left side': 'Lewy bok',
     'Right side': 'Prawy bok',
-    'Bottom': 'Spód',
-    'Thickness': 'Grubość',
-    'Screen': 'Ekran',
+    Bottom: 'Spód',
+    Thickness: 'Grubość',
+    Screen: 'Ekran',
     'Screen brightness': 'Jasność ekranu',
-    'Matte': 'Matowe',
-    'Glossy': 'Błyszczące',
-    'Pose': 'Ułożenie',
+    Matte: 'Matowe',
+    Glossy: 'Błyszczące',
+    Pose: 'Ułożenie',
     'Lying flat': 'Leżąca płasko',
-    'Orientation': 'Orientacja',
-    'None': 'Brak',
+    Orientation: 'Orientacja',
+    None: 'Brak',
     'Front (cover)': 'Przód (okładka)',
-    'Gloss': 'Błyszczące',
+    Gloss: 'Błyszczące',
     'Paper thickness': 'Grubość papieru',
-    'Custom': 'Własny',
+    Custom: 'Własny',
 
     /* export/templates.ts */
-    'Bleed': 'Spad',
-    'Trim': 'Linia cięcia',
+    Bleed: 'Spad',
+    Trim: 'Linia cięcia',
     'Safe area': 'Strefa bezpieczna',
     'Artwork size': 'Format pliku',
     'incl. bleed': 'ze spadem',
-    'Hole': 'Otwór',
+    Hole: 'Otwór',
     'Hub area (often unprinted)': 'Strefa piasty (często bez nadruku)',
     'reduced from': 'obniżono z',
     'Guide layer – hide before export': 'Warstwa pomocnicza – ukryj przed eksportem',
@@ -375,17 +388,18 @@ export const polish: Locale = {
     'Spine fold': 'Zgięcie grzbietu',
     'Hinge groove': 'Rowek zawiasu',
     'Matte laminate': 'Mat (folia matowa)',
-    ' The wrap covers the overhanging boards and the hinge grooves (marked on the template). Printers usually need a 15–20 mm turn-in for real case binding – the template matches the mockup with a 3 mm bleed.': ' Okładka obejmuje wystające krawędzie tektury i rowki zawiasu (zaznaczone na szablonie). Do druku oprawy twardej drukarnie zwykle wymagają 15–20 mm zawinięcia – szablon odpowiada makiecie ze spadem 3 mm.',
+    ' The wrap covers the overhanging boards and the hinge grooves (marked on the template). Printers usually need a 15–20 mm turn-in for real case binding – the template matches the mockup with a 3 mm bleed.':
+      ' Okładka obejmuje wystające krawędzie tektury i rowki zawiasu (zaznaczone na szablonie). Do druku oprawy twardej drukarnie zwykle wymagają 15–20 mm zawinięcia – szablon odpowiada makiecie ze spadem 3 mm.',
     'Width (page block)': 'Szerokość (format bloku)',
     'Height (page block)': 'Wysokość (format bloku)',
     'Page block thickness': 'Grubość bloku stron',
     'Board thickness': 'Grubość tektury',
     'Cover overhang (squares)': 'Wystawanie okładki nad blok',
-    'Rounded': 'Zaokrąglony',
+    Rounded: 'Zaokrąglony',
     'Flat (square)': 'Prosty (płaski)',
     'Hinge score lines': 'Bigowanie przy grzbiecie',
     'Page colour': 'Kolor stron',
-    'Headband': 'Kapitałka',
+    Headband: 'Kapitałka',
     'Headband colour': 'Kolor kapitałki',
     'Hole zone': 'Strefa otworów',
     'Cover thickness': 'Grubość okładek',
@@ -398,11 +412,14 @@ export const polish: Locale = {
     'Coil colour': 'Kolor spirali',
     'Back colour (no artwork)': 'Kolor tyłu (bez grafiki)',
     'Hardcover book': 'Książka w twardej oprawie',
-    'Case-bound hardcover (2.5 mm boards) with overhanging covers, hinge grooves, a flat or rounded spine and a page block.': 'Oprawa twarda (tektura 2,5 mm) z wystającą okładką, rowkami zawiasu, prostym lub zaokrąglonym grzbietem i blokiem stron.',
+    'Case-bound hardcover (2.5 mm boards) with overhanging covers, hinge grooves, a flat or rounded spine and a page block.':
+      'Oprawa twarda (tektura 2,5 mm) z wystającą okładką, rowkami zawiasu, prostym lub zaokrąglonym grzbietem i blokiem stron.',
     'Paperback book': 'Książka w miękkiej oprawie',
-    'Perfect-bound paperback: a thin cover flush with the page block and slightly rounded spine edges.': 'Oprawa miękka klejona: cienka okładka równo z blokiem stron, lekko zaokrąglone krawędzie grzbietu.',
+    'Perfect-bound paperback: a thin cover flush with the page block and slightly rounded spine edges.':
+      'Oprawa miękka klejona: cienka okładka równo z blokiem stron, lekko zaokrąglone krawędzie grzbietu.',
     'Spiral notebook': 'Notes na spirali',
-    'A5 notebook / calendar with a wire-o or single coil binding on the left or top edge, covers and a page block.': 'Notes / kalendarz A5 na spirali (Wire-O lub pojedynczej) przy lewej lub górnej krawędzi, z okładkami i blokiem kartek.',
+    'A5 notebook / calendar with a wire-o or single coil binding on the left or top edge, covers and a page block.':
+      'Notes / kalendarz A5 na spirali (Wire-O lub pojedynczej) przy lewej lub górnej krawędzi, z okładkami i blokiem kartek.',
 
     /* models/box.ts */
     'Main artwork of the box.': 'Główna grafika pudełka.',
@@ -411,11 +428,12 @@ export const polish: Locale = {
     'The left edge of the artwork meets the front.': 'Lewa krawędź grafiki przylega do przodu.',
     'The bottom edge of the artwork meets the front.': 'Dolna krawędź grafiki przylega do przodu.',
     'The top edge of the artwork meets the front.': 'Górna krawędź grafiki przylega do przodu.',
-    'Box': 'Pudełko',
-    'Cardboard product box with separate artwork for every face.': 'Kartonowe pudełko produktowe z osobną grafiką na każdej ściance.',
+    Box: 'Pudełko',
+    'Cardboard product box with separate artwork for every face.':
+      'Kartonowe pudełko produktowe z osobną grafiką na każdej ściance.',
 
     /* models/box/common.ts */
-    'Depth': 'Głębokość',
+    Depth: 'Głębokość',
     'Edge rounding': 'Zaokrąglenie krawędzi',
     'Matte (paper / matte laminate)': 'Mat (papier / folia matowa)',
     'Colour of faces without artwork': 'Kolor ścianek bez grafiki',
@@ -423,28 +441,32 @@ export const polish: Locale = {
 
     /* models/box/dieline.ts */
     'Box – dieline (single image)': 'Pudełko – siatka (jedno zdjęcie)',
-    'The same box, with all artwork in one file: a cross-shaped net.': 'To samo pudełko, ale cała grafika w jednym pliku: rozkładówka w kształcie krzyża.',
+    'The same box, with all artwork in one file: a cross-shaped net.':
+      'To samo pudełko, ale cała grafika w jednym pliku: rozkładówka w kształcie krzyża.',
     'Box net': 'Siatka pudełka',
-    'Row: left | front | right | back; top above the front, bottom below it. Download the template.': 'Rząd: lewy bok | przód | prawy bok | tył; góra nad przodem, spód pod przodem. Pobierz szablon.',
+    'Row: left | front | right | back; top above the front, bottom below it. Download the template.':
+      'Rząd: lewy bok | przód | prawy bok | tył; góra nad przodem, spód pod przodem. Pobierz szablon.',
 
     /* models/box/slim.ts */
     'Lid height': 'Wysokość wieczka',
-    'Placement': 'Ułożenie',
+    Placement: 'Ułożenie',
     'Lying flat (lid up)': 'Leży (wieczko u góry)',
     'Standing (lid facing front)': 'Stoi (wieczko z przodu)',
     'Base colour (without artwork)': 'Kolor spodu (bez grafiki)',
     'Lid – top': 'Wieczko – wierzch',
     'Slim box': 'Pudełko płaskie',
-    'Flat two-piece box with a lid over a base (board game, gift, phone, cosmetics). Lying flat or standing.': 'Płaskie pudełko z nakładanym wieczkiem (gra planszowa, prezent, smartfon, kosmetyki). Może leżeć lub stać.',
+    'Flat two-piece box with a lid over a base (board game, gift, phone, cosmetics). Lying flat or standing.':
+      'Płaskie pudełko z nakładanym wieczkiem (gra planszowa, prezent, smartfon, kosmetyki). Może leżeć lub stać.',
     'Main artwork on the lid.': 'Główna grafika na wieczku.',
     'Lid – sides': 'Wieczko – boki',
     'Band: front | right | back | left.': 'Pas: przód | prawy bok | tył | lewy bok.',
     'Base – sides': 'Spód – boki',
-    'Visible part of the base below the lid, same band layout.': 'Widoczna część spodu pod wieczkiem, ten sam układ pasa.',
-    'Length': 'Długość',
+    'Visible part of the base below the lid, same band layout.':
+      'Widoczna część spodu pod wieczkiem, ten sam układ pasa.',
+    Length: 'Długość',
 
     /* models/composites.ts */
-    'Composition': 'Kompozycja',
+    Composition: 'Kompozycja',
     'Disc placement': 'Położenie płyty',
     'Behind the case, peeking out on the right': 'Za pudełkiem, wysunięta w prawo',
     'Leaning against the front': 'Oparta o przód pudełka',
@@ -452,13 +474,17 @@ export const polish: Locale = {
     'Overhang past the right edge': 'Wysunięcie poza prawą krawędź',
     'Disc turn': 'Obrót płyty',
     'Box with disc': 'Pudełko z płytą',
-    'Product box with a disc standing behind it, leaning against the front or lying in front.': 'Pudełko produktowe z płytą stojącą za nim, opartą o przód lub leżącą przed nim.',
+    'Product box with a disc standing behind it, leaning against the front or lying in front.':
+      'Pudełko produktowe z płytą stojącą za nim, opartą o przód lub leżącą przed nim.',
     'DVD case with disc': 'DVD z płytą',
-    'DVD keep case with a disc peeking out from behind, leaning against the front or lying in front.': 'Pudełko DVD z płytą wysuniętą zza pudełka, opartą o przód lub leżącą przed nim.',
+    'DVD keep case with a disc peeking out from behind, leaning against the front or lying in front.':
+      'Pudełko DVD z płytą wysuniętą zza pudełka, opartą o przód lub leżącą przed nim.',
     'Blu-ray case with disc': 'Blu-ray z płytą',
-    'Blu-ray keep case with a disc peeking out from behind, leaning against the front or lying in front.': 'Pudełko Blu-ray z płytą wysuniętą zza pudełka, opartą o przód lub leżącą przed nim.',
+    'Blu-ray keep case with a disc peeking out from behind, leaning against the front or lying in front.':
+      'Pudełko Blu-ray z płytą wysuniętą zza pudełka, opartą o przód lub leżącą przed nim.',
     'CD case with disc': 'CD z płytą',
-    'CD jewel case with a disc peeking out from behind, leaning against the front or lying in front.': 'Pudełko CD z płytą wysuniętą zza pudełka, opartą o przód lub leżącą przed nim.',
+    'CD jewel case with a disc peeking out from behind, leaning against the front or lying in front.':
+      'Pudełko CD z płytą wysuniętą zza pudełka, opartą o przód lub leżącą przed nim.',
 
     /* models/computer.ts */
     'Screen on': 'Ekran włączony',
@@ -467,19 +493,23 @@ export const polish: Locale = {
     'Matte (anti-glare)': 'Matowa (antyrefleks)',
     'Image fit': 'Dopasowanie obrazu',
     'Fill (crop the excess)': 'Wypełnij (przytnij nadmiar)',
-    'Stretch': 'Rozciągnij',
+    Stretch: 'Rozciągnij',
     'Dark grey': 'Ciemnoszary',
-    'Laptop': 'Laptop',
-    'Generic modern 13" / 14" / 16" laptop (16:10 screen) with an adjustable lid angle.': 'Uniwersalny, nowoczesny laptop 13″ / 14″ / 16″ (ekran 16:10) z regulowanym kątem otwarcia klapy.',
-    'A 16:10 screenshot, e.g. 2560 × 1600 px (or 2880 × 1800 / 3456 × 2160 px). Other proportions are cropped or stretched (see “Image fit”).': 'Zrzut ekranu 16:10, np. 2560 × 1600 px (lub 2880 × 1800 / 3456 × 2160 px). Inne proporcje zostaną przycięte lub rozciągnięte (opcja „Dopasowanie obrazu”).',
+    Laptop: 'Laptop',
+    'Generic modern 13" / 14" / 16" laptop (16:10 screen) with an adjustable lid angle.':
+      'Uniwersalny, nowoczesny laptop 13″ / 14″ / 16″ (ekran 16:10) z regulowanym kątem otwarcia klapy.',
+    'A 16:10 screenshot, e.g. 2560 × 1600 px (or 2880 × 1800 / 3456 × 2160 px). Other proportions are cropped or stretched (see “Image fit”).':
+      'Zrzut ekranu 16:10, np. 2560 × 1600 px (lub 2880 × 1800 / 3456 × 2160 px). Inne proporcje zostaną przycięte lub rozciągnięte (opcja „Dopasowanie obrazu”).',
     '13" (304 × 215 mm)': '13″ (304 × 215 mm)',
     '14" (314 × 221 mm)': '14″ (314 × 221 mm)',
     '16" (358 × 248 mm)': '16″ (358 × 248 mm)',
     'Lid opening angle': 'Kąt otwarcia klapy',
     'Body colour': 'Kolor obudowy',
-    'Monitor': 'Monitor',
-    'Generic thin-bezel monitor: 24" / 27" / 32" (16:9) or a curved 34" ultrawide (21:9), L-shaped or pedestal stand.': 'Uniwersalny monitor z cienkimi ramkami: 24″ / 27″ / 32″ (16:9) lub zakrzywiony 34″ ultrawide (21:9), podstawa L lub okrągła.',
-    'A 16:9 screenshot, e.g. 2560 × 1440 px (24–32"). For the 34" ultrawide: 21:9, e.g. 3440 × 1440 px. Other proportions are cropped or stretched (see “Image fit”).': 'Zrzut ekranu 16:9, np. 2560 × 1440 px (24–32″). Dla 34″ ultrawide: 21:9, np. 3440 × 1440 px. Inne proporcje zostaną przycięte lub rozciągnięte (opcja „Dopasowanie obrazu”).',
+    Monitor: 'Monitor',
+    'Generic thin-bezel monitor: 24" / 27" / 32" (16:9) or a curved 34" ultrawide (21:9), L-shaped or pedestal stand.':
+      'Uniwersalny monitor z cienkimi ramkami: 24″ / 27″ / 32″ (16:9) lub zakrzywiony 34″ ultrawide (21:9), podstawa L lub okrągła.',
+    'A 16:9 screenshot, e.g. 2560 × 1440 px (24–32"). For the 34" ultrawide: 21:9, e.g. 3440 × 1440 px. Other proportions are cropped or stretched (see “Image fit”).':
+      'Zrzut ekranu 16:9, np. 2560 × 1440 px (24–32″). Dla 34″ ultrawide: 21:9, np. 3440 × 1440 px. Inne proporcje zostaną przycięte lub rozciągnięte (opcja „Dopasowanie obrazu”).',
     '24" (16:9)': '24″ (16:9)',
     '27" (16:9)': '27″ (16:9)',
     '32" (16:9)': '32″ (16:9)',
@@ -487,16 +517,17 @@ export const polish: Locale = {
     'Curvature (34" only)': 'Zakrzywienie (tylko 34″)',
     '1800R (strong)': '1800R (mocne)',
     '3800R (gentle)': '3800R (lekkie)',
-    'Flat': 'Płaski',
-    'Stand': 'Podstawa',
+    Flat: 'Płaski',
+    Stand: 'Podstawa',
     'L-shaped arm': 'Ramię L',
-    'Pedestal': 'Okrągła stopa',
+    Pedestal: 'Okrągła stopa',
     'Height (bottom edge above desk)': 'Wysokość (dolna krawędź nad blatem)',
     'Screen tilt': 'Pochylenie ekranu',
 
     /* models/disc.ts */
     'Disc label': 'Nadruk płyty',
-    'A 120 × 120 mm square, image centre = disc centre. The print covers Ø 118 mm (from Ø 36 mm or as set) – extend the background to the 120 mm edge, it acts as bleed. Transparent PNG areas show the silver disc.': 'Kwadrat 120 × 120 mm, środek obrazu = środek płyty. Nadruk obejmuje Ø 118 mm (od Ø 36 mm lub wg ustawień) – tło przeciągnij do krawędzi 120 mm, to działa jak spad. Przezroczyste miejsca PNG pokazują srebro płyty.',
+    'A 120 × 120 mm square, image centre = disc centre. The print covers Ø 118 mm (from Ø 36 mm or as set) – extend the background to the 120 mm edge, it acts as bleed. Transparent PNG areas show the silver disc.':
+      'Kwadrat 120 × 120 mm, środek obrazu = środek płyty. Nadruk obejmuje Ø 118 mm (od Ø 36 mm lub wg ustawień) – tło przeciągnij do krawędzi 120 mm, to działa jak spad. Przezroczyste miejsca PNG pokazują srebro płyty.',
     'Label finish': 'Wykończenie nadruku',
     'Label inner diameter': 'Wewn. średnica nadruku',
     'Full-face print (Ø 22–119.5 mm)': 'Pełny nadruk (Ø 22–119,5 mm)',
@@ -508,7 +539,8 @@ export const polish: Locale = {
     'Gold (CD-R)': 'Złota (CD-R)',
     'Violet (DVD±R)': 'Fioletowa (DVD±R)',
     'Dark (BD-R)': 'Ciemna (BD-R)',
-    '120 mm disc with printed label, clear hub and rainbow data side.': 'Płyta 120 mm z nadrukiem, przezroczystym hubem i tęczową stroną z danymi.',
+    '120 mm disc with printed label, clear hub and rainbow data side.':
+      'Płyta 120 mm z nadrukiem, przezroczystym hubem i tęczową stroną z danymi.',
     'Disc pose': 'Ułożenie płyty',
     'Standing, slightly tilted': 'Stojąca, lekko odchylona',
     'Standing upright': 'Stojąca pionowo',
@@ -516,16 +548,16 @@ export const polish: Locale = {
     'Label rotation': 'Obrót nadruku',
 
     /* models/handheld.ts */
-    'Graphite': 'Grafitowy',
+    Graphite: 'Grafitowy',
     'White (ceramic)': 'Biały (ceramika)',
     'Gold (champagne)': 'Złoty (szampański)',
     'Navy blue': 'Granatowy',
     'Custom colour': 'Własny kolor',
-    'Camera': 'Kamera',
-    'Details': 'Szczegóły',
+    Camera: 'Kamera',
+    Details: 'Szczegóły',
     'Screen bezel': 'Ramka wokół ekranu',
-    'Portrait': 'Pionowo',
-    'Landscape': 'Poziomo',
+    Portrait: 'Pionowo',
+    Landscape: 'Poziomo',
     'Body finish': 'Wykończenie obudowy',
     'Custom body colour': 'Własny kolor obudowy',
     'Screen glass': 'Szkło ekranu',
@@ -535,30 +567,36 @@ export const polish: Locale = {
     'Rear camera': 'Aparat z tyłu',
     'Side buttons': 'Przyciski boczne',
     'Stylus next to it': 'Rysik obok',
-    'Smartphone': 'Smartfon',
-    'Generic smartphone 71.5 × 147 × 8 mm with a lit screen, punch-hole camera and rear camera module.': 'Uniwersalny smartfon 71,5 × 147 × 8 mm ze świecącym ekranem, otworem na kamerę i aparatem z tyłu.',
-    'Tablet': 'Tablet',
-    'Generic tablet 179.5 × 247.6 × 6.3 mm (landscape by default) with a lit screen and an optional stylus.': 'Uniwersalny tablet 179,5 × 247,6 × 6,3 mm (domyślnie poziomo) ze świecącym ekranem i opcjonalnym rysikiem.',
+    Smartphone: 'Smartfon',
+    'Generic smartphone 71.5 × 147 × 8 mm with a lit screen, punch-hole camera and rear camera module.':
+      'Uniwersalny smartfon 71,5 × 147 × 8 mm ze świecącym ekranem, otworem na kamerę i aparatem z tyłu.',
+    Tablet: 'Tablet',
+    'Generic tablet 179.5 × 247.6 × 6.3 mm (landscape by default) with a lit screen and an optional stylus.':
+      'Uniwersalny tablet 179,5 × 247,6 × 6,3 mm (domyślnie poziomo) ze świecącym ekranem i opcjonalnym rysikiem.',
 
     /* models/jewelcase.ts */
     'Booklet (cover)': 'Książeczka (okładka)',
-    'Booklet front 120 × 120 mm + 3 mm bleed (file 126 × 126 mm). Shown under the clear lid.': 'Przód książeczki 120 × 120 mm + 3 mm spadu (plik 126 × 126 mm). Widoczny pod przezroczystą pokrywą.',
+    'Booklet front 120 × 120 mm + 3 mm bleed (file 126 × 126 mm). Shown under the clear lid.':
+      'Przód książeczki 120 × 120 mm + 3 mm spadu (plik 126 × 126 mm). Widoczny pod przezroczystą pokrywą.',
     'Back inlay (tray card)': 'Wkładka tylna (inlay)',
-    '151 × 118 mm (spine 6.5 | back 138 | spine 6.5) + 3 mm bleed = 157 × 124 mm. The template’s left spine ends up on the case’s right (opening) side, the right one on the hinge side. Slim cases show only the back (with a clear tray).': '151 × 118 mm (grzbiet 6,5 | tył 138 | grzbiet 6,5) + 3 mm spadu = 157 × 124 mm. Lewy grzbiet szablonu trafia na prawy bok pudełka (strona otwierania), prawy – na stronę zawiasu. W wersji slim widać tylko tył (przy przezroczystej tacce).',
-    'Contents': 'Zawartość',
+    '151 × 118 mm (spine 6.5 | back 138 | spine 6.5) + 3 mm bleed = 157 × 124 mm. The template’s left spine ends up on the case’s right (opening) side, the right one on the hinge side. Slim cases show only the back (with a clear tray).':
+      '151 × 118 mm (grzbiet 6,5 | tył 138 | grzbiet 6,5) + 3 mm spadu = 157 × 124 mm. Lewy grzbiet szablonu trafia na prawy bok pudełka (strona otwierania), prawy – na stronę zawiasu. W wersji slim widać tylko tył (przy przezroczystej tacce).',
+    Contents: 'Zawartość',
     'Case type': 'Typ pudełka',
     'Standard 10.4 mm': 'Standard 10,4 mm',
     'Slim 5.2 mm': 'Slim 5,2 mm',
-    'Tray': 'Tacka',
-    'Clear': 'Przezroczysta',
-    'Smoked': 'Dymiona',
+    Tray: 'Tacka',
+    Clear: 'Przezroczysta',
+    Smoked: 'Dymiona',
     'Inlay colour (no artwork)': 'Kolor wkładki (bez grafiki)',
     'Paper finish': 'Papier',
     'Booklet in the lid': 'Książeczka w pokrywie',
     'Disc inside': 'Płyta w środku',
     'CD jewel case': 'Pudełko CD',
-    'Classic CD jewel case 142 × 125 × 10.4 mm (or slim 5.2 mm) with booklet, back inlay and spines.': 'Klasyczne pudełko CD 142 × 125 × 10,4 mm (lub slim 5,2 mm) z książeczką, wkładką tylną i grzbietami.',
-    'A 120 × 120 mm square. Visible when “Disc inside” is on and “Booklet in the lid” is off.': 'Kwadrat 120 × 120 mm. Widoczna, gdy włączysz „Płyta w środku” i wyłączysz książeczkę w pokrywie.',
+    'Classic CD jewel case 142 × 125 × 10.4 mm (or slim 5.2 mm) with booklet, back inlay and spines.':
+      'Klasyczne pudełko CD 142 × 125 × 10,4 mm (lub slim 5,2 mm) z książeczką, wkładką tylną i grzbietami.',
+    'A 120 × 120 mm square. Visible when “Disc inside” is on and “Booklet in the lid” is off.':
+      'Kwadrat 120 × 120 mm. Widoczna, gdy włączysz „Płyta w środku” i wyłączysz książeczkę w pokrywie.',
 
     /* models/keepcase.ts */
     'Standard 14 mm': 'Standard 14 mm',
@@ -566,11 +604,11 @@ export const polish: Locale = {
     'Slim 7 mm': 'Slim 7 mm',
     'Standard 12 mm': 'Standard 12 mm',
     'Eco 11 mm': 'Eco 11 mm',
-    'Smoke': 'Dymiony',
+    Smoke: 'Dymiony',
     'Translucent blue': 'Niebieski półprzezroczysty',
-    'Red': 'Czerwony',
-    'Green': 'Zielony',
-    'Purple': 'Fioletowy',
+    Red: 'Czerwony',
+    Green: 'Zielony',
+    Purple: 'Fioletowy',
     'Case thickness': 'Grubość pudełka',
     'Plastic colour': 'Kolor plastiku',
     'Top band colour': 'Kolor górnego paska',
@@ -578,47 +616,56 @@ export const polish: Locale = {
     'Insert paper': 'Papier wkładki',
     'Sleeve film gloss': 'Połysk folii',
     'DVD case': 'Pudełko DVD',
-    'DVD keep case 190 × 135 mm (14 / 9 / 7 mm) with a printed insert under a clear sleeve.': 'Pudełko DVD 190 × 135 mm (14 / 9 / 7 mm) z wkładką pod przezroczystą folią.',
+    'DVD keep case 190 × 135 mm (14 / 9 / 7 mm) with a printed insert under a clear sleeve.':
+      'Pudełko DVD 190 × 135 mm (14 / 9 / 7 mm) z wkładką pod przezroczystą folią.',
     'Blu-ray case': 'Pudełko Blu-ray',
-    'Blu-ray keep case 171.5 × 135 mm (12 / 11 / 7 mm) with a translucent top band and a printed insert under a clear sleeve.': 'Pudełko Blu-ray 171,5 × 135 mm (12 / 11 / 7 mm) z półprzezroczystym górnym paskiem i wkładką pod folią.',
+    'Blu-ray keep case 171.5 × 135 mm (12 / 11 / 7 mm) with a translucent top band and a printed insert under a clear sleeve.':
+      'Pudełko Blu-ray 171,5 × 135 mm (12 / 11 / 7 mm) z półprzezroczystym górnym paskiem i wkładką pod folią.',
 
     /* models/printFlat.ts */
-    'Layout': 'Układ',
+    Layout: 'Układ',
     'Fold line (spine)': 'Linia zgięcia (grzbiet)',
     'Standing, leaning slightly': 'Stojąca, lekko odchylona',
     'Small stack': 'Stosik',
     'Two: front and back': 'Dwie: przód i tył',
-    'Arrangement': 'Ułożenie',
+    Arrangement: 'Ułożenie',
     'Cards in the stack': 'Liczba sztuk w stosiku',
     'Business card': 'Wizytówka',
-    'Business card 90 × 50 / 85 × 55 / 89 × 51 mm or a custom size – single, standing, in a stack or front and back side by side.': 'Wizytówka 90 × 50 / 85 × 55 / 89 × 51 mm lub własny rozmiar – pojedyncza, stojąca, w stosiku albo przód i tył obok siebie.',
+    'Business card 90 × 50 / 85 × 55 / 89 × 51 mm or a custom size – single, standing, in a stack or front and back side by side.':
+      'Wizytówka 90 × 50 / 85 × 55 / 89 × 51 mm lub własny rozmiar – pojedyncza, stojąca, w stosiku albo przód i tył obok siebie.',
     'Without an image the back shows the paper colour.': 'Bez obrazu tył ma kolor papieru.',
-    'Size': 'Format',
+    Size: 'Format',
     '90 × 50 mm (Polish standard)': '90 × 50 mm (standard PL)',
     '85 × 55 mm (EU)': '85 × 55 mm (UE)',
     '89 × 51 mm (US, 3.5 × 2″)': '89 × 51 mm (USA, 3,5 × 2″)',
     'Paper colour (edges, empty back)': 'Kolor papieru (krawędzie, pusty tył)',
-    'Flyer': 'Ulotka',
-    'Single-sheet flyer / leaflet A6 / A5 / A4 / DL or a custom size, with an optional gentle sheet bend.': 'Jednokartkowa ulotka A6 / A5 / A4 / DL lub własny format, z opcjonalnym delikatnym wygięciem kartki.',
+    Flyer: 'Ulotka',
+    'Single-sheet flyer / leaflet A6 / A5 / A4 / DL or a custom size, with an optional gentle sheet bend.':
+      'Jednokartkowa ulotka A6 / A5 / A4 / DL lub własny format, z opcjonalnym delikatnym wygięciem kartki.',
     'A6 (105 × 148 mm)': 'A6 (105 × 148 mm)',
     'A5 (148 × 210 mm)': 'A5 (148 × 210 mm)',
     'A4 (210 × 297 mm)': 'A4 (210 × 297 mm)',
     'DL (99 × 210 mm)': 'DL (99 × 210 mm)',
     'Sheet bend': 'Wygięcie kartki',
-    'Postcard': 'Pocztówka',
-    'Postcard 148 × 105 mm (A6) or 6 × 4″, landscape or portrait, with optional rounded corners.': 'Pocztówka 148 × 105 mm (A6) lub 6 × 4″, pozioma albo pionowa, z opcjonalnie zaokrąglonymi narożnikami.',
-    'Without an image a neutral postcard back is shown (address lines, stamp box).': 'Bez obrazu widać neutralny tył pocztówki (linie adresu, miejsce na znaczek).',
+    Postcard: 'Pocztówka',
+    'Postcard 148 × 105 mm (A6) or 6 × 4″, landscape or portrait, with optional rounded corners.':
+      'Pocztówka 148 × 105 mm (A6) lub 6 × 4″, pozioma albo pionowa, z opcjonalnie zaokrąglonymi narożnikami.',
+    'Without an image a neutral postcard back is shown (address lines, stamp box).':
+      'Bez obrazu widać neutralny tył pocztówki (linie adresu, miejsce na znaczek).',
     'A6 (148 × 105 mm)': 'A6 (148 × 105 mm)',
     '6 × 4″ (152.4 × 101.6 mm)': '6 × 4″ (152,4 × 101,6 mm)',
     'Card thickness': 'Grubość kartonu',
     'Card stock colour (edges, empty back)': 'Kolor kartonu (krawędzie, pusty tył)',
     'Postcard back pattern (no artwork)': 'Wzór tyłu pocztówki (bez grafiki)',
     'Plastic card': 'Karta plastikowa',
-    'Gift, loyalty or ID card in the ID-1 format (85.6 × 53.98 × 0.76 mm) with a printed plastic surface.': 'Karta podarunkowa, lojalnościowa lub identyfikator w formacie ID-1 (85,6 × 53,98 × 0,76 mm) z nadrukiem na plastiku.',
-    'Card front: 85.6 × 53.98 mm + 3 mm bleed. The corners are rounded with a 3.18 mm radius.': 'Przód karty: 85,6 × 53,98 mm + 3 mm spadu. Narożniki są zaokrąglone promieniem 3,18 mm.',
-    'Card back in the same format (turned over like a page – top stays at the top). Without an image the back shows the core colour.': 'Tył karty w tym samym formacie (karta obrócona jak kartka – góra zostaje górą). Bez obrazu tył ma kolor rdzenia.',
+    'Gift, loyalty or ID card in the ID-1 format (85.6 × 53.98 × 0.76 mm) with a printed plastic surface.':
+      'Karta podarunkowa, lojalnościowa lub identyfikator w formacie ID-1 (85,6 × 53,98 × 0,76 mm) z nadrukiem na plastiku.',
+    'Card front: 85.6 × 53.98 mm + 3 mm bleed. The corners are rounded with a 3.18 mm radius.':
+      'Przód karty: 85,6 × 53,98 mm + 3 mm spadu. Narożniki są zaokrąglone promieniem 3,18 mm.',
+    'Card back in the same format (turned over like a page – top stays at the top). Without an image the back shows the core colour.':
+      'Tył karty w tym samym formacie (karta obrócona jak kartka – góra zostaje górą). Bez obrazu tył ma kolor rdzenia.',
     'Contact chip': 'Pole stykowe (chip)',
-    'Gold': 'Złote',
+    Gold: 'Złote',
     'Magnetic stripe on the back': 'Pasek magnetyczny na tyle',
     'Print finish': 'Wykończenie nadruku',
     'Core colour (edges, empty back)': 'Kolor rdzenia (krawędzie, pusty tył)',
@@ -628,14 +675,17 @@ export const polish: Locale = {
     '170 gsm coated': '170 g/m² kreda',
     '200 gsm coated': '200 g/m² kreda',
     'Brochure / catalogue': 'Broszura / katalog',
-    'Closed saddle-stitched brochure (A5 / A4 / Letter or custom); its thickness follows the page count and paper weight.': 'Zamknięta broszura szyta zeszytowo (A5 / A4 / Letter lub własny format), grubość wynika z liczby stron i gramatury papieru.',
-    'Used only when no “Cover wrap” image is added. For A4: 210 × 297 mm + 3 mm bleed.': 'Używane tylko, gdy nie dodano „Okładki (całość)”. Dla A4: 210 × 297 mm + 3 mm spadu.',
-    'Used only when no “Cover wrap” image is added. The back as seen from behind (top stays at the top). Without an image – paper colour.': 'Używane tylko, gdy nie dodano „Okładki (całość)”. Tył oglądany od tyłu (góra zostaje górą). Bez obrazu – kolor papieru.',
+    'Closed saddle-stitched brochure (A5 / A4 / Letter or custom); its thickness follows the page count and paper weight.':
+      'Zamknięta broszura szyta zeszytowo (A5 / A4 / Letter lub własny format), grubość wynika z liczby stron i gramatury papieru.',
+    'Used only when no “Cover wrap” image is added. For A4: 210 × 297 mm + 3 mm bleed.':
+      'Używane tylko, gdy nie dodano „Okładki (całość)”. Dla A4: 210 × 297 mm + 3 mm spadu.',
+    'Used only when no “Cover wrap” image is added. The back as seen from behind (top stays at the top). Without an image – paper colour.':
+      'Używane tylko, gdy nie dodano „Okładki (całość)”. Tył oglądany od tyłu (góra zostaje górą). Bez obrazu – kolor papieru.',
     'US Letter (215.9 × 279.4 mm)': 'US Letter (215,9 × 279,4 mm)',
     'Page count (incl. cover)': 'Liczba stron (z okładką)',
     'Paper weight': 'Gramatura papieru',
     'Staples on the spine': 'Zszywki na grzbiecie',
-    'Standing': 'Stojąca',
+    Standing: 'Stojąca',
 
     /* models/printFolded.ts */
     'Fold line (crease)': 'Linia zgięcia (bigowanie)',
@@ -653,20 +703,22 @@ export const polish: Locale = {
     'Inside 1': 'Wnętrze 1',
     'Inside 2': 'Wnętrze 2',
     'Inside 3 / back cover': 'Wnętrze 3 / tył',
-    'Outside': 'Strona zewnętrzna',
-    'Inside': 'Strona wewnętrzna',
+    Outside: 'Strona zewnętrzna',
+    Inside: 'Strona wewnętrzna',
     'Fold type': 'Rodzaj falcowania',
     'Roll / letter fold': 'Zwijany (do środka)',
     'Z-fold (zigzag)': 'Harmonijka (Z)',
     'Panel width (sheet = 3 ×)': 'Szerokość panelu (arkusz = 3 ×)',
     'Narrower flap (roll fold)': 'Węższa klapka (falc zwijany)',
     'Tri-fold leaflet': 'Ulotka składana 3-częściowa',
-    'DL leaflet from an A4 sheet (297 × 210 mm → 99 × 210 mm), roll or Z fold; standing partially opened or lying.': 'Ulotka DL z arkusza A4 (297 × 210 mm → 99 × 210 mm), falc zwijany lub harmonijka Z; stojąca, częściowo rozłożona lub leżąca.',
+    'DL leaflet from an A4 sheet (297 × 210 mm → 99 × 210 mm), roll or Z fold; standing partially opened or lying.':
+      'Ulotka DL z arkusza A4 (297 × 210 mm → 99 × 210 mm), falc zwijany lub harmonijka Z; stojąca, częściowo rozłożona lub leżąca.',
     'Inside – right': 'Wnętrze – prawa strona',
     'Back (upside down)': 'Tył (do góry nogami)',
     'Inside – top': 'Wnętrze – góra',
     'Inside – bottom': 'Wnętrze – dół',
-    'Inside spread as seen when opened (left | right, or top / bottom with the fold at the top). Without an image: plain paper.': 'Rozkładówka wewnętrzna widziana po otwarciu (lewa | prawa, a przy zgięciu u góry: góra / dół). Bez obrazu: czysty papier.',
+    'Inside spread as seen when opened (left | right, or top / bottom with the fold at the top). Without an image: plain paper.':
+      'Rozkładówka wewnętrzna widziana po otwarciu (lewa | prawa, a przy zgięciu u góry: góra / dół). Bez obrazu: czysty papier.',
     'Size (folded)': 'Format (po złożeniu)',
     'On the left (portrait, like a book)': 'Z lewej (pionowa, jak książka)',
     'At the top (landscape tent)': 'U góry (pozioma, namiot)',
@@ -677,7 +729,8 @@ export const polish: Locale = {
     'DL – 99 × 210 mm': 'DL – 99 × 210 mm',
     'A5 – 148 × 210 mm': 'A5 – 148 × 210 mm',
     'Greeting card': 'Kartka okolicznościowa',
-    'Folded greeting card (A6, square, DL, A5 or custom) standing opened – fold on the left or at the top (tent).': 'Składana kartka (A6, kwadrat, DL, A5 lub własny format) stojąca i rozchylona – zgięcie z lewej lub u góry (namiot).',
+    'Folded greeting card (A6, square, DL, A5 or custom) standing opened – fold on the left or at the top (tent).':
+      'Składana kartka (A6, kwadrat, DL, A5 lub własny format) stojąca i rozchylona – zgięcie z lewej lub u góry (namiot).',
     'A4 → A5 (148 × 210 mm)': 'A4 → A5 (148 × 210 mm)',
     'A5 → A6 (105 × 148 mm)': 'A5 → A6 (105 × 148 mm)',
     'A3 → A4 (210 × 297 mm)': 'A3 → A4 (210 × 297 mm)',
@@ -685,7 +738,8 @@ export const polish: Locale = {
     'Square 210 × 210 mm': 'Kwadrat 210 × 210 mm',
     'Letter → 5.5 × 8.5″ (139.7 × 215.9 mm)': 'Letter → 5,5 × 8,5″ (139,7 × 215,9 mm)',
     'Bi-fold brochure': 'Folder składany na pół',
-    'Brochure from a sheet folded in half (A4 → A5 by default), lying flat or standing slightly open.': 'Folder z arkusza złożonego na pół (domyślnie A4 → A5), leżący lub stojący lekko rozchylony.',
+    'Brochure from a sheet folded in half (A4 → A5 by default), lying flat or standing slightly open.':
+      'Folder z arkusza złożonego na pół (domyślnie A4 → A5), leżący lub stojący lekko rozchylony.',
 
     /* models/screen.ts */
     // Web addresses offered for the browser window: shown as they are in every language.
@@ -695,8 +749,8 @@ export const polish: Locale = {
     'shop.example.com': 'shop.example.com',
     'localhost:3000': 'localhost:3000',
     'Shape & placement': 'Kształt i ustawienie',
-    'Frame': 'Ramka',
-    'Window': 'Okno',
+    Frame: 'Ramka',
+    Window: 'Okno',
     'Panel width': 'Szerokość panelu',
     'Curvature (− convex, + concave)': 'Wygięcie (− wypukłe, + wklęsłe)',
     'Lean back': 'Odchylenie do tyłu',
@@ -708,35 +762,39 @@ export const polish: Locale = {
     'Satin plastic': 'Plastik satynowy',
     'Glossy plastic': 'Plastik błyszczący',
     'Metal (aluminium)': 'Metal (aluminium)',
-    'Screenshot': 'Zrzut ekranu',
-    'A thin floating panel showing a screenshot – flat or curved, with an optional frame; the height follows the image.': 'Cienki „pływający” panel ze zrzutem ekranu – płaski lub wygięty, z opcjonalną ramką; wysokość dopasowuje się do obrazu.',
-    'A screenshot or any artwork – any aspect ratio (the panel height follows the image). Without an image: 16:10.': 'Zrzut ekranu lub dowolna grafika – proporcje dowolne (wysokość panelu dopasuje się do obrazu). Bez obrazu: 16:10.',
+    Screenshot: 'Zrzut ekranu',
+    'A thin floating panel showing a screenshot – flat or curved, with an optional frame; the height follows the image.':
+      'Cienki „pływający” panel ze zrzutem ekranu – płaski lub wygięty, z opcjonalną ramką; wysokość dopasowuje się do obrazu.',
+    'A screenshot or any artwork – any aspect ratio (the panel height follows the image). Without an image: 16:10.':
+      'Zrzut ekranu lub dowolna grafika – proporcje dowolne (wysokość panelu dopasuje się do obrazu). Bez obrazu: 16:10.',
     'Thin light': 'Cienka jasna',
     'Thin dark': 'Cienka ciemna',
     'Frame width': 'Szerokość ramki',
     'Edge & back colour (no frame)': 'Kolor krawędzi i tyłu (bez ramki)',
     'Browser window': 'Okno przeglądarki',
-    'A browser / app window with a generic title bar (buttons, address bar) – flat or curved; the height follows the image.': 'Okno przeglądarki / aplikacji z ogólnym paskiem tytułu (przyciski, pasek adresu) – płaskie lub wygięte; wysokość dopasowuje się do obrazu.',
-    'Window content under the bar (e.g. a page screenshot) – any aspect ratio, the window height follows the image. Without an image: 16:10.': 'Zawartość okna pod paskiem (np. zrzut strony) – proporcje dowolne, wysokość okna dopasuje się do obrazu. Bez obrazu: 16:10.',
+    'A browser / app window with a generic title bar (buttons, address bar) – flat or curved; the height follows the image.':
+      'Okno przeglądarki / aplikacji z ogólnym paskiem tytułu (przyciski, pasek adresu) – płaskie lub wygięte; wysokość dopasowuje się do obrazu.',
+    'Window content under the bar (e.g. a page screenshot) – any aspect ratio, the window height follows the image. Without an image: 16:10.':
+      'Zawartość okna pod paskiem (np. zrzut strony) – proporcje dowolne, wysokość okna dopasuje się do obrazu. Bez obrazu: 16:10.',
     'Bar theme': 'Motyw paska',
-    'Light': 'Jasny',
-    'Dark': 'Ciemny',
+    Light: 'Jasny',
+    Dark: 'Ciemny',
     'Window buttons': 'Przyciski okna',
-    'Coloured': 'Kolorowe',
-    'Grey': 'Szare',
+    Coloured: 'Kolorowe',
+    Grey: 'Szare',
     'Address bar': 'Pasek adresu',
-    'Empty': 'Pusty',
+    Empty: 'Pusty',
     'Bar height': 'Wysokość paska',
 
     /* scene/lightPresets.ts */
-    'Studio': 'Studio',
+    Studio: 'Studio',
     'Soft light': 'Miękkie światło',
-    'Dramatic': 'Dramatyczne',
+    Dramatic: 'Dramatyczne',
     'Flat (catalogue)': 'Płaskie (katalogowe)',
     'Top light': 'Od góry',
     'Rim light': 'Kontrowe',
-    'Warm': 'Ciepłe',
-    'Cool': 'Chłodne',
+    Warm: 'Ciepłe',
+    Cool: 'Chłodne',
 
     /* ui/presets.ts */
     'Bright studio': 'Jasne studio',
@@ -745,35 +803,52 @@ export const polish: Locale = {
     'Glossy hero shot': 'Błyszczący hero shot',
 
     /* books: texts with placeholders */
-    'The whole cover, left to right: Back | Spine | Front. By default {w} × {h} mm + 3 mm bleed (spine {spine} mm – it changes with the page block thickness; download the template). Takes priority over the separate Front / Spine / Back slots.{hardcoverNote}': 'Cała okładka, od lewej: Tył | Grzbiet | Przód. Domyślnie {w} × {h} mm + 3 mm spadu (grzbiet {spine} mm – zmienia się z grubością bloku; pobierz szablon). Ma pierwszeństwo przed osobnymi polami Przód / Grzbiet / Tył.{hardcoverNote}',
-    '{onlyIfNoCover} By default {w} × {h} mm + 3 mm bleed (left edge = spine).': '{onlyIfNoCover} Domyślnie {w} × {h} mm + 3 mm spadu (lewa krawędź = grzbiet).',
-    '{onlyIfNoCover} A vertical strip: by default {w} × {h} mm + 3 mm bleed (left edge = back cover side). Without an image the spine uses “Spine & back colour”.': '{onlyIfNoCover} Pionowy pasek: domyślnie {w} × {h} mm + 3 mm spadu (lewa krawędź = strona tylnej okładki). Bez obrazu grzbiet ma kolor „Kolor grzbietu i tyłu”.',
-    '{onlyIfNoCover} By default {w} × {h} mm + 3 mm bleed (right edge = spine). Without an image the back uses “Spine & back colour”.': '{onlyIfNoCover} Domyślnie {w} × {h} mm + 3 mm spadu (prawa krawędź = grzbiet). Bez obrazu tył ma kolor „Kolor grzbietu i tyłu”.',
-    'Front cover: {w} × {h} mm + 3 mm bleed (follows the dimensions). Keep the hole zone along the binding edge free of important content – it is marked on the template.': 'Okładka przednia: {w} × {h} mm + 3 mm spadu (format zmienia się z wymiarami). Przy krawędzi oprawy zostaw wolną strefę otworów – zaznaczona na szablonie.',
-    'Back cover as seen from behind (with left binding the holes are on the RIGHT of the image). Without an image the back uses “Back colour (no artwork)”.': 'Okładka tylna widziana od tyłu (przy oprawie z lewej strony otwory są po PRAWEJ stronie obrazu). Bez obrazu tył ma kolor „Kolor tyłu (bez grafiki)”.',
+    'The whole cover, left to right: Back | Spine | Front. By default {w} × {h} mm + 3 mm bleed (spine {spine} mm – it changes with the page block thickness; download the template). Takes priority over the separate Front / Spine / Back slots.{hardcoverNote}':
+      'Cała okładka, od lewej: Tył | Grzbiet | Przód. Domyślnie {w} × {h} mm + 3 mm spadu (grzbiet {spine} mm – zmienia się z grubością bloku; pobierz szablon). Ma pierwszeństwo przed osobnymi polami Przód / Grzbiet / Tył.{hardcoverNote}',
+    '{onlyIfNoCover} By default {w} × {h} mm + 3 mm bleed (left edge = spine).':
+      '{onlyIfNoCover} Domyślnie {w} × {h} mm + 3 mm spadu (lewa krawędź = grzbiet).',
+    '{onlyIfNoCover} A vertical strip: by default {w} × {h} mm + 3 mm bleed (left edge = back cover side). Without an image the spine uses “Spine & back colour”.':
+      '{onlyIfNoCover} Pionowy pasek: domyślnie {w} × {h} mm + 3 mm spadu (lewa krawędź = strona tylnej okładki). Bez obrazu grzbiet ma kolor „Kolor grzbietu i tyłu”.',
+    '{onlyIfNoCover} By default {w} × {h} mm + 3 mm bleed (right edge = spine). Without an image the back uses “Spine & back colour”.':
+      '{onlyIfNoCover} Domyślnie {w} × {h} mm + 3 mm spadu (prawa krawędź = grzbiet). Bez obrazu tył ma kolor „Kolor grzbietu i tyłu”.',
+    'Front cover: {w} × {h} mm + 3 mm bleed (follows the dimensions). Keep the hole zone along the binding edge free of important content – it is marked on the template.':
+      'Okładka przednia: {w} × {h} mm + 3 mm spadu (format zmienia się z wymiarami). Przy krawędzi oprawy zostaw wolną strefę otworów – zaznaczona na szablonie.',
+    'Back cover as seen from behind (with left binding the holes are on the RIGHT of the image). Without an image the back uses “Back colour (no artwork)”.':
+      'Okładka tylna widziana od tyłu (przy oprawie z lewej strony otwory są po PRAWEJ stronie obrazu). Bez obrazu tył ma kolor „Kolor tyłu (bez grafiki)”.',
 
     /* devices: texts with placeholders */
-    'The image shown on the screen (app or web screenshot, artwork). Recommended {pxW} × {pxH} px {orientation} (screen {w} × {h} mm); for {other} swap the sizes. {example} Other aspect ratios fill the screen with cropping; the rounded corners clip it.': 'Obraz wyświetlany na ekranie (zrzut aplikacji, strony, grafika). Zalecane {pxW} × {pxH} px {orientation} (ekran {w} × {h} mm); dla układu {other} zamień wymiary. {example} Obraz o innych proporcjach wypełnia ekran z przycięciem, zaokrąglone narożniki go obcinają.',
-    'A typical screenshot (e.g. {w} × {h} px) fits too – it is cropped slightly.': 'Typowy zrzut ekranu (np. {w} × {h} px) też pasuje – zostanie lekko przycięty.',
+    'The image shown on the screen (app or web screenshot, artwork). Recommended {pxW} × {pxH} px {orientation} (screen {w} × {h} mm); for {other} swap the sizes. {example} Other aspect ratios fill the screen with cropping; the rounded corners clip it.':
+      'Obraz wyświetlany na ekranie (zrzut aplikacji, strony, grafika). Zalecane {pxW} × {pxH} px {orientation} (ekran {w} × {h} mm); dla układu {other} zamień wymiary. {example} Obraz o innych proporcjach wypełnia ekran z przycięciem, zaokrąglone narożniki go obcinają.',
+    'A typical screenshot (e.g. {w} × {h} px) fits too – it is cropped slightly.':
+      'Typowy zrzut ekranu (np. {w} × {h} px) też pasuje – zostanie lekko przycięty.',
 
     /* keepcase: texts with placeholders */
-    'The whole insert under the sleeve, left to right: Back | Spine | Front. {w} × {h} mm + 3 mm bleed (width = 2 × {panel} mm + spine {spines} mm – download the template). Takes priority over the separate Front / Spine / Back slots.': 'Cała wkładka pod folią, od lewej: Tył | Grzbiet | Przód. Format {w} × {h} mm + 3 mm spadu (szerokość = 2 × {panel} mm + grzbiet {spines} mm – pobierz szablon). Ma pierwszeństwo przed osobnymi polami Przód / Grzbiet / Tył.',
+    'The whole insert under the sleeve, left to right: Back | Spine | Front. {w} × {h} mm + 3 mm bleed (width = 2 × {panel} mm + spine {spines} mm – download the template). Takes priority over the separate Front / Spine / Back slots.':
+      'Cała wkładka pod folią, od lewej: Tył | Grzbiet | Przód. Format {w} × {h} mm + 3 mm spadu (szerokość = 2 × {panel} mm + grzbiet {spines} mm – pobierz szablon). Ma pierwszeństwo przed osobnymi polami Przód / Grzbiet / Tył.',
     '{onlyIfNoCover} {w} × {h} mm + 3 mm bleed.': '{onlyIfNoCover} {w} × {h} mm + 3 mm spadu.',
-    '{onlyIfNoCover} A vertical strip as in the template: width = case thickness ({spines} mm) × {h} mm + 3 mm bleed. Without an image the spine uses “Spine & back colour”.': '{onlyIfNoCover} Pionowy pasek jak na szablonie: szerokość = grubość pudełka ({spines} mm) × {h} mm + 3 mm spadu. Bez obrazu grzbiet ma kolor „Kolor grzbietu i tyłu”.',
-    '{onlyIfNoCover} {w} × {h} mm + 3 mm bleed. Without an image the back uses “Spine & back colour”.': '{onlyIfNoCover} {w} × {h} mm + 3 mm spadu. Bez obrazu tył ma kolor „Kolor grzbietu i tyłu”.',
+    '{onlyIfNoCover} A vertical strip as in the template: width = case thickness ({spines} mm) × {h} mm + 3 mm bleed. Without an image the spine uses “Spine & back colour”.':
+      '{onlyIfNoCover} Pionowy pasek jak na szablonie: szerokość = grubość pudełka ({spines} mm) × {h} mm + 3 mm spadu. Bez obrazu grzbiet ma kolor „Kolor grzbietu i tyłu”.',
+    '{onlyIfNoCover} {w} × {h} mm + 3 mm bleed. Without an image the back uses “Spine & back colour”.':
+      '{onlyIfNoCover} {w} × {h} mm + 3 mm spadu. Bez obrazu tył ma kolor „Kolor grzbietu i tyłu”.',
 
     /* models-misc: texts with placeholders */
     'Print Ø {d}': 'Nadruk Ø {d}',
 
     /* printFlat: texts with placeholders */
-    '{item} – front side. Default {w} × {h} mm + 3 mm bleed on every side (the template follows the chosen size).': '{item} – strona przednia. Domyślnie {w} × {h} mm + 3 mm spadu z każdej strony (szablon uwzględnia wybrany rozmiar).',
-    'Back in the same format, laid out as when turning the sheet over like a page (top stays at the top). {fallback}': 'Tył w tym samym formacie, przygotowany jak przy obróceniu kartki (góra zostaje górą). {fallback}',
-    'The whole cover, left to right: Back | Front, no spine (stapled on the fold line). For A4: 420 × 297 mm + 3 mm bleed. Takes priority over the separate Front / Back slots.': 'Cała okładka od lewej: Tył | Przód, bez grzbietu (zszywka w linii zgięcia). Dla A4: 420 × 297 mm + 3 mm spadu. Ma pierwszeństwo przed osobnymi polami Przód / Tył.',
+    '{item} – front side. Default {w} × {h} mm + 3 mm bleed on every side (the template follows the chosen size).':
+      '{item} – strona przednia. Domyślnie {w} × {h} mm + 3 mm spadu z każdej strony (szablon uwzględnia wybrany rozmiar).',
+    'Back in the same format, laid out as when turning the sheet over like a page (top stays at the top). {fallback}':
+      'Tył w tym samym formacie, przygotowany jak przy obróceniu kartki (góra zostaje górą). {fallback}',
+    'The whole cover, left to right: Back | Front, no spine (stapled on the fold line). For A4: 420 × 297 mm + 3 mm bleed. Takes priority over the separate Front / Back slots.':
+      'Cała okładka od lewej: Tył | Przód, bez grzbietu (zszywka w linii zgięcia). Dla A4: 420 × 297 mm + 3 mm spadu. Ma pierwszeństwo przed osobnymi polami Przód / Tył.',
 
     /* printFolded: texts with placeholders */
-    'The whole outside of the sheet (3 panels), left to right: roll fold – Inner flap | Back | Front cover; Z-fold – Panel 1 | Panel 2 | Front cover. A4: 297 × 210 mm + 3 mm bleed = 303 × 216 mm (download the template).': 'Cała zewnętrzna strona arkusza (3 panele), od lewej: falc zwijany – Klapka | Tył | Okładka; harmonijka Z – Panel 1 | Panel 2 | Okładka. A4: 297 × 210 mm + 3 mm spadu = 303 × 216 mm (pobierz szablon).',
-    'The inside of the leaflet (3 panels) as seen when opened. The left panel backs the front cover, the right one the flap (Z-fold: backs panel 1 = back cover). Without an image: plain paper.': 'Wnętrze ulotki (3 panele) widziane po rozłożeniu. Lewy panel leży na odwrocie okładki, prawy – na odwrocie klapki (harmonijka Z: na odwrocie panelu 1, czyli tył). Bez obrazu: czysty papier.',
-    'Outside spread: Back | Front ({w} × {h} mm + 3 mm bleed for the default size). With the fold at the top the layout is vertical: back (upside down) above the front – download the template.': 'Rozkładówka zewnętrzna: Tył | Przód ({w} × {h} mm + 3 mm spadu dla formatu domyślnego). Przy zgięciu u góry układ jest pionowy: tył (do góry nogami) nad przodem – pobierz szablon.',
+    'The whole outside of the sheet (3 panels), left to right: roll fold – Inner flap | Back | Front cover; Z-fold – Panel 1 | Panel 2 | Front cover. A4: 297 × 210 mm + 3 mm bleed = 303 × 216 mm (download the template).':
+      'Cała zewnętrzna strona arkusza (3 panele), od lewej: falc zwijany – Klapka | Tył | Okładka; harmonijka Z – Panel 1 | Panel 2 | Okładka. A4: 297 × 210 mm + 3 mm spadu = 303 × 216 mm (pobierz szablon).',
+    'The inside of the leaflet (3 panels) as seen when opened. The left panel backs the front cover, the right one the flap (Z-fold: backs panel 1 = back cover). Without an image: plain paper.':
+      'Wnętrze ulotki (3 panele) widziane po rozłożeniu. Lewy panel leży na odwrocie okładki, prawy – na odwrocie klapki (harmonijka Z: na odwrocie panelu 1, czyli tył). Bez obrazu: czysty papier.',
+    'Outside spread: Back | Front ({w} × {h} mm + 3 mm bleed for the default size). With the fold at the top the layout is vertical: back (upside down) above the front – download the template.':
+      'Rozkładówka zewnętrzna: Tył | Przód ({w} × {h} mm + 3 mm spadu dla formatu domyślnego). Przy zgięciu u góry układ jest pionowy: tył (do góry nogami) nad przodem – pobierz szablon.',
 
     /* templates: texts with placeholders */
     'Template too large to render': 'Szablon zbyt duży do wygenerowania',
@@ -782,43 +857,43 @@ export const polish: Locale = {
   // need a different translation depending on what they describe.
   contexts: {
     'business card': {
-      'Finish': 'Uszlachetnienie',
+      Finish: 'Uszlachetnienie',
     },
-    'computer': {
-      'Pose': 'Ustawienie',
-      'Size': 'Rozmiar',
+    computer: {
+      Pose: 'Ustawienie',
+      Size: 'Rozmiar',
     },
     'flat print': {
-      'Satin': 'Satynowe',
-      'Landscape': 'Pozioma',
-      'Portrait': 'Pionowa',
-      'Silver': 'Srebrne',
+      Satin: 'Satynowe',
+      Landscape: 'Pozioma',
+      Portrait: 'Pionowa',
+      Silver: 'Srebrne',
       'Width (custom size)': 'Szerokość (rozmiar własny)',
       'Height (custom size)': 'Wysokość (rozmiar własny)',
     },
     'folded print': {
-      'Satin': 'Satynowe',
+      Satin: 'Satynowe',
     },
     'greeting card page': {
       'Inside – left': 'Wnętrze – lewa strona',
     },
     'jewel case': {
-      'Black': 'Czarna',
-      'White': 'Biała',
-      'Matte': 'Matowy',
-      'Satin': 'Satynowy',
-      'Gloss': 'Błyszczący',
+      Black: 'Czarna',
+      White: 'Biała',
+      Matte: 'Matowy',
+      Satin: 'Satynowy',
+      Gloss: 'Błyszczący',
     },
     'keep case': {
-      'Clear': 'Przezroczysty',
-      'Glossy': 'Błyszczący',
-      'Satin': 'Satynowy',
-      'Matte': 'Matowy',
+      Clear: 'Przezroczysty',
+      Glossy: 'Błyszczący',
+      Satin: 'Satynowy',
+      Matte: 'Matowy',
     },
     'model name': {
-      'Disc': 'Płyta CD/DVD',
+      Disc: 'Płyta CD/DVD',
     },
-    'notebook': {
+    notebook: {
       'Page block thickness': 'Grubość bloku kartek',
       'Page colour': 'Kolor kartek',
     },
@@ -826,12 +901,12 @@ export const polish: Locale = {
       'Matte (anti-glare)': 'Matowe (antyrefleks)',
     },
     'recommended image orientation': {
-      'portrait': 'w pionie',
-      'landscape': 'w poziomie',
+      portrait: 'w pionie',
+      landscape: 'w poziomie',
     },
     'image layout to swap to': {
-      'landscape': 'poziomego',
-      'portrait': 'pionowego',
+      landscape: 'poziomego',
+      portrait: 'pionowego',
     },
   },
 };

@@ -33,7 +33,12 @@ describe('Documents', () => {
     expect(store.state.modelId).toBe('dvd');
     docs.add(documentState());
     expect(docs.tabs().map((t) => t.untitledNumber)).toEqual([1, 2, 3]);
-    expect(docs.tabs().filter((t) => t.active).map((t) => t.id)).toEqual([docs.activeId]);
+    expect(
+      docs
+        .tabs()
+        .filter((t) => t.active)
+        .map((t) => t.id),
+    ).toEqual([docs.activeId]);
   });
 
   it('adds a tab in the background when asked', () => {

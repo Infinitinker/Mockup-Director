@@ -76,7 +76,11 @@ function clipToStrip(poly: [number, number][], x0: number, x1: number): [number,
     }
     return out;
   };
-  return clip(clip(poly, (x) => x >= x0, x0), (x) => x <= x1, x1);
+  return clip(
+    clip(poly, (x) => x >= x0, x0),
+    (x) => x <= x1,
+    x1,
+  );
 }
 
 /**

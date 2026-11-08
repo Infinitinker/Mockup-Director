@@ -94,7 +94,8 @@ if (i !== -1) {
     console.error('--notices needs a file name');
     process.exit(2);
   }
-  let md = '# Third-party notices\n\nMockup Director includes the following third-party software.\n\n## JavaScript packages\n\n';
+  let md =
+    '# Third-party notices\n\nMockup Director includes the following third-party software.\n\n## JavaScript packages\n\n';
   for (const r of prod) {
     md += `### ${r.name} ${r.version} (${r.license})\n\n`;
     const texts = licenseTexts(r.path);
@@ -111,7 +112,8 @@ if (i !== -1) {
 
 if (bad.length) {
   console.error(`\nDisallowed or missing licenses (${bad.length}):`);
-  for (const r of bad) console.error(`  ${r.name}@${r.version}  ${r.license ?? '(none)'}${r.prod ? '  [shipped]' : ''}`);
+  for (const r of bad)
+    console.error(`  ${r.name}@${r.version}  ${r.license ?? '(none)'}${r.prod ? '  [shipped]' : ''}`);
   process.exit(1);
 }
 console.log('All npm licenses are allowed.');

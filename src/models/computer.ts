@@ -110,7 +110,14 @@ function finishSlab(ext: THREE.ExtrudeGeometry, zLo: number, zHi: number, b: num
  * Rounded slab: the XY outline `shape` (already shrunk by the bevel on every side) extruded from
  * z0 to z1 with a round bevel of radius `b` – so the finished part reaches the un-shrunk outline.
  */
-function slab(shape: THREE.Shape, z0: number, z1: number, b: number, curveSegments = 8, bevelSegments = 3): THREE.BufferGeometry {
+function slab(
+  shape: THREE.Shape,
+  z0: number,
+  z1: number,
+  b: number,
+  curveSegments = 8,
+  bevelSegments = 3,
+): THREE.BufferGeometry {
   const depth = Math.max(0.01, z1 - z0 - 2 * b);
   const ext = new THREE.ExtrudeGeometry(shape, {
     depth,
@@ -125,7 +132,17 @@ function slab(shape: THREE.Shape, z0: number, z1: number, b: number, curveSegmen
 }
 
 /** Rounded-rectangle slab of OUTER size w × h (XY), from z0 to z1, corner radius r, edge bevel b. */
-function rrSlab(cx: number, cy: number, w: number, h: number, r: number, z0: number, z1: number, bevel: number, curveSegments = 8): THREE.BufferGeometry {
+function rrSlab(
+  cx: number,
+  cy: number,
+  w: number,
+  h: number,
+  r: number,
+  z0: number,
+  z1: number,
+  bevel: number,
+  curveSegments = 8,
+): THREE.BufferGeometry {
   const b = clamp(bevel, 0.1, Math.min((z1 - z0) / 2 - 0.02, w / 4, h / 4));
   return slab(rrShape(cx, cy, w - 2 * b, h - 2 * b, r - b), z0, z1, b, curveSegments);
 }
@@ -238,7 +255,10 @@ function sectionSlab(
 
 /** Pixel aspect (w / h) of a texture's image, or null when unknown. */
 function imageAspect(tex: THREE.Texture): number | null {
-  const img = tex.image as { width?: number; height?: number; videoWidth?: number; videoHeight?: number } | null | undefined;
+  const img = tex.image as
+    | { width?: number; height?: number; videoWidth?: number; videoHeight?: number }
+    | null
+    | undefined;
   if (!img) return null;
   const w = img.videoWidth || img.width || 0;
   const h = img.videoHeight || img.height || 0;
@@ -401,10 +421,42 @@ interface LaptopFinish {
 }
 
 const LAPTOP_FINISHES: Record<string, LaptopFinish> = {
-  darkGrey: { label: L('Dark grey'), body: '#5f6166', metalness: 0.85, roughness: 0.38, clearcoat: 0, keys: '#141416', well: '#2c2d31' },
-  silver: { label: L('Silver'), body: '#cfd1d5', metalness: 0.95, roughness: 0.32, clearcoat: 0, keys: '#151517', well: '#7c7e83' },
-  black: { label: L('Black'), body: '#2a2b2e', metalness: 0.55, roughness: 0.42, clearcoat: 0.1, keys: '#111113', well: '#161719' },
-  white: { label: L('White'), body: '#eeede9', metalness: 0, roughness: 0.4, clearcoat: 0.35, keys: '#e4e3df', well: '#cfceca' },
+  darkGrey: {
+    label: L('Dark grey'),
+    body: '#5f6166',
+    metalness: 0.85,
+    roughness: 0.38,
+    clearcoat: 0,
+    keys: '#141416',
+    well: '#2c2d31',
+  },
+  silver: {
+    label: L('Silver'),
+    body: '#cfd1d5',
+    metalness: 0.95,
+    roughness: 0.32,
+    clearcoat: 0,
+    keys: '#151517',
+    well: '#7c7e83',
+  },
+  black: {
+    label: L('Black'),
+    body: '#2a2b2e',
+    metalness: 0.55,
+    roughness: 0.42,
+    clearcoat: 0.1,
+    keys: '#111113',
+    well: '#161719',
+  },
+  white: {
+    label: L('White'),
+    body: '#eeede9',
+    metalness: 0,
+    roughness: 0.4,
+    clearcoat: 0.35,
+    keys: '#e4e3df',
+    well: '#cfceca',
+  },
 };
 
 /** Gap between the closed lid and the deck (rubber bumpers), mm. */
@@ -515,7 +567,10 @@ function buildLaptop(ctx: ModelContext): THREE.Object3D {
   const floorTop = baseT - WELL_DEPTH;
   const floorGeo = new THREE.BoxGeometry(kbW, floorTop - 0.05, kbH);
   floorGeo.translate(0, (floorTop + 0.05) / 2, wellCz);
-  const floor = new THREE.Mesh(floorGeo, new THREE.MeshStandardMaterial({ color: fin.well, roughness: 0.75, metalness: 0 }));
+  const floor = new THREE.Mesh(
+    floorGeo,
+    new THREE.MeshStandardMaterial({ color: fin.well, roughness: 0.75, metalness: 0 }),
+  );
   floor.name = 'keyboard-well';
   root.add(floor);
 
@@ -523,7 +578,13 @@ function buildLaptop(ctx: ModelContext): THREE.Object3D {
   const keyH = WELL_DEPTH + 0.2;
   const keys = new THREE.Mesh(
     keyboardGeometry(u, -7.5 * u, wellBack + pad, floorTop, keyH),
-    new THREE.MeshPhysicalMaterial({ color: fin.keys, roughness: 0.58, metalness: 0, clearcoat: 0.08, clearcoatRoughness: 0.6 }),
+    new THREE.MeshPhysicalMaterial({
+      color: fin.keys,
+      roughness: 0.58,
+      metalness: 0,
+      clearcoat: 0.08,
+      clearcoatRoughness: 0.6,
+    }),
   );
   keys.name = 'keys';
   root.add(keys);
@@ -667,7 +728,13 @@ function buildLaptop(ctx: ModelContext): THREE.Object3D {
   // Generic camera dot centred in the top bezel.
   const camGeo = new THREE.CircleGeometry(1.0, 20);
   camGeo.translate(0, lidH - LAPTOP_TOP_BEZEL / 2, 0.09);
-  const camMat = new THREE.MeshPhysicalMaterial({ color: '#141a24', roughness: 0.1, metalness: 0.3, clearcoat: 1, clearcoatRoughness: 0.02 });
+  const camMat = new THREE.MeshPhysicalMaterial({
+    color: '#141a24',
+    roughness: 0.1,
+    metalness: 0.3,
+    clearcoat: 1,
+    clearcoatRoughness: 0.02,
+  });
   decal(camMat, 3);
   const cam = new THREE.Mesh(camGeo, camMat);
   cam.name = 'camera';
@@ -692,7 +759,9 @@ export const laptopModel: ModelDefinition = {
     {
       id: 'screen',
       label: L('Screen'),
-      hint: L('A 16:10 screenshot, e.g. 2560 × 1600 px (or 2880 × 1800 / 3456 × 2160 px). Other proportions are cropped or stretched (see “Image fit”).'),
+      hint: L(
+        'A 16:10 screenshot, e.g. 2560 × 1600 px (or 2880 × 1800 / 3456 × 2160 px). Other proportions are cropped or stretched (see “Image fit”).',
+      ),
       aspect: 16 / 10,
     },
   ],
@@ -768,9 +837,33 @@ interface MonitorFinish {
 }
 
 const MONITOR_FINISHES: Record<string, MonitorFinish> = {
-  black: { label: L('Black'), frame: '#1b1c1e', frameMetal: 0, frameRough: 0.48, stand: '#26272a', standMetal: 0.6, standRough: 0.4 },
-  silver: { label: L('Silver'), frame: '#c6c8cc', frameMetal: 0.95, frameRough: 0.34, stand: '#c9cbcf', standMetal: 0.95, standRough: 0.3 },
-  white: { label: L('White'), frame: '#eceae6', frameMetal: 0, frameRough: 0.42, stand: '#e6e4e0', standMetal: 0, standRough: 0.38 },
+  black: {
+    label: L('Black'),
+    frame: '#1b1c1e',
+    frameMetal: 0,
+    frameRough: 0.48,
+    stand: '#26272a',
+    standMetal: 0.6,
+    standRough: 0.4,
+  },
+  silver: {
+    label: L('Silver'),
+    frame: '#c6c8cc',
+    frameMetal: 0.95,
+    frameRough: 0.34,
+    stand: '#c9cbcf',
+    standMetal: 0.95,
+    standRough: 0.3,
+  },
+  white: {
+    label: L('White'),
+    frame: '#eceae6',
+    frameMetal: 0,
+    frameRough: 0.42,
+    stand: '#e6e4e0',
+    standMetal: 0,
+    standRough: 0.38,
+  },
 };
 
 /** Curvature radii (mm) for the ultrawide. */
@@ -860,7 +953,14 @@ function buildMonitor(ctx: ModelContext): THREE.Object3D {
   const ledOn = bool(p, 'screenOn', true);
   const led = new THREE.Mesh(
     ledGeo,
-    decal(new THREE.MeshStandardMaterial({ color: ledOn ? '#ffffff' : '#3a3b3d', emissive: '#ffffff', emissiveIntensity: ledOn ? 0.6 : 0, roughness: 0.4 })),
+    decal(
+      new THREE.MeshStandardMaterial({
+        color: ledOn ? '#ffffff' : '#3a3b3d',
+        emissive: '#ffffff',
+        emissiveIntensity: ledOn ? 0.6 : 0,
+        roughness: 0.4,
+      }),
+    ),
   );
   led.position.set(lx, s.chin / 2, lz);
   led.rotation.y = R > 0 ? -ledX / R : 0;
@@ -941,13 +1041,17 @@ export const monitorModel: ModelDefinition = {
   id: 'device-monitor',
   category: 'device',
   name: L('Monitor'),
-  description: L('Generic thin-bezel monitor: 24" / 27" / 32" (16:9) or a curved 34" ultrawide (21:9), L-shaped or pedestal stand.'),
+  description: L(
+    'Generic thin-bezel monitor: 24" / 27" / 32" (16:9) or a curved 34" ultrawide (21:9), L-shaped or pedestal stand.',
+  ),
   icon: ICON_MONITOR,
   slots: [
     {
       id: 'screen',
       label: L('Screen'),
-      hint: L('A 16:9 screenshot, e.g. 2560 × 1440 px (24–32"). For the 34" ultrawide: 21:9, e.g. 3440 × 1440 px. Other proportions are cropped or stretched (see “Image fit”).'),
+      hint: L(
+        'A 16:9 screenshot, e.g. 2560 × 1440 px (24–32"). For the 34" ultrawide: 21:9, e.g. 3440 × 1440 px. Other proportions are cropped or stretched (see “Image fit”).',
+      ),
       aspect: 16 / 9,
     },
   ],

@@ -55,7 +55,8 @@ export function createImagesPanel(ctx: AppContext): { el: HTMLElement; render():
     const asset = s.images[modelId]?.[slot.id];
     const loading = ctx.loadingSlots.value.has(`${modelId}/${slot.id}`);
     const thumb = h('div', { class: 'slot-thumb checkerboard' });
-    if (asset) thumb.appendChild(h('img', { attrs: { src: thumbnailFor(asset), alt: asset.name, draggable: 'false' } }));
+    if (asset)
+      thumb.appendChild(h('img', { attrs: { src: thumbnailFor(asset), alt: asset.name, draggable: 'false' } }));
     else thumb.appendChild(h('span', { class: 'slot-empty-icon', html: ICONS.image }));
     if (loading) thumb.appendChild(h('span', { class: 'spinner', attrs: { 'aria-label': t('loading') } }));
 
@@ -64,7 +65,12 @@ export function createImagesPanel(ctx: AppContext): { el: HTMLElement; render():
     thumb.appendChild(badge);
 
     const fileLine = asset
-      ? h('div', { class: 'slot-file', title: asset.name }, h('span', { class: 'slot-filename', text: asset.name }), h('span', { class: 'slot-size', text: `${asset.width} × ${asset.height} px` }))
+      ? h(
+          'div',
+          { class: 'slot-file', title: asset.name },
+          h('span', { class: 'slot-filename', text: asset.name }),
+          h('span', { class: 'slot-size', text: `${asset.width} × ${asset.height} px` }),
+        )
       : h('div', { class: 'slot-file empty', text: t('noImage') });
 
     const actions = h(
@@ -157,7 +163,9 @@ export function createImagesPanel(ctx: AppContext): { el: HTMLElement; render():
       e.stopPropagation();
       depth = 0;
       el.classList.remove('drop-target');
-      const file = Array.from(e.dataTransfer?.files ?? []).find((f) => f.type.startsWith('image/') || /\.(png|jpe?g|webp|gif|bmp|tiff?|avif|heic|svg)$/i.test(f.name));
+      const file = Array.from(e.dataTransfer?.files ?? []).find(
+        (f) => f.type.startsWith('image/') || /\.(png|jpe?g|webp|gif|bmp|tiff?|avif|heic|svg)$/i.test(f.name),
+      );
       // An empty list makes assignImages show an "unsupported file" hint.
       void ctx.actions.assignImages(file ? [file] : [], [slot.id]);
     });

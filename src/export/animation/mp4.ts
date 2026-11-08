@@ -24,7 +24,9 @@ const PROFILES = ['6400', '4d00', '42e0', '4200'];
 
 /** Is WebCodecs video encoding present at all? (Config support is checked per export.) */
 export function mp4EncodingAvailable(): boolean {
-  return typeof VideoEncoder === 'function' && typeof VideoFrame === 'function' && typeof EncodedVideoChunk === 'function';
+  return (
+    typeof VideoEncoder === 'function' && typeof VideoFrame === 'function' && typeof EncodedVideoChunk === 'function'
+  );
 }
 
 export function bitrateFor(width: number, height: number, fps: number, quality: 'low' | 'medium' | 'high'): number {
@@ -38,7 +40,9 @@ export function avcCandidates(width: number, height: number, fps: number): strin
   const mbh = Math.ceil(height / 16);
   const fs = mbw * mbh;
   const mbps = fs * fps;
-  const fits = LEVELS.filter(([, maxFs, maxMbps]) => fs <= maxFs && mbps <= maxMbps && Math.max(mbw, mbh) <= Math.sqrt(maxFs * 8));
+  const fits = LEVELS.filter(
+    ([, maxFs, maxMbps]) => fs <= maxFs && mbps <= maxMbps && Math.max(mbw, mbh) <= Math.sqrt(maxFs * 8),
+  );
   const levels = fits.length ? fits : [LEVELS[LEVELS.length - 1]];
   const out: string[] = [];
   for (const [level] of levels) for (const p of PROFILES) out.push(`avc1.${p}${level.toString(16).padStart(2, '0')}`);
@@ -46,7 +50,12 @@ export function avcCandidates(width: number, height: number, fps: number): strin
 }
 
 /** Find a supported encoder configuration (null = H.264 encoding unsupported for this size). */
-export async function findAvcConfig(width: number, height: number, fps: number, bitrate: number): Promise<VideoEncoderConfig | null> {
+export async function findAvcConfig(
+  width: number,
+  height: number,
+  fps: number,
+  bitrate: number,
+): Promise<VideoEncoderConfig | null> {
   if (!mp4EncodingAvailable()) return null;
   for (const codec of avcCandidates(width, height, fps)) {
     const base: VideoEncoderConfig = { codec, width, height, bitrate, framerate: fps, latencyMode: 'quality' };
@@ -78,7 +87,12 @@ export class Mp4Writer {
   ) {}
 
   /** null = this engine cannot encode H.264 at this size. */
-  static async create(width: number, height: number, fps: number, quality: 'low' | 'medium' | 'high'): Promise<Mp4Writer | null> {
+  static async create(
+    width: number,
+    height: number,
+    fps: number,
+    quality: 'low' | 'medium' | 'high',
+  ): Promise<Mp4Writer | null> {
     const config = await findAvcConfig(width, height, fps, bitrateFor(width, height, fps, quality));
     if (!config) return null;
     const mb = await import('mediabunny');

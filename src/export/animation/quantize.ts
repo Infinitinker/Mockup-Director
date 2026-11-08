@@ -34,7 +34,9 @@ export class ColorHistogram {
     const { count, sumR, sumG, sumB } = this;
     for (let p = 0; p < n; p += s) {
       if (visible && !visible[p]) continue;
-      const r = rgb[p * 3], g = rgb[p * 3 + 1], b = rgb[p * 3 + 2];
+      const r = rgb[p * 3],
+        g = rgb[p * 3 + 1],
+        b = rgb[p * 3 + 2];
       const bin = ((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3);
       count[bin] += 1;
       sumR[bin] += r;
@@ -62,7 +64,10 @@ export function buildPalette(hist: ColorHistogram, maxColors: number): Uint8Arra
   let m = 0;
   for (let i = 0; i < BINS; i++) if (hist.count[i] > 0) m++;
   if (m === 0) return new Uint8Array([0, 0, 0]);
-  const pr = new Float32Array(m), pg = new Float32Array(m), pb = new Float32Array(m), pw = new Float64Array(m);
+  const pr = new Float32Array(m),
+    pg = new Float32Array(m),
+    pb = new Float32Array(m),
+    pw = new Float64Array(m);
   for (let i = 0, k = 0; i < BINS; i++) {
     const c = hist.count[i];
     if (c <= 0) continue;
@@ -86,19 +91,34 @@ export function buildPalette(hist: ColorHistogram, maxColors: number): Uint8Arra
   for (let k = 0; k < m; k++) order[k] = k;
 
   const boxSse = (start: number, end: number): number => {
-    let w = 0, r = 0, g = 0, b = 0, rr = 0, gg = 0, bb = 0;
+    let w = 0,
+      r = 0,
+      g = 0,
+      b = 0,
+      rr = 0,
+      gg = 0,
+      bb = 0;
     for (let i = start; i < end; i++) {
-      const k = order[i], c = pw[k];
+      const k = order[i],
+        c = pw[k];
       w += c;
-      r += c * pr[k]; g += c * pg[k]; b += c * pb[k];
-      rr += c * pr[k] * pr[k]; gg += c * pg[k] * pg[k]; bb += c * pb[k] * pb[k];
+      r += c * pr[k];
+      g += c * pg[k];
+      b += c * pb[k];
+      rr += c * pr[k] * pr[k];
+      gg += c * pg[k] * pg[k];
+      bb += c * pb[k] * pb[k];
     }
     if (w <= 0) return 0;
     return WR * (rr - (r * r) / w) + WG * (gg - (g * g) / w) + WB * (bb - (b * b) / w);
   };
 
   const boxes: Box[] = [{ start: 0, end: m, sse: boxSse(0, m) }];
-  let prefW = new Float64Array(0), prefR = prefW, prefG = prefW, prefB = prefW, prefQ = prefW;
+  let prefW = new Float64Array(0),
+    prefR = prefW,
+    prefG = prefW,
+    prefB = prefW,
+    prefQ = prefW;
   while (boxes.length < max) {
     // The box with the largest error that can still be split.
     let bi = -1;
@@ -111,24 +131,42 @@ export function buildPalette(hist: ColorHistogram, maxColors: number): Uint8Arra
     const len = box.end - box.start;
 
     // Split axis: the channel with the largest weighted variance.
-    let w = 0, r = 0, g = 0, b = 0, rr = 0, gg = 0, bb = 0;
+    let w = 0,
+      r = 0,
+      g = 0,
+      b = 0,
+      rr = 0,
+      gg = 0,
+      bb = 0;
     for (let i = box.start; i < box.end; i++) {
-      const k = order[i], c = pw[k];
-      w += c; r += c * pr[k]; g += c * pg[k]; b += c * pb[k];
-      rr += c * pr[k] * pr[k]; gg += c * pg[k] * pg[k]; bb += c * pb[k] * pb[k];
+      const k = order[i],
+        c = pw[k];
+      w += c;
+      r += c * pr[k];
+      g += c * pg[k];
+      b += c * pb[k];
+      rr += c * pr[k] * pr[k];
+      gg += c * pg[k] * pg[k];
+      bb += c * pb[k] * pb[k];
     }
-    const vr = WR * (rr - (r * r) / w), vg = WG * (gg - (g * g) / w), vb = WB * (bb - (b * b) / w);
+    const vr = WR * (rr - (r * r) / w),
+      vg = WG * (gg - (g * g) / w),
+      vb = WB * (bb - (b * b) / w);
     const axis = vr >= vg && vr >= vb ? pr : vg >= vb ? pg : pb;
     order.subarray(box.start, box.end).sort((a, c) => axis[a] - axis[c]);
 
     // Split position minimising SSE(left) + SSE(right) (prefix sums over the sorted points).
     if (prefW.length < len + 1) {
-      prefW = new Float64Array(len + 1); prefR = new Float64Array(len + 1); prefG = new Float64Array(len + 1);
-      prefB = new Float64Array(len + 1); prefQ = new Float64Array(len + 1);
+      prefW = new Float64Array(len + 1);
+      prefR = new Float64Array(len + 1);
+      prefG = new Float64Array(len + 1);
+      prefB = new Float64Array(len + 1);
+      prefQ = new Float64Array(len + 1);
     }
     prefW[0] = prefR[0] = prefG[0] = prefB[0] = prefQ[0] = 0;
     for (let i = 0; i < len; i++) {
-      const k = order[box.start + i], c = pw[k];
+      const k = order[box.start + i],
+        c = pw[k];
       prefW[i + 1] = prefW[i] + c;
       prefR[i + 1] = prefR[i] + c * pr[k];
       prefG[i + 1] = prefG[i] + c * pg[k];
@@ -137,49 +175,94 @@ export function buildPalette(hist: ColorHistogram, maxColors: number): Uint8Arra
     }
     const sseOf = (wq: number, ws: number, rs: number, gs: number, bs: number) =>
       ws > 0 ? wq - (WR * rs * rs + WG * gs * gs + WB * bs * bs) / ws : 0;
-    let bestI = 1, best = Infinity;
-    const tw = prefW[len], tr = prefR[len], tg = prefG[len], tb = prefB[len], tq = prefQ[len];
+    let bestI = 1,
+      best = Infinity;
+    const tw = prefW[len],
+      tr = prefR[len],
+      tg = prefG[len],
+      tb = prefB[len],
+      tq = prefQ[len];
     for (let i = 1; i < len; i++) {
       const e =
         sseOf(prefQ[i], prefW[i], prefR[i], prefG[i], prefB[i]) +
         sseOf(tq - prefQ[i], tw - prefW[i], tr - prefR[i], tg - prefG[i], tb - prefB[i]);
-      if (e < best) { best = e; bestI = i; }
+      if (e < best) {
+        best = e;
+        bestI = i;
+      }
     }
     const mid = box.start + bestI;
-    boxes.splice(bi, 1, { start: box.start, end: mid, sse: boxSse(box.start, mid) }, { start: mid, end: box.end, sse: boxSse(mid, box.end) });
+    boxes.splice(
+      bi,
+      1,
+      { start: box.start, end: mid, sse: boxSse(box.start, mid) },
+      { start: mid, end: box.end, sse: boxSse(mid, box.end) },
+    );
   }
 
   // Box means = initial palette.
   const n = boxes.length;
-  const cr = new Float64Array(n), cg = new Float64Array(n), cb = new Float64Array(n);
+  const cr = new Float64Array(n),
+    cg = new Float64Array(n),
+    cb = new Float64Array(n);
   boxes.forEach((bx, j) => {
-    let w = 0, r = 0, g = 0, b = 0;
+    let w = 0,
+      r = 0,
+      g = 0,
+      b = 0;
     for (let i = bx.start; i < bx.end; i++) {
-      const k = order[i], c = pw[k];
-      w += c; r += c * pr[k]; g += c * pg[k]; b += c * pb[k];
+      const k = order[i],
+        c = pw[k];
+      w += c;
+      r += c * pr[k];
+      g += c * pg[k];
+      b += c * pb[k];
     }
-    cr[j] = r / w; cg[j] = g / w; cb[j] = b / w;
+    cr[j] = r / w;
+    cg[j] = g / w;
+    cb[j] = b / w;
   });
 
   // Weighted k-means refinement (a few passes are enough – the median cut start is already good).
   const assign = new Int32Array(m);
-  const ar = new Float64Array(n), ag = new Float64Array(n), ab = new Float64Array(n), aw = new Float64Array(n);
+  const ar = new Float64Array(n),
+    ag = new Float64Array(n),
+    ab = new Float64Array(n),
+    aw = new Float64Array(n);
   for (let iter = 0; iter < 3; iter++) {
-    ar.fill(0); ag.fill(0); ab.fill(0); aw.fill(0);
+    ar.fill(0);
+    ag.fill(0);
+    ab.fill(0);
+    aw.fill(0);
     for (let k = 0; k < m; k++) {
-      let bj = 0, bd = Infinity;
-      const r = pr[k], g = pg[k], b = pb[k];
+      let bj = 0,
+        bd = Infinity;
+      const r = pr[k],
+        g = pg[k],
+        b = pb[k];
       for (let j = 0; j < n; j++) {
-        const dr = r - cr[j], dg = g - cg[j], db = b - cb[j];
+        const dr = r - cr[j],
+          dg = g - cg[j],
+          db = b - cb[j];
         const d = WR * dr * dr + WG * dg * dg + WB * db * db;
-        if (d < bd) { bd = d; bj = j; }
+        if (d < bd) {
+          bd = d;
+          bj = j;
+        }
       }
       assign[k] = bj;
       const c = pw[k];
-      ar[bj] += c * r; ag[bj] += c * g; ab[bj] += c * b; aw[bj] += c;
+      ar[bj] += c * r;
+      ag[bj] += c * g;
+      ab[bj] += c * b;
+      aw[bj] += c;
     }
     for (let j = 0; j < n; j++) {
-      if (aw[j] > 0) { cr[j] = ar[j] / aw[j]; cg[j] = ag[j] / aw[j]; cb[j] = ab[j] / aw[j]; }
+      if (aw[j] > 0) {
+        cr[j] = ar[j] / aw[j];
+        cg[j] = ag[j] / aw[j];
+        cb[j] = ab[j] / aw[j];
+      }
     }
   }
 
@@ -209,13 +292,22 @@ export class PaletteMapper {
     if (hit >= 0) return hit;
     // Search for the centre of the 6-bit cell, so the cached answer does not depend on which
     // colour of the cell happened to be looked up first.
-    const qr = (r & ~3) + 1.5, qg = (g & ~3) + 1.5, qb = (b & ~3) + 1.5;
+    const qr = (r & ~3) + 1.5,
+      qg = (g & ~3) + 1.5,
+      qb = (b & ~3) + 1.5;
     const p = this.palette;
-    let best = 0, bd = Infinity;
+    let best = 0,
+      bd = Infinity;
     for (let j = 0; j < this.size; j++) {
-      const dr = qr - p[j * 3], dg = qg - p[j * 3 + 1], db = qb - p[j * 3 + 2];
+      const dr = qr - p[j * 3],
+        dg = qg - p[j * 3 + 1],
+        db = qb - p[j * 3 + 2];
       const d = WR * dr * dr + WG * dg * dg + WB * db * db;
-      if (d < bd) { bd = d; best = j; if (d === 0) break; }
+      if (d < bd) {
+        bd = d;
+        best = j;
+        if (d === 0) break;
+      }
     }
     this.cache[key] = best;
     return best;
@@ -246,10 +338,9 @@ const FS_STRENGTH = 0.85;
 const ORDERED_SPREAD = 32;
 /** 8x8 Bayer matrix (values 0..63). */
 const BAYER8 = new Uint8Array([
-  0, 32, 8, 40, 2, 34, 10, 42, 48, 16, 56, 24, 50, 18, 58, 26,
-  12, 44, 4, 36, 14, 46, 6, 38, 60, 28, 52, 20, 62, 30, 54, 22,
-  3, 35, 11, 43, 1, 33, 9, 41, 51, 19, 59, 27, 49, 17, 57, 25,
-  15, 47, 7, 39, 13, 45, 5, 37, 63, 31, 55, 23, 61, 29, 53, 21,
+  0, 32, 8, 40, 2, 34, 10, 42, 48, 16, 56, 24, 50, 18, 58, 26, 12, 44, 4, 36, 14, 46, 6, 38, 60, 28, 52, 20, 62, 30, 54,
+  22, 3, 35, 11, 43, 1, 33, 9, 41, 51, 19, 59, 27, 49, 17, 57, 25, 15, 47, 7, 39, 13, 45, 5, 37, 63, 31, 55, 23, 61, 29,
+  53, 21,
 ]);
 
 const clampByte = (v: number) => (v < 0 ? 0 : v > 255 ? 255 : Math.round(v));
@@ -286,10 +377,18 @@ export function mapFrame(o: MapFrameOptions): void {
         const eb = (b - pal[idx * 3 + 2]) * FS_STRENGTH;
         const f = e + dir * 3; // forward neighbour
         const bk = e - dir * 3; // backward neighbour (next row)
-        cur[f] += er * 0.4375; cur[f + 1] += eg * 0.4375; cur[f + 2] += eb * 0.4375;
-        next[bk] += er * 0.1875; next[bk + 1] += eg * 0.1875; next[bk + 2] += eb * 0.1875;
-        next[e] += er * 0.3125; next[e + 1] += eg * 0.3125; next[e + 2] += eb * 0.3125;
-        next[f] += er * 0.0625; next[f + 1] += eg * 0.0625; next[f + 2] += eb * 0.0625;
+        cur[f] += er * 0.4375;
+        cur[f + 1] += eg * 0.4375;
+        cur[f + 2] += eb * 0.4375;
+        next[bk] += er * 0.1875;
+        next[bk + 1] += eg * 0.1875;
+        next[bk + 2] += eb * 0.1875;
+        next[e] += er * 0.3125;
+        next[e + 1] += eg * 0.3125;
+        next[e + 2] += eb * 0.3125;
+        next[f] += er * 0.0625;
+        next[f + 1] += eg * 0.0625;
+        next[f + 2] += eb * 0.0625;
       }
       const t = cur;
       cur = next;
@@ -306,7 +405,9 @@ export function mapFrame(o: MapFrameOptions): void {
         out[p] = T;
         continue;
       }
-      let r = rgb[p * 3], g = rgb[p * 3 + 1], b = rgb[p * 3 + 2];
+      let r = rgb[p * 3],
+        g = rgb[p * 3 + 1],
+        b = rgb[p * 3 + 2];
       if (ordered) {
         const d = ((BAYER8[((y & 7) << 3) | (x & 7)] + 0.5) / 64 - 0.5) * ORDERED_SPREAD;
         r = clampByte(r + d);

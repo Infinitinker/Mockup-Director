@@ -7,7 +7,13 @@
  *    and a progress indicator with Cancel while the animation is rendered.
  */
 import type { AnimationFormat, AnimationSettings, ExportFormat, ExportSettings } from '../../core/types';
-import { DEFAULT_ANIMATION, MAX_ANIMATION_DURATION, MAX_EXPORT_SIZE, MIN_ANIMATION_DURATION, MIN_ANIMATION_SIZE } from '../../core/defaults';
+import {
+  DEFAULT_ANIMATION,
+  MAX_ANIMATION_DURATION,
+  MAX_EXPORT_SIZE,
+  MIN_ANIMATION_DURATION,
+  MIN_ANIMATION_SIZE,
+} from '../../core/defaults';
 import type { AppContext } from '../context';
 import { formatNumber, t, type MessageKey } from '../../i18n';
 import { clamp, h, nextId, safeStorage, shortcutLabel } from '../dom';
@@ -15,7 +21,14 @@ import { ICONS } from '../icons';
 import { numberControl, section, segmentedControl, selectControl, switchControl, type Control } from '../controls';
 import { hasAny } from '../state';
 import { animationFormatSupport, webpEncodingSupported, type AnimationProgress } from '../exportBridge';
-import { defaultFpsFor, frameCountOf, maxFpsFor, maxMarginFor, maxSizeFor, outputSizeOf } from '../../export/animation/settings';
+import {
+  defaultFpsFor,
+  frameCountOf,
+  maxFpsFor,
+  maxMarginFor,
+  maxSizeFor,
+  outputSizeOf,
+} from '../../export/animation/settings';
 
 const SIZE_PRESETS = [800, 1200, 1600, 2000, 3000, 4000];
 const ANIM_SIZE_PRESETS = [480, 640, 800, 1080, 1200, 1920];
@@ -73,12 +86,20 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
     });
 
   const imageDims: DimTarget = { get: (w) => ex()[w], set: setSize, max: () => MAX_EXPORT_SIZE, min: MIN_SIZE };
-  const animDims: DimTarget = { get: (w) => an()[w], set: setAnimSize, max: () => maxSizeFor(an().format), min: MIN_ANIMATION_SIZE };
+  const animDims: DimTarget = {
+    get: (w) => an()[w],
+    set: setAnimSize,
+    max: () => maxSizeFor(an().format),
+    min: MIN_ANIMATION_SIZE,
+  };
 
   /** Width/height numeric field with lock-aspect behaviour. */
   const dimField = (which: 'width' | 'height', target: DimTarget): Control => {
     const id = nextId('dim');
-    const input = h('input', { class: 'num-input', attrs: { id, type: 'text', inputmode: 'numeric', autocomplete: 'off', spellcheck: 'false' } });
+    const input = h('input', {
+      class: 'num-input',
+      attrs: { id, type: 'text', inputmode: 'numeric', autocomplete: 'off', spellcheck: 'false' },
+    });
     const el = h(
       'div',
       { class: 'dim-field' },
@@ -184,7 +205,14 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
     const chips = sizeChips(SIZE_PRESETS, imageDims, add);
     const wField = add(dimField('width', imageDims));
     const hField = add(dimField('height', imageDims));
-    const dims = h('div', { class: 'dims' }, wField.el, h('span', { class: 'dims-x', text: '×' }), hField.el, lockButton());
+    const dims = h(
+      'div',
+      { class: 'dims' },
+      wField.el,
+      h('span', { class: 'dims-x', text: '×' }),
+      hField.el,
+      lockButton(),
+    );
     const margin = add(
       numberControl({
         label: t('margin'),
@@ -212,7 +240,10 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
       }),
     );
     const sizingNote = h('p', { class: 'ctl-note' });
-    add({ el: sizingNote, sync: () => (sizingNote.textContent = ex().sizing === 'canvas' ? t('sizingCanvasHint') : t('sizingTrimHint')) });
+    add({
+      el: sizingNote,
+      sync: () => (sizingNote.textContent = ex().sizing === 'canvas' ? t('sizingCanvasHint') : t('sizingTrimHint')),
+    });
 
     const sizeSection = section('export.size', t('size'), [
       h('div', { class: 'ctl' }, h('div', { class: 'ctl-label', text: t('sizePresets') }), chips),
@@ -264,7 +295,10 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
       }),
     );
     const jpegNote = h('p', { class: 'ctl-note warn-note', text: t('jpegNoAlpha') });
-    add({ el: jpegNote, sync: () => (jpegNote.hidden = !(ex().format === 'jpeg' && ex().background === 'transparent')) });
+    add({
+      el: jpegNote,
+      sync: () => (jpegNote.hidden = !(ex().format === 'jpeg' && ex().background === 'transparent')),
+    });
     const formatSection = section('export.format', t('formatSection'), [
       format.el,
       !webp ? h('p', { class: 'ctl-note', text: t('webpUnsupported') }) : null,
@@ -281,7 +315,8 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
         const e = ex();
         const fmt = e.format === 'jpeg' ? 'JPEG' : e.format.toUpperCase();
         const transparent = e.background === 'transparent' && e.format !== 'jpeg';
-        const size = e.sizing === 'trim' ? t('summaryTrim', { w: e.width, h: e.height }) : `${e.width} × ${e.height} px`;
+        const size =
+          e.sizing === 'trim' ? t('summaryTrim', { w: e.width, h: e.height }) : `${e.width} × ${e.height} px`;
         summary.textContent = `${size} · ${fmt} · ${transparent ? t('summaryTransparent') : t('summaryOpaque')}`;
       },
     });
@@ -335,7 +370,9 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
     const motionNote = h('p', { class: 'ctl-note' });
     add({
       el: motionNote,
-      sync: () => (motionNote.textContent = an().motion === 'loop' ? t('animLoopHint') : t('animSwingHint', { a: an().swingAngle })),
+      sync: () =>
+        (motionNote.textContent =
+          an().motion === 'loop' ? t('animLoopHint') : t('animSwingHint', { a: an().swingAngle })),
     });
     const swingAngle = add(
       numberControl({
@@ -389,7 +426,8 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
         unit: 's',
         decimals: 1,
         get: () => an().duration,
-        set: (v) => updA((a) => (a.duration = clamp(Math.round(v * 10) / 10, MIN_ANIMATION_DURATION, MAX_ANIMATION_DURATION))),
+        set: (v) =>
+          updA((a) => (a.duration = clamp(Math.round(v * 10) / 10, MIN_ANIMATION_DURATION, MAX_ANIMATION_DURATION))),
       }),
     );
     const fps = add(
@@ -429,9 +467,20 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
     const chips = sizeChips(ANIM_SIZE_PRESETS, animDims, add);
     const wField = add(dimField('width', animDims));
     const hField = add(dimField('height', animDims));
-    const dims = h('div', { class: 'dims' }, wField.el, h('span', { class: 'dims-x', text: '×' }), hField.el, lockButton());
+    const dims = h(
+      'div',
+      { class: 'dims' },
+      wField.el,
+      h('span', { class: 'dims-x', text: '×' }),
+      hField.el,
+      lockButton(),
+    );
     const maxNote = h('p', { class: 'ctl-note' });
-    add({ el: maxNote, sync: () => (maxNote.textContent = t('animMaxSize', { n: maxSizeFor(an().format), fmt: FORMAT_LABEL[an().format] })) });
+    add({
+      el: maxNote,
+      sync: () =>
+        (maxNote.textContent = t('animMaxSize', { n: maxSizeFor(an().format), fmt: FORMAT_LABEL[an().format] })),
+    });
     const evenNote = h('p', { class: 'ctl-note warn-note' });
     add({
       el: evenNote,
@@ -468,8 +517,18 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
         label: t('format'),
         options: [
           { value: 'gif', label: 'GIF' },
-          { value: 'webp', label: 'WebP', disabled: !support.webp, title: support.webp ? 'WebP' : t('animWebpUnsupported') },
-          { value: 'mp4', label: 'MP4', disabled: !support.mp4, title: support.mp4 ? 'MP4 (H.264)' : t('animMp4Unsupported') },
+          {
+            value: 'webp',
+            label: 'WebP',
+            disabled: !support.webp,
+            title: support.webp ? 'WebP' : t('animWebpUnsupported'),
+          },
+          {
+            value: 'mp4',
+            label: 'MP4',
+            disabled: !support.mp4,
+            title: support.mp4 ? 'MP4 (H.264)' : t('animMp4Unsupported'),
+          },
         ],
         get: () => an().format,
         set: (v) =>
@@ -494,7 +553,11 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
     if (!support.webp) unsupportedNotes.push(h('p', { class: 'ctl-note', text: t('animWebpUnsupported') }));
     if (!support.mp4) unsupportedNotes.push(h('p', { class: 'ctl-note', text: t('animMp4Unsupported') }));
 
-    const qualityKeys: Record<AnimationSettings['quality'], MessageKey> = { low: 'animQualityLow', medium: 'animQualityMedium', high: 'animQualityHigh' };
+    const qualityKeys: Record<AnimationSettings['quality'], MessageKey> = {
+      low: 'animQualityLow',
+      medium: 'animQualityMedium',
+      high: 'animQualityHigh',
+    };
     const quality = add(
       segmentedControl<AnimationSettings['quality']>({
         label: t('quality'),
@@ -573,7 +636,13 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
       sync: () => {
         const a = an();
         const o = outputSizeOf(a);
-        summary.textContent = t('animSummary', { w: o.width, h: o.height, fmt: FORMAT_LABEL[a.format], n: frameCountOf(a), d: formatNumber(a.duration, a.duration % 1 ? 1 : 0) });
+        summary.textContent = t('animSummary', {
+          w: o.width,
+          h: o.height,
+          fmt: FORMAT_LABEL[a.format],
+          n: frameCountOf(a),
+          d: formatNumber(a.duration, a.duration % 1 ? 1 : 0),
+        });
       },
     });
     animBtn = h(
@@ -598,17 +667,27 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
 
   const progressText = h('div', { class: 'anim-progress-text', attrs: { 'aria-live': 'polite' } });
   const progressBar = h('div', { class: 'anim-progress-bar' });
-  const progressTrack = h('div', {
-    class: 'anim-progress-track',
-    attrs: { role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-valuenow': 0 },
-  }, progressBar);
+  const progressTrack = h(
+    'div',
+    {
+      class: 'anim-progress-track',
+      attrs: { role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-valuenow': 0 },
+    },
+    progressBar,
+  );
   const cancelBtn = h('button', {
     class: 'btn anim-cancel',
     text: t('cancel'),
     attrs: { type: 'button' },
     on: { click: () => ctx.actions.cancelAnimation() },
   });
-  const progressEl = h('div', { class: 'anim-progress', attrs: { hidden: true } }, progressText, progressTrack, cancelBtn);
+  const progressEl = h(
+    'div',
+    { class: 'anim-progress', attrs: { hidden: true } },
+    progressText,
+    progressTrack,
+    cancelBtn,
+  );
 
   const updateProgress = (p: AnimationProgress | null) => {
     progressEl.hidden = !p;

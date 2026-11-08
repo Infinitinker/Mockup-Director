@@ -6,8 +6,8 @@
 /* ------------------------------------------------------------------ */
 :root {
   color-scheme: light dark;
-  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', 'Segoe UI', Helvetica, Arial, sans-serif;
-  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
   --bg-window: #ececee;
   --bg-toolbar: rgba(246, 246, 248, 0.86);
@@ -122,7 +122,7 @@ textarea {
   font: inherit;
   color: inherit;
 }
-input[type='text'],
+input[type="text"],
 textarea {
   -webkit-user-select: text;
   user-select: text;
@@ -466,7 +466,9 @@ body.is-busy * {
   color: var(--text);
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.12s, opacity 0.12s;
+  transition:
+    background 0.12s,
+    opacity 0.12s;
 }
 .btn:hover:not(:disabled) {
   filter: brightness(0.97);
@@ -484,7 +486,9 @@ body.is-busy * {
 .btn-primary {
   background: var(--accent);
   color: #fff;
-  box-shadow: 0 0.5px 1px rgba(0, 0, 0, 0.2), inset 0 0.5px 0 rgba(255, 255, 255, 0.25);
+  box-shadow:
+    0 0.5px 1px rgba(0, 0, 0, 0.2),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.25);
   font-weight: 550;
 }
 .btn-primary:hover:not(:disabled) {
@@ -628,10 +632,13 @@ body.is-busy * {
 }
 .checkerboard {
   background-color: var(--checker-a);
-  background-image: linear-gradient(45deg, var(--checker-b) 25%, transparent 25%, transparent 75%, var(--checker-b) 75%),
+  background-image:
+    linear-gradient(45deg, var(--checker-b) 25%, transparent 25%, transparent 75%, var(--checker-b) 75%),
     linear-gradient(45deg, var(--checker-b) 25%, transparent 25%, transparent 75%, var(--checker-b) 75%);
   background-size: 16px 16px;
-  background-position: 0 0, 8px 8px;
+  background-position:
+    0 0,
+    8px 8px;
 }
 .glass {
   background: var(--glass);
@@ -965,7 +972,9 @@ body.is-busy * {
 .hex-input:focus,
 .text-input:focus,
 .select:focus {
-  box-shadow: inset 0 0 0 0.5px var(--accent), 0 0 0 3px var(--focus);
+  box-shadow:
+    inset 0 0 0 0.5px var(--accent),
+    0 0 0 3px var(--focus);
 }
 .num-input:disabled,
 .hex-input:disabled {
@@ -1010,7 +1019,13 @@ body.is-busy * {
 .range::-webkit-slider-runnable-track {
   height: 4px;
   border-radius: 2px;
-  background: linear-gradient(to right, var(--accent) 0, var(--accent) var(--fill), var(--track) var(--fill), var(--track) 100%);
+  background: linear-gradient(
+    to right,
+    var(--accent) 0,
+    var(--accent) var(--fill),
+    var(--track) var(--fill),
+    var(--track) 100%
+  );
 }
 .range::-webkit-slider-thumb {
   -webkit-appearance: none;
@@ -1019,7 +1034,9 @@ body.is-busy * {
   margin-top: -6px;
   border-radius: 50%;
   background: #fff;
-  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.28), 0 1px 3px rgba(0, 0, 0, 0.28);
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.28),
+    0 1px 3px rgba(0, 0, 0, 0.28);
 }
 .range:active::-webkit-slider-thumb {
   background: #f2f2f2;
@@ -1040,7 +1057,9 @@ body.is-busy * {
   border: 0;
   border-radius: 50%;
   background: #fff;
-  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.28), 0 1px 3px rgba(0, 0, 0, 0.28);
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.28),
+    0 1px 3px rgba(0, 0, 0, 0.28);
 }
 .range:disabled {
   cursor: default;
@@ -1069,7 +1088,7 @@ body.is-busy * {
   transition: background 0.18s;
 }
 .switch::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 2px;
   left: 2px;
@@ -1221,7 +1240,9 @@ body.is-busy * {
   border-radius: 10px;
   background: var(--bg-card);
   box-shadow: 0 0 0 0.5px var(--border);
-  transition: box-shadow 0.12s, background 0.12s;
+  transition:
+    box-shadow 0.12s,
+    background 0.12s;
 }
 .slot-card.warn {
   box-shadow: 0 0 0 1px var(--warn);
@@ -1565,7 +1586,9 @@ body.is-busy * {
   box-shadow: var(--shadow-pop);
   opacity: 0;
   transform: translateY(-8px);
-  transition: opacity 0.2s, transform 0.2s;
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
   -webkit-user-select: text;
   user-select: text;
 }
@@ -1654,7 +1677,9 @@ body.is-busy * {
   background: var(--bg-inspector);
   -webkit-backdrop-filter: saturate(180%) blur(30px);
   backdrop-filter: saturate(180%) blur(30px);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3), 0 0 0 0.5px var(--border-strong);
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.3),
+    0 0 0 0.5px var(--border-strong);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -1726,10 +1751,14 @@ body.is-busy * {
   width: min(520px, calc(100vw - 32px));
   max-height: calc(100vh - var(--toolbar-h) - 80px);
   overflow-y: auto;
-  transition: transform 0.15s, box-shadow 0.15s;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
 }
 .dialog-batch.is-drop-target {
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3), 0 0 0 2px var(--accent);
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.3),
+    0 0 0 2px var(--accent);
 }
 .batch-content {
   display: flex;

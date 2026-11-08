@@ -107,7 +107,11 @@ function solidMat(color: string, f: FinishDef): THREE.MeshPhysicalMaterial {
 
 /** Cut edge of the paper – slightly darker than the face. */
 function edgeMat(color: string): THREE.MeshStandardMaterial {
-  return new THREE.MeshStandardMaterial({ color: new THREE.Color(color).multiplyScalar(0.9), roughness: 0.92, metalness: 0 });
+  return new THREE.MeshStandardMaterial({
+    color: new THREE.Color(color).multiplyScalar(0.9),
+    roughness: 0.92,
+    metalness: 0,
+  });
 }
 
 /* ------------------------------------------------------------------ */
@@ -297,7 +301,13 @@ function buildSheet(spec: SheetSpec): Sheet {
       const cols: StripCol[] = [];
       for (let k = 0; k <= ARC_SEGS; k++) {
         const phi = (rot * k) / ARC_SEGS;
-        cols.push({ a: at(dzIn, phi, y), b: at(dzOut, phi, y), n: new THREE.Vector3(0, ny, 0), uvA: [0, 0], uvB: [0, 0] });
+        cols.push({
+          a: at(dzIn, phi, y),
+          b: at(dzOut, phi, y),
+          n: new THREE.Vector3(0, ny, 0),
+          uvA: [0, 0],
+          uvB: [0, 0],
+        });
       }
       edgeB[parent].strip(cols);
     }
@@ -566,7 +576,10 @@ function spreadTemplate(panels: TemplatePanel[], cross: number, axis: 'h' | 'v')
     pos += p.size;
     guides.push({ orientation: lineAcross, posMm: pos, label: i === panels.length - 1 ? TRIM : FOLD });
   });
-  guides.push({ orientation: lineAlong, posMm: b, label: TRIM }, { orientation: lineAlong, posMm: b + cross, label: TRIM });
+  guides.push(
+    { orientation: lineAlong, posMm: b, label: TRIM },
+    { orientation: lineAlong, posMm: b + cross, label: TRIM },
+  );
   return axis === 'h'
     ? { widthMm: total + 2 * b, heightMm: cross + 2 * b, bleedMm: b, guides, regions }
     : { widthMm: cross + 2 * b, heightMm: total + 2 * b, bleedMm: b, guides, regions };
@@ -824,7 +837,9 @@ export const trifoldModel: ModelDefinition = {
   id: 'print-trifold',
   category: 'print',
   name: L('Tri-fold leaflet'),
-  description: L('DL leaflet from an A4 sheet (297 × 210 mm → 99 × 210 mm), roll or Z fold; standing partially opened or lying.'),
+  description: L(
+    'DL leaflet from an A4 sheet (297 × 210 mm → 99 × 210 mm), roll or Z fold; standing partially opened or lying.',
+  ),
   icon: ICON_TRIFOLD,
   slots: trifoldSlots,
   params: trifoldParams,
@@ -898,13 +913,19 @@ function cardTemplate(p: ParamValues, v: CardVariant, side: 'outside' | 'inside'
       side === 'outside'
         ? [L('Back'), L('Front (cover)')]
         : [Lctx('greeting card page', 'Inside – left'), L('Inside – right')];
-    return spreadTemplate(labels.map((label) => ({ size: pw, label })), ph, 'h');
+    return spreadTemplate(
+      labels.map((label) => ({ size: pw, label })),
+      ph,
+      'h',
+    );
   }
   const labels =
-    side === 'outside'
-      ? [L('Back (upside down)'), L('Front (cover)')]
-      : [L('Inside – top'), L('Inside – bottom')];
-  return spreadTemplate(labels.map((label) => ({ size: ph, label })), pw, 'v');
+    side === 'outside' ? [L('Back (upside down)'), L('Front (cover)')] : [L('Inside – top'), L('Inside – bottom')];
+  return spreadTemplate(
+    labels.map((label) => ({ size: ph, label })),
+    pw,
+    'v',
+  );
 }
 
 function cardSlots(v: CardVariant): ImageSlotDef[] {
@@ -927,7 +948,9 @@ function cardSlots(v: CardVariant): ImageSlotDef[] {
     {
       id: 'inside',
       label: L('Inside'),
-      hint: L('Inside spread as seen when opened (left | right, or top / bottom with the fold at the top). Without an image: plain paper.'),
+      hint: L(
+        'Inside spread as seen when opened (left | right, or top / bottom with the fold at the top). Without an image: plain paper.',
+      ),
       aspect,
       template: (p) => cardTemplate(p, v, 'inside'),
     },
@@ -941,10 +964,7 @@ function cardParams(v: CardVariant): ParamDef[] {
       type: 'select',
       label: L('Size (folded)'),
       group: G_DIM,
-      options: [
-        ...v.sizes.map((s) => ({ value: s.value, label: s.label })),
-        { value: 'custom', label: L('Custom') },
-      ],
+      options: [...v.sizes.map((s) => ({ value: s.value, label: s.label })), { value: 'custom', label: L('Custom') }],
       default: v.defaultSize,
     },
     {
@@ -1065,7 +1085,9 @@ const ICON_CARD =
 export const greetingCardModel: ModelDefinition = cardModel(GREETING, {
   id: 'print-greeting-card',
   name: L('Greeting card'),
-  description: L('Folded greeting card (A6, square, DL, A5 or custom) standing opened – fold on the left or at the top (tent).'),
+  description: L(
+    'Folded greeting card (A6, square, DL, A5 or custom) standing opened – fold on the left or at the top (tent).',
+  ),
   icon: ICON_CARD,
   defaultCamera: { yaw: 20, pitch: 12 },
 });

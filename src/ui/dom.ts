@@ -21,7 +21,11 @@ export interface Props {
 }
 
 /** Create an element: h('button', { class: 'btn', on: { click } }, 'Text'). */
-export function h<K extends keyof HTMLElementTagNameMap>(tag: K, props: Props = {}, ...children: Child[]): HTMLElementTagNameMap[K] {
+export function h<K extends keyof HTMLElementTagNameMap>(
+  tag: K,
+  props: Props = {},
+  ...children: Child[]
+): HTMLElementTagNameMap[K] {
   const el = document.createElement(tag);
   if (props.class) el.className = props.class;
   if (props.html !== undefined) el.innerHTML = props.html;
@@ -152,7 +156,9 @@ export const safeStorage = {
 };
 
 export const isMac: boolean = /Mac|iPhone|iPad|iPod/i.test(
-  (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData?.platform || navigator.platform || navigator.userAgent,
+  (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData?.platform ||
+    navigator.platform ||
+    navigator.userAgent,
 );
 
 /** Human-readable shortcut label: ⌘S on macOS, Ctrl+S elsewhere. */

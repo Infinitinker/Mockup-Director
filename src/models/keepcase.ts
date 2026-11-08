@@ -135,7 +135,10 @@ function edgeRadius(thickness: number): number {
 }
 
 /** Outer size of the case (for composites / layout). */
-export function keepCaseSize(params: ParamValues, variant: KeepCaseVariant): { width: number; height: number; depth: number } {
+export function keepCaseSize(
+  params: ParamValues,
+  variant: KeepCaseVariant,
+): { width: number; height: number; depth: number } {
   const spec = SPECS[variant];
   const t = thicknessOf(params, variant);
   return spec.band
@@ -663,7 +666,13 @@ export function buildKeepCase(ctx: ModelContext, variant: KeepCaseVariant): THRE
     return m;
   };
   const solidPaper = () =>
-    new THREE.MeshPhysicalMaterial({ color: sideColor, roughness: paperRough, metalness: 0, clearcoat, clearcoatRoughness });
+    new THREE.MeshPhysicalMaterial({
+      color: sideColor,
+      roughness: paperRough,
+      metalness: 0,
+      clearcoat,
+      clearcoatRoughness,
+    });
 
   const addSheet = (geo: THREE.BufferGeometry, mat: THREE.Material, name: string) => {
     const m = new THREE.Mesh(geo, mat);
@@ -684,7 +693,11 @@ export function buildKeepCase(ctx: ModelContext, variant: KeepCaseVariant): THRE
     const panel = (s0: number, s1: number, width: number) =>
       ribbon(slicePath(sheet, s0, s1), 'xz', y0, y1, (s, y) => [(BLEED + (s - s0)) / (width + 2 * BLEED), v(y, hTot)]);
     addSheet(panel(sSpine1, sTotal, pw), paper(ctx.getTexture('front')), 'front');
-    addSheet(panel(sSpine0, sSpine1, T), ctx.hasImage('spine') ? paper(ctx.getTexture('spine')) : solidPaper(), 'spine');
+    addSheet(
+      panel(sSpine0, sSpine1, T),
+      ctx.hasImage('spine') ? paper(ctx.getTexture('spine')) : solidPaper(),
+      'spine',
+    );
     addSheet(panel(0, sSpine0, pw), ctx.hasImage('back') ? paper(ctx.getTexture('back')) : solidPaper(), 'back');
   }
 
@@ -731,7 +744,14 @@ export function buildKeepCase(ctx: ModelContext, variant: KeepCaseVariant): THRE
       const ring = roundedRect(-pwE / 2, cy - ph / 2, pwE / 2, cy + ph / 2, ph / 2, ph / 2);
       const inset = 0.9;
       ring.holes.push(
-        roundedRect(-pwE / 2 + inset, cy - ph / 2 + inset, pwE / 2 - inset, cy + ph / 2 - inset, ph / 2 - inset, ph / 2 - inset),
+        roundedRect(
+          -pwE / 2 + inset,
+          cy - ph / 2 + inset,
+          pwE / 2 - inset,
+          cy + ph / 2 - inset,
+          ph / 2 - inset,
+          ph / 2 - inset,
+        ),
       );
       const emb = new THREE.ExtrudeGeometry(ring, {
         depth: 0.18,
@@ -848,7 +868,9 @@ export const blurayModel: ModelDefinition = {
   id: 'bluray-case',
   category: 'disc',
   name: L('Blu-ray case'),
-  description: L('Blu-ray keep case 171.5 × 135 mm (12 / 11 / 7 mm) with a translucent top band and a printed insert under a clear sleeve.'),
+  description: L(
+    'Blu-ray keep case 171.5 × 135 mm (12 / 11 / 7 mm) with a translucent top band and a printed insert under a clear sleeve.',
+  ),
   icon: ICON_BLURAY,
   slots: makeSlots('bluray'),
   params: makeParams('bluray'),

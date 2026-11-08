@@ -27,7 +27,10 @@ export function createGallery(ctx: AppContext): { el: HTMLElement; render(): voi
     el.replaceChildren();
     el.setAttribute('aria-label', t('models'));
     const current = ctx.store.state.modelId;
-    const cats = [...CATEGORY_ORDER, ...new Set(MODELS.map((m) => m.category).filter((c) => !CATEGORY_ORDER.includes(c)))];
+    const cats = [
+      ...CATEGORY_ORDER,
+      ...new Set(MODELS.map((m) => m.category).filter((c) => !CATEGORY_ORDER.includes(c))),
+    ];
     for (const cat of cats) {
       const models = MODELS.filter((m) => m.category === cat);
       if (!models.length) continue;
@@ -46,7 +49,9 @@ export function createGallery(ctx: AppContext): { el: HTMLElement; render(): voi
           // model.icon is static SVG markup from our own model modules.
           h('span', { class: 'gallery-icon', html: m.icon }),
           h('span', { class: 'gallery-name', text: lt(m.name) }),
-          filled ? h('span', { class: 'gallery-badge', text: String(filled), title: t('imagesAssigned', { n: filled }) }) : null,
+          filled
+            ? h('span', { class: 'gallery-badge', text: String(filled), title: t('imagesAssigned', { n: filled }) })
+            : null,
         );
         list.appendChild(h('li', {}, btn));
       }

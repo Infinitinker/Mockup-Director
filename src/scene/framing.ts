@@ -29,7 +29,9 @@ export interface CameraBasis {
  *       counter-clockwise, so the model appears rotated CLOCKWISE on screen.
  */
 export function cameraBasis(cam: Pick<CameraSettings, 'yaw' | 'pitch' | 'roll'>): CameraBasis {
-  const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(-cam.pitch * DEG, cam.yaw * DEG, cam.roll * DEG, 'YXZ'));
+  const q = new THREE.Quaternion().setFromEuler(
+    new THREE.Euler(-cam.pitch * DEG, cam.yaw * DEG, cam.roll * DEG, 'YXZ'),
+  );
   return {
     right: new THREE.Vector3(1, 0, 0).applyQuaternion(q),
     up: new THREE.Vector3(0, 1, 0).applyQuaternion(q),
@@ -77,7 +79,12 @@ export function fitCamera(
   const qx = scratch.subarray(0, n);
   const qy = scratch.subarray(n, n * 2);
   const qz = scratch.subarray(n * 2, n * 3);
-  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity, minZ = Infinity, maxZ = -Infinity;
+  let minX = Infinity,
+    maxX = -Infinity,
+    minY = Infinity,
+    maxY = -Infinity,
+    minZ = Infinity,
+    maxZ = -Infinity;
   for (let i = 0; i < n; i++) {
     const px = points[i * 3] - pivot.x;
     const py = points[i * 3 + 1] - pivot.y;
@@ -85,10 +92,15 @@ export function fitCamera(
     const x = px * right.x + py * right.y + pz * right.z;
     const y = px * up.x + py * up.y + pz * up.z;
     const z = px * back.x + py * back.y + pz * back.z;
-    qx[i] = x; qy[i] = y; qz[i] = z;
-    if (x < minX) minX = x; if (x > maxX) maxX = x;
-    if (y < minY) minY = y; if (y > maxY) maxY = y;
-    if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
+    qx[i] = x;
+    qy[i] = y;
+    qz[i] = z;
+    if (x < minX) minX = x;
+    if (x > maxX) maxX = x;
+    if (y < minY) minY = y;
+    if (y > maxY) maxY = y;
+    if (z < minZ) minZ = z;
+    if (z > maxZ) maxZ = z;
   }
   if (n === 0) {
     minX = minY = minZ = -50;
@@ -118,19 +130,27 @@ export function fitCamera(
   const ty = Math.tan(fov / 2) / s;
   const tx = ty * aspect;
 
-  let ax = -Infinity, bx = -Infinity, ay = -Infinity, by = -Infinity;
+  let ax = -Infinity,
+    bx = -Infinity,
+    ay = -Infinity,
+    by = -Infinity;
   for (let i = 0; i < n; i++) {
     ax = Math.max(ax, qz[i] + qx[i] / tx);
     bx = Math.max(bx, qz[i] - qx[i] / tx);
     ay = Math.max(ay, qz[i] + qy[i] / ty);
     by = Math.max(by, qz[i] - qy[i] / ty);
   }
-  if (n === 0) { ax = bx = ay = by = 100; }
+  if (n === 0) {
+    ax = bx = ay = by = 100;
+  }
   // The camera must also stay clearly in front of every point.
   let d = Math.max((ax + bx) / 2, (ay + by) / 2, maxZ + extent * 0.05);
 
   // Feasible lateral offsets at this distance – take the interval centres.
-  let loX = -Infinity, hiX = Infinity, loY = -Infinity, hiY = Infinity;
+  let loX = -Infinity,
+    hiX = Infinity,
+    loY = -Infinity,
+    hiY = Infinity;
   for (let i = 0; i < n; i++) {
     const depth = d - qz[i];
     loX = Math.max(loX, qx[i] - tx * depth);
@@ -142,13 +162,17 @@ export function fitCamera(
   const oy = n ? (loY + hiY) / 2 : 0;
   if (!Number.isFinite(d)) d = extent * 3;
 
-  let minDepth = Infinity, maxDepth = 0;
+  let minDepth = Infinity,
+    maxDepth = 0;
   for (let i = 0; i < n; i++) {
     const depth = d - qz[i];
     if (depth < minDepth) minDepth = depth;
     if (depth > maxDepth) maxDepth = depth;
   }
-  if (n === 0) { minDepth = d * 0.5; maxDepth = d * 1.5; }
+  if (n === 0) {
+    minDepth = d * 0.5;
+    maxDepth = d * 1.5;
+  }
 
   const position = pivot.clone().addScaledVector(right, ox).addScaledVector(up, oy).addScaledVector(back, d);
   return {
@@ -181,11 +205,20 @@ export class UnionFit {
   private readonly slack: number;
   private readonly aspect: number;
   private n = 0;
-  private minX = Infinity; private maxX = -Infinity;
-  private minY = Infinity; private maxY = -Infinity;
-  private minZ = Infinity; private maxZ = -Infinity;
-  private ax = -Infinity; private bx = -Infinity; private ay = -Infinity; private by = -Infinity;
-  private lx = -Infinity; private hx = Infinity; private ly = -Infinity; private hy = Infinity;
+  private minX = Infinity;
+  private maxX = -Infinity;
+  private minY = Infinity;
+  private maxY = -Infinity;
+  private minZ = Infinity;
+  private maxZ = -Infinity;
+  private ax = -Infinity;
+  private bx = -Infinity;
+  private ay = -Infinity;
+  private by = -Infinity;
+  private lx = -Infinity;
+  private hx = Infinity;
+  private ly = -Infinity;
+  private hy = Infinity;
 
   constructor(
     private readonly pivot: THREE.Vector3,
@@ -221,15 +254,20 @@ export class UnionFit {
       const x = px * right.x + py * right.y + pz * right.z;
       const y = px * up.x + py * up.y + pz * up.z;
       const z = px * back.x + py * back.y + pz * back.z;
-      if (x < this.minX) this.minX = x; if (x > this.maxX) this.maxX = x;
-      if (y < this.minY) this.minY = y; if (y > this.maxY) this.maxY = y;
-      if (z < this.minZ) this.minZ = z; if (z > this.maxZ) this.maxZ = z;
-      const zx = x / tx, zy = y / ty;
+      if (x < this.minX) this.minX = x;
+      if (x > this.maxX) this.maxX = x;
+      if (y < this.minY) this.minY = y;
+      if (y > this.maxY) this.maxY = y;
+      if (z < this.minZ) this.minZ = z;
+      if (z > this.maxZ) this.maxZ = z;
+      const zx = x / tx,
+        zy = y / ty;
       if (z + zx > this.ax) this.ax = z + zx;
       if (z - zx > this.bx) this.bx = z - zx;
       if (z + zy > this.ay) this.ay = z + zy;
       if (z - zy > this.by) this.by = z - zy;
-      const xz = tx * z, yz = ty * z;
+      const xz = tx * z,
+        yz = ty * z;
       if (x + xz > this.lx) this.lx = x + xz;
       if (x - xz < this.hx) this.hx = x - xz;
       if (y + yz > this.ly) this.ly = y + yz;

@@ -8,7 +8,15 @@ import type { AppContext } from '../context';
 import { lt, t } from '../../i18n';
 import { h } from '../dom';
 import { ICONS } from '../icons';
-import { colorControl, numberControl, section, segmentedControl, selectControl, switchControl, type Control } from '../controls';
+import {
+  colorControl,
+  numberControl,
+  section,
+  segmentedControl,
+  selectControl,
+  switchControl,
+  type Control,
+} from '../controls';
 import { completeParams, snapToStep } from '../modelUtils';
 import { hasAny } from '../state';
 
@@ -46,15 +54,29 @@ export function createModelPanel(ctx: AppContext): { el: HTMLElement; render(): 
           set: (v) => setParam(def.id, snapToStep(v, def.step, def.min, def.max)),
         });
       case 'boolean':
-        return switchControl({ label, get: () => current().params[def.id] as boolean, set: (v) => setParam(def.id, v) });
+        return switchControl({
+          label,
+          get: () => current().params[def.id] as boolean,
+          set: (v) => setParam(def.id, v),
+        });
       case 'select': {
         const opts = def.options.map((o) => ({ value: o.value, label: lt(o.label) }));
         // Short option lists read best as a segmented control; long ones as a menu.
         const totalLen = opts.reduce((n, o) => n + o.label.length, 0);
         if (opts.length <= 3 && totalLen <= 26) {
-          return segmentedControl<string>({ label, options: opts, get: () => current().params[def.id] as string, set: (v) => setParam(def.id, v) });
+          return segmentedControl<string>({
+            label,
+            options: opts,
+            get: () => current().params[def.id] as string,
+            set: (v) => setParam(def.id, v),
+          });
         }
-        return selectControl({ label, options: opts, get: () => current().params[def.id] as string, set: (v) => setParam(def.id, v) });
+        return selectControl({
+          label,
+          options: opts,
+          get: () => current().params[def.id] as string,
+          set: (v) => setParam(def.id, v),
+        });
       }
       case 'color':
         return colorControl({ label, get: () => current().params[def.id] as string, set: (v) => setParam(def.id, v) });
@@ -69,7 +91,12 @@ export function createModelPanel(ctx: AppContext): { el: HTMLElement; render(): 
       h(
         'div',
         { class: 'panel-header' },
-        h('div', {}, h('div', { class: 'panel-title', text: lt(model.name) }), model.description ? h('div', { class: 'panel-sub', text: lt(model.description) }) : null),
+        h(
+          'div',
+          {},
+          h('div', { class: 'panel-title', text: lt(model.name) }),
+          model.description ? h('div', { class: 'panel-sub', text: lt(model.description) }) : null,
+        ),
       ),
     );
     if (!model.params.length) {
@@ -87,7 +114,13 @@ export function createModelPanel(ctx: AppContext): { el: HTMLElement; render(): 
     for (const [key, g] of groups) {
       const ctls = g.defs.map(controlFor);
       controls.push(...ctls);
-      el.appendChild(section(`model.${model.id}.${key}`, g.title, ctls.map((c) => c.el)));
+      el.appendChild(
+        section(
+          `model.${model.id}.${key}`,
+          g.title,
+          ctls.map((c) => c.el),
+        ),
+      );
     }
     el.appendChild(
       h(

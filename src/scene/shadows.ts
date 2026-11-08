@@ -86,14 +86,19 @@ export function computeShadowLayout(input: ShadowInput): ShadowLayout {
   };
 
   const L = input.lightDir;
-  let kx = 0, kz = 0, keyWeight = 0;
+  let kx = 0,
+    kz = 0,
+    keyWeight = 0;
   if (L.y > 0.02) {
     // A studio key is a large soft box, not the sun: its shadow reads shorter and softer than
     // a point light's, so the geometric shadow length is scaled down (and clamped).
     kx = (L.x / L.y) * SHEAR_SCALE;
     kz = (L.z / L.y) * SHEAR_SCALE;
     const len = Math.hypot(kx, kz);
-    if (len > MAX_SHEAR) { kx *= MAX_SHEAR / len; kz *= MAX_SHEAR / len; }
+    if (len > MAX_SHEAR) {
+      kx *= MAX_SHEAR / len;
+      kz *= MAX_SHEAR / len;
+    }
     keyWeight = 0.6 * THREE.MathUtils.clamp(input.keyIntensity / 1.2, 0, 1.25);
   }
   const key: LayerLayout = {
@@ -115,17 +120,42 @@ export function computeShadowLayout(input: ShadowInput): ShadowLayout {
     minZ: Math.min(foot.minZ, foot.minZ - kz * hTop),
     maxZ: Math.max(foot.maxZ, foot.maxZ - kz * hTop),
   };
-  const grow = (r: ShadowRect, m: number): ShadowRect => ({ minX: r.minX - m, maxX: r.maxX + m, minZ: r.minZ - m, maxZ: r.maxZ + m });
+  const grow = (r: ShadowRect, m: number): ShadowRect => ({
+    minX: r.minX - m,
+    maxX: r.maxX + m,
+    minZ: r.minZ - m,
+    maxZ: r.maxZ + m,
+  });
   const union = (a: ShadowRect, c: ShadowRect): ShadowRect => ({
-    minX: Math.min(a.minX, c.minX), maxX: Math.max(a.maxX, c.maxX), minZ: Math.min(a.minZ, c.minZ), maxZ: Math.max(a.maxZ, c.maxZ),
+    minX: Math.min(a.minX, c.minX),
+    maxX: Math.max(a.maxX, c.maxX),
+    minZ: Math.min(a.minZ, c.minZ),
+    maxZ: Math.max(a.maxZ, c.maxZ),
   });
 
   const contactVisible = grow(foot, contact.sigma * 2);
   const visible = keyWeight > 0 ? union(contactVisible, grow(proj, key.sigma * 1.5)) : contactVisible;
-  const plane = keyWeight > 0 ? union(grow(foot, contact.sigma * 3.5), grow(proj, key.sigma * 3.5)) : grow(foot, contact.sigma * 3.5);
+  const plane =
+    keyWeight > 0
+      ? union(grow(foot, contact.sigma * 3.5), grow(proj, key.sigma * 3.5))
+      : grow(foot, contact.sigma * 3.5);
 
   const r = (v: number) => v.toFixed(3);
-  const key_ = [plane.minX, plane.maxX, plane.minZ, plane.maxZ, contact.sigma, contact.fade, kx, kz, key.sigma, key.fade, keyWeight].map(r).join('|');
+  const key_ = [
+    plane.minX,
+    plane.maxX,
+    plane.minZ,
+    plane.maxZ,
+    contact.sigma,
+    contact.fade,
+    kx,
+    kz,
+    key.sigma,
+    key.fade,
+    keyWeight,
+  ]
+    .map(r)
+    .join('|');
   return { plane, visible, contactVisible, contact, key, key_ };
 }
 
@@ -328,7 +358,9 @@ export class GroundShadow {
     const restore: { o: THREE.Object3D; visible: boolean; material?: THREE.Material | THREE.Material[] }[] = [];
     if (model) {
       let anyCaster = false;
-      model.traverse((o) => { if ((o as THREE.Mesh).isMesh && (o as THREE.Mesh).castShadow) anyCaster = true; });
+      model.traverse((o) => {
+        if ((o as THREE.Mesh).isMesh && (o as THREE.Mesh).castShadow) anyCaster = true;
+      });
       model.traverse((o) => {
         const mesh = o as THREE.Mesh;
         if (mesh.isMesh) {

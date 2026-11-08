@@ -105,7 +105,14 @@ export class ZipWriter {
     const blob = data instanceof Blob ? data : new Blob([data]);
     const size = blob.size;
     const after =
-      this.dataBytes + LOCAL_HEADER + nameBytes.length + size + this.centralBytes + CENTRAL_HEADER + nameBytes.length + END_RECORD;
+      this.dataBytes +
+      LOCAL_HEADER +
+      nameBytes.length +
+      size +
+      this.centralBytes +
+      CENTRAL_HEADER +
+      nameBytes.length +
+      END_RECORD;
     // Every offset / size field is 32-bit; keep the WHOLE archive below the limit.
     if (size >= MAX_U32 || after >= MAX_U32) throw new ZipLimitError();
 

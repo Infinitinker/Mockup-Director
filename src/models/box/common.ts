@@ -103,7 +103,10 @@ export function colorOf(params: ParamValues, id: string, fallback: string): stri
 }
 
 /** Box outer dimensions (mm) from the standard width/height/depth params. */
-export function boxDims(params: ParamValues, def: { w: number; h: number; d: number }): { W: number; H: number; D: number } {
+export function boxDims(
+  params: ParamValues,
+  def: { w: number; h: number; d: number },
+): { W: number; H: number; D: number } {
   return {
     W: Math.max(1, num(params, 'width', def.w)),
     H: Math.max(1, num(params, 'height', def.h)),
@@ -119,7 +122,10 @@ export function boxDims(params: ParamValues, def: { w: number; h: number; d: num
  * Printed carton surface. Matte = uncoated/matte-laminated board, satin = coated board with a soft
  * sheen, glossy = gloss laminate (a sharp clear-coat reflection over the print).
  */
-export function surfaceMaterial(finish: Finish, src: { map: THREE.Texture } | { color: string }): THREE.MeshPhysicalMaterial {
+export function surfaceMaterial(
+  finish: Finish,
+  src: { map: THREE.Texture } | { color: string },
+): THREE.MeshPhysicalMaterial {
   const look =
     finish === 'matte'
       ? { roughness: 0.82, clearcoat: 0, clearcoatRoughness: 0.5 }

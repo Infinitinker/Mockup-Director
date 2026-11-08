@@ -49,7 +49,9 @@ const SEG = 160;
 export const discSlot: ImageSlotDef = {
   id: 'disc',
   label: L('Disc label'),
-  hint: L('A 120 × 120 mm square, image centre = disc centre. The print covers Ø 118 mm (from Ø 36 mm or as set) – extend the background to the 120 mm edge, it acts as bleed. Transparent PNG areas show the silver disc.'),
+  hint: L(
+    'A 120 × 120 mm square, image centre = disc centre. The print covers Ø 118 mm (from Ø 36 mm or as set) – extend the background to the 120 mm edge, it acts as bleed. Transparent PNG areas show the silver disc.',
+  ),
   aspect: 1,
   // A function of the params, so the downloaded template follows 'discInner' / 'discFullFace'
   // exactly like the 3D label does (placeholder.ts resolves it with defaults for the round
@@ -150,7 +152,15 @@ type RingUV = 'label' | 'polar';
  *  - uv 'polar': u = angle (0..1), v = radius (0 at rIn .. 1 at rOut); used for radial data maps.
  *  - withTangent: adds a per-vertex RADIAL tangent (drives the anisotropic highlight direction).
  */
-function ringGeometry(rIn: number, rOut: number, y: number, up: boolean, uvMode: RingUV, withTangent = false, radialSeg = 1): THREE.BufferGeometry {
+function ringGeometry(
+  rIn: number,
+  rOut: number,
+  y: number,
+  up: boolean,
+  uvMode: RingUV,
+  withTangent = false,
+  radialSeg = 1,
+): THREE.BufferGeometry {
   const cols = SEG + 1;
   const rows = radialSeg + 1;
   const pos = new Float32Array(cols * rows * 3);
@@ -205,7 +215,11 @@ function wallGeometry(r: number, y0: number, y1: number): THREE.BufferGeometry {
 /** Clear polycarbonate body: hole wall, flat faces and a softly rounded outer edge. */
 function shellGeometry(): THREE.BufferGeometry {
   const e = 0.25; // edge rounding radius
-  const pts: THREE.Vector2[] = [new THREE.Vector2(R_HOLE, T), new THREE.Vector2(R_HOLE, 0), new THREE.Vector2(R - e, 0)];
+  const pts: THREE.Vector2[] = [
+    new THREE.Vector2(R_HOLE, T),
+    new THREE.Vector2(R_HOLE, 0),
+    new THREE.Vector2(R - e, 0),
+  ];
   for (let i = 1; i <= 4; i++) {
     const a = -Math.PI / 2 + (i / 4) * (Math.PI / 2);
     pts.push(new THREE.Vector2(R - e + e * Math.cos(a), e + e * Math.sin(a)));
@@ -324,7 +338,12 @@ export function buildDisc(ctx: ModelContext, slotId: string = 'disc'): THREE.Obj
   const yHigh = T - 0.03;
   const metalTop = new THREE.MeshPhysicalMaterial({ color: '#b8bcc3', metalness: 1, roughness: 0.24 });
   group.add(new THREE.Mesh(ringGeometry(R_METAL_IN, R_METAL_OUT, yHigh, true, 'label'), metalTop));
-  const walls = new THREE.MeshPhysicalMaterial({ color: '#bfc3c9', metalness: 1, roughness: 0.3, side: THREE.DoubleSide });
+  const walls = new THREE.MeshPhysicalMaterial({
+    color: '#bfc3c9',
+    metalness: 1,
+    roughness: 0.3,
+    side: THREE.DoubleSide,
+  });
   group.add(new THREE.Mesh(wallGeometry(R_METAL_OUT, yLow, yHigh), walls));
   group.add(new THREE.Mesh(wallGeometry(R_METAL_IN, yLow, yHigh), walls));
 
@@ -372,7 +391,10 @@ export function buildDisc(ctx: ModelContext, slotId: string = 'disc'): THREE.Obj
 
   // 4) Printed label: circular area cut from the square image (image centre = disc centre,
   //    image edge = 120 mm). Drawn after the shell so it sits on top of the plastic.
-  const label = new THREE.Mesh(ringGeometry(rIn, rOut, T + 0.008, true, 'label', false, 3), labelMaterial(ctx.getTexture(slotId), glossy));
+  const label = new THREE.Mesh(
+    ringGeometry(rIn, rOut, T + 0.008, true, 'label', false, 3),
+    labelMaterial(ctx.getTexture(slotId), glossy),
+  );
   label.name = 'disc-label';
   label.renderOrder = 2;
   group.add(label);

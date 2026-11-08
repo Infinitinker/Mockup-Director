@@ -102,7 +102,10 @@ export class GifAnimationEncoder {
       const g = this.global;
       // Diff mode: only for opaque output (transparent output needs full frames + disposal 2).
       const diff = !this.o.transparent;
-      let x0 = 0, y0 = 0, x1 = this.w - 1, y1 = this.h - 1;
+      let x0 = 0,
+        y0 = 0,
+        x1 = this.w - 1,
+        y1 = this.h - 1;
       if (diff) {
         const rect = this.markUnchanged();
         if (!rect) {
@@ -128,7 +131,12 @@ export class GifAnimationEncoder {
       const sub = this.crop(x0, y0, x1, y1);
       const useTransparency = this.o.transparent || (diff && this.frames > 0);
       this.writeFrame(
-        sub, x0, y0, x1 - x0 + 1, y1 - y0 + 1, delay,
+        sub,
+        x0,
+        y0,
+        x1 - x0 + 1,
+        y1 - y0 + 1,
+        delay,
         this.o.transparent ? 2 : 1,
         useTransparency ? g.transparentIndex : -1,
         null,
@@ -155,7 +163,18 @@ export class GifAnimationEncoder {
         visible: this.visible,
         transparentIndex: Math.max(0, transparentIndex),
       });
-      this.writeFrame(this.indices, 0, 0, this.w, this.h, delay, this.o.transparent ? 2 : 1, transparentIndex, table, bits);
+      this.writeFrame(
+        this.indices,
+        0,
+        0,
+        this.w,
+        this.h,
+        delay,
+        this.o.transparent ? 2 : 1,
+        transparentIndex,
+        table,
+        bits,
+      );
     }
     this.frames++;
   }
@@ -201,10 +220,14 @@ export class GifAnimationEncoder {
     const [mr, mg, mb] = this.o.matte;
     for (let p = 0; p < n; p++) {
       const a = rgba[p * 4 + 3];
-      const r = rgba[p * 4], g = rgba[p * 4 + 1], b = rgba[p * 4 + 2];
+      const r = rgba[p * 4],
+        g = rgba[p * 4 + 1],
+        b = rgba[p * 4 + 2];
       if (vis) vis[p] = a >= thr ? 1 : 0;
       if (a === 255) {
-        rgb[p * 3] = r; rgb[p * 3 + 1] = g; rgb[p * 3 + 2] = b;
+        rgb[p * 3] = r;
+        rgb[p * 3 + 1] = g;
+        rgb[p * 3 + 2] = b;
       } else {
         const k = a / 255;
         rgb[p * 3] = Math.round(r * k + mr * (1 - k));
@@ -223,7 +246,10 @@ export class GifAnimationEncoder {
       keep.fill(0);
       return { x0: 0, y0: 0, x1: w - 1, y1: h - 1 };
     }
-    let x0 = w, y0 = h, x1 = -1, y1 = -1;
+    let x0 = w,
+      y0 = h,
+      x1 = -1,
+      y1 = -1;
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
         const p = y * w + x;
@@ -285,9 +311,14 @@ export class GifAnimationEncoder {
     if (g) this.chunks.push(g.table);
     // NETSCAPE2.0 application extension: loop count.
     const loop = new ByteWriter(19);
-    loop.u8(0x21); loop.u8(0xff); loop.u8(0x0b);
+    loop.u8(0x21);
+    loop.u8(0xff);
+    loop.u8(0x0b);
     loop.ascii('NETSCAPE2.0');
-    loop.u8(0x03); loop.u8(0x01); loop.u16(this.o.loopCount); loop.u8(0x00);
+    loop.u8(0x03);
+    loop.u8(0x01);
+    loop.u16(this.o.loopCount);
+    loop.u8(0x00);
     this.chunks.push(loop.bytes());
   }
 
@@ -308,13 +339,18 @@ export class GifAnimationEncoder {
     bits: number,
   ): void {
     const head = new ByteWriter(24);
-    head.u8(0x21); head.u8(0xf9); head.u8(0x04);
+    head.u8(0x21);
+    head.u8(0xf9);
+    head.u8(0x04);
     head.u8(((disposal & 7) << 2) | (transparentIndex >= 0 ? 1 : 0));
     head.u16(delayCs);
     head.u8(transparentIndex >= 0 ? transparentIndex : 0);
     head.u8(0x00);
     head.u8(0x2c);
-    head.u16(x); head.u16(y); head.u16(w); head.u16(h);
+    head.u16(x);
+    head.u16(y);
+    head.u16(w);
+    head.u16(h);
     head.u8(localTable ? 0x80 | (bits - 1) : 0);
     this.chunks.push(head.bytes());
     if (localTable) this.chunks.push(localTable);

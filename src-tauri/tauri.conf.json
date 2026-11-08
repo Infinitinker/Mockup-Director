@@ -32,24 +32,13 @@
     "security": {
       "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost blob:; media-src 'self' blob:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none'",
       "devCsp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost blob: ws://localhost:1420 http://localhost:1420; media-src 'self' blob:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none'",
-      "dangerousDisableAssetCspModification": [
-        "style-src"
-      ]
+      "dangerousDisableAssetCspModification": ["style-src"]
     }
   },
   "bundle": {
     "active": true,
-    "targets": [
-      "app",
-      "dmg"
-    ],
-    "icon": [
-      "icons/32x32.png",
-      "icons/128x128.png",
-      "icons/128x128@2x.png",
-      "icons/icon.icns",
-      "icons/icon.ico"
-    ],
+    "targets": ["app", "dmg"],
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"],
     "category": "public.app-category.graphics-design",
     "copyright": "© 2026 Infinitinker",
     "publisher": "Infinitinker",
@@ -61,22 +50,16 @@
     },
     "fileAssociations": [
       {
-        "ext": [
-          "mdproj"
-        ],
+        "ext": ["mdproj"],
         "name": "Mockup Director project",
         "description": "Mockup Director project",
         "role": "Editor",
         "rank": "Owner",
         "mimeType": "application/x-mockup-director-project",
-        "contentTypes": [
-          "io.github.infinitinker.mockupdirector.project"
-        ],
+        "contentTypes": ["io.github.infinitinker.mockupdirector.project"],
         "exportedType": {
           "identifier": "io.github.infinitinker.mockupdirector.project",
-          "conformsTo": [
-            "public.json"
-          ]
+          "conformsTo": ["public.json"]
         }
       }
     ]

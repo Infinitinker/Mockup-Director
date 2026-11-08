@@ -299,7 +299,8 @@ export function sizeSvgRoot(svg: string, tw: number, th: number, vw: number, vh:
   tag = tag.replace(/\s(width|height)\s*=\s*("[^"]*"|'[^']*')/gi, '');
   const selfClosing = /\/\s*>$/.test(tag);
   const head = tag.replace(/\/?\s*>$/, '');
-  const extra = ` width="${tw}" height="${th}"` + (hasViewBox ? '' : ` viewBox="0 0 ${vw} ${vh}" preserveAspectRatio="none"`);
+  const extra =
+    ` width="${tw}" height="${th}"` + (hasViewBox ? '' : ` viewBox="0 0 ${vw} ${vh}" preserveAspectRatio="none"`);
   tag = head + extra + (selfClosing ? '/>' : '>');
   return svg.slice(0, m.index) + tag + svg.slice(m.index + m[0].length);
 }
@@ -320,7 +321,10 @@ export function svgIntrinsicSize(svg: string): { width: number; height: number }
   };
   const w = toPx(attr('width'));
   const h = toPx(attr('height'));
-  const vb = attr('viewBox')?.trim().split(/[\s,]+/).map(Number);
+  const vb = attr('viewBox')
+    ?.trim()
+    .split(/[\s,]+/)
+    .map(Number);
   const vbOk = vb && vb.length === 4 && vb[2] > 0 && vb[3] > 0;
   if (w && h) return { width: w, height: h };
   if (vbOk) {

@@ -30,9 +30,7 @@ export function findAlphaBounds(
   const aligned = data.byteOffset % 4 === 0;
   const words = aligned ? new Uint32Array(data.buffer, data.byteOffset, width * height) : null;
   const shift = LITTLE_ENDIAN ? 24 : 0;
-  const alphaAt: (i: number) => number = words
-    ? (i) => (words[i] >>> shift) & 0xff
-    : (i) => data[i * 4 + 3];
+  const alphaAt: (i: number) => number = words ? (i) => (words[i] >>> shift) & 0xff : (i) => data[i * 4 + 3];
 
   const rowHasContent = (y: number): boolean => {
     const base = y * width;
@@ -92,7 +90,12 @@ export function supersampleSize(
 }
 
 /** Scale (w, h) uniformly to fit inside (maxW, maxH). Result in whole pixels, at least 1×1. */
-export function fitInside(w: number, h: number, maxW: number, maxH: number): { width: number; height: number; scale: number } {
+export function fitInside(
+  w: number,
+  h: number,
+  maxW: number,
+  maxH: number,
+): { width: number; height: number; scale: number } {
   const s = Math.min(maxW / w, maxH / h);
   return {
     width: Math.max(1, Math.min(maxW, Math.round(w * s))),

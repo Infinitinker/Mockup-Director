@@ -138,7 +138,11 @@ export function formatDecimalIn(lang: Lang, v: number): string {
 
 /** Parses a typed number: accepts both "1,5" and "1.5", ignores spaces and a trailing unit. */
 export function parseNumber(s: string): number | null {
-  const cleaned = s.trim().replace(/\s+/g, '').replace(',', '.').replace(/[^0-9.eE+\-]+$/, '');
+  const cleaned = s
+    .trim()
+    .replace(/\s+/g, '')
+    .replace(',', '.')
+    .replace(/[^0-9.eE+\-]+$/, '');
   if (!cleaned) return null;
   const n = Number(cleaned);
   return Number.isFinite(n) ? n : null;

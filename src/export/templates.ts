@@ -204,7 +204,16 @@ function drawRectTemplate(d: Draw, tpl: PrintTemplate, slot: ImageSlotDef, lang:
     // Small "cut" caption in the top bleed area.
     const fs = Math.min(b * 0.6, 2.4);
     if (fs >= 0.9) {
-      d.text(`${ltIn(lang, T.trim)} · ${ltIn(lang, T.bleed)} ${fmtMm(b, lang)} mm`, trim.x + 2, b / 2, fs, C.trim, 'left', 'middle', 500);
+      d.text(
+        `${ltIn(lang, T.trim)} · ${ltIn(lang, T.bleed)} ${fmtMm(b, lang)} mm`,
+        trim.x + 2,
+        b / 2,
+        fs,
+        C.trim,
+        'left',
+        'middle',
+        500,
+      );
     }
   }
 
@@ -215,7 +224,13 @@ function drawRectTemplate(d: Draw, tpl: PrintTemplate, slot: ImageSlotDef, lang:
       const v = intersect(r, trim);
       if (v) drawRegionLabel(d, { xMm: v.x, yMm: v.y, wMm: v.w, hMm: v.h, label: r.label }, ltIn(lang, r.label), lang);
     });
-  } else drawRegionLabel(d, { xMm: trim.x, yMm: trim.y, wMm: trim.w, hMm: trim.h, label: slot.label }, ltIn(lang, slot.label), lang);
+  } else
+    drawRegionLabel(
+      d,
+      { xMm: trim.x, yMm: trim.y, wMm: trim.w, hMm: trim.h, label: slot.label },
+      ltIn(lang, slot.label),
+      lang,
+    );
 }
 
 function drawGuide(
@@ -359,7 +374,12 @@ function drawCircleTemplate(d: Draw, tpl: PrintTemplate, slot: ImageSlotDef, lan
 
   // Fold guides (unusual on discs, but honour them).
   for (const gd of tpl.guides ?? []) {
-    drawGuide(d, gd.orientation, gd.posMm, ltIn(lang, gd.label ?? T.fold), W, H, { x: b, y: b, w: W - 2 * b, h: H - 2 * b });
+    drawGuide(d, gd.orientation, gd.posMm, ltIn(lang, gd.label ?? T.fold), W, H, {
+      x: b,
+      y: b,
+      w: W - 2 * b,
+      h: H - 2 * b,
+    });
   }
 
   // Labels: slot name in the upper printable band, diameters in the lower one, hub note near it.
@@ -373,9 +393,19 @@ function drawCircleTemplate(d: Draw, tpl: PrintTemplate, slot: ImageSlotDef, lan
     d.text(dims, cx, cy + hubR + band * 0.4, fs * 0.42, C.labelDim, 'center', 'middle', 500);
   }
   const hubFs = Math.min(2.2, (hubR - r) * 0.22);
-  if (hubR > r && hubFs >= 0.8) d.text(ltIn(lang, T.hub), cx, cy + hubR + hubFs * 1.1, hubFs, C.safe, 'center', 'middle', 500);
+  if (hubR > r && hubFs >= 0.8)
+    d.text(ltIn(lang, T.hub), cx, cy + hubR + hubFs * 1.1, hubFs, C.safe, 'center', 'middle', 500);
   if (R - SAFE_MARGIN_MM > hubR) {
-    d.text(ltIn(lang, T.safe), cx, cy - R + SAFE_MARGIN_MM + 2.2, Math.min(2.2, band * 0.12), C.safe, 'center', 'middle', 500);
+    d.text(
+      ltIn(lang, T.safe),
+      cx,
+      cy - R + SAFE_MARGIN_MM + 2.2,
+      Math.min(2.2, band * 0.12),
+      C.safe,
+      'center',
+      'middle',
+      500,
+    );
   }
 }
 
@@ -394,7 +424,9 @@ function drawLegend(
   const H = tpl.heightMm;
   const b = clampBleed(tpl);
   // Circle templates have little free corner space – use the smallest legend there.
-  const fs = tpl.circle ? Math.max(1.4, Math.min(2.4, Math.min(W, H) * 0.012)) : Math.max(1.6, Math.min(3.2, Math.min(W, H) * 0.02));
+  const fs = tpl.circle
+    ? Math.max(1.4, Math.min(2.4, Math.min(W, H) * 0.012))
+    : Math.max(1.6, Math.min(3.2, Math.min(W, H) * 0.02));
   const lh = fs * 1.45;
   const sw = fs * 2.4; // swatch width
 
@@ -402,10 +434,14 @@ function drawLegend(
   const items: Item[] = [{ kind: 'none', text: ltIn(lang, slot.label), bold: true }];
   if (b > 0) items.push({ kind: 'bleed', text: `${ltIn(lang, T.bleed)}: ${fmtMm(b, lang)} mm` });
   const net = b > 0 ? `: ${fmtMm(W - 2 * b, lang)} × ${fmtMm(H - 2 * b, lang)} mm` : '';
-  items.push({ kind: 'trim', text: tpl.circle ? `${ltIn(lang, T.trim)}: Ø ${fmtMm(tpl.circle.outerMm, lang)} mm` : `${ltIn(lang, T.trim)}${net}` });
+  items.push({
+    kind: 'trim',
+    text: tpl.circle ? `${ltIn(lang, T.trim)}: Ø ${fmtMm(tpl.circle.outerMm, lang)} mm` : `${ltIn(lang, T.trim)}${net}`,
+  });
   items.push({ kind: 'safe', text: `${ltIn(lang, T.safe)}: ${fmtMm(SAFE_MARGIN_MM, lang)} mm` });
   if (tpl.guides?.length) items.push({ kind: 'fold', text: ltIn(lang, T.foldLegend) });
-  if (tpl.circle && tpl.circle.innerMm > 0) items.push({ kind: 'hole', text: `${ltIn(lang, T.hole)}: Ø ${fmtMm(tpl.circle.innerMm, lang)} mm` });
+  if (tpl.circle && tpl.circle.innerMm > 0)
+    items.push({ kind: 'hole', text: `${ltIn(lang, T.hole)}: Ø ${fmtMm(tpl.circle.innerMm, lang)} mm` });
   const sizeTxt = `${ltIn(lang, T.artboard)}: ${fmtMm(W, lang)} × ${fmtMm(H, lang)} mm${b > 0 ? ` (${ltIn(lang, T.inclBleed)})` : ''}`;
   items.push({ kind: 'none', text: sizeTxt });
   const dpiTxt =
@@ -414,7 +450,9 @@ function drawLegend(
   items.push({ kind: 'none', text: dpiTxt });
   items.push({ kind: 'none', text: ltIn(lang, T.hint) });
 
-  const textW = Math.max(...items.map((it) => d.measure(it.text, fs, it.bold ? 700 : 500) + (it.kind === 'none' ? 0 : sw + fs * 0.6)));
+  const textW = Math.max(
+    ...items.map((it) => d.measure(it.text, fs, it.bold ? 700 : 500) + (it.kind === 'none' ? 0 : sw + fs * 0.6)),
+  );
   const pad = fs * 0.7;
   const boxW = textW + pad * 2;
   const boxH = items.length * lh + pad * 2 - (lh - fs);
@@ -442,11 +480,18 @@ function drawLegend(
           g.strokeRect(d.px(sx), d.px(sy - fs * 0.4), d.px(sw), d.px(fs * 0.8));
         }
       } else {
-        const style = it.kind === 'trim' ? ([C.trim, 0.25, [3, 1.5]] as const)
-          : it.kind === 'safe' ? ([C.safe, 0.2, [1.6, 1.0]] as const)
-          : ([C.fold, 0.22, [2.2, 0.8, 0.5, 0.8]] as const);
+        const style =
+          it.kind === 'trim'
+            ? ([C.trim, 0.25, [3, 1.5]] as const)
+            : it.kind === 'safe'
+              ? ([C.safe, 0.2, [1.6, 1.0]] as const)
+              : ([C.fold, 0.22, [2.2, 0.8, 0.5, 0.8]] as const);
         // Scale dashes down so the pattern is recognisable inside the small swatch.
-        d.stroke(style[0], style[1], style[2].map((v) => v * Math.min(1, sw / 8)));
+        d.stroke(
+          style[0],
+          style[1],
+          style[2].map((v) => v * Math.min(1, sw / 8)),
+        );
         g.beginPath();
         g.moveTo(d.px(sx), d.px(sy));
         g.lineTo(d.px(sx + sw), d.px(sy));
@@ -544,7 +589,8 @@ class Draw {
       const h = sizeMm * this.k;
       const pad = h * 0.2;
       const left = align === 'center' ? xPx - w / 2 : align === 'right' || align === 'end' ? xPx - w : xPx;
-      const top = baseline === 'middle' ? yPx - h / 2 : baseline === 'bottom' || baseline === 'alphabetic' ? yPx - h : yPx;
+      const top =
+        baseline === 'middle' ? yPx - h / 2 : baseline === 'bottom' || baseline === 'alphabetic' ? yPx - h : yPx;
       g.fillStyle = 'rgba(255,255,255,0.85)';
       g.fillRect(left - pad, top - pad * 0.5, w + pad * 2, h + pad);
     }

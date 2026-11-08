@@ -39,7 +39,10 @@ export function frameCountOf(s: Pick<AnimationSettings, 'fps' | 'duration'>): nu
 }
 
 /** The pixel size actually encoded (MP4 / H.264 needs even dimensions). */
-export function outputSizeOf(s: Pick<AnimationSettings, 'format' | 'width' | 'height'>): { width: number; height: number } {
+export function outputSizeOf(s: Pick<AnimationSettings, 'format' | 'width' | 'height'>): {
+  width: number;
+  height: number;
+} {
   if (s.format !== 'mp4') return { width: s.width, height: s.height };
   return { width: Math.max(2, s.width & ~1), height: Math.max(2, s.height & ~1) };
 }
@@ -79,7 +82,11 @@ export function normaliseAnimationSettings(
     height,
     margin: Math.round(clamp(num(src.margin, d.margin), 0, maxMarginFor(width, height))),
     fps: Math.round(clamp(num(src.fps, defaultFpsFor(format)), 1, maxFpsFor(format))),
-    duration: clamp(Math.round(num(src.duration, d.duration) * 10) / 10, MIN_ANIMATION_DURATION, MAX_ANIMATION_DURATION),
+    duration: clamp(
+      Math.round(num(src.duration, d.duration) * 10) / 10,
+      MIN_ANIMATION_DURATION,
+      MAX_ANIMATION_DURATION,
+    ),
     motion: pick(src.motion, ['loop', 'swing'] as const, d.motion),
     swingAngle: Math.round(clamp(num(src.swingAngle, d.swingAngle), 1, 180)),
     direction: pick(src.direction, ['cw', 'ccw'] as const, d.direction),

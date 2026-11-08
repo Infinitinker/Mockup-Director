@@ -69,7 +69,7 @@ export class LzwEncoder {
           table[slot] = nextCode + 1;
           this.used[this.usedCount++] = slot;
           nextCode++;
-          if (nextCode > (1 << size) && size < 12) size++;
+          if (nextCode > 1 << size && size < 12) size++;
         } else {
           write(clear);
           this.reset();
@@ -80,7 +80,7 @@ export class LzwEncoder {
       }
       write(prefix);
       // The decoder adds one more entry after reading this code; keep its code size in sync.
-      if (nextCode < MAX_CODES && nextCode + 1 > (1 << size) && size < 12) size++;
+      if (nextCode < MAX_CODES && nextCode + 1 > 1 << size && size < 12) size++;
     }
     write(eoi);
     if (this.accBits > 0) this.push(this.acc & 0xff);

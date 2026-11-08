@@ -19,7 +19,16 @@
  *  - Cancel stops after the current item; what is done can still be saved.
  */
 import type * as THREE from 'three';
-import type { ExportFormat, ExportSettings, ImageAsset, Lang, ModelContext, ParamValues, SceneSettings, StageAPI } from '../core/types';
+import type {
+  ExportFormat,
+  ExportSettings,
+  ImageAsset,
+  Lang,
+  ModelContext,
+  ParamValues,
+  SceneSettings,
+  StageAPI,
+} from '../core/types';
 import { cloneScene } from '../core/defaults';
 import { getPlaceholderTexture } from '../core/placeholder';
 import { IMAGE_ACCEPT, disposeImageAsset, loadImageFile } from '../core/images';
@@ -98,7 +107,12 @@ interface BatchItem {
 /* ------------------------------------------------------------------ */
 
 /** Build a NEW object tree of a model from explicit params / images (never from the store). */
-function buildModel(modelId: string, params: ParamValues | undefined, images: Record<string, ImageAsset>, lang: Lang): THREE.Object3D {
+function buildModel(
+  modelId: string,
+  params: ParamValues | undefined,
+  images: Record<string, ImageAsset>,
+  lang: Lang,
+): THREE.Object3D {
   const model = getModel(modelId);
   const ctx: ModelContext = {
     params: completeParams(model, params),
@@ -142,7 +156,15 @@ async function runBatch(
   onProgress: (index: number, label: string) => void,
   isCancelled: () => boolean,
 ): Promise<BatchResult> {
-  const res: BatchResult = { zip: new ZipWriter(), total: items.length, done: 0, errors: [], warnings: [], cancelled: false, limitHit: false };
+  const res: BatchResult = {
+    zip: new ZipWriter(),
+    total: items.length,
+    done: 0,
+    errors: [],
+    warnings: [],
+    cancelled: false,
+    limitHit: false,
+  };
   let trash: (() => void)[] = [];
   const emptyTrash = (list: (() => void)[]) =>
     list.forEach((fn) => {
@@ -174,7 +196,11 @@ async function runBatch(
       await nextFrame();
       try {
         const out = await item.render(runner);
-        const name = uniqueName(res.zip, `${String(i + 1).padStart(digits, '0')}-${item.slug}`, extensionFor(out.format));
+        const name = uniqueName(
+          res.zip,
+          `${String(i + 1).padStart(digits, '0')}-${item.slug}`,
+          extensionFor(out.format),
+        );
         await res.zip.add(name, out.blob);
         res.done += 1;
         if (out.warning) res.warnings.push({ label: item.label, message: out.warning });
@@ -287,7 +313,10 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
   const progressBar = h('div', { class: 'anim-progress-bar' });
   const progressTrack = h(
     'div',
-    { class: 'anim-progress-track', attrs: { role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-valuenow': 0 } },
+    {
+      class: 'anim-progress-track',
+      attrs: { role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-valuenow': 0 },
+    },
     progressBar,
   );
   const stoppingNote = h('p', { class: 'ctl-note', text: t('batchStopping'), attrs: { hidden: true } });
@@ -385,13 +414,17 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
           h('span', { class: 'btn-icon', html: ICONS.image }),
           h('span', { class: 'btn-text', text: t('batchPickImages') }),
         ),
-        memory.imageFiles.length ? button(t('batchClear'), 'btn-ghost', () => {
+        memory.imageFiles.length
+          ? button(t('batchClear'), 'btn-ghost', () => {
               memory.imageFiles = [];
               render();
-            }) : null,
+            })
+          : null,
       ),
       h('p', { class: 'ctl-note', text: t('batchDropHint') }),
-      memory.imageFiles.length ? h('div', { class: 'batch-count', text: t('batchFilesCount', { n: memory.imageFiles.length }) }) : null,
+      memory.imageFiles.length
+        ? h('div', { class: 'batch-count', text: t('batchFilesCount', { n: memory.imageFiles.length }) })
+        : null,
       fileList(memory.imageFiles, (i) => {
         memory.imageFiles = memory.imageFiles.filter((_, j) => j !== i);
         render();
@@ -432,13 +465,17 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
           h('span', { class: 'btn-icon', html: ICONS.open }),
           h('span', { class: 'btn-text', text: t('batchPickProjects') }),
         ),
-        memory.projectFiles.length ? button(t('batchClear'), 'btn-ghost', () => {
+        memory.projectFiles.length
+          ? button(t('batchClear'), 'btn-ghost', () => {
               memory.projectFiles = [];
               render();
-            }) : null,
+            })
+          : null,
       ),
       h('p', { class: 'ctl-note', text: t('batchDropHint') }),
-      memory.projectFiles.length ? h('div', { class: 'batch-count', text: t('batchFilesCount', { n: memory.projectFiles.length }) }) : null,
+      memory.projectFiles.length
+        ? h('div', { class: 'batch-count', text: t('batchFilesCount', { n: memory.projectFiles.length }) })
+        : null,
       fileList(memory.projectFiles, (i) => {
         memory.projectFiles = memory.projectFiles.filter((_, j) => j !== i);
         render();
@@ -453,12 +490,17 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
   /** Refresh the parts of the setup phase that depend on the selection. */
   const syncSetup = () => {
     const n = itemCount();
-    const settings = mode === 'projects' && memory.ownExport ? t('batchOwnSettingsSummary') : settingsSummary(ctx.store.state.export);
+    const settings =
+      mode === 'projects' && memory.ownExport ? t('batchOwnSettingsSummary') : settingsSummary(ctx.store.state.export);
     outputSummary.textContent = t('batchOutputSummary', { n, settings });
     if (startBtn) startBtn.disabled = n === 0;
   };
 
-  const MODE_HINT: Record<BatchMode, MessageKey> = { images: 'batchModeImagesHint', views: 'batchModeViewsHint', projects: 'batchModeProjectsHint' };
+  const MODE_HINT: Record<BatchMode, MessageKey> = {
+    images: 'batchModeImagesHint',
+    views: 'batchModeViewsHint',
+    projects: 'batchModeProjectsHint',
+  };
 
   const renderSetup = () => {
     const modeCtl = segmentedControl<BatchMode>({
@@ -494,7 +536,10 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
   /* Running / result phases ------------------------------------------------ */
   const renderRunning = () => {
     stoppingNote.hidden = !cancelRequested;
-    content.replaceChildren(h('div', { class: 'anim-progress batch-progress' }, progressText, progressTrack), stoppingNote);
+    content.replaceChildren(
+      h('div', { class: 'anim-progress batch-progress' }, progressText, progressTrack),
+      stoppingNote,
+    );
     const cancel = button(t('cancel'), '', () => {
       cancelRequested = true;
       cancel.disabled = true;
@@ -507,7 +552,8 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
   const noteList = (title: string, notes: ItemNote[], cls: string): HTMLElement | null => {
     if (!notes.length) return null;
     const list = h('ul', { class: `batch-notes ${cls}` });
-    for (const n of notes) list.appendChild(h('li', {}, h('strong', { text: n.label }), h('span', { text: ` – ${n.message}` })));
+    for (const n of notes)
+      list.appendChild(h('li', {}, h('strong', { text: n.label }), h('span', { text: ` – ${n.message}` })));
     return h('div', { class: 'batch-notes-wrap' }, h('div', { class: 'ctl-label', text: title }), list);
   };
 
@@ -586,7 +632,10 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
           if (!memory.views[i + 1]) return;
           const label = t(v.key);
           // Same camera change as the preset-view action (keeps fov, zoom and projection).
-          const viewScene: SceneSettings = { ...scene, camera: { ...scene.camera, yaw: v.yaw, pitch: v.pitch, roll: 0, panX: 0, panY: 0 } };
+          const viewScene: SceneSettings = {
+            ...scene,
+            camera: { ...scene.camera, yaw: v.yaw, pitch: v.pitch, roll: 0, panX: 0, panY: 0 },
+          };
           items.push({ label, slug: slugOf(label), render: (r) => renderStill(r.stage, settings, viewScene) });
         });
         return items;
@@ -768,5 +817,8 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
   render();
   document.body.appendChild(backdrop);
   requestAnimationFrame(() => backdrop.classList.add('show'));
-  (actions.querySelector<HTMLButtonElement>('.btn-primary:not(:disabled)') ?? dialog.querySelector<HTMLElement>('button'))?.focus();
+  (
+    actions.querySelector<HTMLButtonElement>('.btn-primary:not(:disabled)') ??
+    dialog.querySelector<HTMLElement>('button')
+  )?.focus();
 }

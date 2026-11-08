@@ -37,7 +37,10 @@ export async function takeOpenedFiles(): Promise<{ files: File[]; errors: string
  * file that could not be read (with a message naming it), and if the shell cannot be asked at all;
  * the files that could be read still reach `onOpened`.
  */
-export async function handleOpenedFiles(onOpened: (files: File[]) => void, onError: (e: unknown) => void): Promise<void> {
+export async function handleOpenedFiles(
+  onOpened: (files: File[]) => void,
+  onError: (e: unknown) => void,
+): Promise<void> {
   if (!inDesktopApp()) return;
   const take = () =>
     takeOpenedFiles().then(({ files, errors }) => {

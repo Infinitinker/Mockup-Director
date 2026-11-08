@@ -17,8 +17,30 @@
  */
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import type { ImageSlotDef, LocalizedText, ModelContext, ModelDefinition, ParamDef, ParamValues, PrintTemplate, TemplateGuide } from '../core/types';
-import { L, Lctx, bool, castShadows, mmParam, num, placeOnGround, planarUVs, printMaterial, round1, roundedRectShape, str } from './shared';
+import type {
+  ImageSlotDef,
+  LocalizedText,
+  ModelContext,
+  ModelDefinition,
+  ParamDef,
+  ParamValues,
+  PrintTemplate,
+  TemplateGuide,
+} from '../core/types';
+import {
+  L,
+  Lctx,
+  bool,
+  castShadows,
+  mmParam,
+  num,
+  placeOnGround,
+  planarUVs,
+  printMaterial,
+  round1,
+  roundedRectShape,
+  str,
+} from './shared';
 
 /* ------------------------------------------------------------------ */
 /* Common constants / helpers                                          */
@@ -589,7 +611,9 @@ function bookSlots(kind: BookKind): ImageSlotDef[] {
   const onlyIfNoCover = L('Used only when no “Cover wrap” image is added.');
   // Appended to the wrap hint of the hardcover only (it starts with a space).
   const hardNote = hard
-    ? L(' The wrap covers the overhanging boards and the hinge grooves (marked on the template). Printers usually need a 15–20 mm turn-in for real case binding – the template matches the mockup with a 3 mm bleed.')
+    ? L(
+        ' The wrap covers the overhanging boards and the hinge grooves (marked on the template). Printers usually need a 15–20 mm turn-in for real case binding – the template matches the mockup with a 3 mm bleed.',
+      )
     : '';
   const h = round1(hc);
   return [
@@ -608,7 +632,11 @@ function bookSlots(kind: BookKind): ImageSlotDef[] {
     {
       id: 'front',
       label: L('Front'),
-      hint: L('{onlyIfNoCover} By default {w} × {h} mm + 3 mm bleed (left edge = spine).', { onlyIfNoCover, w: round1(fw), h }),
+      hint: L('{onlyIfNoCover} By default {w} × {h} mm + 3 mm bleed (left edge = spine).', {
+        onlyIfNoCover,
+        w: round1(fw),
+        h,
+      }),
       aspect: aspect(fw),
       template: (params) => bookPanelTemplate(params, kind, 'front'),
     },
@@ -759,7 +787,15 @@ function buildBook(ctx: ModelContext, kind: BookKind): THREE.Object3D {
    * bottom caps) and, optionally, the fore-edge end pieces. U maps an artwork position (mm from
    * the back fore-edge trim along the outer surface, may run into the bleed) to the texture u.
    */
-  const addPart = (i0: number, i1: number, mat: THREE.Material, U: (s: number) => number, withB: boolean, withE: boolean, name: string) => {
+  const addPart = (
+    i0: number,
+    i1: number,
+    mat: THREE.Material,
+    U: (s: number) => number,
+    withB: boolean,
+    withE: boolean,
+    name: string,
+  ) => {
     const mb = new MeshBuilder();
     const slice = O.slice(i0, i1 + 1);
     // Outer face. UV: u runs along the developed cover (arc length), v up the height. The path
@@ -811,7 +847,15 @@ function buildBook(ctx: ModelContext, kind: BookKind): THREE.Object3D {
   if (useCover) {
     // One wrap image: Back | Spine | Front.
     const wTot = wrapLen + 2 * b;
-    addPart(0, last, coverMaterial(finish, { map: ctx.getTexture('cover') }), (s) => (b + s) / wTot, true, true, 'cover');
+    addPart(
+      0,
+      last,
+      coverMaterial(finish, { map: ctx.getTexture('cover') }),
+      (s) => (b + s) / wTot,
+      true,
+      true,
+      'cover',
+    );
   } else {
     // Separate panels; the front always shows an image (placeholder when empty), empty spine /
     // back fall back to a solid colour.
@@ -820,10 +864,22 @@ function buildBook(ctx: ModelContext, kind: BookKind): THREE.Object3D {
     const fw = wrapLen - s1 + 2 * b;
     const sw = s1 - s0 + 2 * b;
     const bw = s0 + 2 * b;
-    addPart(iF0, last, coverMaterial(finish, { map: ctx.getTexture('front') }), (s) => (b + s - s1) / fw, false, true, 'front');
-    const spineMat = ctx.hasImage('spine') ? coverMaterial(finish, { map: ctx.getTexture('spine') }) : coverMaterial(finish, { color: sideColor });
+    addPart(
+      iF0,
+      last,
+      coverMaterial(finish, { map: ctx.getTexture('front') }),
+      (s) => (b + s - s1) / fw,
+      false,
+      true,
+      'front',
+    );
+    const spineMat = ctx.hasImage('spine')
+      ? coverMaterial(finish, { map: ctx.getTexture('spine') })
+      : coverMaterial(finish, { color: sideColor });
     addPart(iB1, iF0, spineMat, (s) => (b + s - s0) / sw, false, false, 'spine');
-    const backMat = ctx.hasImage('back') ? coverMaterial(finish, { map: ctx.getTexture('back') }) : coverMaterial(finish, { color: sideColor });
+    const backMat = ctx.hasImage('back')
+      ? coverMaterial(finish, { map: ctx.getTexture('back') })
+      : coverMaterial(finish, { color: sideColor });
     addPart(0, iB1, backMat, (s) => (b + s) / bw, true, false, 'back');
   }
 
@@ -831,8 +887,20 @@ function buildBook(ctx: ModelContext, kind: BookKind): THREE.Object3D {
   {
     const mb = new MeshBuilder();
     const nodes: PNode[] = [{ ...Bn[0], nx: 0, nz: -1 }, ...I, { ...En[En.length - 1], nx: 0, nz: 1 }];
-    addRibbon(mb, nodes, 0, Hc, -1, () => 0, () => 0);
-    const endpaper = new THREE.MeshStandardMaterial({ color: kind === 'hard' ? '#efeadf' : '#f4f3ef', roughness: 0.85, metalness: 0 });
+    addRibbon(
+      mb,
+      nodes,
+      0,
+      Hc,
+      -1,
+      () => 0,
+      () => 0,
+    );
+    const endpaper = new THREE.MeshStandardMaterial({
+      color: kind === 'hard' ? '#efeadf' : '#f4f3ef',
+      roughness: 0.85,
+      metalness: 0,
+    });
     const mesh = new THREE.Mesh(mb.geometry(), endpaper);
     mesh.name = 'cover-inside';
     root.add(mesh);
@@ -840,7 +908,8 @@ function buildBook(ctx: ModelContext, kind: BookKind): THREE.Object3D {
 
   /* ---- page block ---- */
   root.add(buildPageBlock(g, pageMaterial(colorOf(p, 'pageColor', kind === 'hard' ? '#f3ecdc' : '#f1ead8'))));
-  if (kind === 'hard' && bool(p, 'headband', true)) root.add(...buildHeadbands(g, colorOf(p, 'headbandColor', '#8a1c22')));
+  if (kind === 'hard' && bool(p, 'headband', true))
+    root.add(...buildHeadbands(g, colorOf(p, 'headbandColor', '#8a1c22')));
 
   castShadows(root);
   placeOnGround(root);
@@ -995,8 +1064,22 @@ function noteTemplate(p: ParamValues, face: 'front' | 'back'): PrintTemplate {
 
 /** Wire colours: bare metal or powder-coated. */
 function coilMaterial(color: string): THREE.MeshPhysicalMaterial {
-  if (color === 'black') return new THREE.MeshPhysicalMaterial({ color: '#1b1b1e', metalness: 0.45, roughness: 0.32, clearcoat: 0.6, clearcoatRoughness: 0.2 });
-  if (color === 'white') return new THREE.MeshPhysicalMaterial({ color: '#f1f1ef', metalness: 0.05, roughness: 0.3, clearcoat: 0.6, clearcoatRoughness: 0.2 });
+  if (color === 'black')
+    return new THREE.MeshPhysicalMaterial({
+      color: '#1b1b1e',
+      metalness: 0.45,
+      roughness: 0.32,
+      clearcoat: 0.6,
+      clearcoatRoughness: 0.2,
+    });
+  if (color === 'white')
+    return new THREE.MeshPhysicalMaterial({
+      color: '#f1f1ef',
+      metalness: 0.05,
+      roughness: 0.3,
+      clearcoat: 0.6,
+      clearcoatRoughness: 0.2,
+    });
   return new THREE.MeshPhysicalMaterial({ color: '#d5d8dd', metalness: 1, roughness: 0.26 });
 }
 
@@ -1081,7 +1164,9 @@ function buildNotebook(ctx: ModelContext): THREE.Object3D {
   const backFace = hasBack
     ? coverMaterial(finish, { map: ctx.getTexture('back') })
     : new THREE.MeshStandardMaterial({ color: backColor, roughness: 0.88, metalness: 0 });
-  const backEdge = hasBack ? edgeMat : new THREE.MeshStandardMaterial({ color: backColor, roughness: 0.9, metalness: 0 });
+  const backEdge = hasBack
+    ? edgeMat
+    : new THREE.MeshStandardMaterial({ color: backColor, roughness: 0.9, metalness: 0 });
   const back = new THREE.Mesh(backGeo, [backFace, backEdge]);
   back.name = 'back-cover';
   root.add(back);
@@ -1125,7 +1210,14 @@ function buildNotebook(ctx: ModelContext): THREE.Object3D {
   if (merged) {
     const holes = new THREE.Mesh(
       merged,
-      new THREE.MeshStandardMaterial({ color: '#151515', roughness: 0.9, metalness: 0, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
+      new THREE.MeshStandardMaterial({
+        color: '#151515',
+        roughness: 0.9,
+        metalness: 0,
+        polygonOffset: true,
+        polygonOffsetFactor: -2,
+        polygonOffsetUnits: -2,
+      }),
     );
     holes.name = 'holes';
     root.add(holes);
@@ -1321,7 +1413,9 @@ export const hardcoverModel: ModelDefinition = {
   id: 'book-hardcover',
   category: 'book',
   name: L('Hardcover book'),
-  description: L('Case-bound hardcover (2.5 mm boards) with overhanging covers, hinge grooves, a flat or rounded spine and a page block.'),
+  description: L(
+    'Case-bound hardcover (2.5 mm boards) with overhanging covers, hinge grooves, a flat or rounded spine and a page block.',
+  ),
   icon: ICON_HARDCOVER,
   slots: bookSlots('hard'),
   params: bookParams('hard'),
@@ -1345,7 +1439,9 @@ export const spiralNotebookModel: ModelDefinition = {
   id: 'notebook-spiral',
   category: 'book',
   name: L('Spiral notebook'),
-  description: L('A5 notebook / calendar with a wire-o or single coil binding on the left or top edge, covers and a page block.'),
+  description: L(
+    'A5 notebook / calendar with a wire-o or single coil binding on the left or top edge, covers and a page block.',
+  ),
   icon: ICON_NOTEBOOK,
   slots: notebookSlots(),
   params: notebookParams(),

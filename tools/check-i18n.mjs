@@ -122,13 +122,22 @@ try {
       if (reported.has(key)) continue;
       reported.add(key);
       missing++;
-      console.log(`${loc.code}: no translation for ${text.ctx ? `[${text.ctx}] ` : ''}${JSON.stringify(text.en)}  (${where})`);
+      console.log(
+        `${loc.code}: no translation for ${text.ctx ? `[${text.ctx}] ` : ''}${JSON.stringify(text.en)}  (${where})`,
+      );
     }
     const unusedTexts = Object.keys(loc.texts).filter((k) => !used.has(k));
-    const unusedCtx = Object.entries(loc.contexts).flatMap(([c, t]) => Object.keys(t).filter((k) => !usedCtx.has(`${c}\u0004${k}`)).map((k) => `[${c}] ${k}`));
-    for (const k of [...unusedTexts, ...unusedCtx]) console.log(`${loc.code}: warning: translation not used by any text found: ${JSON.stringify(k)}`);
+    const unusedCtx = Object.entries(loc.contexts).flatMap(([c, t]) =>
+      Object.keys(t)
+        .filter((k) => !usedCtx.has(`${c}\u0004${k}`))
+        .map((k) => `[${c}] ${k}`),
+    );
+    for (const k of [...unusedTexts, ...unusedCtx])
+      console.log(`${loc.code}: warning: translation not used by any text found: ${JSON.stringify(k)}`);
   }
-  console.log(missing ? `\n${missing} texts without a translation.` : `All ${all.length} texts found have translations.`);
+  console.log(
+    missing ? `\n${missing} texts without a translation.` : `All ${all.length} texts found have translations.`,
+  );
   process.exitCode = missing ? 1 : 0;
 } finally {
   rmSync(tmp, { recursive: true, force: true });

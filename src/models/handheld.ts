@@ -267,11 +267,16 @@ function makeSlot(spec: DeviceSpec): ImageSlotDef {
       {
         pxW: px(ow),
         pxH: px(oh),
-        orientation: portrait ? Lctx('recommended image orientation', 'portrait') : Lctx('recommended image orientation', 'landscape'),
+        orientation: portrait
+          ? Lctx('recommended image orientation', 'portrait')
+          : Lctx('recommended image orientation', 'landscape'),
         w: round1(ow),
         h: round1(oh),
         other: portrait ? Lctx('image layout to swap to', 'landscape') : Lctx('image layout to swap to', 'portrait'),
-        example: L('A typical screenshot (e.g. {w} × {h} px) fits too – it is cropped slightly.', { w: exampleW, h: exampleH }),
+        example: L('A typical screenshot (e.g. {w} × {h} px) fits too – it is cropped slightly.', {
+          w: exampleW,
+          h: exampleH,
+        }),
       },
     ),
     aspect: ow / oh,
@@ -292,9 +297,25 @@ function makeParams(spec: DeviceSpec): ParamDef[] {
   const out: ParamDef[] = [
     mmParam('width', L('Width'), spec.width.def, spec.width.min, spec.width.max, spec.width.step, G_DIM),
     mmParam('height', L('Height'), spec.height.def, spec.height.min, spec.height.max, spec.height.step, G_DIM),
-    mmParam('thickness', L('Thickness'), spec.thickness.def, spec.thickness.min, spec.thickness.max, spec.thickness.step, G_DIM),
+    mmParam(
+      'thickness',
+      L('Thickness'),
+      spec.thickness.def,
+      spec.thickness.min,
+      spec.thickness.max,
+      spec.thickness.step,
+      G_DIM,
+    ),
     mmParam('bezel', L('Screen bezel'), spec.bezel.def, spec.bezel.min, spec.bezel.max, spec.bezel.step, G_DIM),
-    mmParam('cornerRadius', L('Corner radius'), spec.radius.def, spec.radius.min, spec.radius.max, spec.radius.step, G_DIM),
+    mmParam(
+      'cornerRadius',
+      L('Corner radius'),
+      spec.radius.def,
+      spec.radius.min,
+      spec.radius.max,
+      spec.radius.step,
+      G_DIM,
+    ),
     {
       id: 'orientation',
       type: 'select',
@@ -405,7 +426,13 @@ const CORNER_SEGS = 16;
  * +Z). Returns points and their outward 2D normals; the normals are the same for every inset, so
  * rings at different insets line up vertex by vertex.
  */
-function outlineRing(w: number, h: number, r: number, d: number, segs = CORNER_SEGS): { x: number; y: number; nx: number; ny: number }[] {
+function outlineRing(
+  w: number,
+  h: number,
+  r: number,
+  d: number,
+  segs = CORNER_SEGS,
+): { x: number; y: number; nx: number; ny: number }[] {
   const rr = Math.max(0.05, r - d);
   const cx = w / 2 - d - rr;
   const cy = h / 2 - d - rr;
@@ -475,8 +502,14 @@ function slabGeometry(
     const a0 = k * n;
     const b0 = k * n + 1;
     const c0 = (k + 1) * n;
-    const geoN = v(b0).sub(v(a0)).cross(v(c0).sub(v(a0)));
-    const avgN = new THREE.Vector3(nor[a0 * 3] + nor[c0 * 3], nor[a0 * 3 + 1] + nor[c0 * 3 + 1], nor[a0 * 3 + 2] + nor[c0 * 3 + 2]);
+    const geoN = v(b0)
+      .sub(v(a0))
+      .cross(v(c0).sub(v(a0)));
+    const avgN = new THREE.Vector3(
+      nor[a0 * 3] + nor[c0 * 3],
+      nor[a0 * 3 + 1] + nor[c0 * 3 + 1],
+      nor[a0 * 3 + 2] + nor[c0 * 3 + 2],
+    );
     const flip = geoN.dot(avgN) < 0;
     for (let i = 0; i < n; i++) {
       const i1 = (i + 1) % n;
@@ -614,9 +647,19 @@ function buildDevice(ctx: ModelContext, spec: DeviceSpec): THREE.Object3D {
   const backMat =
     spec.backGlassT > 0
       ? // Frosted back glass.
-        new THREE.MeshPhysicalMaterial({ color: backColor, metalness: 0, roughness: 0.48, clearcoat: 0.7, clearcoatRoughness: 0.32 })
+        new THREE.MeshPhysicalMaterial({
+          color: backColor,
+          metalness: 0,
+          roughness: 0.48,
+          clearcoat: 0.7,
+          clearcoatRoughness: 0.32,
+        })
       : // Bead-blasted metal unibody back (same metal as the frame, a bit rougher).
-        new THREE.MeshPhysicalMaterial({ color: backColor, metalness: finish.metalness, roughness: Math.min(0.6, finish.roughness + 0.14) });
+        new THREE.MeshPhysicalMaterial({
+          color: backColor,
+          metalness: finish.metalness,
+          roughness: Math.min(0.6, finish.roughness + 0.14),
+        });
 
   /* ---- frame (body) ---- */
   const gB = spec.backGlassT;
@@ -720,7 +763,9 @@ function buildDevice(ctx: ModelContext, spec: DeviceSpec): THREE.Object3D {
     const zMid = (wall0 + wall1) / 2;
     // Right side (+X): rotateY(+90°) maps local +Z (protrusion) -> +X, local x (bw) -> -Z.
     const rightButton = (len: number, y: number, name: string) => {
-      const g = buttonGeometry(len, bw, prot).rotateY(Math.PI / 2).translate(W / 2, y, zMid);
+      const g = buttonGeometry(len, bw, prot)
+        .rotateY(Math.PI / 2)
+        .translate(W / 2, y, zMid);
       add(g, frameMat, name);
     };
     if (spec.kind === 'phone') {
@@ -762,13 +807,33 @@ function buildDevice(ctx: ModelContext, spec: DeviceSpec): THREE.Object3D {
     const modProfile: ProfilePt[] = [{ d: 0, z: zBack + 0.25, a: 0 }, ...edgeArc(zEnd, em, -1)];
     const modMat =
       spec.backGlassT > 0
-        ? new THREE.MeshPhysicalMaterial({ color: backColor, metalness: 0, roughness: 0.2, clearcoat: 1, clearcoatRoughness: 0.05 })
+        ? new THREE.MeshPhysicalMaterial({
+            color: backColor,
+            metalness: 0,
+            roughness: 0.2,
+            clearcoat: 1,
+            clearcoatRoughness: 0.05,
+          })
         : backMat;
-    add(slabGeometry(mw, mh, rs.r * s, modProfile, { start: false, end: true }).translate(mx, my, 0), modMat, 'camera-module');
+    add(
+      slabGeometry(mw, mh, rs.r * s, modProfile, { start: false, end: true }).translate(mx, my, 0),
+      modMat,
+      'camera-module',
+    );
 
     const ringMat = new THREE.MeshPhysicalMaterial({ color: '#1b1b1e', metalness: 0.85, roughness: 0.3 });
-    const lensGlass = new THREE.MeshPhysicalMaterial({ color: '#07080b', roughness: 0.08, clearcoat: 1, clearcoatRoughness: 0.02 });
-    const pupilMat = new THREE.MeshPhysicalMaterial({ color: '#1d2638', roughness: 0.1, clearcoat: 1, clearcoatRoughness: 0.02 });
+    const lensGlass = new THREE.MeshPhysicalMaterial({
+      color: '#07080b',
+      roughness: 0.08,
+      clearcoat: 1,
+      clearcoatRoughness: 0.02,
+    });
+    const pupilMat = new THREE.MeshPhysicalMaterial({
+      color: '#1d2638',
+      roughness: 0.1,
+      clearcoat: 1,
+      clearcoatRoughness: 0.02,
+    });
     const lr = rs.lensR * s;
     const ringH = 0.5;
     // Lens geometries are shared between the lenses of this build. Circles face -Z (rotateY π;
@@ -799,12 +864,22 @@ function buildDevice(ctx: ModelContext, spec: DeviceSpec): THREE.Object3D {
     const fz = (onModule ? zEnd : zBack) - 0.04;
     // Decals 0.04 mm off the surface: polygonOffset keeps them free of z-fighting from afar.
     const decal = { polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 };
-    const flashMat = new THREE.MeshPhysicalMaterial({ color: '#f2ecdc', roughness: 0.35, clearcoat: 1, clearcoatRoughness: 0.1, ...decal });
+    const flashMat = new THREE.MeshPhysicalMaterial({
+      color: '#f2ecdc',
+      roughness: 0.35,
+      clearcoat: 1,
+      clearcoatRoughness: 0.1,
+      ...decal,
+    });
     add(new THREE.CircleGeometry(rs.flashR * s, 28).rotateY(Math.PI).translate(fx, fy, fz), flashMat, 'flash');
     // Tiny microphone hole next to the flash (offset scaled with the module so it stays on its
     // flat face on small tablets).
     const micMat = new THREE.MeshStandardMaterial({ color: '#050505', roughness: 0.8, ...decal });
-    add(new THREE.CircleGeometry(0.45, 16).rotateY(Math.PI).translate(fx, fy - (rs.flashR + 2.2) * s, fz), micMat, 'microphone');
+    add(
+      new THREE.CircleGeometry(0.45, 16).rotateY(Math.PI).translate(fx, fy - (rs.flashR + 2.2) * s, fz),
+      micMat,
+      'microphone',
+    );
   }
 
   if (d.landscape) device.rotation.z = Math.PI / 2;
@@ -834,7 +909,12 @@ function buildStylus(dark: boolean): THREE.Object3D {
   const g = new THREE.Group();
   g.name = 'stylus';
   // Lathe profiles: (radius, position along the axis), tip at 0.
-  const nib = [new THREE.Vector2(0, 0), new THREE.Vector2(0.45, 0.12), new THREE.Vector2(0.8, 0.9), new THREE.Vector2(1.05, 2.6)];
+  const nib = [
+    new THREE.Vector2(0, 0),
+    new THREE.Vector2(0.45, 0.12),
+    new THREE.Vector2(0.8, 0.9),
+    new THREE.Vector2(1.05, 2.6),
+  ];
   const body = [
     new THREE.Vector2(1.05, 2.6),
     new THREE.Vector2(2.2, 7),
@@ -904,7 +984,9 @@ export const tabletModel: ModelDefinition = {
   id: 'device-tablet',
   category: 'device',
   name: L('Tablet'),
-  description: L('Generic tablet 179.5 × 247.6 × 6.3 mm (landscape by default) with a lit screen and an optional stylus.'),
+  description: L(
+    'Generic tablet 179.5 × 247.6 × 6.3 mm (landscape by default) with a lit screen and an optional stylus.',
+  ),
   icon: ICON_TABLET,
   slots: [makeSlot(SPECS.tablet)],
   params: makeParams(SPECS.tablet),

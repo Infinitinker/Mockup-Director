@@ -46,11 +46,15 @@ export function createTabBar(docs: Documents, opts: TabBarOptions): { el: HTMLEl
   const onTabKey = (e: KeyboardEvent, tab: TabInfo, ids: string[]) => {
     const i = ids.indexOf(tab.id);
     const target =
-      e.key === 'ArrowRight' ? ids[(i + 1) % ids.length]
-      : e.key === 'ArrowLeft' ? ids[(i - 1 + ids.length) % ids.length]
-      : e.key === 'Home' ? ids[0]
-      : e.key === 'End' ? ids[ids.length - 1]
-      : null;
+      e.key === 'ArrowRight'
+        ? ids[(i + 1) % ids.length]
+        : e.key === 'ArrowLeft'
+          ? ids[(i - 1 + ids.length) % ids.length]
+          : e.key === 'Home'
+            ? ids[0]
+            : e.key === 'End'
+              ? ids[ids.length - 1]
+              : null;
     if (target) {
       e.preventDefault();
       focusTab(target);
@@ -117,7 +121,12 @@ export function createTabBar(docs: Documents, opts: TabBarOptions): { el: HTMLEl
         },
       },
       button,
-      h('span', { class: 'doctab-end', attrs: { 'aria-hidden': 'true' } }, h('span', { class: 'doctab-dirty', text: '•' }), close),
+      h(
+        'span',
+        { class: 'doctab-end', attrs: { 'aria-hidden': 'true' } },
+        h('span', { class: 'doctab-dirty', text: '•' }),
+        close,
+      ),
     );
     tabEls.set(tab.id, button);
     return item;

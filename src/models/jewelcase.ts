@@ -150,7 +150,9 @@ export const bookletSlot: ImageSlotDef = {
 export const inlaySlot: ImageSlotDef = {
   id: 'inlay',
   label: L('Back inlay (tray card)'),
-  hint: L('151 × 118 mm (spine 6.5 | back 138 | spine 6.5) + 3 mm bleed = 157 × 124 mm. The template’s left spine ends up on the case’s right (opening) side, the right one on the hinge side. Slim cases show only the back (with a clear tray).'),
+  hint: L(
+    '151 × 118 mm (spine 6.5 | back 138 | spine 6.5) + 3 mm bleed = 157 × 124 mm. The template’s left spine ends up on the case’s right (opening) side, the right one on the hinge side. Slim cases show only the back (with a clear tray).',
+  ),
   aspect: IW / IH,
   template: INLAY_TEMPLATE,
 };
@@ -260,7 +262,12 @@ function remapBoxFace(g: THREE.BoxGeometry, face: number, u0: number, v0: number
 }
 
 /** Plane facing the given axis whose UVs read correctly when viewed from that side, mapped into a template rect. */
-function facingPlane(w: number, h: number, facing: '-z' | '+z' | '+x' | '-x', rect: [number, number, number, number] = [0, 0, 1, 1]): THREE.PlaneGeometry {
+function facingPlane(
+  w: number,
+  h: number,
+  facing: '-z' | '+z' | '+x' | '-x',
+  rect: [number, number, number, number] = [0, 0, 1, 1],
+): THREE.PlaneGeometry {
   const g = new THREE.PlaneGeometry(w, h);
   if (facing === '-z') g.rotateY(Math.PI);
   else if (facing === '+x') g.rotateY(Math.PI / 2);
@@ -273,7 +280,14 @@ function facingPlane(w: number, h: number, facing: '-z' | '+z' | '+x' | '-x', re
 }
 
 /** Template rect (mm from the top-left, incl. bleed) → UV rect [u0, v0, u1, v1] (v = 0 bottom). */
-function uvRect(xMm: number, yMm: number, wMm: number, hMm: number, tw: number, th: number): [number, number, number, number] {
+function uvRect(
+  xMm: number,
+  yMm: number,
+  wMm: number,
+  hMm: number,
+  tw: number,
+  th: number,
+): [number, number, number, number] {
   return [xMm / tw, 1 - (yMm + hMm) / th, (xMm + wMm) / tw, 1 - yMm / th];
 }
 
@@ -331,7 +345,11 @@ function buildTray(
   const hole = new THREE.Path();
   hole.absarc(CX, CY, 60.6, 0, Math.PI * 2, true);
   rimShape.holes.push(hole);
-  const rim = new THREE.ExtrudeGeometry(rimShape, { depth: lay.trayFront - lay.trayFloor, bevelEnabled: false, curveSegments: 96 });
+  const rim = new THREE.ExtrudeGeometry(rimShape, {
+    depth: lay.trayFront - lay.trayFloor,
+    bevelEnabled: false,
+    curveSegments: 96,
+  });
   rim.translate(0, 0, lay.trayFloor);
   add(rim);
 
@@ -388,7 +406,11 @@ export function buildJewelCase(ctx: ModelContext): THREE.Object3D {
   };
 
   /* ---- Lid ------------------------------------------------------- */
-  const lidGeo = new THREE.ExtrudeGeometry(roundedRectShape(W, H, 1.2), { depth: Ly.lid1 - Ly.lid0, bevelEnabled: false, curveSegments: 6 });
+  const lidGeo = new THREE.ExtrudeGeometry(roundedRectShape(W, H, 1.2), {
+    depth: Ly.lid1 - Ly.lid0,
+    bevelEnabled: false,
+    curveSegments: 6,
+  });
   lidGeo.translate(0, CY, Ly.lid0);
   shell(lidGeo, [clearFace, clearEdge], 'lid');
 
@@ -422,8 +444,14 @@ export function buildJewelCase(ctx: ModelContext): THREE.Object3D {
 
   // Booklet tabs: small clips at the right edge and under the hinge strip.
   for (const yc of [25, H - 25]) {
-    shell(boxGeo(CX + BOOKLET / 2 - 0.8, CX + BOOKLET / 2 + 2.8, yc - 5, yc + 5, Ly.booklet0 - 0.3, Ly.lid0), boxMats('z'));
-    shell(boxGeo(CX - BOOKLET / 2 - 2.2, CX - BOOKLET / 2 + 1.6, yc - 5, yc + 5, Ly.booklet0 - 0.3, Ly.lid0), boxMats('z'));
+    shell(
+      boxGeo(CX + BOOKLET / 2 - 0.8, CX + BOOKLET / 2 + 2.8, yc - 5, yc + 5, Ly.booklet0 - 0.3, Ly.lid0),
+      boxMats('z'),
+    );
+    shell(
+      boxGeo(CX - BOOKLET / 2 - 2.2, CX - BOOKLET / 2 + 1.6, yc - 5, yc + 5, Ly.booklet0 - 0.3, Ly.lid0),
+      boxMats('z'),
+    );
   }
 
   /* ---- Booklet --------------------------------------------------- */
@@ -431,7 +459,11 @@ export function buildJewelCase(ctx: ModelContext): THREE.Object3D {
     const bt = Ly.booklet1 - Ly.booklet0;
     const bGeo = new THREE.BoxGeometry(BOOKLET, BOOKLET, bt);
     // Front face shows the trim area of the template (bleed falls outside the face).
-    remapBoxFace(bGeo, 4, ...uvRect(BLEED, BLEED, BOOKLET, BOOKLET, BOOKLET_TEMPLATE.widthMm, BOOKLET_TEMPLATE.heightMm));
+    remapBoxFace(
+      bGeo,
+      4,
+      ...uvRect(BLEED, BLEED, BOOKLET, BOOKLET, BOOKLET_TEMPLATE.widthMm, BOOKLET_TEMPLATE.heightMm),
+    );
     bGeo.translate(CX, CY, (Ly.booklet0 + Ly.booklet1) / 2);
     const paperEdge = new THREE.MeshPhysicalMaterial({ color: '#f1efe9', roughness: 0.85 });
     const front = printMaterial(ctx.getTexture('booklet'), { roughness: paper.roughness, gloss: paper.gloss });
@@ -466,7 +498,12 @@ export function buildJewelCase(ctx: ModelContext): THREE.Object3D {
   if (!slim || (hasInlay && trayIsSeeThrough)) {
     const outer = hasInlay
       ? printMaterial(ctx.getTexture('inlay'), { roughness: paper.roughness, gloss: paper.gloss })
-      : new THREE.MeshPhysicalMaterial({ color: str(p, 'inlayColor', '#ffffff'), roughness: paper.roughness, clearcoat: paper.gloss, clearcoatRoughness: 0.1 });
+      : new THREE.MeshPhysicalMaterial({
+          color: str(p, 'inlayColor', '#ffffff'),
+          roughness: paper.roughness,
+          clearcoat: paper.gloss,
+          clearcoatRoughness: 0.1,
+        });
     const inner = new THREE.MeshPhysicalMaterial({ color: '#f1efe9', roughness: 0.85 });
     const xb = INLAY_BACK / 2;
     const yc = CY;

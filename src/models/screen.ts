@@ -138,7 +138,14 @@ function faceStrip(
  * clockwise seen from +Z; each loop point is swept through the edge profile from the front
  * (z = 0, inset e) to the back (z = -t, inset e), meeting the front/back faces exactly.
  */
-function sideWall(halfW: number, halfH: number, r: number, t: number, e: number, midSegs: number): THREE.BufferGeometry {
+function sideWall(
+  halfW: number,
+  halfH: number,
+  r: number,
+  t: number,
+  e: number,
+  midSegs: number,
+): THREE.BufferGeometry {
   interface LoopPt {
     x: number;
     y: number;
@@ -530,7 +537,12 @@ function buildScreenshot(ctx: ModelContext): THREE.Object3D {
   const bodyColor = hasFrame ? FRAME_COLORS[frame] : str(p, 'bodyColor', '#2a2b2f');
   const bodyMat = bodyMaterial(bodyColor, str(p, 'bodyFinish', 'plastic'));
   const frameMat = hasFrame
-    ? new THREE.MeshPhysicalMaterial({ color: FRAME_COLORS[frame], roughness: 0.3, clearcoat: 0.8, clearcoatRoughness: 0.05 })
+    ? new THREE.MeshPhysicalMaterial({
+        color: FRAME_COLORS[frame],
+        roughness: 0.3,
+        clearcoat: 0.8,
+        clearcoatRoughness: 0.05,
+      })
     : null;
 
   const panel = new THREE.Group();
@@ -577,11 +589,15 @@ export const screenshotModel: ModelDefinition = {
   id: 'device-screenshot',
   category: 'device',
   name: L('Screenshot'),
-  description: L('A thin floating panel showing a screenshot – flat or curved, with an optional frame; the height follows the image.'),
+  description: L(
+    'A thin floating panel showing a screenshot – flat or curved, with an optional frame; the height follows the image.',
+  ),
   icon: ICON_SCREENSHOT,
   slots: [
     screenSlot(
-      L('A screenshot or any artwork – any aspect ratio (the panel height follows the image). Without an image: 16:10.'),
+      L(
+        'A screenshot or any artwork – any aspect ratio (the panel height follows the image). Without an image: 16:10.',
+      ),
     ),
   ],
   params: [
@@ -688,7 +704,13 @@ function roundRectPath(g: CanvasRenderingContext2D, x: number, y: number, w: num
  * chevrons, centred address pill with a small padlock + domain, a "more" menu and a separator.
  * Drawn upright; CanvasTexture keeps flipY = true, so v = 0 is the bottom of the drawing.
  */
-function chromeTexture(wMm: number, hMm: number, pal: ChromePalette, buttons: string, address: string): THREE.CanvasTexture {
+function chromeTexture(
+  wMm: number,
+  hMm: number,
+  pal: ChromePalette,
+  buttons: string,
+  address: string,
+): THREE.CanvasTexture {
   const wPx = 3072;
   const hPx = clamp(Math.round((wPx * hMm) / wMm), 24, 1024);
   const canvas = document.createElement('canvas');
@@ -823,7 +845,14 @@ function buildBrowser(ctx: ModelContext): THREE.Object3D {
 
   // Chrome bar (top corners rounded): its canvas covers [-hw, split]..[hw, top]; u left -> right,
   // v bottom -> top seen from +Z -> upright, not mirrored.
-  const barGeo = faceStrip(xs, (x) => top - cornerDrop(x, hw, rc), () => split, 0, 1, [-hw, split, hw, top]);
+  const barGeo = faceStrip(
+    xs,
+    (x) => top - cornerDrop(x, hw, rc),
+    () => split,
+    0,
+    1,
+    [-hw, split, hw, top],
+  );
   bendGeometry(barGeo, rho);
   const barTex = chromeTexture(2 * hw, barH, pal, str(p, 'buttons', 'color'), str(p, 'address', 'example.com'));
   const bar = new THREE.Mesh(barGeo, artMaterial(barTex, finish, glow));
@@ -832,7 +861,14 @@ function buildBrowser(ctx: ModelContext): THREE.Object3D {
 
   // Content (bottom corners rounded): the user's image spans [-hw, bot]..[hw, split] exactly,
   // u left -> right, v bottom -> top seen from +Z -> upright, not mirrored.
-  const contentGeo = faceStrip(xs, () => split, (x) => bot + cornerDrop(x, hw, rc), 0, 1, [-hw, bot, hw, split]);
+  const contentGeo = faceStrip(
+    xs,
+    () => split,
+    (x) => bot + cornerDrop(x, hw, rc),
+    0,
+    1,
+    [-hw, bot, hw, split],
+  );
   bendGeometry(contentGeo, rho);
   const content = new THREE.Mesh(contentGeo, artMaterial(ctx.getTexture('screen'), finish, glow));
   content.name = 'screen';
@@ -851,11 +887,15 @@ export const browserWindowModel: ModelDefinition = {
   id: 'device-browser',
   category: 'device',
   name: L('Browser window'),
-  description: L('A browser / app window with a generic title bar (buttons, address bar) – flat or curved; the height follows the image.'),
+  description: L(
+    'A browser / app window with a generic title bar (buttons, address bar) – flat or curved; the height follows the image.',
+  ),
   icon: ICON_BROWSER,
   slots: [
     screenSlot(
-      L('Window content under the bar (e.g. a page screenshot) – any aspect ratio, the window height follows the image. Without an image: 16:10.'),
+      L(
+        'Window content under the bar (e.g. a page screenshot) – any aspect ratio, the window height follows the image. Without an image: 16:10.',
+      ),
     ),
   ],
   params: [

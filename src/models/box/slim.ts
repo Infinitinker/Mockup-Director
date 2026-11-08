@@ -15,7 +15,14 @@
  * Bands read upright when the box lies flat; empty bands use the colour params.
  */
 import * as THREE from 'three';
-import type { ModelContext, ModelDefinition, NumberParamDef, ParamValues, PrintTemplate, SelectParamDef } from '../../core/types';
+import type {
+  ModelContext,
+  ModelDefinition,
+  NumberParamDef,
+  ParamValues,
+  PrintTemplate,
+  SelectParamDef,
+} from '../../core/types';
 import { L, num, placeOnGround, str } from '../shared';
 import {
   aspectOf,
@@ -166,7 +173,10 @@ function buildSlimBox(ctx: ModelContext): THREE.Object3D {
   // Underside of the lid: the narrow rim around the base – or the whole bottom of a full-telescope box.
   lidMats[FACE_INDEX.ny] = hasBase ? sidePlain() : basePlain();
 
-  const lid = new THREE.Mesh(roundedBoxGeometry({ width: W, height: lidH, depth: H, radius: edgeRadius(p, W, lidH, H), uv: lidUV }), lidMats);
+  const lid = new THREE.Mesh(
+    roundedBoxGeometry({ width: W, height: lidH, depth: H, radius: edgeRadius(p, W, lidH, H), uv: lidUV }),
+    lidMats,
+  );
   lid.name = 'lid';
   lid.position.y = D - lidH / 2;
   lid.castShadow = true;
@@ -234,7 +244,9 @@ export const slimBoxModel: ModelDefinition = {
   id: 'box-slim',
   category: 'box',
   name: L('Slim box'),
-  description: L('Flat two-piece box with a lid over a base (board game, gift, phone, cosmetics). Lying flat or standing.'),
+  description: L(
+    'Flat two-piece box with a lid over a base (board game, gift, phone, cosmetics). Lying flat or standing.',
+  ),
   icon: icon(
     '<path d="M8 30 L22 20 H56 L42 30 Z"/><path d="M8 30 V44 H42 V30"/><path d="M42 44 L56 34 V20"/>' +
       '<path d="M8 39 H42 L56 29" stroke-width="2"/>',

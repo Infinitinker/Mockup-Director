@@ -135,7 +135,8 @@ export function parseProjectFile(json: unknown): ProjectFile {
   if (!isPlain(json) || json.app !== 'mockup-director') throw new ProjectError(t('errNotProject'));
   if (typeof json.version !== 'number' || json.version > 1) throw new ProjectError(t('errProjectVersion'));
 
-  const modelId = typeof json.modelId === 'string' && MODELS.some((m) => m.id === json.modelId) ? json.modelId : MODELS[0].id;
+  const modelId =
+    typeof json.modelId === 'string' && MODELS.some((m) => m.id === json.modelId) ? json.modelId : MODELS[0].id;
 
   const params: Record<string, ParamValues> = {};
   if (isPlain(json.params)) {
@@ -159,7 +160,10 @@ export function parseProjectFile(json: unknown): ProjectFile {
       for (const [sid, img] of Object.entries(slots)) {
         if (!model.slots.some((s) => s.id === sid) || !isPlain(img)) continue;
         if (typeof img.dataUrl !== 'string' || !/^data:image\//i.test(img.dataUrl)) continue;
-        (images[mid] ??= {})[sid] = { name: typeof img.name === 'string' ? img.name.slice(0, 255) : sid, dataUrl: img.dataUrl };
+        (images[mid] ??= {})[sid] = {
+          name: typeof img.name === 'string' ? img.name.slice(0, 255) : sid,
+          dataUrl: img.dataUrl,
+        };
       }
     }
   }

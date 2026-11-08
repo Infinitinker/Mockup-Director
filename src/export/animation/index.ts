@@ -23,7 +23,15 @@ import { frameDelays, turntableAngles } from './turntable';
 
 export { AnimationCancelled, AnimationError, isAnimationCancelled } from './errors';
 export { mp4EncodingAvailable } from './mp4';
-export { defaultFpsFor, frameCountOf, maxFpsFor, maxMarginFor, maxSizeFor, normaliseAnimationSettings, outputSizeOf } from './settings';
+export {
+  defaultFpsFor,
+  frameCountOf,
+  maxFpsFor,
+  maxMarginFor,
+  maxSizeFor,
+  normaliseAnimationSettings,
+  outputSizeOf,
+} from './settings';
 export { turntableAngles } from './turntable';
 
 export type AnimationPhase = 'prepare' | 'palette' | 'frames' | 'finalize';
@@ -72,7 +80,11 @@ export function animationFileFilter(format: AnimationFormat): { name: string; ex
 }
 
 /** Render and encode the turntable animation of the current stage. */
-export async function exportAnimation(stage: StageAPI, raw: AnimationSettings, opts: AnimationExportOptions): Promise<AnimationResult> {
+export async function exportAnimation(
+  stage: StageAPI,
+  raw: AnimationSettings,
+  opts: AnimationExportOptions,
+): Promise<AnimationResult> {
   const s = normaliseAnimationSettings(raw, { webp: opts.webpSupported, mp4: mp4EncodingAvailable() });
   if (s.format !== raw.format) {
     throw raw.format === 'webp' ? webpUnsupported() : mp4Unsupported();

@@ -44,11 +44,15 @@ export const messages = {
   tabUnsaved: '{name} (unsaved changes)',
   openAfterExport: 'Projects to open: {n}. They open when the export ends.',
   errAutosave: 'Your open projects could not be saved for the next start. They are still open: save them to keep them.',
-  errRestore: 'The projects that were open last time could not be reopened. They are kept for the next start; until then, open projects are not saved automatically, so save them to files.',
+  errRestore:
+    'The projects that were open last time could not be reopened. They are kept for the next start; until then, open projects are not saved automatically, so save them to files.',
   restoreSkipped: 'Projects that could not be reopened: {n}. Open them again from their files.',
-  errSessionDamaged: 'The record of the projects that were open is damaged. Open your projects again from their files; changes that were not saved to a file cannot be recovered.',
-  errSessionNewer: 'The projects that were open were saved by a newer version of Mockup Director. Update the app to get them back.',
-  errStorageUnavailable: 'This system does not let Mockup Director keep data between starts, so open projects are not reopened after a restart.',
+  errSessionDamaged:
+    'The record of the projects that were open is damaged. Open your projects again from their files; changes that were not saved to a file cannot be recovered.',
+  errSessionNewer:
+    'The projects that were open were saved by a newer version of Mockup Director. Update the app to get them back.',
+  errStorageUnavailable:
+    'This system does not let Mockup Director keep data between starts, so open projects are not reopened after a restart.',
   /* gallery */
   models: 'Models',
   catBoxes: 'Boxes',
@@ -96,7 +100,8 @@ export const messages = {
   templateFilePrefix: 'template',
   noTemplate: 'This item has no template.',
   aspectBadge: 'Aspect',
-  aspectWarning: 'Artwork aspect ratio ({actual}) differs from the expected one ({expected}) by more than 3% – the image may look distorted.',
+  aspectWarning:
+    'Artwork aspect ratio ({actual}) differs from the expected one ({expected}) by more than 3% – the image may look distorted.',
   noSlots: 'This model has no artwork slots.',
   unsupportedFile: 'Unsupported file – choose an image (PNG, JPEG, WebP…).',
   tooManyFiles: 'Skipped files: {n} (no free slots).',
@@ -178,8 +183,10 @@ export const messages = {
   animDuration: 'Duration',
   animFps: 'Frames per second',
   animUseView: 'Zoom & pan from the preview',
-  animUseViewHint: 'Off: the whole composition always fits. On: the preview zoom and pan are applied on top of the fixed framing (may crop).',
-  animStartNote: 'The animation starts from the current view – camera angle, lighting, shadow and reflection are kept, and the framing is fixed for all frames.',
+  animUseViewHint:
+    'Off: the whole composition always fits. On: the preview zoom and pan are applied on top of the fixed framing (may crop).',
+  animStartNote:
+    'The animation starts from the current view – camera angle, lighting, shadow and reflection are kept, and the framing is fixed for all frames.',
   animSizePresets: 'Size presets (square)',
   animMaxSize: 'Maximum {n} px per side ({fmt}).',
   animMp4Even: 'MP4 needs even dimensions – the file will be {w} × {h} px.',
@@ -193,10 +200,13 @@ export const messages = {
   animPalette: 'Colour palette',
   animPaletteGlobal: 'Global',
   animPaletteFrame: 'Per frame',
-  animPaletteHint: 'Global palette: stable colours and a smaller file. Per frame: more accurate colours, a larger file.',
+  animPaletteHint:
+    'Global palette: stable colours and a smaller file. Per frame: more accurate colours, a larger file.',
   animWebpUnsupported: 'Animated WebP is unavailable – this system’s web engine cannot encode WebP.',
-  animMp4Unsupported: 'MP4 needs WebCodecs (Windows with WebView2, Safari 16.4+ / macOS 13.3+, or a recent WebKitGTK on Linux) – not available on this system.',
-  animGifAlphaNote: 'GIF only has 1-bit transparency: the soft shadow and reflection disappear and edges may look jagged. Prefer the preview background or WebP.',
+  animMp4Unsupported:
+    'MP4 needs WebCodecs (Windows with WebView2, Safari 16.4+ / macOS 13.3+, or a recent WebKitGTK on Linux) – not available on this system.',
+  animGifAlphaNote:
+    'GIF only has 1-bit transparency: the soft shadow and reflection disappear and edges may look jagged. Prefer the preview background or WebP.',
   animMp4NoAlpha: 'MP4 has no transparency – the background will be white.',
   animSummary: '{w} × {h} px · {fmt} · {d} s · {n} frames',
   exportAnimationDots: 'Export animation…',
@@ -214,12 +224,14 @@ export const messages = {
   batchModeImages: 'Many images',
   batchModeViews: 'Many views',
   batchModeProjects: 'Many projects',
-  batchModeImagesHint: 'Many images → one model: every file goes into the chosen slot and becomes a separate mockup. Other slots, parameters and the scene stay unchanged.',
+  batchModeImagesHint:
+    'Many images → one model: every file goes into the chosen slot and becomes a separate mockup. Other slots, parameters and the scene stay unchanged.',
   batchModeViewsHint: 'The current project from several camera views – one image per selected view.',
   batchModeProjectsHint: 'Every project file (.mdproj) is rendered with its own model, artwork and scene.',
   batchModel: 'Model: {name}',
   batchSlot: 'Slot to vary',
-  batchSlotHint: 'If a wrap-around cover image is set it may take precedence over separate faces – choose the cover slot then.',
+  batchSlotHint:
+    'If a wrap-around cover image is set it may take precedence over separate faces – choose the cover slot then.',
   batchPickImages: 'Choose images…',
   batchPickProjects: 'Choose projects…',
   batchClear: 'Clear list',

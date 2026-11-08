@@ -354,7 +354,8 @@ write(
 const pi = process.argv.indexOf('--preview');
 if (pi !== -1 && process.argv[pi + 1]) {
   const sizes = [16, 32, 64, 128, 256];
-  const cell = (png, x, y, s) => `<image x="${x}" y="${y}" width="${s}" height="${s}" href="data:image/png;base64,${png.toString('base64')}"/>`;
+  const cell = (png, x, y, s) =>
+    `<image x="${x}" y="${y}" width="${s}" height="${s}" href="data:image/png;base64,${png.toString('base64')}"/>`;
   let row = '';
   let x = 20;
   for (const s of sizes) {

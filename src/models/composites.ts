@@ -17,7 +17,15 @@
  * and centred on x/z.
  */
 import * as THREE from 'three';
-import type { ImageSlotDef, ModelContext, ModelDefinition, NumberParamDef, ParamDef, ParamValues, SelectParamDef } from '../core/types';
+import type {
+  ImageSlotDef,
+  ModelContext,
+  ModelDefinition,
+  NumberParamDef,
+  ParamDef,
+  ParamValues,
+  SelectParamDef,
+} from '../core/types';
 import { L, num, str } from './shared';
 import { buildBox, boxModel } from './box';
 import { blurayModel, buildKeepCase, dvdModel } from './keepcase';
@@ -86,7 +94,13 @@ const DROPPED_BASE_PARAMS = new Set(['showDisc', ...discParams.map((d) => d.id)]
 function compositeParams(base: ParamDef[], turnDefault: number): ParamDef[] {
   const out: ParamDef[] = [];
   const seen = new Set<string>();
-  for (const p of [...base.filter((b) => !DROPPED_BASE_PARAMS.has(b.id)), placementParam, offsetParam, angleParam(turnDefault), ...discParams]) {
+  for (const p of [
+    ...base.filter((b) => !DROPPED_BASE_PARAMS.has(b.id)),
+    placementParam,
+    offsetParam,
+    angleParam(turnDefault),
+    ...discParams,
+  ]) {
     if (seen.has(p.id)) continue;
     seen.add(p.id);
     out.push(p);

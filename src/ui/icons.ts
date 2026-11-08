@@ -16,14 +16,20 @@ export const ICONS = {
   reset: svg('<path d="M2.75 8a5.25 5.25 0 1 0 1.6-3.78"/><path d="M2.5 2.5v2.75h2.75"/>'),
   perspective: svg('<path d="M3 4.5 8 2l5 2.5v7L8 14l-5-2.5z"/><path d="M3 4.5 8 7l5-2.5M8 7v7"/>'),
   ortho: svg('<rect x="3" y="3" width="10" height="10" rx="1"/><path d="M3 8h10M8 3v10" stroke-dasharray="1.5 1.5"/>'),
-  checker: svg('<rect x="2.5" y="2.5" width="11" height="11" rx="1.5"/><path d="M2.5 8h11M8 2.5v11" /><rect x="2.5" y="2.5" width="5.5" height="5.5" fill="currentColor" stroke="none" opacity=".5"/><rect x="8" y="8" width="5.5" height="5.5" fill="currentColor" stroke="none" opacity=".5"/>'),
+  checker: svg(
+    '<rect x="2.5" y="2.5" width="11" height="11" rx="1.5"/><path d="M2.5 8h11M8 2.5v11" /><rect x="2.5" y="2.5" width="5.5" height="5.5" fill="currentColor" stroke="none" opacity=".5"/><rect x="8" y="8" width="5.5" height="5.5" fill="currentColor" stroke="none" opacity=".5"/>',
+  ),
   fill: svg('<rect x="2.5" y="2.5" width="11" height="11" rx="1.5" fill="currentColor" fill-opacity=".55"/>'),
   gradient: svg(
     '<defs><linearGradient id="cbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="currentColor" stop-opacity=".1"/><stop offset="1" stop-color="currentColor" stop-opacity=".8"/></linearGradient></defs><rect x="2.5" y="2.5" width="11" height="11" rx="1.5" fill="url(#cbg)"/>',
   ),
-  image: svg('<rect x="2" y="3" width="12" height="10" rx="1.5"/><circle cx="5.75" cy="6.25" r="1.1"/><path d="m2.5 12 3.75-3.5 2.5 2.25L10.5 9l3 2.75"/>'),
+  image: svg(
+    '<rect x="2" y="3" width="12" height="10" rx="1.5"/><circle cx="5.75" cy="6.25" r="1.1"/><path d="m2.5 12 3.75-3.5 2.5 2.25L10.5 9l3 2.75"/>',
+  ),
   trash: svg('<path d="M2.75 4.25h10.5M6.25 4.25V2.75h3.5v1.5"/><path d="M4 4.25l.6 9h6.8l.6-9"/>'),
-  template: svg('<rect x="2" y="2.5" width="12" height="11" rx="1"/><path d="M6 2.5v11M10 2.5v11" stroke-dasharray="1.5 1.3"/>'),
+  template: svg(
+    '<rect x="2" y="2.5" width="12" height="11" rx="1"/><path d="M6 2.5v11M10 2.5v11" stroke-dasharray="1.5 1.3"/>',
+  ),
   chevron: svg('<path d="m4.5 6 3.5 3.5L11.5 6"/>'),
   lock: svg('<rect x="3.5" y="7" width="9" height="6.5" rx="1.25"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/>'),
   unlock: svg('<rect x="3.5" y="7" width="9" height="6.5" rx="1.25"/><path d="M5.5 7V5a2.5 2.5 0 0 1 4.9-.7"/>'),

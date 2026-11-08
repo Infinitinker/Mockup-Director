@@ -82,9 +82,13 @@ interface ModelInfo {
 function boxCorners(b: THREE.Box3): Float32Array {
   const out = new Float32Array(24);
   let i = 0;
-  for (const x of [b.min.x, b.max.x]) for (const y of [b.min.y, b.max.y]) for (const z of [b.min.z, b.max.z]) {
-    out[i++] = x; out[i++] = y; out[i++] = z;
-  }
+  for (const x of [b.min.x, b.max.x])
+    for (const y of [b.min.y, b.max.y])
+      for (const z of [b.min.z, b.max.z]) {
+        out[i++] = x;
+        out[i++] = y;
+        out[i++] = z;
+      }
   return out;
 }
 
@@ -149,7 +153,7 @@ function finite(v: unknown, fallback: number): number {
 
 /** Wrap an angle to (-180, 180]. */
 function wrapDeg(a: number): number {
-  let x = ((a + 180) % 360 + 360) % 360 - 180;
+  let x = ((((a + 180) % 360) + 360) % 360) - 180;
   if (x === -180) x = 180;
   return x;
 }
@@ -171,8 +175,16 @@ function sanitizeCamera(c: Partial<CameraSettings> | undefined): CameraSettings 
 
 function cameraEquals(a: CameraSettings, b: CameraSettings): boolean {
   const eq = (x: number, y: number) => Math.abs(x - y) < 1e-6;
-  return eq(a.yaw, b.yaw) && eq(a.pitch, b.pitch) && eq(a.roll, b.roll) && eq(a.fov, b.fov) &&
-    a.projection === b.projection && eq(a.zoom, b.zoom) && eq(a.panX, b.panX) && eq(a.panY, b.panY);
+  return (
+    eq(a.yaw, b.yaw) &&
+    eq(a.pitch, b.pitch) &&
+    eq(a.roll, b.roll) &&
+    eq(a.fov, b.fov) &&
+    a.projection === b.projection &&
+    eq(a.zoom, b.zoom) &&
+    eq(a.panX, b.panX) &&
+    eq(a.panY, b.panY)
+  );
 }
 
 /** Stage failure with a user-presentable message (errorMessage() in the UI shows `text`; `message` is the English text). */
@@ -296,7 +308,11 @@ export function createStage(container: HTMLElement): StageAPI {
   }
 
   /** Collect the points that must be visible: model, visible reflection, visible shadow. */
-  function buildFitPoints(reflDepth: number | null, gap: number, shadowRect: ShadowLayout['visible'] | null): Float32Array {
+  function buildFitPoints(
+    reflDepth: number | null,
+    gap: number,
+    shadowRect: ShadowLayout['visible'] | null,
+  ): Float32Array {
     const s = info.samples;
     const n = s.length / 3;
     const need = s.length * 2 + 12;
@@ -315,10 +331,14 @@ export function createStage(container: HTMLElement): StageAPI {
     }
     if (shadowRect) {
       for (const [x, z] of [
-        [shadowRect.minX, shadowRect.minZ], [shadowRect.maxX, shadowRect.minZ],
-        [shadowRect.minX, shadowRect.maxZ], [shadowRect.maxX, shadowRect.maxZ],
+        [shadowRect.minX, shadowRect.minZ],
+        [shadowRect.maxX, shadowRect.minZ],
+        [shadowRect.minX, shadowRect.maxZ],
+        [shadowRect.maxX, shadowRect.maxZ],
       ]) {
-        out[k++] = x; out[k++] = 0; out[k++] = z;
+        out[k++] = x;
+        out[k++] = 0;
+        out[k++] = z;
       }
     }
     return out.subarray(0, k);
@@ -340,14 +360,18 @@ export function createStage(container: HTMLElement): StageAPI {
     // Camera fit.
     // Preview framing ignores the key-light shadow (it moves with the light); exports include it.
     const shadowFit = shadowLayout ? (interactive ? shadowLayout.contactVisible : shadowLayout.visible) : null;
-    const pts = buildFitPoints(reflOn ? reflection.visibleDepth(s.reflection) : null, Math.max(0, s.reflection.gap), shadowFit);
+    const pts = buildFitPoints(
+      reflOn ? reflection.visibleDepth(s.reflection) : null,
+      Math.max(0, s.reflection.gap),
+      shadowFit,
+    );
     const fit = fitCamera(pts, info.pivot, cam, aspect, slack);
     const c = applyCamera(cam, aspect, fit, interactive ? cam.zoom : 1);
     if (interactive && (cam.panX !== 0 || cam.panY !== 0)) {
       // Pan = shift of the (zoomed) view by a fraction of its half size; content follows +panX right, +panY up.
       const fw = 1000 * aspect;
       const fh = 1000;
-      c.setViewOffset(fw, fh, -cam.panX * fw / 2, cam.panY * fh / 2, fw, fh);
+      c.setViewOffset(fw, fh, (-cam.panX * fw) / 2, (cam.panY * fh) / 2, fw, fh);
     } else {
       c.clearViewOffset();
     }
@@ -401,7 +425,11 @@ export function createStage(container: HTMLElement): StageAPI {
     keyLight.position.copy(info.pivot).addScaledVector(lightDir, info.size * 4 + 100);
     keyLight.target.position.copy(info.pivot);
     keyLight.target.updateMatrixWorld();
-    try { keyLight.color.set(s.light.color); } catch { keyLight.color.set(0xffffff); }
+    try {
+      keyLight.color.set(s.light.color);
+    } catch {
+      keyLight.color.set(0xffffff);
+    }
     const keyIntensity = THREE.MathUtils.clamp(finite(s.light.intensity, 1), 0, 3);
     keyLight.intensity = keyIntensity * KEY_SCALE;
     fillLight.intensity = THREE.MathUtils.clamp(finite(s.light.ambient, 0.5), 0, 2) * FILL_SCALE;
@@ -438,7 +466,11 @@ export function createStage(container: HTMLElement): StageAPI {
       if (recentEmitted.length > 12) recentEmitted.shift();
       lastEmitTime = performance.now();
       for (const cb of [...listeners]) {
-        try { cb({ ...c }); } catch (err) { console.error(err); }
+        try {
+          cb({ ...c });
+        } catch (err) {
+          console.error(err);
+        }
       }
     }
   }
@@ -462,7 +494,14 @@ export function createStage(container: HTMLElement): StageAPI {
    * window (in px of the RW × RH frame) – used for the viewport pan in animations.
    * The caller must set the pixel ratio to 1 and restore the renderer size afterwards.
    */
-  function renderTiles(ctx: CanvasRenderingContext2D, RW: number, RH: number, tile: number, shiftX: number, shiftY: number): void {
+  function renderTiles(
+    ctx: CanvasRenderingContext2D,
+    RW: number,
+    RH: number,
+    tile: number,
+    shiftX: number,
+    shiftY: number,
+  ): void {
     const cam = activeCam;
     for (let y = 0; y < RH; y += tile) {
       for (let x = 0; x < RW; x += tile) {
@@ -479,7 +518,10 @@ export function createStage(container: HTMLElement): StageAPI {
 
   /** Render the on-screen view right now (inside the current task). */
   function frameNow(): void {
-    if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+    if (rafId) {
+      cancelAnimationFrame(rafId);
+      rafId = 0;
+    }
     frame();
   }
 
@@ -536,7 +578,11 @@ export function createStage(container: HTMLElement): StageAPI {
   on(canvas, 'pointerdown', (e: PointerEvent) => {
     if (e.pointerType === 'mouse' && e.button > 2) return;
     e.preventDefault();
-    try { canvas.setPointerCapture(e.pointerId); } catch { /* ignore */ }
+    try {
+      canvas.setPointerCapture(e.pointerId);
+    } catch {
+      /* ignore */
+    }
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pointers.size === 2) pinch = pinchState();
     canvas.style.cursor = 'grabbing';
@@ -555,7 +601,10 @@ export function createStage(container: HTMLElement): StageAPI {
 
     if (pointers.size >= 2) {
       // Two fingers: pinch = zoom, move = pan.
-      if (!pinch) { pinch = pinchState(); return; }
+      if (!pinch) {
+        pinch = pinchState();
+        return;
+      }
       const now = pinchState();
       if (pinch.dist > 0 && now.dist > 0) {
         cam.zoom = THREE.MathUtils.clamp(cam.zoom * (now.dist / pinch.dist), ZOOM_MIN, ZOOM_MAX);
@@ -582,7 +631,11 @@ export function createStage(container: HTMLElement): StageAPI {
   const endPointer = (e: PointerEvent) => {
     if (!pointers.has(e.pointerId)) return;
     pointers.delete(e.pointerId);
-    try { canvas.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
+    try {
+      canvas.releasePointerCapture(e.pointerId);
+    } catch {
+      /* ignore */
+    }
     pinch = pointers.size >= 2 ? pinchState() : null;
     if (pointers.size === 0) canvas.style.cursor = 'grab';
   };
@@ -591,16 +644,21 @@ export function createStage(container: HTMLElement): StageAPI {
   on(canvas, 'lostpointercapture', endPointer);
   on(canvas, 'contextmenu', (e: MouseEvent) => e.preventDefault());
 
-  on(canvas, 'wheel', (e: WheelEvent) => {
-    e.preventDefault(); // also blocks browser pinch-zoom (ctrl+wheel)
-    if (gestureActive) return;
-    let dy = e.deltaY;
-    if (e.deltaMode === 1) dy *= 16;
-    else if (e.deltaMode === 2) dy *= viewSize().h;
-    // ctrlKey = trackpad pinch in Chromium/Firefox – deltas are small, so use a stronger factor.
-    const k = e.ctrlKey ? 0.01 : 0.0015;
-    zoomAt(e.clientX, e.clientY, Math.exp(-THREE.MathUtils.clamp(dy, -200, 200) * k));
-  }, { passive: false });
+  on(
+    canvas,
+    'wheel',
+    (e: WheelEvent) => {
+      e.preventDefault(); // also blocks browser pinch-zoom (ctrl+wheel)
+      if (gestureActive) return;
+      let dy = e.deltaY;
+      if (e.deltaMode === 1) dy *= 16;
+      else if (e.deltaMode === 2) dy *= viewSize().h;
+      // ctrlKey = trackpad pinch in Chromium/Firefox – deltas are small, so use a stronger factor.
+      const k = e.ctrlKey ? 0.01 : 0.0015;
+      zoomAt(e.clientX, e.clientY, Math.exp(-THREE.MathUtils.clamp(dy, -200, 200) * k));
+    },
+    { passive: false },
+  );
 
   // Safari / WKWebView trackpad pinch (non-standard GestureEvent). Harmless elsewhere.
   on(canvas, 'gesturestart', (e: Event) => {
@@ -633,7 +691,10 @@ export function createStage(container: HTMLElement): StageAPI {
   on(canvas, 'webglcontextlost', (e: Event) => {
     e.preventDefault();
     contextLost = true;
-    if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+    if (rafId) {
+      cancelAnimationFrame(rafId);
+      rafId = 0;
+    }
   });
   on(canvas, 'webglcontextrestored', () => {
     contextLost = false;
@@ -703,7 +764,12 @@ export function createStage(container: HTMLElement): StageAPI {
       if (shadowOn) {
         // The key-light shadow follows the camera-relative light: its rectangle differs per frame.
         keyLightDir(snap, baseCam.yaw - a, dir);
-        const r = computeShadowLayout({ bounds: startInfo.bounds, lightDir: dir, softness: snap.shadow.softness, keyIntensity }).visible;
+        const r = computeShadowLayout({
+          bounds: startInfo.bounds,
+          lightDir: dir,
+          softness: snap.shadow.softness,
+          keyIntensity,
+        }).visible;
         corners.set([r.minX, 0, r.minZ, r.maxX, 0, r.minZ, r.minX, 0, r.maxZ, r.maxX, 0, r.maxZ]);
         union.add(corners, a);
       }
@@ -751,7 +817,11 @@ export function createStage(container: HTMLElement): StageAPI {
       overlay.remove();
       overlay.width = 0;
       overlay.height = 0;
-      if (low) { low.width = 0; low.height = 0; low = null; }
+      if (low) {
+        low.width = 0;
+        low.height = 0;
+        low = null;
+      }
       if (disposed) return;
       activeCam.clearViewOffset();
       renderer.setPixelRatio(prevRatio);
@@ -853,7 +923,9 @@ export function createStage(container: HTMLElement): StageAPI {
 
     onCameraChange(cb) {
       listeners.add(cb);
-      return () => { listeners.delete(cb); };
+      return () => {
+        listeners.delete(cb);
+      };
     },
 
     renderToCanvas(o: RenderOptions): HTMLCanvasElement {

@@ -9,7 +9,14 @@
  * Templates / params / materials: src/models/box/common.ts.
  */
 import * as THREE from 'three';
-import type { ImageSlotDef, LocalizedText, ModelContext, ModelDefinition, ParamValues, PrintTemplate } from '../core/types';
+import type {
+  ImageSlotDef,
+  LocalizedText,
+  ModelContext,
+  ModelDefinition,
+  ParamValues,
+  PrintTemplate,
+} from '../core/types';
 import { L } from './shared';
 import {
   aspectOf,
