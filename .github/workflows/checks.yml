@@ -2,7 +2,8 @@
 # minutes, and their job names are short and fixed, so they are the required status checks of the
 # main branch ruleset (docs/development.md):
 #   - Lint:     Biome (format and lint of TypeScript, the tool scripts, CSS and every JSON file, so
-#               also the Tauri configuration) and rustfmt; the same result on every system, so once.
+#               also the Tauri configuration), rustfmt, and the same version in package.json and
+#               Cargo.toml; the same result on every system, so once.
 #   - Web:      TypeScript type-check, Vite production build, unit tests, translation check.
 #   - Licenses: no copyleft (GPL/AGPL/LGPL…) dependency in npm or Rust, plus the generated
 #               THIRD-PARTY-NOTICES.md (license texts of everything shipped in the app) as an artifact.
@@ -58,6 +59,10 @@ jobs:
       - name: rustfmt
         run: cargo fmt --manifest-path src-tauri/Cargo.toml --check
 
+      # package.json and src-tauri/Cargo.toml have the same version (tools/release.mjs).
+      - name: Version
+        run: node tools/release.mjs check
+
   web:
     name: Web
     runs-on: ubuntu-latest
@@ -103,25 +108,11 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
-      # Fails on any npm package (shipped or build-only) with a license outside the allow list.
-      - name: Check npm licenses
-        run: node scripts/licenses.mjs --notices THIRD-PARTY-NOTICES.md
-
-      - name: Install cargo-deny and cargo-about
-        uses: taiki-e/install-action@v2
+      # The same check and notices as a release (.github/actions/notices).
+      - name: Check licenses and write the notices
+        uses: ./.github/actions/notices
         with:
-          tool: cargo-deny,cargo-about
-
-      # Fails on any Rust crate (for the Windows, macOS and Linux targets) with a license outside
-      # the allow list in src-tauri/deny.toml.
-      - name: Check Rust licenses (cargo-deny)
-        run: cargo deny --manifest-path src-tauri/Cargo.toml --config src-tauri/deny.toml check licenses
-
-      - name: Generate Rust license notices (cargo-about)
-        run: |
-          cargo about generate --manifest-path src-tauri/Cargo.toml --config src-tauri/about.toml \
-            --output-file rust-notices.md src-tauri/about.hbs
-          cat rust-notices.md >> THIRD-PARTY-NOTICES.md
+          output: THIRD-PARTY-NOTICES.md
 
       - name: Upload THIRD-PARTY-NOTICES.md
         uses: actions/upload-artifact@v6

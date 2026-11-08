@@ -13,18 +13,20 @@ Mockup Director runs on Windows, macOS and Linux and works offline. It is free a
 
 ## Download and install
 
-Download the app from the **Releases** page of this repository. Every release has a file for each system.
+Download the app from the **Releases** page of this repository. Every release has a file for each system; `x.y.z` below stands for the version.
 
 ### Windows
 
-1. Download `Mockup Director_x.y.z_x64-setup.exe` and run it. It installs for your user only, so it needs no administrator rights.
+1. Download `MockupDirector-x.y.z-windows-x64-setup.exe` and run it. It installs for your user only, so it needs no administrator rights.
 2. Windows 10 or 11 (64-bit) with Microsoft Edge WebView2 is required. WebView2 comes with Windows; if it is missing, the installer downloads it.
+
+Or use the portable version, which needs no installing: unzip `MockupDirector-x.y.z-windows-x64-portable.zip` and start **Mockup Director.exe** in the folder. To update it, replace the folder with the new one. It keeps its data in the same place as the installed app.
 
 **First launch:** the app is not signed with a certificate, so Windows SmartScreen says "Windows protected your PC". Click **More info → Run anyway**. You only need to do this once.
 
 ### macOS
 
-1. Download `Mockup Director_x.y.z_universal.dmg`, open it and drag **Mockup Director** to **Applications**.
+1. Download `MockupDirector-x.y.z-macos-universal.dmg`, open it and drag **Mockup Director** to **Applications**.
 2. The app runs on Apple Silicon and Intel Macs with macOS 12 (Monterey) or later.
 
 **First launch:** if the app was not signed with an Apple Developer ID, macOS blocks it the first time ("Apple could not verify…"). To allow it once:
@@ -48,33 +50,37 @@ Mockup Director needs 64-bit Linux (x86_64) with glibc 2.35 or newer: Ubuntu 22.
 - `.deb`: for Debian, Ubuntu and Mint.
 - `.rpm`: for Fedora and openSUSE.
 
-On the Releases page, the file names have a dot instead of the space (`Mockup.Director_…`). The commands below work either way. Run them in the folder with the downloaded file.
+Run these commands in the folder with the downloaded file.
 
 AppImage:
 
 ```bash
-chmod +x ./Mockup*Director_*_amd64.AppImage && ./Mockup*Director_*_amd64.AppImage
+chmod +x ./MockupDirector-*-linux-x86_64.AppImage && ./MockupDirector-*-linux-x86_64.AppImage
 ```
 
 Debian, Ubuntu, Mint:
 
 ```bash
-sudo apt install ./Mockup*Director_*_amd64.deb
+sudo apt install ./MockupDirector-*-linux-x86_64.deb
 ```
 
 Fedora:
 
 ```bash
-sudo dnf install ./Mockup*Director-*.x86_64.rpm
+sudo dnf install ./MockupDirector-*-linux-x86_64.rpm
 ```
 
 openSUSE (the package is not signed, so zypper would ask about it):
 
 ```bash
-sudo zypper install --allow-unsigned-rpm ./Mockup*Director-*.x86_64.rpm
+sudo zypper install --allow-unsigned-rpm ./MockupDirector-*-linux-x86_64.rpm
 ```
 
 The `.deb` and `.rpm` packages install the system's WebKitGTK and add Mockup Director to the applications menu; the AppImage carries its own copy. If the AppImage reports that FUSE is missing ("No suitable fusermount binary found"), install the `fuse3` package, or start it with `--appimage-extract-and-run`.
+
+### Check a download
+
+The notes of every release list the SHA-256 checksum of each file. To check that a download is complete and unchanged, compare its checksum with the list: `Get-FileHash <file>` in PowerShell on Windows, `shasum -a 256 <file>` on macOS, `sha256sum <file>` on Linux.
 
 ## Getting started
 
@@ -128,7 +134,7 @@ Mockup Director speaks English and Polish. On the first start it follows your sy
   WEBKIT_DISABLE_DMABUF_RENDERER=1 mockup-director
   ```
 
-  For the AppImage, put the same `WEBKIT_DISABLE_DMABUF_RENDERER=1` before `./Mockup*Director_*_amd64.AppImage`.
+  For the AppImage, put the same `WEBKIT_DISABLE_DMABUF_RENDERER=1` before `./MockupDirector-*-linux-x86_64.AppImage`.
 - **"3D preview unavailable – WebGL does not work on this computer".** Update your graphics driver; on a virtual machine, enable 3D acceleration.
 - **WebP or MP4 is greyed out.** Your system's web engine cannot encode that format; see the note under the format choice and pick another one.
 - **Windows SmartScreen or macOS blocks the first launch.** See the first-launch notes in [Download and install](#download-and-install).

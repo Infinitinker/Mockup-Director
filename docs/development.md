@@ -65,7 +65,7 @@ Type-check and production build of the web part:
 npm run build
 ```
 
-The unit tests, in `tests/` (their folders mirror `src/`, e.g. `tests/ui/state.test.ts` tests `src/ui/state.ts`). They use [Vitest](https://vitest.dev/) and run in Node without a browser, so they cover code that needs no DOM or WebGL:
+The unit tests, in `tests/` (their folders mirror `src/` and `tools/`, e.g. `tests/ui/state.test.ts` tests `src/ui/state.ts` and `tests/tools/release.test.ts` tests `tools/release.mjs`). They use [Vitest](https://vitest.dev/) and run in Node without a browser, so they cover code that needs no DOM or WebGL:
 
 ```bash
 npm test
@@ -119,7 +119,7 @@ rustup target add aarch64-apple-darwin x86_64-apple-darwin
 npm run tauri build -- --target universal-apple-darwin
 ```
 
-GitHub Actions builds all three systems on every push to `dev` and `main` and for pull requests from other branches and forks (`build-windows.yml`, `build-macos.yml`, `build-linux.yml`); the files are in the run's **Artifacts**. Releases are described in [releasing.md](releasing.md).
+GitHub Actions builds all three systems on every push to `dev` and `main` and for pull requests from other branches and forks (`build-windows.yml`, `build-macos.yml`, `build-linux.yml`); the files are in the run's **Artifacts**, under the names they have in a release (`MockupDirector-<version>-windows-x64-setup.exe` and so on). Releases are described in [releasing.md](releasing.md).
 
 ## Branches
 

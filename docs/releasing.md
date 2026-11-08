@@ -2,19 +2,45 @@
 
 ## A new version
 
-1. Raise the version in `package.json`, `src-tauri/tauri.conf.json` and `src-tauri/Cargo.toml`. When updating Tauri, raise the npm packages (`@tauri-apps/api`, `@tauri-apps/plugin-dialog`, `@tauri-apps/cli`) together with the `~2.x` ranges in `src-tauri/Cargo.toml`: the Tauri CLI stops the build when the Rust crates and the npm packages differ in `major.minor`. Commit the updated `src-tauri/Cargo.lock` with it (`cargo update` refreshes it).
-2. Merge `dev` into `main`, then tag the release:
+1. Raise the version in `package.json` and `src-tauri/Cargo.toml` (`src-tauri/tauri.conf.json` reads it from `package.json`). Versions are `major.minor.patch`; a version with a hyphen, such as `0.3.0-beta.1`, is a pre-release. Commit the updated `src-tauri/Cargo.lock` with it (`cargo update --workspace` refreshes the app's own entry). The Lint check fails when the two versions differ (`node tools/release.mjs check`).
+
+   When updating Tauri, raise the npm packages (`@tauri-apps/api`, `@tauri-apps/plugin-dialog`, `@tauri-apps/cli`) together with the `~2.x` ranges in `src-tauri/Cargo.toml`: the Tauri CLI stops the build when the Rust crates and the npm packages differ in `major.minor`.
+2. To try the release first, start **Actions → Release → Run workflow** on `dev`. It builds every file and writes the notes, without a release: both are on the run's page, and the notes also in its summary. GitHub offers **Run workflow** only for workflows that are on `main`; before the first release, the pull request in step 3 is the trial: a pull request that changes how a release is built (the release and build workflows, `.github/actions/`, `tools/release.mjs` or the notes template) runs the Release workflow the same way.
+3. Merge `dev` into `main` with a pull request, then tag the merge commit on `main` with an annotated tag and push it:
 
    ```bash
-   git tag v0.2.0
+   git switch main && git pull
    ```
 
    ```bash
-   git push --tags
+   git tag -a v0.2.0 -m "Mockup Director 0.2.0"
    ```
 
-   The Windows, macOS and Linux workflows attach the `.exe`, the `.dmg`, and the `.AppImage`, `.deb` and `.rpm` to one **draft** release. Whichever build finishes first creates the draft; tauri-action has no lock, so if two builds finish within seconds of each other it can create two drafts for the same tag. Then move the files into one draft and delete the other.
-3. Attach `THIRD-PARTY-NOTICES.md` from the Checks run's artifacts (see [licenses.md](licenses.md)), check the draft, and publish it on GitHub.
+   ```bash
+   git push origin v0.2.0
+   ```
+
+   A pre-release (a tag with a hyphen) can be tagged on any branch.
+4. The tag starts the **Release** workflow (`.github/workflows/release.yml`):
+   - **Check the version:** the tag must be `v` followed by the version in `package.json`, `src-tauri/Cargo.toml` must have the same version, and a release (not a pre-release) must be on `main`.
+   - **Windows, macOS, Linux:** the three build workflows, called by the release.
+   - **Third-party notices:** the license check, and the license texts of everything in the app (see [licenses.md](licenses.md)).
+   - **Draft the release:** checks that exactly these files arrived, then creates a **draft** release named "Mockup Director 0.2.0" with them, marked as a pre-release when the version has a hyphen:
+
+     | File | What it is |
+     | --- | --- |
+     | `MockupDirector-<version>-windows-x64-setup.exe` | the Windows installer |
+     | `MockupDirector-<version>-windows-x64-portable.zip` | the portable Windows app, with `LICENSE.txt` and `README.txt` |
+     | `MockupDirector-<version>-macos-universal.dmg` | the macOS app, for Apple Silicon and Intel |
+     | `MockupDirector-<version>-linux-x86_64.AppImage` | the Linux app for any distribution |
+     | `MockupDirector-<version>-linux-x86_64.deb` | the package for Debian, Ubuntu and Mint |
+     | `MockupDirector-<version>-linux-x86_64.rpm` | the package for Fedora and openSUSE |
+     | `MockupDirector-<version>-third-party-notices.md` | the licenses of the libraries in the app |
+
+     The notes come from `tools/release-notes.md`: a download table, first-launch help and the SHA-256 checksum of every file. `tools/release.mjs` fills them in and checks the files; `tests/tools/release.test.ts` tests it.
+5. On the draft, replace the "What's new" text with the changes for users, check the files, and publish it.
+
+If a build fails, fix it, delete the tag (`git push origin :v0.2.0` and `git tag -d v0.2.0`) and the draft, if there is one, and tag again.
 
 ## Linux builds
 

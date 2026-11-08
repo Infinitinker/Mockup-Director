@@ -1,0 +1,42 @@
+# Checks the licenses of every npm package and Rust crate against the allow lists, and writes the
+# third-party notices: the license texts of everything shipped in the app (docs/licenses.md).
+# Used by the Licenses check (checks.yml) and by the release (release.yml). Needs a checkout, Node.js
+# and `npm ci` first.
+name: License check and notices
+description: Fails on a dependency license outside the allow lists, and writes the third-party notices.
+
+inputs:
+  output:
+    description: The Markdown file to write the notices to.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    # Fails on any npm package (shipped or build-only) with a license outside the allow list.
+    - name: Check npm licenses
+      shell: bash
+      run: |
+        mkdir -p "$(dirname "${{ inputs.output }}")"
+        node scripts/licenses.mjs --notices "${{ inputs.output }}"
+
+    # Exact versions, raised by hand (Dependabot does not see them): the notices of a release should
+    # not change because a tool changed.
+    - name: Install cargo-deny and cargo-about
+      uses: taiki-e/install-action@v2
+      with:
+        tool: cargo-deny@0.20.2,cargo-about@0.9.3
+
+    # Fails on any Rust crate (for the Windows, macOS and Linux targets) with a license outside the
+    # allow list in src-tauri/deny.toml.
+    - name: Check Rust licenses (cargo-deny)
+      shell: bash
+      run: cargo deny --manifest-path src-tauri/Cargo.toml --config src-tauri/deny.toml check licenses
+
+    - name: Add the Rust license notices (cargo-about)
+      shell: bash
+      run: |
+        notices="$RUNNER_TEMP/rust-notices.md"
+        cargo about generate --manifest-path src-tauri/Cargo.toml --config src-tauri/about.toml \
+          --output-file "$notices" src-tauri/about.hbs
+        cat "$notices" >> "${{ inputs.output }}"

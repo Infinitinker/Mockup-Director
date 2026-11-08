@@ -1,7 +1,6 @@
-# Builds the Mockup Director Linux app (x86_64) and publishes
-#   - workflow artifacts: the AppImage, the .deb and the .rpm package (Actions → run → Artifacts),
-#   - on tags v*: a DRAFT GitHub Release with all three attached (the Windows and macOS workflows
-#     attach their installers to the same draft release).
+# Builds the Mockup Director Linux app (x86_64): the AppImage, the .deb and the .rpm package, each
+# kept on the run's page (Actions → run → Artifacts) under its release file name. The release
+# workflow (release.yml) calls this workflow and puts the files on the release.
 #
 # Linux-specific bundle settings live in src-tauri/tauri.linux.conf.json (merged automatically by
 # Tauri on Linux): AppImage + .deb + .rpm.
@@ -17,34 +16,37 @@
 # (and update the glibc / distro list in README.md and docs/releasing.md).
 name: Build Linux app
 
-# Runs on every push to dev and main (a merged pull request is a push to main), on release tags,
-# on demand, and for pull requests, except those from this repository's dev and main, whose
+# Runs on every push to dev and main (a merged pull request is a push to main), on demand, from the
+# release workflow, and for pull requests, except those from this repository's dev and main, whose
 # pushes are built already (so Dependabot's pull requests and other branches get a build).
 # It is not a required status check: the Checks workflow (checks.yml) is.
 on:
   push:
     branches: [main, dev]
-    tags: ['v*']
   pull_request:
   workflow_dispatch:
+  workflow_call:
 
-# A newer push cancels the build still going for the older one; a release (tag) build is never cut short.
+# A newer push cancels the build still going for the older one; a release's build is never cut short.
+# (Called from release.yml, github.workflow is "Release".)
 concurrency:
-  group: build-linux-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref_type != 'tag' }}
+  group: build-linux-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.workflow != 'Release' }}
+
+permissions:
+  contents: read
 
 jobs:
   build-linux:
-    # A fork can have a branch named dev too, so forks are always built.
+    # A fork can have a branch named dev too, so forks are always built. Called from release.yml,
+    # it always builds, also for a pull request from dev.
     if: >-
-      github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork ||
-      (github.head_ref != 'dev' && github.head_ref != 'main')
+      github.event_name != 'pull_request' || github.workflow == 'Release' ||
+      github.event.pull_request.head.repo.fork || (github.head_ref != 'dev' && github.head_ref != 'main')
     name: Build (x86_64-unknown-linux-gnu)
     runs-on: ubuntu-24.04
     container: ubuntu:22.04
     timeout-minutes: 60
-    permissions:
-      contents: write # needed to create the draft release on tags
     env:
       DEBIAN_FRONTEND: noninteractive # tzdata (pulled in by WebKitGTK) must not prompt for a timezone
     defaults:
@@ -85,35 +87,24 @@ jobs:
         run: npm ci
 
       - name: Build Tauri app
-        id: tauri
         uses: tauri-apps/tauri-action@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          # Release only for tags (empty inputs = build without uploading a release).
-          tagName: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
-          releaseName: ${{ github.ref_type == 'tag' && format('Mockup Director {0}', github.ref_name) || '' }}
-          # Same text in all three build workflows: whichever finishes first creates the draft release.
-          # tauri-action has no lock: if two builds finish within seconds of each other, it can create
-          # two drafts for the same tag. Then move the assets into one draft and delete the other.
-          # Quoted: a plain YAML scalar must not contain ": " (as in "Windows: ...").
-          releaseBody: "${{ github.ref_type == 'tag' && 'Windows: download the *_x64-setup.exe file. macOS: download the .dmg file. Linux: download the .AppImage (any distribution), the .deb (Debian, Ubuntu) or the .rpm (Fedora, openSUSE). First launch: see the README.' || '' }}"
-          releaseDraft: true
-          prerelease: false
 
-      - name: Collect build outputs
-        id: collect
+      - name: Name the release files
         run: |
-          version="${{ steps.tauri.outputs.appVersion }}"
-          [ -n "$version" ] || version="$(node -p "require('./src-tauri/tauri.conf.json').version")"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          ls -la src-tauri/target/release/bundle/appimage src-tauri/target/release/bundle/deb src-tauri/target/release/bundle/rpm
+          version="$(node -p "require('./package.json').version")"
+          name="MockupDirector-$version-linux-x86_64"
+          bundle="src-tauri/target/release/bundle"
+          mkdir -p dist-release
+          cp "$bundle"/appimage/*.AppImage "dist-release/$name.AppImage"
+          cp "$bundle"/deb/*.deb "dist-release/$name.deb"
+          cp "$bundle"/rpm/*.rpm "dist-release/$name.rpm"
+          ls -la dist-release
 
       # Double-clicking a .mdproj file opens the app only if the package installs the MIME definition
       # (src-tauri/linux/mockup-director-mime.xml) and its .desktop entry takes files (%F) of that type.
       - name: Check the .mdproj file association in the .deb
         run: |
-          deb="$(ls src-tauri/target/release/bundle/deb/*.deb | head -n 1)"
+          deb="$(ls dist-release/*.deb)"
           rm -rf deb-check && mkdir deb-check && dpkg-deb -x "$deb" deb-check
           if [ ! -f deb-check/usr/share/mime/packages/mockup-director.xml ]; then
             echo "::error::$deb does not install the MIME definition of .mdproj files"
@@ -126,28 +117,25 @@ jobs:
             exit 1
           fi
 
-      # upload-artifact does not keep the executable bit, so after downloading the AppImage the
-      # user runs `chmod +x` once (see README) – the same as for an AppImage from a release page.
+      # Each file on its own and unzipped, so the run's page offers the file itself. A download does
+      # not keep the AppImage's executable bit, so the user runs `chmod +x` once (see README).
       - name: Upload AppImage
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
-          name: MockupDirector-${{ steps.collect.outputs.version }}-linux-appimage
-          path: src-tauri/target/release/bundle/appimage/*.AppImage
+          path: dist-release/*.AppImage
+          archive: false
           if-no-files-found: error
-          compression-level: 0 # an AppImage is already compressed (squashfs)
 
       - name: Upload .deb
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
-          name: MockupDirector-${{ steps.collect.outputs.version }}-linux-deb
-          path: src-tauri/target/release/bundle/deb/*.deb
+          path: dist-release/*.deb
+          archive: false
           if-no-files-found: error
-          compression-level: 0
 
       - name: Upload .rpm
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
-          name: MockupDirector-${{ steps.collect.outputs.version }}-linux-rpm
-          path: src-tauri/target/release/bundle/rpm/*.rpm
+          path: dist-release/*.rpm
+          archive: false
           if-no-files-found: error
-          compression-level: 0

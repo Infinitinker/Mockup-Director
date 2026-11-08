@@ -1,6 +1,6 @@
-# Builds the Mockup Director macOS app (universal binary: Apple Silicon + Intel) and publishes
-#   - workflow artifacts: the .dmg and a zipped .app (Actions → run → Artifacts),
-#   - on tags v*: a DRAFT GitHub Release with the .dmg attached.
+# Builds the Mockup Director macOS app (universal binary: Apple Silicon + Intel) as a .dmg, kept on
+# the run's page (Actions → run → Artifacts) under its release file name. The release workflow
+# (release.yml) calls this workflow and puts the file on the release.
 #
 # Code signing / notarisation is optional. Without secrets the app is ad-hoc signed
 # (tauri.conf.json → bundle.macOS.signingIdentity "-") and must be allowed once in
@@ -11,8 +11,8 @@
 #   APPLE_ID, APPLE_PASSWORD (app-specific password), APPLE_TEAM_ID   → notarisation
 name: Build macOS app
 
-# Runs on every push to dev and main (a merged pull request is a push to main), on release tags,
-# on demand, and for pull requests, except those from this repository's dev and main, whose
+# Runs on every push to dev and main (a merged pull request is a push to main), on demand, from the
+# release workflow, and for pull requests, except those from this repository's dev and main, whose
 # pushes are built already (so Dependabot's pull requests and other branches get a build).
 # It is not a required status check: the Checks workflow (checks.yml) is.
 # Note: in a PRIVATE repository macOS runner minutes count ≈10× Linux minutes against the
@@ -20,26 +20,29 @@ name: Build macOS app
 on:
   push:
     branches: [main, dev]
-    tags: ['v*']
   pull_request:
   workflow_dispatch:
+  workflow_call:
 
-# A newer push cancels the build still going for the older one; a release (tag) build is never cut short.
+# A newer push cancels the build still going for the older one; a release's build is never cut short.
+# (Called from release.yml, github.workflow is "Release".)
 concurrency:
-  group: build-macos-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref_type != 'tag' }}
+  group: build-macos-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.workflow != 'Release' }}
+
+permissions:
+  contents: read
 
 jobs:
   build-macos:
-    # A fork can have a branch named dev too, so forks are always built.
+    # A fork can have a branch named dev too, so forks are always built. Called from release.yml,
+    # it always builds, also for a pull request from dev.
     if: >-
-      github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork ||
-      (github.head_ref != 'dev' && github.head_ref != 'main')
+      github.event_name != 'pull_request' || github.workflow == 'Release' ||
+      github.event.pull_request.head.repo.fork || (github.head_ref != 'dev' && github.head_ref != 'main')
     name: Build (universal-apple-darwin)
     runs-on: macos-latest
     timeout-minutes: 60
-    permissions:
-      contents: write # needed to create the draft release on tags
 
     steps:
       - name: Checkout
@@ -98,48 +101,21 @@ jobs:
           fi
 
       - name: Build Tauri app
-        id: tauri
         uses: tauri-apps/tauri-action@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           args: --target universal-apple-darwin
-          # Release only for tags (empty inputs = build without uploading a release).
-          tagName: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
-          releaseName: ${{ github.ref_type == 'tag' && format('Mockup Director {0}', github.ref_name) || '' }}
-          # Same text in all three build workflows: whichever finishes first creates the draft release.
-          # tauri-action has no lock: if two builds finish within seconds of each other, it can create
-          # two drafts for the same tag. Then move the assets into one draft and delete the other.
-          # Quoted: a plain YAML scalar must not contain ": " (as in "Windows: ...").
-          releaseBody: "${{ github.ref_type == 'tag' && 'Windows: download the *_x64-setup.exe file. macOS: download the .dmg file. Linux: download the .AppImage (any distribution), the .deb (Debian, Ubuntu) or the .rpm (Fedora, openSUSE). First launch: see the README.' || '' }}"
-          releaseDraft: true
-          prerelease: false
 
-      # upload-artifact does not preserve file permissions or symlinks, so the .app bundle is
-      # zipped with ditto (keeps the executable bit, symlinks and extended attributes).
-      - name: Zip .app bundle
-        id: zip
+      - name: Name the release file
         run: |
-          bundle_dir="src-tauri/target/universal-apple-darwin/release/bundle"
-          version="${{ steps.tauri.outputs.appVersion }}"
-          [ -n "$version" ] || version="$(node -p "require('./src-tauri/tauri.conf.json').version")"
-          zip_path="$bundle_dir/MockupDirector_${version}_universal.app.zip"
-          ditto -c -k --sequesterRsrc --keepParent "$bundle_dir/macos/Mockup Director.app" "$zip_path"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          ls -la "$bundle_dir/dmg" "$zip_path"
+          version="$(node -p "require('./package.json').version")"
+          mkdir -p dist-release
+          cp src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg "dist-release/MockupDirector-$version-macos-universal.dmg"
+          ls -la dist-release
 
+      # On its own and unzipped, so the run's page offers the file itself.
       - name: Upload .dmg
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
-          name: MockupDirector-${{ steps.zip.outputs.version }}-macos-dmg
-          path: src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
+          path: dist-release/*-macos-universal.dmg
+          archive: false
           if-no-files-found: error
-          compression-level: 0 # a .dmg is already compressed
-
-      - name: Upload zipped .app
-        uses: actions/upload-artifact@v6
-        with:
-          name: MockupDirector-${{ steps.zip.outputs.version }}-macos-app
-          path: src-tauri/target/universal-apple-darwin/release/bundle/MockupDirector_*_universal.app.zip
-          if-no-files-found: error
-          compression-level: 0

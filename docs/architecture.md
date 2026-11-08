@@ -21,7 +21,7 @@ src/
   ui/           the interface (vanilla TypeScript + CSS): app, toolbar, gallery, viewport, panels/,
                 state and undo history (state.ts), project tabs (documents.ts, tabbar.ts), the session
                 autosave (session.ts), project files, looks, batch export, shortcuts
-tests/          unit tests (Vitest, config in vitest.config.ts); their folders mirror src/
+tests/          unit tests (Vitest, config in vitest.config.ts); their folders mirror src/ and tools/
 src-tauri/      the Tauri v2 shell (Rust): window, dialogs, a single app process (lib.rs), writing
                 files (files.rs), opened project files (opened.rs), closing the window if the page
                 never answers (closing.rs); tests in src-tauri/tests/
@@ -39,10 +39,15 @@ src-tauri/      the Tauri v2 shell (Rust): window, dialogs, a single app process
 .github/workflows/
   checks.yml         the Checks: lint, web build and tests, translations, licenses, Rust on Windows and
                      Linux; for main, dev and pull requests
-  build-windows.yml  the NSIS installer (x64) and a portable ZIP, built with MSYS2; a draft release for v* tags
-  build-macos.yml    a universal .dmg; a draft release for v* tags
-  build-linux.yml    .AppImage, .deb and .rpm (x86_64); a draft release for v* tags
+  build-windows.yml  the NSIS installer (x64) and a portable ZIP, built with MSYS2
+  build-macos.yml    a universal .dmg
+  build-linux.yml    .AppImage, .deb and .rpm (x86_64)
+  release.yml        for a v* tag: checks the version, calls the three builds, drafts the release; a
+                     trial without a release for pull requests that change it, and on demand
+.github/actions/notices/    the license check and third-party notices, for checks.yml and release.yml
 scripts/licenses.mjs        license check of npm packages and third-party notices (npm run licenses)
+tools/release.mjs           the release rules: version and tag, the files, the notes (release.yml)
+tools/release-notes.md      the template of the release notes
 tools/draw-icon.mjs         draws the app icon and writes every icon file (npm run icons)
 tools/check-i18n.mjs        checks that every text has a translation (npm run check:i18n)
 start.bat, start.sh         run the desktop app from source (npm run app:dev), see docs/development.md

@@ -1,0 +1,159 @@
+# A pushed tag v<version> builds the release on all three systems and drafts its page on GitHub,
+# which a maintainer then completes and publishes (docs/releasing.md). Pull requests that change how
+# a release is built run it too, and so does a run started by hand (Actions → Release → Run workflow,
+# offered once this file is on main): they build the same files and write the same notes, without a
+# release, and keep both on the run's page for 90 days.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  pull_request:
+    paths:
+      - .github/workflows/release.yml
+      - .github/workflows/build-*.yml
+      - .github/actions/**
+      - tools/release.mjs
+      - tools/release-notes.md
+  workflow_dispatch:
+
+# A newer push to a pull request replaces its run; a release's build is never cut short.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Check the version
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # the history of main, to check where the tag is
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      # The same version in package.json and src-tauri/Cargo.toml, and a tag v<version>.
+      - name: Check the version and the tag
+        id: version
+        run: node tools/release.mjs check ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+
+      # A release is built from main, after dev was merged into it; a pre-release can come from any branch.
+      - name: Check the tag is on main
+        if: github.ref_type == 'tag' && steps.version.outputs.prerelease == 'false'
+        run: |
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::$GITHUB_REF_NAME is not on main. Merge dev into main and tag the commit on main."
+            exit 1
+          fi
+
+  windows:
+    name: Windows
+    needs: check
+    uses: ./.github/workflows/build-windows.yml
+
+  macos:
+    name: macOS
+    needs: check
+    uses: ./.github/workflows/build-macos.yml
+    secrets: inherit # the optional Apple signing secrets (docs/releasing.md)
+
+  linux:
+    name: Linux
+    needs: check
+    uses: ./.github/workflows/build-linux.yml
+
+  notices:
+    name: Third-party notices
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Check licenses and write the notices
+        uses: ./.github/actions/notices
+        with:
+          output: dist-release/MockupDirector-${{ needs.check.outputs.version }}-third-party-notices.md
+
+      - name: Upload the notices
+        uses: actions/upload-artifact@v7
+        with:
+          path: dist-release/*-third-party-notices.md
+          archive: false
+          if-no-files-found: error
+
+  draft:
+    name: Draft the release
+    needs: [check, windows, macos, linux, notices]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write # to create the release
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      # skip-decompress keeps each file as uploaded: otherwise the portable ZIP would arrive unpacked.
+      - name: Download the files
+        uses: actions/download-artifact@v8
+        with:
+          pattern: MockupDirector-*
+          merge-multiple: true
+          skip-decompress: true
+          path: release
+
+      # Fails unless the folder holds exactly the release's files; the notes list their checksums.
+      - name: Check the files and write the notes
+        run: |
+          ls -l release
+          node tools/release.mjs notes release "$RUNNER_TEMP/notes.md"
+          cat "$RUNNER_TEMP/notes.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Draft the release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.check.outputs.version }}
+          PRERELEASE: ${{ needs.check.outputs.prerelease }}
+        run: |
+          flags=()
+          [ "$PRERELEASE" = true ] && flags+=(--prerelease)
+          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft --verify-tag "${flags[@]}" \
+            --title "Mockup Director $VERSION" --notes-file "$RUNNER_TEMP/notes.md" -- release/*
+
+      # A run started by hand keeps the notes next to the files.
+      - name: Keep the notes
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@v7
+        with:
+          path: ${{ runner.temp }}/notes.md
+          archive: false
+          if-no-files-found: error

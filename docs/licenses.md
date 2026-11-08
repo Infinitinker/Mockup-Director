@@ -16,7 +16,7 @@ npm run licenses
 
 ## Third-party notices
 
-The same job writes **THIRD-PARTY-NOTICES.md** with the full license texts of every library shipped in the app (**Actions → the "Checks" run → Artifacts → `third-party-notices`**). The MIT and Apache licenses require these notices to come with the distributed app, so attach the file to every release.
+The same job writes **THIRD-PARTY-NOTICES.md** with the full license texts of every library shipped in the app (**Actions → the "Checks" run → Artifacts → `third-party-notices`**). The MIT and Apache licenses require these notices to come with the distributed app; the release workflow makes them the same way (`.github/actions/notices`, shared by both workflows) and attaches them to every release as `MockupDirector-<version>-third-party-notices.md`. The versions of cargo-deny and cargo-about are pinned in that action and raised by hand; compare the notices before and after raising them.
 
 ## WebView2Loader.dll (Windows)
 

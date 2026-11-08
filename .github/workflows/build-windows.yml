@@ -1,7 +1,6 @@
-# Builds the Mockup Director Windows app (x64) and publishes
-#   - workflow artifacts: the NSIS installer (.exe) and a portable ZIP (Actions → run → Artifacts),
-#   - on tags v*: a DRAFT GitHub Release with the installer attached (the macOS and Linux workflows
-#     attach their .dmg / .AppImage / .deb / .rpm to the same draft release).
+# Builds the Mockup Director Windows app (x64): the NSIS installer and a portable ZIP, each kept on
+# the run's page (Actions → run → Artifacts) under its release file name. The release workflow
+# (release.yml) calls this workflow and puts the files on the release.
 #
 # Windows-specific bundle settings live in src-tauri/tauri.windows.conf.json (merged automatically
 # by Tauri on Windows): NSIS installer only, per-user install (no admin rights needed).
@@ -16,33 +15,36 @@
 # MSYS2 and Rust setup steps with `dtolnay/rust-toolchain@stable`, and package the portable .exe alone.
 name: Build Windows app
 
-# Runs on every push to dev and main (a merged pull request is a push to main), on release tags,
-# on demand, and for pull requests, except those from this repository's dev and main, whose
+# Runs on every push to dev and main (a merged pull request is a push to main), on demand, from the
+# release workflow, and for pull requests, except those from this repository's dev and main, whose
 # pushes are built already (so Dependabot's pull requests and other branches get a build).
 # It is not a required status check: the Checks workflow (checks.yml) is.
 on:
   push:
     branches: [main, dev]
-    tags: ['v*']
   pull_request:
   workflow_dispatch:
+  workflow_call:
 
-# A newer push cancels the build still going for the older one; a release (tag) build is never cut short.
+# A newer push cancels the build still going for the older one; a release's build is never cut short.
+# (Called from release.yml, github.workflow is "Release".)
 concurrency:
-  group: build-windows-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref_type != 'tag' }}
+  group: build-windows-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.workflow != 'Release' }}
+
+permissions:
+  contents: read
 
 jobs:
   build-windows:
-    # A fork can have a branch named dev too, so forks are always built.
+    # A fork can have a branch named dev too, so forks are always built. Called from release.yml,
+    # it always builds, also for a pull request from dev.
     if: >-
-      github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork ||
-      (github.head_ref != 'dev' && github.head_ref != 'main')
+      github.event_name != 'pull_request' || github.workflow == 'Release' ||
+      github.event.pull_request.head.repo.fork || (github.head_ref != 'dev' && github.head_ref != 'main')
     name: Build (x86_64-pc-windows-gnu)
     runs-on: windows-latest
     timeout-minutes: 60
-    permissions:
-      contents: write # needed to create the draft release on tags
     defaults:
       run:
         shell: bash
@@ -88,21 +90,7 @@ jobs:
         run: npm ci
 
       - name: Build Tauri app
-        id: tauri
         uses: tauri-apps/tauri-action@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          # Release only for tags (empty inputs = build without uploading a release).
-          tagName: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
-          releaseName: ${{ github.ref_type == 'tag' && format('Mockup Director {0}', github.ref_name) || '' }}
-          # Same text in all three build workflows: whichever finishes first creates the draft release.
-          # tauri-action has no lock: if two builds finish within seconds of each other, it can create
-          # two drafts for the same tag. Then move the assets into one draft and delete the other.
-          # Quoted: a plain YAML scalar must not contain ": " (as in "Windows: ...").
-          releaseBody: "${{ github.ref_type == 'tag' && 'Windows: download the *_x64-setup.exe file. macOS: download the .dmg file. Linux: download the .AppImage (any distribution), the .deb (Debian, Ubuntu) or the .rpm (Fedora, openSUSE). First launch: see the README.' || '' }}"
-          releaseDraft: true
-          prerelease: false
 
       # A GNU build cannot start without WebView2Loader.dll; tauri-bundler puts it into the NSIS
       # installer (fixed for GNU builds in tauri-bundler 2.2.2). 7-Zip can list NSIS installers.
@@ -119,33 +107,46 @@ jobs:
       # The release binary embeds the whole frontend, so it also runs without installing. It needs
       # the Microsoft Edge WebView2 runtime (part of Windows 10/11) and, as a GNU build, the
       # WebView2Loader.dll next to it, so the portable version is a ZIP of both.
-      - name: Collect build outputs
-        id: collect
+      - name: Name the release files
         run: |
-          version="${{ steps.tauri.outputs.appVersion }}"
-          [ -n "$version" ] || version="$(node -p "require('./src-tauri/tauri.conf.json').version")"
-          out="windows-dist"
+          version="$(node -p "require('./package.json').version")"
+          name="MockupDirector-$version-windows-x64"
           release="src-tauri/target/release"
-          mkdir -p "$out/installer" "$out/portable/MockupDirector"
-          cp "$release"/bundle/nsis/*-setup.exe "$out/installer/"
-          cp "$release/mockup-director.exe" "$out/portable/MockupDirector/Mockup Director.exe"
-          cp "$release/WebView2Loader.dll" "$out/portable/MockupDirector/"
-          cp LICENSE "$out/portable/MockupDirector/LICENSE.txt"
-          (cd "$out/portable" && 7z a -tzip "MockupDirector_${version}_x64_portable.zip" MockupDirector > /dev/null)
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          ls -la "$out"/installer "$out"/portable
+          folder="portable/Mockup Director"
+          mkdir -p dist-release "$folder"
+          cp "$release"/bundle/nsis/*-setup.exe "dist-release/$name-setup.exe"
+          cp "$release/mockup-director.exe" "$folder/Mockup Director.exe"
+          cp "$release/WebView2Loader.dll" "$folder/"
+          cp LICENSE "$folder/LICENSE.txt"
+          printf '%s\r\n' \
+            "Mockup Director $version, portable" \
+            "" \
+            "Start Mockup Director.exe. Nothing is installed: the app keeps its open tabs and looks in" \
+            "%LOCALAPPDATA%\\io.github.infinitinker.mockupdirector, the same folder the installed app uses." \
+            "" \
+            "Update: replace this folder with the one from the new version." \
+            "Remove: delete this folder. To remove your data too, also delete" \
+            "%LOCALAPPDATA%\\io.github.infinitinker.mockupdirector (this also clears the installed app's data)." \
+            "" \
+            "Windows 10 or 11 (64-bit) with Microsoft Edge WebView2 is needed; it comes with Windows." \
+            "The app is not signed: if SmartScreen stops it, click More info, then Run anyway." \
+            "" \
+            "Source and help: https://github.com/${{ github.repository }}" \
+            "Built from commit $GITHUB_SHA." > "$folder/README.txt"
+          (cd portable && 7z a -tzip "../dist-release/$name-portable.zip" "Mockup Director" > /dev/null)
+          ls -la dist-release
 
+      # Each file on its own and unzipped, so the run's page offers the file itself.
       - name: Upload installer
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
-          name: MockupDirector-${{ steps.collect.outputs.version }}-windows-setup
-          path: windows-dist/installer/*.exe
+          path: dist-release/*-windows-x64-setup.exe
+          archive: false
           if-no-files-found: error
 
       - name: Upload portable ZIP
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
-          name: MockupDirector-${{ steps.collect.outputs.version }}-windows-portable
-          path: windows-dist/portable/*.zip
+          path: dist-release/*-windows-x64-portable.zip
+          archive: false
           if-no-files-found: error
-          compression-level: 0 # already a ZIP
