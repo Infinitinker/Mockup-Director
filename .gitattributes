@@ -1,3 +1,9 @@
-# Line endings that must not depend on a contributor's git settings.
-*.sh  text eol=lf
+# Text files have LF line endings in every checkout, on every system, so builds and formatting checks
+# see the same files everywhere. Windows' cmd needs CRLF in batch files.
+* text=auto eol=lf
 *.bat text eol=crlf
+
+# Binary files, never converted.
+*.png  binary
+*.ico  binary
+*.icns binary
