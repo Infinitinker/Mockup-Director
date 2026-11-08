@@ -44,8 +44,14 @@ src-tauri/      the Tauri v2 shell (Rust): window, dialogs, a single app process
   build-linux.yml    .AppImage, .deb and .rpm (x86_64)
   release.yml        for a v* tag: checks the version, calls the three builds, drafts the release; a
                      trial without a release for pull requests that change it, and on demand
-.github/actions/notices/    the license check and third-party notices, for checks.yml and release.yml
-scripts/licenses.mjs        license check of npm packages and third-party notices (npm run licenses)
+.github/actions/notices/    the license checks and the notices check, for checks.yml and release.yml
+LICENSE                     the MIT license; every package of the app contains it as LICENSE.txt
+THIRD-PARTY-NOTICES.md      the licenses of the app's dependencies, written by tools/notices.mjs;
+                            every package contains it as THIRD-PARTY-NOTICES.txt
+tools/licenses.mjs          license check of npm packages (npm run licenses)
+tools/notices.mjs           writes THIRD-PARTY-NOTICES.md (npm run notices)
+tools/licenses/             license texts that come from no package: the Windows runtime parts, and
+                            npm packages that contain no license file
 tools/release.mjs           the release rules: version and tag, the files, the notes (release.yml)
 tools/release-notes.md      the template of the release notes
 tools/draw-icon.mjs         draws the app icon and writes every icon file (npm run icons)

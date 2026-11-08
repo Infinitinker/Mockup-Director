@@ -105,6 +105,18 @@ jobs:
         with:
           args: --target universal-apple-darwin
 
+      # The licenses come with every copy (bundle.resources in tauri.conf.json).
+      - name: Check the app contains the licenses
+        run: |
+          resources="$(ls -d src-tauri/target/universal-apple-darwin/release/bundle/macos/*.app)/Contents/Resources"
+          for file in LICENSE.txt THIRD-PARTY-NOTICES.txt; do
+            if [ ! -f "$resources/$file" ]; then
+              ls -la "$resources"
+              echo "::error::$resources does not contain $file"
+              exit 1
+            fi
+          done
+
       - name: Name the release file
         run: |
           version="$(node -p "require('./package.json').version")"

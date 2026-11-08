@@ -79,10 +79,20 @@ Every text in the code has a translation in every interface language (see [trans
 npm run check:i18n
 ```
 
-The licenses of the npm dependencies (see [licenses.md](licenses.md)):
+The licenses of the npm dependencies, and the third-party notices (see [licenses.md](licenses.md)):
 
 ```bash
 npm run licenses
+```
+
+```bash
+npm run notices
+```
+
+`npm run notices` writes `THIRD-PARTY-NOTICES.md` again; commit it after changing dependencies. It needs cargo-about, at the version in `tools/notices.mjs`:
+
+```bash
+cargo install cargo-about@0.9.3 --locked --features cli
 ```
 
 The Rust tests, in `src-tauri/tests/` (after `npm run build`, which the Tauri build step needs):

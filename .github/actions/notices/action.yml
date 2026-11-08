@@ -1,14 +1,9 @@
-# Checks the licenses of every npm package and Rust crate against the allow lists, and writes the
-# third-party notices: the license texts of everything shipped in the app (docs/licenses.md).
-# Used by the Licenses check (checks.yml) and by the release (release.yml). Needs a checkout, Node.js
-# and `npm ci` first.
+# Checks the licenses of every npm package and Rust crate against the allow lists, and that the
+# committed THIRD-PARTY-NOTICES.md, which every package of the app contains, matches the dependencies
+# (docs/licenses.md). Used by the Licenses check (checks.yml) and by the release (release.yml). Needs a
+# checkout, Node.js and `npm ci` first.
 name: License check and notices
-description: Fails on a dependency license outside the allow lists, and writes the third-party notices.
-
-inputs:
-  output:
-    description: The Markdown file to write the notices to.
-    required: true
+description: Fails on a dependency license outside the allow lists, or on out-of-date third-party notices.
 
 runs:
   using: composite
@@ -16,12 +11,10 @@ runs:
     # Fails on any npm package (shipped or build-only) with a license outside the allow list.
     - name: Check npm licenses
       shell: bash
-      run: |
-        mkdir -p "$(dirname "${{ inputs.output }}")"
-        node scripts/licenses.mjs --notices "${{ inputs.output }}"
+      run: node tools/licenses.mjs
 
     # Exact versions, raised by hand (Dependabot does not see them): the notices of a release should
-    # not change because a tool changed.
+    # not change because a tool changed. tools/notices.mjs checks it runs with this cargo-about.
     - name: Install cargo-deny and cargo-about
       uses: taiki-e/install-action@v2
       with:
@@ -33,10 +26,8 @@ runs:
       shell: bash
       run: cargo deny --manifest-path src-tauri/Cargo.toml --config src-tauri/deny.toml check licenses
 
-    - name: Add the Rust license notices (cargo-about)
+    # Writes the notices again and compares them with the committed file; fails on a shipped part
+    # without a license text, too.
+    - name: Check the third-party notices
       shell: bash
-      run: |
-        notices="$RUNNER_TEMP/rust-notices.md"
-        cargo about generate --manifest-path src-tauri/Cargo.toml --config src-tauri/about.toml \
-          --output-file "$notices" src-tauri/about.hbs
-        cat "$notices" >> "${{ inputs.output }}"
+      run: node tools/notices.mjs --check

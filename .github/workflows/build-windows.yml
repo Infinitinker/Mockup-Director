@@ -93,16 +93,19 @@ jobs:
         uses: tauri-apps/tauri-action@v1
 
       # A GNU build cannot start without WebView2Loader.dll; tauri-bundler puts it into the NSIS
-      # installer (fixed for GNU builds in tauri-bundler 2.2.2). 7-Zip can list NSIS installers.
-      - name: Check the installer contains WebView2Loader.dll
+      # installer (fixed for GNU builds in tauri-bundler 2.2.2). The licenses come with every copy
+      # (bundle.resources in tauri.conf.json). 7-Zip can list NSIS installers.
+      - name: Check the installer contains WebView2Loader.dll and the licenses
         run: |
           installer="$(ls src-tauri/target/release/bundle/nsis/*-setup.exe | head -n 1)"
           7z l "$installer" > installer-contents.txt
-          if ! grep -qi 'WebView2Loader\.dll' installer-contents.txt; then
-            cat installer-contents.txt
-            echo "::error::$installer does not contain WebView2Loader.dll"
-            exit 1
-          fi
+          for file in WebView2Loader.dll LICENSE.txt THIRD-PARTY-NOTICES.txt; do
+            if ! grep -qiF "$file" installer-contents.txt; then
+              cat installer-contents.txt
+              echo "::error::$installer does not contain $file"
+              exit 1
+            fi
+          done
 
       # The release binary embeds the whole frontend, so it also runs without installing. It needs
       # the Microsoft Edge WebView2 runtime (part of Windows 10/11) and, as a GNU build, the
@@ -118,6 +121,7 @@ jobs:
           cp "$release/mockup-director.exe" "$folder/Mockup Director.exe"
           cp "$release/WebView2Loader.dll" "$folder/"
           cp LICENSE "$folder/LICENSE.txt"
+          cp THIRD-PARTY-NOTICES.md "$folder/THIRD-PARTY-NOTICES.txt"
           printf '%s\r\n' \
             "Mockup Director $version, portable" \
             "" \
@@ -130,6 +134,9 @@ jobs:
             "" \
             "Windows 10 or 11 (64-bit) with Microsoft Edge WebView2 is needed; it comes with Windows." \
             "The app is not signed: if SmartScreen stops it, click More info, then Run anyway." \
+            "" \
+            "Mockup Director is under the MIT license (LICENSE.txt). The licenses of the libraries" \
+            "it contains are in THIRD-PARTY-NOTICES.txt." \
             "" \
             "Source and help: https://github.com/${{ github.repository }}" \
             "Built from commit $GITHUB_SHA." > "$folder/README.txt"

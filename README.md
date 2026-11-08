@@ -163,7 +163,7 @@ Ko-fi takes cards and PayPal; buycoffee.to suits Polish supporters, with BLIK an
 
 ## License
 
-Mockup Director is released under the [MIT license](LICENSE). Its dependencies use permissive licenses (MIT, Apache-2.0, BSD, ISC, Zlib, Unicode) and MPL-2.0; see [docs/licenses.md](docs/licenses.md). The Linux AppImage also contains system libraries under the LGPL (GTK, WebKitGTK and their dependencies).
+Mockup Director is released under the [MIT license](LICENSE). Its dependencies use permissive licenses (MIT, Apache-2.0, BSD, ISC, Zlib, Unicode) and MPL-2.0; their licenses are in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md), which also comes with the app as `THIRD-PARTY-NOTICES.txt` (see [docs/licenses.md](docs/licenses.md)). The Linux AppImage also contains system libraries under the LGPL (GTK, WebKitGTK and their dependencies).
 
 ## Trademarks
 

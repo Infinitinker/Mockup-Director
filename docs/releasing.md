@@ -24,7 +24,7 @@
 4. The tag starts the **Release** workflow (`.github/workflows/release.yml`):
    - **Check the version:** the tag must be `v` followed by the version in `package.json`, `src-tauri/Cargo.toml` must have the same version, and a release (not a pre-release) must be on `main`.
    - **Windows, macOS, Linux:** the three build workflows, called by the release.
-   - **Third-party notices:** the license check, and the license texts of everything in the app (see [licenses.md](licenses.md)).
+   - **Third-party notices:** the license checks, and that `THIRD-PARTY-NOTICES.md` matches the dependencies; the release gets a copy (see [licenses.md](licenses.md)).
    - **Draft the release:** checks that exactly these files arrived, then creates a **draft** release named "Mockup Director 0.2.0" with them, marked as a pre-release when the version has a hyphen:
 
      | File | What it is |

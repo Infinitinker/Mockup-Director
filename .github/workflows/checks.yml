@@ -5,8 +5,8 @@
 #               also the Tauri configuration), rustfmt, and the same version in package.json and
 #               Cargo.toml; the same result on every system, so once.
 #   - Web:      TypeScript type-check, Vite production build, unit tests, translation check.
-#   - Licenses: no copyleft (GPL/AGPL/LGPL…) dependency in npm or Rust, plus the generated
-#               THIRD-PARTY-NOTICES.md (license texts of everything shipped in the app) as an artifact.
+#   - Licenses: no copyleft (GPL/AGPL/LGPL…) dependency in npm or Rust, and THIRD-PARTY-NOTICES.md
+#               (license texts of the app's dependencies) up to date with them.
 #   - Rust (Windows), Rust (Linux): clippy and the Rust tests. The shell has code for each system
 #               (#[cfg(target_os)]), and clippy only sees the code of the system it runs on, so it runs
 #               on each. On Windows with MSYS2 and Rust's GNU toolchain, the one the app is built
@@ -108,18 +108,9 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
-      # The same check and notices as a release (.github/actions/notices).
-      - name: Check licenses and write the notices
+      # The same checks as a release (.github/actions/notices).
+      - name: Check licenses and notices
         uses: ./.github/actions/notices
-        with:
-          output: THIRD-PARTY-NOTICES.md
-
-      - name: Upload THIRD-PARTY-NOTICES.md
-        uses: actions/upload-artifact@v6
-        with:
-          name: third-party-notices
-          path: THIRD-PARTY-NOTICES.md
-          if-no-files-found: error
 
   rust:
     name: Rust (${{ matrix.name }})

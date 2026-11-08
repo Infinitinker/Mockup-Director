@@ -40,6 +40,10 @@
     "targets": ["app", "dmg"],
     "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"],
     "category": "public.app-category.graphics-design",
+    "resources": {
+      "../LICENSE": "LICENSE.txt",
+      "../THIRD-PARTY-NOTICES.md": "THIRD-PARTY-NOTICES.txt"
+    },
     "copyright": "© 2026 Infinitinker",
     "publisher": "Infinitinker",
     "shortDescription": "Photorealistic 3D mockups of packaging, books, print and devices",

@@ -15,6 +15,7 @@ on:
       - .github/actions/**
       - tools/release.mjs
       - tools/release-notes.md
+      - src-tauri/tauri*.conf.json
   workflow_dispatch:
 
 # A newer push to a pull request replaces its run; a release's build is never cut short.
@@ -93,10 +94,14 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
-      - name: Check licenses and write the notices
+      # The committed notices, the same file every package contains, once they are checked.
+      - name: Check licenses and notices
         uses: ./.github/actions/notices
-        with:
-          output: dist-release/MockupDirector-${{ needs.check.outputs.version }}-third-party-notices.md
+
+      - name: Name the notices
+        run: |
+          mkdir -p dist-release
+          cp THIRD-PARTY-NOTICES.md "dist-release/MockupDirector-${{ needs.check.outputs.version }}-third-party-notices.md"
 
       - name: Upload the notices
         uses: actions/upload-artifact@v7

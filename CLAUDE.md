@@ -14,7 +14,7 @@ A desktop app that turns flat artwork into photorealistic 3D mockups (boxes, dis
 
 ## Open source
 
-- MIT license. Every dependency must have a license on the allow lists (`scripts/licenses.mjs`, `src-tauri/deny.toml`, `src-tauri/about.toml`, kept in sync): permissive licenses and MPL-2.0, never GPL, AGPL or LGPL. Check the license before adding a dependency; keep dependencies few and justified.
+- MIT license. Every dependency must have a license on the allow lists (`tools/licenses.mjs`, `src-tauri/deny.toml`, `src-tauri/about.toml`, kept in sync): permissive licenses and MPL-2.0, never GPL, AGPL or LGPL. Check the license before adding a dependency; keep dependencies few and justified.
 - No third-party names, templates, artwork or logos in the app or the repository. Device models stay generic.
 - Write code, docs and history as if strangers will read them: no personal paths, secrets or machine-specific settings.
 
@@ -29,6 +29,6 @@ A desktop app that turns flat artwork into photorealistic 3D mockups (boxes, dis
 ## Tooling
 
 - Node.js 22+ with npm, and the Rust stable toolchain for the desktop app; see `docs/development.md`.
-- Before committing: `npm run lint`, `npm run build`, `npm test` and `npm run check:i18n` (`npm run format` fixes formatting); for Rust changes `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` (in `src-tauri/`); `npm run licenses` after changing dependencies.
+- Before committing: `npm run lint`, `npm run build`, `npm test` and `npm run check:i18n` (`npm run format` fixes formatting); for Rust changes `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` (in `src-tauri/`); `npm run licenses` and `npm run notices` after changing dependencies (commit the regenerated `THIRD-PARTY-NOTICES.md`).
 - Tests live in `tests/` (TypeScript, Vitest) and `src-tauri/tests/` (Rust), mirroring the source folders; nothing test-only goes in `src/`.
 - Branches: `main` is stable, work happens on `dev`, changes reach `main` through pull requests.

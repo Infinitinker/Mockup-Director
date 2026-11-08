@@ -15,7 +15,7 @@ targets = [
 
 [licenses]
 # Permissive licenses, plus MPL-2.0 (weak, file-level copyleft that never extends to our code).
-# Keep in sync with ALLOWED in scripts/licenses.mjs and `accepted` in src-tauri/about.toml.
+# Keep in sync with ALLOWED in tools/licenses.mjs and `accepted` in src-tauri/about.toml.
 allow = [
   "MIT",
   "MIT-0",

@@ -117,6 +117,18 @@ jobs:
             exit 1
           fi
 
+      # The licenses come with every copy (bundle.resources in tauri.conf.json); the AppImage and the
+      # .rpm are made from the same files.
+      - name: Check the .deb contains the licenses
+        run: |
+          for file in LICENSE.txt THIRD-PARTY-NOTICES.txt; do
+            if [ -z "$(find deb-check/usr/lib -name "$file")" ]; then
+              find deb-check -maxdepth 4
+              echo "::error::The .deb does not contain $file"
+              exit 1
+            fi
+          done
+
       # Each file on its own and unzipped, so the run's page offers the file itself. A download does
       # not keep the AppImage's executable bit, so the user runs `chmod +x` once (see README).
       - name: Upload AppImage
