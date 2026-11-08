@@ -144,6 +144,17 @@ For developers and translators:
 - [docs/releasing.md](docs/releasing.md): versions, releases and code signing.
 - [docs/licenses.md](docs/licenses.md): the dependency license policy and third-party notices.
 
+## Support
+
+Mockup Director is free, with no ads and no tracking. If it saves you time, you can buy me a coffee:
+
+<p>
+  <a href="https://ko-fi.com/infinitinker"><img src="https://img.shields.io/badge/Ko--fi-support-FF5E5B?logo=kofi&logoColor=white" alt="Support on Ko-fi"></a>
+  <a href="https://buycoffee.to/infinitinker"><img src="https://img.shields.io/badge/buycoffee.to-support-FFB400" alt="Support on buycoffee.to"></a>
+</p>
+
+Ko-fi takes cards and PayPal; buycoffee.to suits Polish supporters, with BLIK and Polish bank transfers.
+
 ## License
 
 Mockup Director is released under the [MIT license](LICENSE). Its dependencies use permissive licenses (MIT, Apache-2.0, BSD, ISC, Zlib, Unicode) and MPL-2.0; see [docs/licenses.md](docs/licenses.md). The Linux AppImage also contains system libraries under the LGPL (GTK, WebKitGTK and their dependencies).
