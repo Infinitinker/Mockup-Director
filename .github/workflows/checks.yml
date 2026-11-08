@@ -1,0 +1,206 @@
+# The checks for every push to main/dev and every pull request, also from forks. They finish in a few
+# minutes, and their job names are short and fixed, so they are the required status checks of the
+# main branch ruleset (docs/development.md):
+#   - Lint:     Biome (format and lint of TypeScript, the tool scripts, CSS and every JSON file, so
+#               also the Tauri configuration) and rustfmt; the same result on every system, so once.
+#   - Web:      TypeScript type-check, Vite production build, unit tests, translation check.
+#   - Licenses: no copyleft (GPL/AGPL/LGPL…) dependency in npm or Rust, plus the generated
+#               THIRD-PARTY-NOTICES.md (license texts of everything shipped in the app) as an artifact.
+#   - Rust (Windows), Rust (Linux): clippy and the Rust tests. The shell has code for each system
+#               (#[cfg(target_os)]), and clippy only sees the code of the system it runs on, so it runs
+#               on each. On Windows with MSYS2 and Rust's GNU toolchain, the one the app is built
+#               with. macOS is left out: its runners count 10x against the free minutes, and the
+#               macOS build (build-macos.yml) compiles the macOS code on every push.
+# The desktop apps are built by build-windows.yml, build-macos.yml and build-linux.yml.
+name: Checks
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+  workflow_dispatch:
+
+# A newer push to the same branch or pull request cancels the run still going for the older one.
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      # Fails on a file Biome would format differently and on any lint warning (npm run lint).
+      - name: Biome
+        run: npx biome ci --error-on-warnings --reporter=github
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - name: rustfmt
+        run: cargo fmt --manifest-path src-tauri/Cargo.toml --check
+
+  web:
+    name: Web
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build (tsc --noEmit && vite build)
+        run: npm run build
+
+      # Unit tests (Vitest) in tests/.
+      - name: Test
+        run: npm test
+
+      # Every text written in English in the code has a translation in every interface language.
+      - name: Check translations
+        run: npm run check:i18n
+
+  licenses:
+    name: Licenses
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      # Fails on any npm package (shipped or build-only) with a license outside the allow list.
+      - name: Check npm licenses
+        run: node scripts/licenses.mjs --notices THIRD-PARTY-NOTICES.md
+
+      - name: Install cargo-deny and cargo-about
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-deny,cargo-about
+
+      # Fails on any Rust crate (for the Windows, macOS and Linux targets) with a license outside
+      # the allow list in src-tauri/deny.toml.
+      - name: Check Rust licenses (cargo-deny)
+        run: cargo deny --manifest-path src-tauri/Cargo.toml --config src-tauri/deny.toml check licenses
+
+      - name: Generate Rust license notices (cargo-about)
+        run: |
+          cargo about generate --manifest-path src-tauri/Cargo.toml --config src-tauri/about.toml \
+            --output-file rust-notices.md src-tauri/about.hbs
+          cat rust-notices.md >> THIRD-PARTY-NOTICES.md
+
+      - name: Upload THIRD-PARTY-NOTICES.md
+        uses: actions/upload-artifact@v6
+        with:
+          name: third-party-notices
+          path: THIRD-PARTY-NOTICES.md
+          if-no-files-found: error
+
+  rust:
+    name: Rust (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows
+            os: windows-latest
+          - name: Linux
+            os: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+    steps:
+      # The Tauri v2 prerequisites for Debian/Ubuntu (see build-linux.yml).
+      - name: Install system libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev libxdo-dev libssl-dev librsvg2-dev
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      # The same MSYS2 and GNU toolchain setup as build-windows.yml, where the reasons are explained.
+      - name: Setup MSYS2 (MINGW64)
+        if: runner.os == 'Windows'
+        id: msys2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: false
+          install: mingw-w64-x86_64-gcc
+
+      - name: Setup Rust (GNU toolchain)
+        if: runner.os == 'Windows'
+        run: |
+          echo "${{ steps.msys2.outputs.msys2-location }}/mingw64/bin" >> "$GITHUB_PATH"
+          rustup toolchain install stable-x86_64-pc-windows-gnu --profile minimal --component clippy --no-self-update
+          rustup default stable-x86_64-pc-windows-gnu
+
+      - name: Setup Rust
+        if: runner.os == 'Linux'
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      # The shell embeds the web UI from dist/ when it is compiled, so the UI is built first.
+      - name: Build the web UI
+        run: |
+          npm ci
+          npm run build
+
+      - name: Clippy
+        working-directory: src-tauri
+        run: cargo clippy --all-targets --locked -- -D warnings
+
+      - name: Test
+        working-directory: src-tauri
+        run: cargo test --locked

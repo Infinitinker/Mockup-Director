@@ -33,8 +33,12 @@ src-tauri/      the Tauri v2 shell (Rust): window, dialogs, a single app process
   capabilities/default.json what the window may do
   deny.toml                 allowed licenses of Rust dependencies (cargo-deny)
   about.toml, about.hbs     the Rust part of the third-party notices (cargo-about)
+.github/
+  dependabot.yml     a monthly pull request with new versions of the actions the workflows use
+  FUNDING.yml        the donation links of the Sponsor button
 .github/workflows/
-  ci.yml             web checks, translation check and license checks, for main, dev and pull requests
+  checks.yml         the Checks: lint, web build and tests, translations, licenses, Rust on Windows and
+                     Linux; for main, dev and pull requests
   build-windows.yml  the NSIS installer (x64) and a portable ZIP, built with MSYS2; a draft release for v* tags
   build-macos.yml    a universal .dmg; a draft release for v* tags
   build-linux.yml    .AppImage, .deb and .rpm (x86_64); a draft release for v* tags

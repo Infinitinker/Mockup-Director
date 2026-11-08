@@ -14,7 +14,7 @@
    ```
 
    The Windows, macOS and Linux workflows attach the `.exe`, the `.dmg`, and the `.AppImage`, `.deb` and `.rpm` to one **draft** release. Whichever build finishes first creates the draft; tauri-action has no lock, so if two builds finish within seconds of each other it can create two drafts for the same tag. Then move the files into one draft and delete the other.
-3. Attach `THIRD-PARTY-NOTICES.md` from the CI run's artifacts (see [licenses.md](licenses.md)), check the draft, and publish it on GitHub.
+3. Attach `THIRD-PARTY-NOTICES.md` from the Checks run's artifacts (see [licenses.md](licenses.md)), check the draft, and publish it on GitHub.
 
 ## Linux builds
 

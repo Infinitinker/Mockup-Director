@@ -29,6 +29,6 @@ A desktop app that turns flat artwork into photorealistic 3D mockups (boxes, dis
 ## Tooling
 
 - Node.js 22+ with npm, and the Rust stable toolchain for the desktop app; see `docs/development.md`.
-- Before committing: `npm run build`, `npm test` and `npm run check:i18n`; for Rust changes `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` (in `src-tauri/`); `npm run licenses` after changing dependencies.
+- Before committing: `npm run lint`, `npm run build`, `npm test` and `npm run check:i18n` (`npm run format` fixes formatting); for Rust changes `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` (in `src-tauri/`); `npm run licenses` after changing dependencies.
 - Tests live in `tests/` (TypeScript, Vitest) and `src-tauri/tests/` (Rust), mirroring the source folders; nothing test-only goes in `src/`.
 - Branches: `main` is stable, work happens on `dev`, changes reach `main` through pull requests.

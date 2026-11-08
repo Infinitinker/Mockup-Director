@@ -45,6 +45,20 @@ This is `tauri dev` with `src-tauri/tauri.dev.conf.json` merged in, which gives 
 
 ## Checks
 
+Formatting and lint of the TypeScript code, the tool scripts, the CSS and every JSON file, with [Biome](https://biomejs.dev/) (configured in `biome.json`):
+
+```bash
+npm run lint
+```
+
+Warnings fail it too, as in CI. `npm run format` rewrites the files the way Biome formats them and applies its safe fixes. When a lint rule is wrong for one line, keep the code and say why in a comment above it: `// biome-ignore lint/<group>/<rule>: <reason>` (`/* … */` in CSS).
+
+The formatting of the whole code base was done in one commit, which `git blame` can skip:
+
+```bash
+git config blame.ignoreRevsFile .git-blame-ignore-revs
+```
+
 Type-check and production build of the web part:
 
 ```bash
@@ -87,7 +101,7 @@ cargo fmt --check --manifest-path src-tauri/Cargo.toml
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 ```
 
-CI runs the type-check, the build, the unit tests, the translation check and the license checks for every push to `main` and `dev` and for every pull request (`.github/workflows/ci.yml`).
+The **Checks** workflow (`.github/workflows/checks.yml`) runs all of these for every push to `main` and `dev` and for every pull request, in a few minutes: `Lint` (Biome and rustfmt), `Web` (type-check, build, unit tests, translations), `Licenses`, and clippy and the Rust tests on two systems, `Rust (Windows)` (with MSYS2 and the GNU toolchain) and `Rust (Linux)`. The Rust code differs per system and clippy only sees the code of the system it runs on, hence two runs; the macOS code is compiled by the macOS build. Once a month Dependabot opens a pull request to `dev` with new versions of the actions the workflows use (`.github/dependabot.yml`).
 
 ## Building the desktop app
 
@@ -105,13 +119,13 @@ rustup target add aarch64-apple-darwin x86_64-apple-darwin
 npm run tauri build -- --target universal-apple-darwin
 ```
 
-GitHub Actions builds all three systems on every push to `dev` and `main` (`build-windows.yml`, `build-macos.yml`, `build-linux.yml`); the files are in the run's **Artifacts**. Releases are described in [releasing.md](releasing.md).
+GitHub Actions builds all three systems on every push to `dev` and `main` and for pull requests from other branches and forks (`build-windows.yml`, `build-macos.yml`, `build-linux.yml`); the files are in the run's **Artifacts**. Releases are described in [releasing.md](releasing.md).
 
 ## Branches
 
-`main` is the stable version; day-to-day work happens on `dev`. Changes reach `main` through a pull request from `dev`. Every push to `dev` and `main` (merging a pull request too) builds the apps and runs CI.
+`main` is the stable version; day-to-day work happens on `dev`. Changes reach `main` through a pull request from `dev`. Every push to `dev` and `main` (merging a pull request too) builds the apps and runs the Checks.
 
-To protect `main` (**Settings → Rules → Rulesets → New branch ruleset**): target *Include default branch*, with the rules *Restrict deletions*, *Block force pushes*, *Require a pull request before merging* (0 approvals if you work alone) and *Require status checks to pass* with the checks `Type-check & build (web)`, `License check`, `Build (x86_64-pc-windows-gnu)`, `Build (universal-apple-darwin)` and `Build (x86_64-unknown-linux-gnu)`. The push to `dev` runs the checks on the same commit the pull request merges. In a private repository on a free GitHub plan, rulesets are not enforced (they need a public repository or GitHub Pro), and macOS runner minutes count about 10× Linux minutes against the free quota.
+To protect `main` (**Settings → Rules → Rulesets → New branch ruleset**): target *Include default branch*, with the rules *Restrict deletions*, *Block force pushes*, *Require a pull request before merging* (0 approvals if you work alone) and *Require status checks to pass* with the checks `Lint`, `Web`, `Licenses`, `Rust (Windows)` and `Rust (Linux)`, each from the GitHub Actions app. The builds are not required checks: they take ten minutes and more, and the push to `dev` builds the same commit the pull request merges. Under *General → Pull Requests*, allowing only merge commits keeps the history of `dev` on `main`. In a private repository on a free GitHub plan, rulesets are not enforced (they need a public repository or GitHub Pro), and macOS runner minutes count about 10× Linux minutes against the free quota.
 
 ## The app icon
 

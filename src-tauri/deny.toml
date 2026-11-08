@@ -1,4 +1,4 @@
-# cargo-deny configuration – used in CI (.github/workflows/ci.yml, job "licenses") to make sure no
+# cargo-deny configuration – used in CI (.github/workflows/checks.yml, job "Licenses") to make sure no
 # Rust dependency brings a copyleft license (GPL, AGPL, LGPL, …) into the app.
 #   cargo deny --manifest-path src-tauri/Cargo.toml --config src-tauri/deny.toml check licenses
 

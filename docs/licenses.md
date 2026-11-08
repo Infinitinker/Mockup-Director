@@ -6,7 +6,7 @@ Mockup Director is released under the [MIT license](../LICENSE).
 
 Dependencies may only use permissive licenses (MIT, Apache-2.0, BSD, ISC, Zlib, Unicode and similar) or MPL-2.0, a weak copyleft that covers only the library's own files, not the app's code. GPL, AGPL and LGPL dependencies are not allowed.
 
-CI enforces this: the **License check** job fails when any npm or Rust dependency has a license outside the allow list. The allow lists are in `scripts/licenses.mjs` (npm) and `src-tauri/deny.toml` (Rust, checked by cargo-deny for the Windows, macOS and Linux targets); `src-tauri/about.toml` must accept the same licenses. Change all three together.
+CI enforces this: the **Licenses** job of the Checks workflow fails when any npm or Rust dependency has a license outside the allow list. The allow lists are in `scripts/licenses.mjs` (npm) and `src-tauri/deny.toml` (Rust, checked by cargo-deny for the Windows, macOS and Linux targets); `src-tauri/about.toml` must accept the same licenses. Change all three together.
 
 Check the npm part locally with:
 
@@ -16,7 +16,7 @@ npm run licenses
 
 ## Third-party notices
 
-The same job writes **THIRD-PARTY-NOTICES.md** with the full license texts of every library shipped in the app (**Actions → the "CI" run → Artifacts → `third-party-notices`**). The MIT and Apache licenses require these notices to come with the distributed app, so attach the file to every release.
+The same job writes **THIRD-PARTY-NOTICES.md** with the full license texts of every library shipped in the app (**Actions → the "Checks" run → Artifacts → `third-party-notices`**). The MIT and Apache licenses require these notices to come with the distributed app, so attach the file to every release.
 
 ## WebView2Loader.dll (Windows)
 

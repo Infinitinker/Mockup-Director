@@ -16,21 +16,28 @@
 # MSYS2 and Rust setup steps with `dtolnay/rust-toolchain@stable`, and package the portable .exe alone.
 name: Build Windows app
 
-# Runs on every push to dev and main (a merged pull request is a push to main), on release tags
-# and on demand. Its job name "Build (x86_64-pc-windows-gnu)" can be a required status check of
-# the main branch ruleset: the push to dev runs it on the same commit the pull request merges.
+# Runs on every push to dev and main (a merged pull request is a push to main), on release tags,
+# on demand, and for pull requests, except those from this repository's dev and main, whose
+# pushes are built already (so Dependabot's pull requests and other branches get a build).
+# It is not a required status check: the Checks workflow (checks.yml) is.
 on:
   push:
     branches: [main, dev]
     tags: ['v*']
+  pull_request:
   workflow_dispatch:
 
+# A newer push cancels the build still going for the older one; a release (tag) build is never cut short.
 concurrency:
   group: build-windows-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref_type != 'tag' }}
 
 jobs:
   build-windows:
+    # A fork can have a branch named dev too, so forks are always built.
+    if: >-
+      github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork ||
+      (github.head_ref != 'dev' && github.head_ref != 'main')
     name: Build (x86_64-pc-windows-gnu)
     runs-on: windows-latest
     timeout-minutes: 60
