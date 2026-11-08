@@ -1206,7 +1206,9 @@ function buildNotebook(ctx: ModelContext): THREE.Object3D {
     holeGeos.push(f, r);
   }
   const merged = mergeGeometries(holeGeos);
-  holeGeos.forEach((h) => h.dispose());
+  holeGeos.forEach((h) => {
+    h.dispose();
+  });
   if (merged) {
     const holes = new THREE.Mesh(
       merged,
@@ -1255,7 +1257,9 @@ function buildNotebook(ctx: ModelContext): THREE.Object3D {
       }
     }
     const wire = mergeGeometries(loops);
-    loops.forEach((l) => l.dispose());
+    loops.forEach((l) => {
+      l.dispose();
+    });
     ring.dispose();
     if (wire) {
       const m = new THREE.Mesh(wire, wireMat);

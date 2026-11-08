@@ -26,7 +26,7 @@ export function toast(kind: ToastKind, title: string, detail?: string): void {
 
   if (!container) {
     // UI not mounted yet – at least log it.
-    (kind === 'error' ? console.error : console.info)(`[mockup-director] ${title}${detail ? ': ' + detail : ''}`);
+    (kind === 'error' ? console.error : console.info)(`[mockup-director] ${title}${detail ? `: ${detail}` : ''}`);
     return;
   }
   const icon = kind === 'success' ? ICONS.check : kind === 'error' || kind === 'warning' ? ICONS.warn : ICONS.info;

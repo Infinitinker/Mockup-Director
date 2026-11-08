@@ -401,7 +401,10 @@ export function createScenePanel(ctx: AppContext): { el: HTMLElement; render(): 
 
   ctx.store.subscribe((e) => {
     if (e.kinds.has('lang')) render();
-    else if (hasAny(e, 'scene', 'camera')) controls.forEach((c) => c.sync());
+    else if (hasAny(e, 'scene', 'camera'))
+      controls.forEach((c) => {
+        c.sync();
+      });
   });
   render();
   return { el, render };

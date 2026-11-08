@@ -301,10 +301,16 @@ export class Store {
   private gc(): void {
     const live = new Set<ImageAsset>();
     collectImages(this.s.images, live);
-    this.undoStack.forEach((s) => collectImages(s.images, live));
-    this.redoStack.forEach((s) => collectImages(s.images, live));
+    this.undoStack.forEach((s) => {
+      collectImages(s.images, live);
+    });
+    this.redoStack.forEach((s) => {
+      collectImages(s.images, live);
+    });
     const dead = [...this.tracked].filter((a) => !live.has(a));
-    dead.forEach((a) => this.tracked.delete(a));
+    dead.forEach((a) => {
+      this.tracked.delete(a);
+    });
     disposeAll(dead);
   }
 

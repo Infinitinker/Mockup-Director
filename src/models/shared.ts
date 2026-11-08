@@ -15,10 +15,14 @@ export function disposeObject(root: THREE.Object3D | null | undefined): void {
     if (m.geometry) geos.add(m.geometry);
     if (m.material) {
       const list = Array.isArray(m.material) ? m.material : [m.material];
-      list.forEach((x) => mats.add(x));
+      list.forEach((x) => {
+        mats.add(x);
+      });
     }
   });
-  geos.forEach((g) => g.dispose());
+  geos.forEach((g) => {
+    g.dispose();
+  });
   mats.forEach((mat) => {
     for (const v of Object.values(mat as unknown as Record<string, unknown>)) {
       if (v instanceof THREE.Texture && v.userData?.disposeWithModel) v.dispose();

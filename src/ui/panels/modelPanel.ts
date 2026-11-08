@@ -35,8 +35,9 @@ export function createModelPanel(ctx: AppContext): { el: HTMLElement; render(): 
   const setParam = (id: string, v: ParamValue) => {
     const { model } = current();
     ctx.store.update(['params'], (s) => {
-      const p = (s.params[model.id] = { ...defaultParams(model), ...(s.params[model.id] ?? {}) });
+      const p = { ...defaultParams(model), ...(s.params[model.id] ?? {}) };
       p[id] = v;
+      s.params[model.id] = p;
     });
   };
 
@@ -147,7 +148,10 @@ export function createModelPanel(ctx: AppContext): { el: HTMLElement; render(): 
 
   ctx.store.subscribe((e) => {
     if (hasAny(e, 'model', 'lang')) render();
-    else if (e.kinds.has('params')) controls.forEach((c) => c.sync());
+    else if (e.kinds.has('params'))
+      controls.forEach((c) => {
+        c.sync();
+      });
   });
   render();
   return { el, render };

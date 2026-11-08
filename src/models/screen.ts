@@ -780,7 +780,10 @@ function chromeTexture(
           let fs = Math.round(u * 0.29);
           const font = (s: number) => `500 ${s}px -apple-system, "Segoe UI", Helvetica, Arial, sans-serif`;
           g.font = font(fs);
-          while (g.measureText(text).width > pw - u * 1.2 && fs > 8) g.font = font((fs -= 1));
+          while (g.measureText(text).width > pw - u * 1.2 && fs > 8) {
+            fs -= 1;
+            g.font = font(fs);
+          }
           const tw = g.measureText(text).width;
           const lockW = u * 0.16;
           const gap = u * 0.1;

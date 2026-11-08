@@ -129,7 +129,9 @@ export function createViewportShell(): ViewportShell {
 
   const sync = () => {
     if (!ctx) return;
-    controls.forEach((c) => c.sync());
+    controls.forEach((c) => {
+      c.sync();
+    });
     applyPreviewBackground(host, ctx.store.state.scene.background);
   };
 

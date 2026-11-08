@@ -104,6 +104,7 @@ if (i !== -1) {
       md += `The package does not ship a license file. It is licensed under ${r.license}; `;
       md += `the full text is in the upstream repository: ${repo ?? `https://www.npmjs.com/package/${r.name}`}\n\n`;
     }
+    // biome-ignore lint/style/useTemplate: the Markdown fence is clearer as plain strings.
     for (const t of texts) md += (texts.length > 1 ? `${t.file}:\n\n` : '') + '```\n' + t.text + '\n```\n\n';
   }
   writeFileSync(out, md);

@@ -277,7 +277,7 @@ export class GifAnimationEncoder {
     const rgb = this.rgb;
     const n = this.w * this.h;
     for (let p = 0; p < n; p++) {
-      if (keep && keep[p]) continue;
+      if (keep?.[p]) continue;
       shown[p * 3] = rgb[p * 3];
       shown[p * 3 + 1] = rgb[p * 3 + 1];
       shown[p * 3 + 2] = rgb[p * 3 + 2];
@@ -344,7 +344,7 @@ export class GifAnimationEncoder {
     head.u8(0x04);
     head.u8(((disposal & 7) << 2) | (transparentIndex >= 0 ? 1 : 0));
     head.u16(delayCs);
-    head.u8(transparentIndex >= 0 ? transparentIndex : 0);
+    head.u8(Math.max(transparentIndex, 0));
     head.u8(0x00);
     head.u8(0x2c);
     head.u16(x);

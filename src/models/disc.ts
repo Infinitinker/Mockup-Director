@@ -255,7 +255,10 @@ function dataThicknessTexture(): THREE.DataTexture {
   const n = 256;
   const data = new Uint8Array(n * 4);
   let seed = 1234567;
-  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const rnd = () => {
+    seed = (seed * 16807) % 2147483647;
+    return seed / 2147483647;
+  };
   let walk = 0;
   for (let i = 0; i < n; i++) {
     const t = i / (n - 1);

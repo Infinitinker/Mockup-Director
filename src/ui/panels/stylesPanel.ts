@@ -148,7 +148,9 @@ export function createStylesPanel(ctx: AppContext): { el: HTMLElement; render():
 
     // User presets.
     const userList = h('ul', { class: 'preset-list', attrs: { role: 'list' } });
-    presets.forEach((p, i) => userList.appendChild(row(p.name, p.scene, i)));
+    presets.forEach((p, i) => {
+      userList.appendChild(row(p.name, p.scene, i));
+    });
     const userSection = section('styles.user', t('myStyles'), [
       presets.length ? userList : h('p', { class: 'empty-state small', text: t('noUserStyles') }),
       h(
@@ -167,7 +169,9 @@ export function createStylesPanel(ctx: AppContext): { el: HTMLElement; render():
 
     // Built-ins.
     const builtinList = h('ul', { class: 'preset-list', attrs: { role: 'list' } });
-    BUILTIN_PRESETS.forEach((p) => builtinList.appendChild(row(lt(p.name), p.scene, null)));
+    BUILTIN_PRESETS.forEach((p) => {
+      builtinList.appendChild(row(lt(p.name), p.scene, null));
+    });
     const builtinSection = section('styles.builtin', t('builtinStyles'), [builtinList]);
 
     el.append(saveSection, userSection, builtinSection);

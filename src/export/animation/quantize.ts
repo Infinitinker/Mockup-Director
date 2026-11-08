@@ -362,7 +362,7 @@ export function mapFrame(o: MapFrameOptions): void {
       for (let i = 0; i < w; i++) {
         const x = dir > 0 ? i : w - 1 - i;
         const p = y * w + x;
-        if ((visible && !visible[p]) || (keep && keep[p])) {
+        if ((visible && !visible[p]) || keep?.[p]) {
           out[p] = T;
           continue; // error is dropped at holes
         }
@@ -401,7 +401,7 @@ export function mapFrame(o: MapFrameOptions): void {
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const p = y * w + x;
-      if ((visible && !visible[p]) || (keep && keep[p])) {
+      if ((visible && !visible[p]) || keep?.[p]) {
         out[p] = T;
         continue;
       }

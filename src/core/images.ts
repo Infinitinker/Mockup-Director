@@ -281,6 +281,7 @@ export function sniffMime(b: Uint8Array, declared: string, name = ''): string {
   if (at(0, 0x49, 0x49, 0x2a, 0x00) || at(0, 0x4d, 0x4d, 0x00, 0x2a)) return 'image/tiff';
   // SVG: text starting (after optional BOM / whitespace / XML prolog / comments) with <svg
   const head = new TextDecoder('utf-8', { fatal: false }).decode(b.subarray(0, 2048)).toLowerCase();
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: control characters mark a binary file, not SVG text.
   if (/<svg[\s>]/.test(head) && !/[\x00-\x08]/.test(head)) return 'image/svg+xml';
   if (declared) return declared.toLowerCase();
   if (/\.svgz?$/i.test(name)) return 'image/svg+xml';
@@ -299,8 +300,7 @@ export function sizeSvgRoot(svg: string, tw: number, th: number, vw: number, vh:
   tag = tag.replace(/\s(width|height)\s*=\s*("[^"]*"|'[^']*')/gi, '');
   const selfClosing = /\/\s*>$/.test(tag);
   const head = tag.replace(/\/?\s*>$/, '');
-  const extra =
-    ` width="${tw}" height="${th}"` + (hasViewBox ? '' : ` viewBox="0 0 ${vw} ${vh}" preserveAspectRatio="none"`);
+  const extra = ` width="${tw}" height="${th}"${hasViewBox ? '' : ` viewBox="0 0 ${vw} ${vh}" preserveAspectRatio="none"`}`;
   tag = head + extra + (selfClosing ? '/>' : '>');
   return svg.slice(0, m.index) + tag + svg.slice(m.index + m[0].length);
 }

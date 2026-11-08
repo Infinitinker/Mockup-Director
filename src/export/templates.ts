@@ -606,7 +606,7 @@ class Draw {
 function clampBleed(tpl: PrintTemplate): number {
   // Never let the bleed swallow the whole artboard.
   const b = Math.min(tpl.bleedMm ?? 0, tpl.widthMm / 2 - 0.5, tpl.heightMm / 2 - 0.5);
-  return b > 0 ? b : 0;
+  return Math.max(b, 0);
 }
 
 function intersect(

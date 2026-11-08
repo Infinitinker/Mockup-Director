@@ -93,7 +93,7 @@ export function setPngPhys(png: Uint8Array, dpi: number): Uint8Array<ArrayBuffer
     const len = readU32(png, o);
     const type = chunkType(png, o);
     const end = o + 12 + len;
-    if (end > png.length) throw new Error('Truncated PNG chunk ' + type);
+    if (end > png.length) throw new Error(`Truncated PNG chunk ${type}`);
     if (type === 'IHDR') ihdrEnd = end;
     else if (type === 'pHYs') drop.push([o, end]);
     o = end;

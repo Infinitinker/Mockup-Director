@@ -521,8 +521,12 @@ function keyboardGeometry(u: number, x0: number, z0: number, yFloor: number, key
     zRow += hu * u;
   });
   const merged = mergeGeometries(parts, false) ?? new THREE.BufferGeometry();
-  parts.forEach((g) => g.dispose());
-  cache.forEach((g) => g.dispose());
+  parts.forEach((g) => {
+    g.dispose();
+  });
+  cache.forEach((g) => {
+    g.dispose();
+  });
   return merged;
 }
 

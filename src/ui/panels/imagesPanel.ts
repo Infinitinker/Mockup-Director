@@ -191,7 +191,10 @@ export function createImagesPanel(ctx: AppContext): { el: HTMLElement; render():
 
   ctx.store.subscribe((e) => {
     if (hasAny(e, 'model', 'images', 'lang')) render();
-    else if (e.kinds.has('params')) warnUpdaters.forEach((u) => u());
+    else if (e.kinds.has('params'))
+      warnUpdaters.forEach((u) => {
+        u();
+      });
   });
   ctx.loadingSlots.subscribe(() => render());
   render();

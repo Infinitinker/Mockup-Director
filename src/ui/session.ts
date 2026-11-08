@@ -214,7 +214,9 @@ export class SessionSaver {
 
   /** Takes ownership of the records of restored tabs. */
   adopt(ids: readonly string[]): void {
-    ids.forEach((id) => this.owned.add(id));
+    ids.forEach((id) => {
+      this.owned.add(id);
+    });
   }
   /** Settles when the running save (if any) has ended. Never rejects. */
   private tail: Promise<void> = Promise.resolve();
@@ -280,7 +282,11 @@ export class SessionSaver {
     }
     for (const p of changed) next.set(p.id, p.revision);
     this.written = next;
-    changed.forEach((p) => this.owned.add(p.id));
-    closedIds.forEach((id) => this.owned.delete(id));
+    changed.forEach((p) => {
+      this.owned.add(p.id);
+    });
+    closedIds.forEach((id) => {
+      this.owned.delete(id);
+    });
   }
 }

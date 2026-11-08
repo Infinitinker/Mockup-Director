@@ -71,7 +71,7 @@ export function msg(key: MessageKey, vars?: TextVars): Message {
 
 export function isMessage(value: unknown): value is Message {
   const key = value && typeof value === 'object' ? (value as { key?: unknown }).key : undefined;
-  // Not Object.hasOwn: the app supports Safari 15.0, which lacks it.
+  // biome-ignore lint/suspicious/noPrototypeBuiltins: not Object.hasOwn, the app supports Safari 15.0, which lacks it.
   return typeof key === 'string' && Object.prototype.hasOwnProperty.call(english.messages, key);
 }
 
@@ -142,7 +142,7 @@ export function parseNumber(s: string): number | null {
     .trim()
     .replace(/\s+/g, '')
     .replace(',', '.')
-    .replace(/[^0-9.eE+\-]+$/, '');
+    .replace(/[^0-9.eE+-]+$/, '');
   if (!cleaned) return null;
   const n = Number(cleaned);
   return Number.isFinite(n) ? n : null;

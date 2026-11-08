@@ -62,6 +62,7 @@ export function sanitizeZipName(name: string): string {
   const parts = name
     .replace(/\\/g, '/')
     .split('/')
+    // biome-ignore lint/suspicious/noControlCharactersInRegex: control characters are removed from ZIP entry names.
     .map((p) => p.replace(/[\u0000-\u001f]/g, '').trim())
     .filter((p) => p && p !== '.' && p !== '..');
   return parts.join('/') || 'file';

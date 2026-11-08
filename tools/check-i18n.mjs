@@ -60,6 +60,7 @@ export function collect() {
 
 /** Every literal L('…') / Lctx('…', '…') in src/ (a text may be split into literals joined with +). */
 function scanSources() {
+  // biome-ignore lint/style/useTemplate: a raw string and a backtick literal read more clearly apart.
   const LIT = String.raw`(?:'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|` + '`(?:[^`\\\\$]|\\\\.|\\$(?!\\{))*`)';
   // A text: literals joined with +, and nothing else before the next argument or the closing parenthesis.
   const STR = String.raw`${LIT}(?:\s*\+\s*${LIT})*(?=\s*[,)])`;

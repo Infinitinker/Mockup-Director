@@ -366,7 +366,7 @@ export class GroundShadow {
         if (mesh.isMesh) {
           const casts = anyCaster ? mesh.castShadow : true;
           const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-          const visibleMats = mats.filter((m) => m && m.visible);
+          const visibleMats = mats.filter((m) => m?.visible);
           if (!casts || visibleMats.length === 0) {
             restore.push({ o, visible: o.visible });
             o.visible = false;

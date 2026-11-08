@@ -242,7 +242,10 @@ export function startApp(root: HTMLElement): void {
 
   const setLoading = (keys: string[], on: boolean) => {
     const next = new Set(loadingSlots.value);
-    keys.forEach((k) => (on ? next.add(k) : next.delete(k)));
+    for (const k of keys) {
+      if (on) next.add(k);
+      else next.delete(k);
+    }
     loadingSlots.set(next);
   };
 
@@ -454,7 +457,7 @@ export function startApp(root: HTMLElement): void {
         const modelId = s.modelId;
         const settings = { ...(s.export.animation ?? DEFAULT_ANIMATION) };
         modelLocked = true;
-        let result;
+        let result: Awaited<ReturnType<typeof exportAnimationBlob>>;
         try {
           result = await exportAnimationBlob(
             stage,

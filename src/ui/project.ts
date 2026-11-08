@@ -160,7 +160,9 @@ export function parseProjectFile(json: unknown): ProjectFile {
       for (const [sid, img] of Object.entries(slots)) {
         if (!model.slots.some((s) => s.id === sid) || !isPlain(img)) continue;
         if (typeof img.dataUrl !== 'string' || !/^data:image\//i.test(img.dataUrl)) continue;
-        (images[mid] ??= {})[sid] = {
+        const forModel = images[mid] ?? {};
+        images[mid] = forModel;
+        forModel[sid] = {
           name: typeof img.name === 'string' ? img.name.slice(0, 255) : sid,
           dataUrl: img.dataUrl,
         };
@@ -189,7 +191,9 @@ export async function hydrateProject(file: ProjectFile): Promise<{ state: Docume
       jobs.push(
         loadImageDataUrl(img.dataUrl, img.name)
           .then((asset: ImageAsset) => {
-            (images[mid] ??= {})[sid] = asset;
+            const forModel = images[mid] ?? {};
+            images[mid] = forModel;
+            forModel[sid] = asset;
           })
           .catch((e: unknown) => {
             failed += 1;

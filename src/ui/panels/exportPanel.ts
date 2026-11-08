@@ -771,7 +771,10 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
     }
   };
 
-  const syncAll = () => controls.forEach((c) => c.sync());
+  const syncAll = () =>
+    controls.forEach((c) => {
+      c.sync();
+    });
   ctx.store.subscribe((e) => {
     if (e.kinds.has('lang')) {
       render();

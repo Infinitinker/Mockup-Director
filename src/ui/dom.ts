@@ -115,7 +115,9 @@ export class Signal<T> {
   }
   set(v: T): void {
     this.v = v;
-    this.listeners.forEach((l) => l(v));
+    this.listeners.forEach((l) => {
+      l(v);
+    });
   }
   subscribe(fn: (v: T) => void): () => void {
     this.listeners.add(fn);

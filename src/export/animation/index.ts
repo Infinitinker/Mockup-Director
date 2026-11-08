@@ -163,8 +163,10 @@ export async function exportAnimation(
       if (!mp4) throw mp4Unsupported();
     }
 
-    const renderCanvas = (render = createCanvas(rw, rh));
-    const outCanvas = (out = createCanvas(W, H));
+    const renderCanvas = createCanvas(rw, rh);
+    render = renderCanvas;
+    const outCanvas = createCanvas(W, H);
+    out = outCanvas;
     const og = get2d(outCanvas, s.format === 'gif');
     checkAbort();
     session = stage.beginAnimation({ angles, width: rw, height: rh, useViewZoomPan: s.useViewZoomPan });

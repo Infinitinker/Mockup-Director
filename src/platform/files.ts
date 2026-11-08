@@ -151,7 +151,7 @@ async function saveInBrowser(blob: Blob, suggestedName: string, filters: FileFil
       const types = filters
         .filter((f) => f.extensions.length && !f.extensions.includes('*'))
         .map((f) => {
-          const exts = f.extensions.map((e) => '.' + stripDot(e).toLowerCase());
+          const exts = f.extensions.map((e) => `.${stripDot(e).toLowerCase()}`);
           const mime = blob.type || MIME_BY_EXT[exts[0].slice(1)] || 'application/octet-stream';
           return { description: f.name, accept: { [mime]: exts } };
         });
