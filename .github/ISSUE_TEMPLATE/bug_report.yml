@@ -1,0 +1,54 @@
+name: Bug report
+description: Something in Mockup Director doesn't work as it should.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead. A screenshot helps.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Mockup Director version
+      description: Hold the pointer over Mockup Director at the left of the toolbar, or give the commit if you run it from source.
+      placeholder: "0.2.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: download
+    attributes:
+      label: Which download
+      options:
+        - Windows installer
+        - Windows portable ZIP
+        - macOS .dmg
+        - Linux AppImage
+        - Linux .deb
+        - Linux .rpm
+        - Built from source
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: System
+      description: The system and its version; on Linux also the desktop (Wayland or X11) and the graphics card.
+      placeholder: "Windows 11 24H2, macOS 15.5, Ubuntu 24.04 with GNOME on Wayland and NVIDIA"
+    validations:
+      required: true
+  - type: input
+    id: model
+    attributes:
+      label: Model
+      description: The model in use, if the problem is about one.
+      placeholder: "DVD keep case"
+  - type: textarea
+    id: files
+    attributes:
+      label: Files
+      description: >
+        A project file (.mdproj) that shows the problem helps most: attach it here, zipped. It contains
+        your artwork, so attach it only if you can share that.

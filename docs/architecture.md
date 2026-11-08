@@ -36,6 +36,8 @@ src-tauri/      the Tauri v2 shell (Rust): window, dialogs, a single app process
 .github/
   dependabot.yml     a monthly pull request with new versions of the actions the workflows use
   FUNDING.yml        the donation links of the Sponsor button
+  ISSUE_TEMPLATE/    the issue forms: bug report, model request, translation; a link to report a security
+                     problem privately (GitHub's advisory form, see SECURITY.md)
 .github/workflows/
   checks.yml         the Checks: lint, web build and tests, translations, licenses, Rust on Windows and
                      Linux; for main, dev and pull requests
@@ -57,6 +59,7 @@ tools/release-notes.md      the template of the release notes
 tools/draw-icon.mjs         draws the app icon and writes every icon file (npm run icons)
 tools/check-i18n.mjs        checks that every text has a translation (npm run check:i18n)
 start.bat, start.sh         run the desktop app from source (npm run app:dev), see docs/development.md
+CONTRIBUTING.md, SECURITY.md how to contribute, and how to report a security problem
 docs/                       this documentation
 ```
 

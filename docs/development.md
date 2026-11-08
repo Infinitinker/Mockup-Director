@@ -137,6 +137,8 @@ GitHub Actions builds all three systems on every push to `dev` and `main` and fo
 
 To protect `main` (**Settings → Rules → Rulesets → New branch ruleset**): target *Include default branch*, with the rules *Restrict deletions*, *Block force pushes*, *Require a pull request before merging* (0 approvals if you work alone) and *Require status checks to pass* with the checks `Lint`, `Web`, `Licenses`, `Rust (Windows)` and `Rust (Linux)`, each from the GitHub Actions app. The builds are not required checks: they take ten minutes and more, and the push to `dev` builds the same commit the pull request merges. Under *General → Pull Requests*, allowing only merge commits keeps the history of `dev` on `main`. In a private repository on a free GitHub plan, rulesets are not enforced (they need a public repository or GitHub Pro), and macOS runner minutes count about 10× Linux minutes against the free quota.
 
+When the repository is public, also turn on **Settings → Code security → Private vulnerability reporting**: [SECURITY.md](../SECURITY.md) and the issue chooser's "Security problem" link send reporters to it. The issue forms in `.github/ISSUE_TEMPLATE/` add the labels `bug`, `model` and `translation`, which must exist in the repository (**Issues → Labels**); a form leaves out a label that does not.
+
 ## The app icon
 
 The icon is drawn by `tools/draw-icon.mjs` (a product box whose front is a film clapperboard). This writes `app-icon.svg`, every file in `src-tauri/icons/` (a rounded-square `.icns` for macOS, a round `.ico` and PNGs for Windows and Linux) and the small toolbar logo `src/ui/app-logo.svg`:

@@ -24,6 +24,7 @@ export const polish: Locale = {
     import: 'Importuj…',
     exportJson: 'Eksportuj…',
     /* toolbar */
+    appVersion: 'Mockup Director {version}',
     new: 'Nowy',
     open: 'Otwórz',
     save: 'Zapisz',

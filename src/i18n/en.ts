@@ -19,6 +19,7 @@ export const messages = {
   import: 'Import…',
   exportJson: 'Export…',
   /* toolbar */
+  appVersion: 'Mockup Director {version}',
   new: 'New',
   open: 'Open',
   save: 'Save',

@@ -119,6 +119,7 @@ On macOS use ⌘ instead of Ctrl, except for switching tabs (Ctrl+Tab / Ctrl+Shi
 - **Tabs:** every open project is a tab above the 3D view, with its own undo history. **New** opens a new tab; **Open** opens each project in its own tab, taking the place of an untouched new tab. A project you double-click while the app is open arrives as a new tab in the same window (during an export, it opens when the export ends). A • marks a tab with unsaved changes; closing it asks whether to save them.
 - **Your open tabs are saved automatically** a moment after each change and when you close the window, unsaved changes included, and come back the next time you start the app. So closing the window does not ask. On macOS, quitting the app (⌘Q, **Quit** in the Dock, logging out) skips that last save, so changes from the last second or two may be missing: close the window first, or save the project.
 - **Looks** and the interface language are remembered by the app.
+- **Privacy:** the app makes no network connections. It has no accounts, no telemetry and no update check, and your projects and artwork never leave your computer.
 
 The open tabs and the looks are kept by the app's web engine in your user profile, in a folder named after the app's identifier, `io.github.infinitinker.mockupdirector` (on Windows in `%LOCALAPPDATA%`, on Linux in `~/.local/share`, on macOS in `~/Library/WebKit`). Uninstalling the app keeps this folder (on Windows, unless you tick "Delete the application data" in the uninstaller); delete it to remove everything.
 
@@ -143,6 +144,8 @@ Mockup Director speaks English and Polish. On the first start it follows your sy
 
 For developers and translators:
 
+- [CONTRIBUTING.md](CONTRIBUTING.md): reporting bugs, asking for models and languages, and contributing them.
+- [SECURITY.md](SECURITY.md): reporting a security problem privately.
 - [docs/development.md](docs/development.md): building and running from source, checks, branches.
 - [docs/architecture.md](docs/architecture.md): how the app is built and where the code lives.
 - [docs/models.md](docs/models.md): adding a new 3D model.
