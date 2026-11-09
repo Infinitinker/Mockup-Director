@@ -1,6 +1,6 @@
 name: Build Windows app
 
-# Builds the Windows release files: the NSIS installer and the portable ZIP, each kept on the run's
+# Builds the Windows release files: the installer and the portable ZIP, each kept on the run's
 # page under its release file name, and checks them. The Release workflow (release.yml) calls it and
 # drafts the release from them; run on its own, it shows early that a change still builds.
 #
@@ -9,14 +9,16 @@ name: Build Windows app
 # whose pushes are built already (so Dependabot's pull requests and other branches get a build too).
 # It is not a required status check: the Checks workflow (checks.yml) is.
 #
-# Windows settings are in src-tauri/tauri.windows.conf.json: the NSIS installer only, installed for
-# the user alone, with no administrator rights. The app is not code-signed, so Windows SmartScreen
-# warns on the first start (see the README).
+# Tauri builds the app without its own installers (bundle.active false in
+# src-tauri/tauri.windows.conf.json); the installer is made with Inno Setup from tools/installer.iss
+# (npm run installer). It installs for the user alone, with no administrator rights, or for all users
+# if they choose. The app is not code-signed, so Windows SmartScreen warns on the first start (see the
+# README).
 #
 # It is built with MSYS2 (MINGW64) and Rust's GNU toolchain, not with Microsoft's C++ tools: the
 # toolchain of a developer's machine (docs/development.md). Tauri supports only MSVC officially, so
 # the build also checks what a GNU build could get wrong. A GNU build loads WebView2Loader.dll at run
-# time instead of linking it in: the installer must contain it, and the portable version is a ZIP with
+# time instead of linking it in: the installer installs it, and the portable version is a ZIP with
 # the DLL next to the executable. To go back to MSVC, replace the MSYS2 and GNU toolchain steps with
 # dtolnay/rust-toolchain, and ship the portable .exe alone.
 on:
@@ -34,6 +36,11 @@ concurrency:
 
 permissions:
   contents: read
+
+env:
+  # Inno Setup's installer, checked against the SHA-256 that its release on GitHub lists.
+  INNO_SETUP_URL: https://github.com/jrsoftware/issrc/releases/download/is-7_1_1/innosetup-7.1.1-x64.exe
+  INNO_SETUP_SHA256: 8a5a6711c3766a6e5fb74f280ba0e3551e719ce94538d901fdbd1f8f9920b3f0
 
 jobs:
   build:
@@ -62,7 +69,6 @@ jobs:
         uses: msys2/setup-msys2@v2
         with:
           msystem: MINGW64
-          update: false
           install: mingw-w64-x86_64-gcc
       # Ahead of other MinGW copies on the runner, such as Strawberry Perl's.
       - name: Put MINGW64 on the PATH
@@ -81,23 +87,25 @@ jobs:
 
       - name: Install
         run: npm ci
+      # The app in src-tauri/target/release, with WebView2Loader.dll and the license texts
+      # (bundle.resources in tauri.conf.json) next to it.
       - name: Build the app
-        uses: tauri-apps/tauri-action@v1
+        run: npm run tauri build
 
-      # A GNU build cannot start without WebView2Loader.dll; tauri-bundler puts it into the NSIS
-      # installer (fixed for GNU builds in tauri-bundler 2.2.2). The licenses come with every copy
-      # (bundle.resources in tauri.conf.json). 7-Zip can list NSIS installers.
-      - name: Check the installer
+      - name: Install Inno Setup
+        shell: pwsh
         run: |
-          installer="$(ls src-tauri/target/release/bundle/nsis/*-setup.exe | head -n 1)"
-          7z l "$installer" > installer-contents.txt
-          for file in WebView2Loader.dll LICENSE.txt THIRD-PARTY-NOTICES.txt; do
-            if ! grep -qiF "$file" installer-contents.txt; then
-              cat installer-contents.txt
-              echo "::error::$installer does not contain $file"
-              exit 1
-            fi
-          done
+          $installer = Join-Path $env:RUNNER_TEMP "innosetup.exe"
+          $folder = Join-Path $env:RUNNER_TEMP "InnoSetup"
+          Invoke-WebRequest $env:INNO_SETUP_URL -OutFile $installer
+          $hash = (Get-FileHash $installer -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($hash -ne $env:INNO_SETUP_SHA256) { throw "Inno Setup's installer has the SHA-256 $hash, not $env:INNO_SETUP_SHA256." }
+          $setup = Start-Process $installer -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-", "/DIR=$folder" -Wait -PassThru
+          if ($setup.ExitCode -ne 0) { throw "Inno Setup's installer failed with exit code $($setup.ExitCode)." }
+          "ISCC=$(Join-Path $folder 'ISCC.exe')" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+      # Inno Setup stops on a file the app should have and does not, so the installer is complete.
+      - name: Build the installer
+        run: npm run installer
 
       # The release binary embeds the whole web UI, so it also runs without installing. It needs the
       # Microsoft Edge WebView2 runtime (part of Windows 10 and 11) and, as a GNU build,
@@ -109,7 +117,7 @@ jobs:
           release="src-tauri/target/release"
           folder="portable/Mockup Director"
           mkdir -p dist-release "$folder"
-          cp "$release"/bundle/nsis/*-setup.exe "dist-release/$name-setup.exe"
+          cp "$release/installer/$name-setup.exe" dist-release/
           cp "$release/mockup-director.exe" "$folder/Mockup Director.exe"
           cp "$release/WebView2Loader.dll" "$folder/"
           cp LICENSE "$folder/LICENSE.txt"

@@ -330,6 +330,17 @@ export const polish: Locale = {
     errWebpAnimation: 'Ten system nie potrafi zapisać formatu WebP. Wybierz GIF lub MP4.',
     errMp4Unsupported:
       'Ten system nie potrafi zakodować wideo H.264 (MP4) w tym rozmiarze. Wymagany jest WebView2 / Chromium, Safari 16.4+ (macOS 13.3+) albo nowszy WebKitGTK. Wybierz GIF lub zmniejsz rozmiar.',
+    /* Windows installer */
+    installerProjectFile: 'Projekt Mockup Director',
+    installerDeleteData:
+      'Usunąć też style, ustawienia i otwarte karty Mockup Director? Twoje projekty zostaną tam, gdzie je zapisano.\n\n{folder}',
+    installerDataNotDeleted: 'Nie udało się usunąć niektórych plików z {folder}. Usuń ten folder ręcznie.',
+    installerWebView2Title: 'Microsoft Edge WebView2',
+    installerWebView2Text:
+      'Mockup Director potrzebuje Microsoft Edge WebView2, którego ten komputer jeszcze nie ma. Instalator pobierze go i zainstaluje.',
+    installerWebView2ExitCode: 'instalator WebView2 zakończył się kodem {code}',
+    installerWebView2Failed:
+      'Nie udało się zainstalować Microsoft Edge WebView2: {error}\n\nSprawdź połączenie z internetem i ponownie kliknij Instaluj albo zainstaluj WebView2 ze strony https://developer.microsoft.com/microsoft-edge/webview2 i uruchom instalator jeszcze raz.',
   },
   texts: {
     /* shared by several files */

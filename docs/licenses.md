@@ -35,6 +35,10 @@ The Windows app is built with Rust's GNU toolchain (MSYS2's MinGW-w64), which pu
 - **WebView2Loader.dll.** A GNU build loads Microsoft's `WebView2Loader.dll` at run time, so the installer and the portable ZIP ship it next to the executable. It comes from Microsoft's WebView2 SDK (through the MIT-licensed `webview2-com-sys` crate), under the SDK's BSD-style license, which allows redistribution in binary form when its copyright notice and disclaimer come with the app. The text, `tools/licenses/webview2-sdk.txt`, is the license of the `Microsoft.Web.WebView2` NuGet package; check it when `webview2-com-sys` moves to a new SDK.
 - **The MinGW-w64 runtime**, linked into the executable. Parts of it require their notices in binary copies: `tools/licenses/mingw-w64-runtime.txt` is MSYS2's `share/licenses/crt/COPYING.MinGW-w64-runtime.txt`. The GCC runtime library (libgcc) is under the GPL-3.0 with the GCC Runtime Library Exception, which puts no conditions on the program. The executable does not use winpthreads (it imports no `libwinpthread-1.dll` and contains none of its code), so its license is not included; if that changes, add MSYS2's `share/licenses/winpthreads/COPYING`.
 
+## The Windows installer
+
+The installer is made by [Inno Setup](https://jrsoftware.org/isinfo.php), whose setup program (and its translations of the standard texts) is in every installer it makes. Its license is permissive: binaries must keep its copyright notices, which they do as long as Setup is not modified (Setup shows them in its About box), so nothing goes into the notices. The installer and the portable ZIP ship the same app files: the executable, `WebView2Loader.dll`, `LICENSE.txt` and `THIRD-PARTY-NOTICES.txt`.
+
 ## The Linux AppImage
 
 The `.deb` and `.rpm` packages use the GTK and WebKitGTK libraries installed on the system. The AppImage instead contains copies of GTK 3, WebKitGTK and their dependencies (among them GLib/GIO, libsoup 3, GStreamer, pango, cairo, gdk-pixbuf, ICU and libgcrypt). These are mostly LGPL-2.0+/2.1+ libraries, dynamically linked, so the app's own code is not covered by them; some have permissive licenses (MIT, BSD, ICU).

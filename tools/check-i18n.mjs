@@ -13,11 +13,9 @@
  *    covers texts that are only created inside functions.
  * Exits with code 1 when a text has no translation. Translations no text uses are listed as a warning.
  */
-import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { pathToFileURL } from 'node:url';
-import { build } from 'vite';
+import { importApp } from './import-app.mjs';
 
 const ROOT = process.cwd();
 const ENTRY = `
@@ -94,52 +92,35 @@ function scanSources() {
   return texts;
 }
 
-const tmp = mkdtempSync(join(tmpdir(), 'mockup-director-i18n-'));
-const outDir = join(tmp, 'out');
-try {
-  const entryFile = join(tmp, 'entry.js');
-  writeFileSync(entryFile, ENTRY);
-  await build({
-    root: ROOT,
-    configFile: false,
-    logLevel: 'error',
-    build: { ssr: entryFile, outDir, emptyOutDir: true, rollupOptions: { output: { entryFileNames: 'entry.mjs' } } },
-    ssr: { noExternal: true },
-  });
-  const { collect } = await import(pathToFileURL(join(outDir, 'entry.mjs')).href);
-  const { found, locales, translationOf } = collect();
-  const all = [...found, ...scanSources()];
+const { collect } = await importApp(ENTRY, ROOT);
+const { found, locales, translationOf } = collect();
+const all = [...found, ...scanSources()];
 
-  let missing = 0;
-  for (const loc of locales.filter((l) => l.code !== 'en')) {
-    const used = new Set();
-    const usedCtx = new Set();
-    const reported = new Set();
-    for (const { text, where } of all) {
-      if (text.ctx && loc.contexts[text.ctx]?.[text.en] !== undefined) usedCtx.add(`${text.ctx}\u0004${text.en}`);
-      else if (loc.texts[text.en] !== undefined) used.add(text.en);
-      if (translationOf(loc, text) !== undefined) continue;
-      const key = `${text.ctx ?? ''}\u0004${text.en}`;
-      if (reported.has(key)) continue;
-      reported.add(key);
-      missing++;
-      console.log(
-        `${loc.code}: no translation for ${text.ctx ? `[${text.ctx}] ` : ''}${JSON.stringify(text.en)}  (${where})`,
-      );
-    }
-    const unusedTexts = Object.keys(loc.texts).filter((k) => !used.has(k));
-    const unusedCtx = Object.entries(loc.contexts).flatMap(([c, t]) =>
-      Object.keys(t)
-        .filter((k) => !usedCtx.has(`${c}\u0004${k}`))
-        .map((k) => `[${c}] ${k}`),
+let missing = 0;
+for (const loc of locales.filter((l) => l.code !== 'en')) {
+  const used = new Set();
+  const usedCtx = new Set();
+  const reported = new Set();
+  for (const { text, where } of all) {
+    if (text.ctx && loc.contexts[text.ctx]?.[text.en] !== undefined) usedCtx.add(`${text.ctx}\u0004${text.en}`);
+    else if (loc.texts[text.en] !== undefined) used.add(text.en);
+    if (translationOf(loc, text) !== undefined) continue;
+    const key = `${text.ctx ?? ''}\u0004${text.en}`;
+    if (reported.has(key)) continue;
+    reported.add(key);
+    missing++;
+    console.log(
+      `${loc.code}: no translation for ${text.ctx ? `[${text.ctx}] ` : ''}${JSON.stringify(text.en)}  (${where})`,
     );
-    for (const k of [...unusedTexts, ...unusedCtx])
-      console.log(`${loc.code}: warning: translation not used by any text found: ${JSON.stringify(k)}`);
   }
-  console.log(
-    missing ? `\n${missing} texts without a translation.` : `All ${all.length} texts found have translations.`,
+  const unusedTexts = Object.keys(loc.texts).filter((k) => !used.has(k));
+  const unusedCtx = Object.entries(loc.contexts).flatMap(([c, t]) =>
+    Object.keys(t)
+      .filter((k) => !usedCtx.has(`${c}\u0004${k}`))
+      .map((k) => `[${c}] ${k}`),
   );
-  process.exitCode = missing ? 1 : 0;
-} finally {
-  rmSync(tmp, { recursive: true, force: true });
+  for (const k of [...unusedTexts, ...unusedCtx])
+    console.log(`${loc.code}: warning: translation not used by any text found: ${JSON.stringify(k)}`);
 }
+console.log(missing ? `\n${missing} texts without a translation.` : `All ${all.length} texts found have translations.`);
+process.exitCode = missing ? 1 : 0;

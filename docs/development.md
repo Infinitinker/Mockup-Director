@@ -9,7 +9,7 @@
     2. Install Rust with the GNU toolchain as the default: `rustup-init --default-host x86_64-pc-windows-gnu`.
     3. Put `C:\msys64\mingw64\bin` at the end of your `PATH`: Rust links with its `gcc`, and Tauri compiles the app's icon and manifest with its `windres`.
 
-    Tauri supports only Microsoft's MSVC toolchain officially, but builds, tests and `npm run app:dev` work with GNU. A GNU build loads `WebView2Loader.dll` at run time: the build puts it next to the executable, and the installer includes it. The Microsoft C++ Build Tools with Rust's default MSVC toolchain work too.
+    Tauri supports only Microsoft's MSVC toolchain officially, but builds, tests and `npm run app:dev` work with GNU. A GNU build loads `WebView2Loader.dll` at run time: the build puts it next to the executable, and the installer installs it. The Microsoft C++ Build Tools with Rust's default MSVC toolchain work too.
   - **macOS:** Xcode Command Line Tools (`xcode-select --install`).
   - **Linux (Debian / Ubuntu):** the WebKitGTK development packages:
 
@@ -119,7 +119,15 @@ The **Checks** workflow (`.github/workflows/checks.yml`) runs all of these for e
 npm run tauri build
 ```
 
-The result lands in `src-tauri/target/release/bundle/`: an NSIS installer on Windows, `.app` and `.dmg` on macOS, and `.AppImage`, `.deb` and `.rpm` on Linux. A universal macOS build (Apple Silicon + Intel) needs both Rust targets:
+On macOS and Linux the result lands in `src-tauri/target/release/bundle/`: `.app` and `.dmg` on macOS, and `.AppImage`, `.deb` and `.rpm` on Linux. On Windows the build makes only the app, `src-tauri/target/release/mockup-director.exe`, with `WebView2Loader.dll` and the license texts next to it. The installer is made from it by [Inno Setup](https://jrsoftware.org/isinfo.php) 7, from `tools/installer.iss`:
+
+```bash
+npm run installer
+```
+
+It writes `src-tauri/target/release/installer/MockupDirector-<version>-windows-x64-setup.exe`, with Mockup Director's texts in every interface language from the `installer…` messages (see [translations.md](translations.md)). It finds Inno Setup where its installer puts it, or wherever the `ISCC` environment variable points. Setup installs for the current user into `%LOCALAPPDATA%\Programs\Mockup Director` with no administrator rights, or for all users if they choose; it registers `.mdproj` files, downloads WebView2 if Windows has none, and, when uninstalling an install for the current user, asks whether to delete that user's data too.
+
+A universal macOS build (Apple Silicon + Intel) needs both Rust targets:
 
 ```bash
 rustup target add aarch64-apple-darwin x86_64-apple-darwin

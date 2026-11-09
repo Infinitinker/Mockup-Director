@@ -324,6 +324,17 @@ export const messages = {
   errWebpAnimation: 'WebP encoding is not supported on this system. Please choose GIF or MP4.',
   errMp4Unsupported:
     'This system cannot encode H.264 video (MP4) at this size. WebView2 / Chromium, Safari 16.4+ (macOS 13.3+) or a recent WebKitGTK is required. Choose GIF or a smaller size.',
+  /* Windows installer: tools/installer.mjs puts these into Setup (tools/installer.iss) */
+  installerProjectFile: 'Mockup Director project',
+  installerDeleteData:
+    'Also delete your Mockup Director looks, settings and open tabs? Your projects stay where you saved them.\n\n{folder}',
+  installerDataNotDeleted: 'Some files in {folder} could not be deleted. Delete the folder yourself.',
+  installerWebView2Title: 'Microsoft Edge WebView2',
+  installerWebView2Text:
+    'Mockup Director needs Microsoft Edge WebView2, which this computer does not have yet. Setup downloads and installs it.',
+  installerWebView2ExitCode: 'the WebView2 installer stopped with code {code}',
+  installerWebView2Failed:
+    'Microsoft Edge WebView2 could not be installed: {error}\n\nCheck the internet connection and click Install again, or install WebView2 from https://developer.microsoft.com/microsoft-edge/webview2 and then run Setup again.',
 } as const satisfies Record<string, string>;
 
 export type MessageKey = keyof typeof messages;

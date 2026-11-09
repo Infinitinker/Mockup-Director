@@ -18,7 +18,8 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "app:dev": "tauri dev --config src-tauri/tauri.dev.conf.json",
-    "icons": "node tools/draw-icon.mjs"
+    "icons": "node tools/draw-icon.mjs",
+    "installer": "node tools/installer.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "~2.12.4",

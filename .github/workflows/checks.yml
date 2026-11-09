@@ -121,7 +121,6 @@ jobs:
         if: runner.os == 'Windows'
         with:
           msystem: MINGW64
-          update: false
           install: mingw-w64-x86_64-gcc
       - name: Put MINGW64 on the PATH
         if: runner.os == 'Windows'

@@ -26,7 +26,8 @@ src-tauri/      the Tauri v2 shell (Rust): window, dialogs, a single app process
                 files (files.rs), opened project files (opened.rs), closing the window if the page
                 never answers (closing.rs); tests in src-tauri/tests/
   tauri.conf.json           shared configuration
-  tauri.windows.conf.json   Windows additions (NSIS installer), merged by Tauri automatically
+  tauri.windows.conf.json   Windows: no Tauri installer (tools/installer.iss makes it), merged by
+                            Tauri automatically
   tauri.linux.conf.json     Linux additions (AppImage, .deb, .rpm), merged by Tauri automatically
   tauri.dev.conf.json       a separate identifier for the app run from source (npm run app:dev)
   linux/                    the .mdproj MIME definition and the .desktop template for the Linux packages
@@ -41,7 +42,8 @@ src-tauri/      the Tauri v2 shell (Rust): window, dialogs, a single app process
 .github/workflows/
   checks.yml         the Checks: Lint, Web (build, tests, translations), Licenses, and clippy and the
                      Rust tests on Windows and Linux; for main, dev and pull requests
-  build-windows.yml  the NSIS installer (x64) and a portable ZIP, built with MSYS2; then checks the files
+  build-windows.yml  the installer (x64, Inno Setup) and a portable ZIP, built with MSYS2; then checks
+                     the files
   build-macos.yml    a universal .dmg; then checks the file
   build-linux.yml    .AppImage, .deb and .rpm (x86_64); then checks the files
   release.yml        for a v* tag: checks the version, calls the three builds, drafts the release with
@@ -57,6 +59,10 @@ tools/licenses/             license texts that come from no package: the Windows
 tools/release.mjs           the release rules: version and tag, the files, the notes (checks.yml, the
                             build workflows, release.yml)
 tools/release-notes.md      the template of the release notes
+tools/installer.iss         the Windows installer (Inno Setup 7): files, the .mdproj association,
+                            WebView2, uninstalling
+tools/installer.mjs         builds it, with its texts from src/i18n (npm run installer)
+tools/import-app.mjs        loads the app's TypeScript into a tool (check-i18n.mjs, installer.mjs)
 tools/draw-icon.mjs         draws the app icon and writes every icon file (npm run icons)
 tools/check-i18n.mjs        checks that every text has a translation (npm run check:i18n)
 start.bat, start.sh         run the desktop app from source (npm run app:dev), see docs/development.md
@@ -84,7 +90,7 @@ All texts are written in English; other languages are one file each in `src/i18n
 ## Files and data
 
 - Projects are JSON files with the `.mdproj` extension, the only one the app saves and opens; `src/ui/project.ts` writes, reads and sanitises them.
-- The installers register `.mdproj` (`bundle.fileAssociations` in `src-tauri/tauri.conf.json`; on Linux also `src-tauri/linux/`: a MIME definition and a `.desktop` template). A double-clicked project reaches the app as a command-line argument (Windows, Linux) or an event (macOS); `src-tauri/src/opened.rs` queues it, and `src/platform/launch.ts` opens it once the app has started. Only one copy of the app runs: on Windows and Linux, a second launch hands its files (relative paths resolved against its own working directory) to the running app and exits (tauri-plugin-single-instance, `src-tauri/src/lib.rs`); they are queued the same way and announced with the `files-opened` event, open in new tabs, and the window is brought forward. On macOS the system sends files to the running app itself, through the same `Opened` event as at start-up.
+- The installers register `.mdproj` (on Windows `tools/installer.iss`; on macOS and Linux `bundle.fileAssociations` in `src-tauri/tauri.conf.json`, on Linux also `src-tauri/linux/`: a MIME definition and a `.desktop` template). A double-clicked project reaches the app as a command-line argument (Windows, Linux) or an event (macOS); `src-tauri/src/opened.rs` queues it, and `src/platform/launch.ts` opens it once the app has started. Only one copy of the app runs: on Windows and Linux, a second launch hands its files (relative paths resolved against its own working directory) to the running app and exits (tauri-plugin-single-instance, `src-tauri/src/lib.rs`); they are queued the same way and announced with the `files-opened` event, open in new tabs, and the window is brought forward. On macOS the system sends files to the running app itself, through the same `Opened` event as at start-up.
 - Every open project is a tab: `src/ui/documents.ts` keeps the tabs, and the store (`src/ui/state.ts`) works on the active one, whose state, undo history and images it swaps in and out (`Store.swap`). A tab is dirty while its revision differs from the one it was saved at; undo brings the earlier revision back.
 - The session autosave (`src/ui/session.ts`) keeps every open tab in the web engine's IndexedDB, unsaved changes included, a moment after each change and when the window closes, and the app reopens them at start-up. It never overwrites a session written by a newer version of the app. On macOS, quitting the app (⌘Q, Quit in the Dock, logging out) skips the window's close event, so changes made since editing last paused for 1.5 seconds may not be saved.
 - User looks and the interface language are kept in the web engine's localStorage.

@@ -68,7 +68,7 @@ Every [release](https://github.com/Infinitinker/Mockup-Director/releases/latest)
 
 ### Windows
 
-Download `MockupDirector-x.y.z-windows-x64-setup.exe` and run it. It installs Mockup Director for you alone, so it needs no administrator rights. It needs Windows 10 or 11 (64-bit) with Microsoft Edge WebView2, which comes with Windows; if it is missing, the installer downloads it.
+Download `MockupDirector-x.y.z-windows-x64-setup.exe` and run it. It installs Mockup Director for you alone, so it needs no administrator rights; if you are an administrator, you can choose to install it for all users instead. It needs Windows 10 or 11 (64-bit) with Microsoft Edge WebView2, which comes with Windows; if it is missing, the installer downloads it.
 
 Rather not install anything? Download `MockupDirector-x.y.z-windows-x64-portable.zip` instead, unzip it anywhere and start **Mockup Director.exe** in the folder. It keeps its data in the same place as the installed app.
 
@@ -208,7 +208,7 @@ Yes. The images you export are yours, and the app contains no third-party templa
 Your looks, the interface language and the open tabs are kept in your user profile, in a folder named after the app's identifier, `io.github.infinitinker.mockupdirector`: on Windows in `%LOCALAPPDATA%`, on Linux in `~/.local/share`, on macOS in `~/Library/WebKit`. Your projects are wherever you saved the `.mdproj` files.
 
 **How do I update or remove it?**
-To update, install the newer version over the old one: run the new installer on Windows, drag the new app to **Applications** on macOS, or install the new package or replace the AppImage on Linux; with the portable ZIP, replace its folder. Your looks and open tabs stay. To remove it, uninstall it like any other app (on Windows in Settings → Apps). Uninstalling keeps the settings folder above (on Windows, unless you tick "Delete the application data" in the uninstaller); delete it to remove everything.
+To update, install the newer version over the old one: run the new installer on Windows, drag the new app to **Applications** on macOS, or install the new package or replace the AppImage on Linux; with the portable ZIP, replace its folder. Your looks and open tabs stay. To remove it, uninstall it like any other app (on Windows in Settings → Apps). Uninstalling keeps the settings folder above; delete it yourself to remove everything. On Windows, if you installed Mockup Director for you alone, the uninstaller asks whether to delete it too.
 
 **Which version do I have?**
 Hold the pointer over **Mockup Director** at the left of the toolbar.
