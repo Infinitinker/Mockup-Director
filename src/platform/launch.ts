@@ -22,7 +22,7 @@ interface OpenedBatch {
  * The queued files, each handed out once: those that could be read as File objects, and one
  * message for each that could not.
  */
-export async function takeOpenedFiles(): Promise<{ files: File[]; errors: string[] }> {
+async function takeOpenedFiles(): Promise<{ files: File[]; errors: string[] }> {
   if (!inDesktopApp()) return { files: [], errors: [] };
   const batch = await invoke<OpenedBatch>('take_opened_files');
   return {

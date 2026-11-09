@@ -44,10 +44,10 @@
       "../LICENSE": "LICENSE.txt",
       "../THIRD-PARTY-NOTICES.md": "THIRD-PARTY-NOTICES.txt"
     },
-    "copyright": "© 2026 Infinitinker",
+    "copyright": "Copyright (c) 2026 Infinitinker",
     "publisher": "Infinitinker",
     "shortDescription": "Photorealistic 3D mockups of packaging, books, print and devices",
-    "longDescription": "Mockup Director turns flat artwork into photorealistic 3D mockups: product boxes, DVD / Blu-ray / CD cases and discs, books and notebooks, print (business cards, flyers, brochures, cards) and devices and screens – with lighting, soft shadows and reflections. Export to PNG/JPEG/WebP up to 4000 × 4000 px, GIF/WebP/MP4 animations and batch export to ZIP.",
+    "longDescription": "Mockup Director turns flat artwork into photorealistic 3D mockups with lighting, soft shadows and reflections: product boxes, DVD / Blu-ray / CD cases and discs, books and notebooks, print (business cards, flyers, brochures, cards) and devices and screens. Export to PNG/JPEG/WebP up to 4000 × 4000 px, GIF/WebP/MP4 animations and batch export to ZIP.",
     "macOS": {
       "minimumSystemVersion": "12.0",
       "signingIdentity": "-"

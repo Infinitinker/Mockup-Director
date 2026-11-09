@@ -2,7 +2,7 @@
 
 ## A new version
 
-1. Raise the version in `package.json` and `src-tauri/Cargo.toml` (`src-tauri/tauri.conf.json` reads it from `package.json`). Versions are `major.minor.patch`; a version with a hyphen, such as `0.3.0-beta.1`, is a pre-release. Commit the updated `src-tauri/Cargo.lock` with it (`cargo update --workspace` refreshes the app's own entry). The Lint check fails when the two versions differ (`node tools/release.mjs check`).
+1. Raise the version in `package.json`, the app's only version: `src-tauri/tauri.conf.json` reads it from there for the app, its packages and the Windows version resource, and `src-tauri/Cargo.toml` has none. Versions are `major.minor.patch`; a version with a hyphen, such as `0.3.0-beta.1`, is a pre-release.
 
    When updating Tauri, raise the npm packages (`@tauri-apps/api`, `@tauri-apps/plugin-dialog`, `@tauri-apps/cli`) together with the `~2.x` ranges in `src-tauri/Cargo.toml`: the Tauri CLI stops the build when the Rust crates and the npm packages differ in `major.minor`.
 2. To try the release first, start **Actions → Release → Run workflow** on `dev`. It checks the version and builds and checks every file, without a release: the files are on the run's page for 90 days. Every push to `dev` builds and checks the files of each system too.
@@ -22,7 +22,7 @@
 
    A pre-release (a tag with a hyphen) can be tagged on any branch.
 4. The tag starts the **Release** workflow (`.github/workflows/release.yml`):
-   - **Check the version:** the tag must be `v` followed by the version in `package.json`, `src-tauri/Cargo.toml` must have the same version, and a release (not a pre-release) must be on `main`.
+   - **Check the version:** the tag must be `v` followed by the version in `package.json`, the version must be of the form `1.2.3` or `1.2.3-beta.1`, and a release (not a pre-release) must be on `main`.
    - **Windows, macOS, Linux:** the three build workflows, called by the release; each checks its files.
    - **Third-party notices:** the license checks, and that `THIRD-PARTY-NOTICES.md` matches the dependencies; the release gets a copy (see [licenses.md](licenses.md)).
    - **Draft the release:** checks that exactly these files arrived, records a build provenance attestation for each (so anyone can check a download with `gh attestation verify <file> --repo Infinitinker/Mockup-Director`), then creates a **draft** release named "Mockup Director 0.2.0" with them, marked as a pre-release when the version has a hyphen:

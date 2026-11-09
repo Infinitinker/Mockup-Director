@@ -56,7 +56,7 @@ export interface BatchHost {
   end(): void;
 }
 
-export type BatchMode = 'images' | 'views' | 'projects';
+type BatchMode = 'images' | 'views' | 'projects';
 
 /** Per-item outcome reported in the final summary. */
 interface ItemNote {

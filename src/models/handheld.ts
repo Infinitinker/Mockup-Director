@@ -947,7 +947,7 @@ const ICON_TABLET = svg(
 /** Front-right 3/4 view from slightly above. */
 const DEVICE_CAMERA = { yaw: 28, pitch: 10 };
 
-export const phoneModel: ModelDefinition = {
+const phoneModel: ModelDefinition = {
   id: 'device-phone',
   category: 'device',
   name: 'Smartphone',
@@ -959,7 +959,7 @@ export const phoneModel: ModelDefinition = {
   build: (ctx) => buildDevice(ctx, SPECS.phone),
 };
 
-export const tabletModel: ModelDefinition = {
+const tabletModel: ModelDefinition = {
   id: 'device-tablet',
   category: 'device',
   name: 'Tablet',

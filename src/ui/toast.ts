@@ -5,7 +5,7 @@
 import { h } from './dom';
 import { ICONS } from './icons';
 
-export type ToastKind = 'info' | 'success' | 'error' | 'warning';
+type ToastKind = 'info' | 'success' | 'error' | 'warning';
 
 let container: HTMLElement | null = null;
 const recent = new Map<string, number>();
@@ -15,7 +15,7 @@ export function mountToasts(parent: HTMLElement): void {
   parent.appendChild(container);
 }
 
-export function toast(kind: ToastKind, title: string, detail?: string): void {
+function toast(kind: ToastKind, title: string, detail?: string): void {
   const key = `${kind}|${title}|${detail ?? ''}`;
   const now = Date.now();
   const last = recent.get(key);

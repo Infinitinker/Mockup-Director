@@ -1,6 +1,7 @@
 [package]
 name = "mockup-director"
-version = "0.1.0"
+# No version: the app's version is the one in package.json, which tauri.conf.json reads (for the
+# app, its bundles and the Windows version resource). Cargo counts this crate as 0.0.0.
 description = "Mockup Director – photorealistic 3D mockups of packaging, books, print and devices"
 authors = ["Infinitinker"]
 license = "MIT"

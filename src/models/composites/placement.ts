@@ -17,19 +17,19 @@ import { DISC_DIAMETER } from '../disc';
 
 export type DiscPlacement = 'behind' | 'front' | 'flat';
 
-export const DISC_R = DISC_DIAMETER / 2;
+const DISC_R = DISC_DIAMETER / 2;
 /**
  * Thickness of the disc's bounding cylinder: 1.2 mm polycarbonate + the label print and the
  * stacking ring that rise ~0.1 mm above it (small safety margin on top).
  */
-export const DISC_SLAB = 1.35;
+const DISC_SLAB = 1.35;
 /** Backward lean (from vertical) of a disc leaning against the case front, degrees. */
-export const FRONT_LEAN_DEG = 14;
+const FRONT_LEAN_DEG = 14;
 /** Air gap between disc and case: behind (a hair of shadow line) / leaning (touching). */
 const GAP_BEHIND = 0.6;
 const GAP_FRONT = 0.25;
 
-export interface DiscPose {
+interface DiscPose {
   /** World position of the disc's local origin (centre of its bottom/back face). */
   position: THREE.Vector3;
   quaternion: THREE.Quaternion;
@@ -50,7 +50,7 @@ function orientation(tiltXDeg: number, yawDeg: number): THREE.Quaternion {
  * given orientation (support function of a cylinder): the two faces contribute
  * [min(0, s·N·d), max(0, s·N·d)], the rim adds ± R·|projection of d onto the label plane|.
  */
-export function discExtent(q: THREE.Quaternion, axis: THREE.Vector3): { lo: number; hi: number } {
+function discExtent(q: THREE.Quaternion, axis: THREE.Vector3): { lo: number; hi: number } {
   const U = new THREE.Vector3(1, 0, 0).applyQuaternion(q);
   const V = new THREE.Vector3(0, 0, 1).applyQuaternion(q);
   const N = new THREE.Vector3(0, 1, 0).applyQuaternion(q);

@@ -13,7 +13,7 @@ import type { TabSnapshot } from './documents';
 import { ProjectError, isPlain, parseProjectFile, toProjectFile } from './project';
 
 /** A session that cannot be read or written, with a message for the user (see ImageLoadError). */
-export class SessionError extends Error {
+class SessionError extends Error {
   constructor(message: string, cause?: unknown) {
     super(message);
     this.name = 'SessionError';
@@ -21,7 +21,7 @@ export class SessionError extends Error {
   }
 }
 
-export interface SessionTab {
+interface SessionTab {
   id: string;
   /** The project's name; '' for a project never saved. */
   name: string;
@@ -30,7 +30,7 @@ export interface SessionTab {
   file: ProjectFile;
 }
 
-export interface Session {
+interface Session {
   /** The id of the tab to show; the first tab's id when the stored one was not restored, '' when there are no tabs. */
   activeId: string;
   /** In tab order. */
@@ -41,7 +41,7 @@ export interface Session {
  * A session read back. Tabs whose record is missing or damaged are left out of `session.tabs`
  * (which may then be empty) and counted in `skipped`, so the caller can tell the user.
  */
-export interface LoadedSession {
+interface LoadedSession {
   session: Session;
   skipped: number;
 }

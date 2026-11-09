@@ -59,6 +59,8 @@ Type-check and production build of the web part:
 npm run build
 ```
 
+The type-check is stricter than `strict` alone (`tsconfig.json`): it also rejects unused variables and parameters, a function that returns a value on some paths only, a method that overrides another without `override`, and `undefined` given to an optional property whose type does not include it (`exactOptionalPropertyTypes`). Its `lib` lists only the parts of ES2022 that Safari 15.0 supports, so it fails on newer APIs such as `Array.prototype.at` or `Object.hasOwn`; APIs that only some engines have, such as WebCodecs, are detected at run time. Biome reports a non-null assertion (`value!`) as a warning, and `npm run lint` fails on warnings: check the value instead, and where it can never be missing, throw an `Error` that says what was missing.
+
 The unit tests, in `tests/` (their folders mirror `src/` and `tools/`, e.g. `tests/ui/state.test.ts` tests `src/ui/state.ts` and `tests/tools/release.test.ts` tests `tools/release.mjs`). They use [Vitest](https://vitest.dev/) and run in Node without a browser, so they cover code that needs no DOM or WebGL:
 
 ```bash
@@ -67,7 +69,7 @@ npm test
 
 `npx vitest` runs them in watch mode while you work.
 
-`tests/layout.test.ts` checks the repository's source files: every module opens with its header comment, and no banner comment splits a file into sections. Its allow-lists name the files that do not follow these rules yet; they may only shrink. `tests/models/ids.test.ts` pins the IDs saved in project files in a snapshot; [models.md](models.md#testing) says when it may be updated.
+`tests/layout.test.ts` checks the repository's source files: every module opens with its header comment, and no banner comment splits a file into sections. Its allow-lists name the files that do not follow these rules yet; they may only shrink. `tests/tauriConfig.test.ts` checks that `tauri.conf.json` reads its version from `package.json` and has LICENSE's copyright line. `tests/models/ids.test.ts` pins the IDs saved in project files in a snapshot; [models.md](models.md#testing) says when it may be updated.
 
 The licenses of the npm dependencies, and the third-party notices (see [licenses.md](licenses.md)):
 
@@ -101,7 +103,7 @@ cargo fmt --check --manifest-path src-tauri/Cargo.toml
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 ```
 
-The **Checks** workflow (`.github/workflows/checks.yml`) runs all of these for every push to `main` and `dev` and for every pull request, in a few minutes: `Lint` (Biome, rustfmt, and that `package.json` and `src-tauri/Cargo.toml` have the same version), `Web` (type-check, build, unit tests), `Licenses`, and clippy and the Rust tests on two systems, `Windows` (with MSYS2 and the GNU toolchain) and `Linux`. The Rust code differs per system and clippy only sees the code of the system it runs on, hence two runs; the macOS code is compiled by the macOS build. Once a month Dependabot opens a pull request to `dev` with new versions of the actions the workflows use (`.github/dependabot.yml`).
+The **Checks** workflow (`.github/workflows/checks.yml`) runs all of these for every push to `main` and `dev` and for every pull request, in a few minutes: `Lint` (Biome and rustfmt), `Web` (type-check, build, unit tests), `Licenses`, and clippy and the Rust tests on two systems, `Windows` (with MSYS2 and the GNU toolchain) and `Linux`. The Rust code differs per system and clippy only sees the code of the system it runs on, hence two runs; the macOS code is compiled by the macOS build. Once a month Dependabot opens a pull request to `dev` with new versions of the actions the workflows use (`.github/dependabot.yml`).
 
 ## Interface texts
 
@@ -158,7 +160,7 @@ How `main` is protected on GitHub is described in [releasing.md](releasing.md#re
 
 ## The app icon
 
-The icon is drawn by `tools/draw-icon.mjs` (a product box whose front is a film clapperboard). This writes `app-icon.svg`, every file in `src-tauri/icons/` (a rounded-square `.icns` for macOS, a round `.ico` and PNGs for Windows and Linux) and the small toolbar logo `src/ui/app-logo.svg`:
+The icon is drawn by `tools/draw-icon.mjs` (a product box whose front is a film clapperboard). This writes the icons that `bundle.icon` in `src-tauri/tauri.conf.json` lists, in `src-tauri/icons/`: `32x32.png`, `128x128.png` and `128x128@2x.png` (round) for Linux, the first of them also the window icon, a round `icon.ico` for Windows and its installer, and a rounded-square `icon.icns` for macOS. It also writes the small toolbar logo `src/ui/app-logo.svg` and `docs/images/icon.png`, the icon at the top of the README:
 
 ```bash
 npm run icons

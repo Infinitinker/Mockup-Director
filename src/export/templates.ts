@@ -10,7 +10,7 @@ import type { ImageSlotDef, ParamValues, PrintTemplate, TemplateRegion } from '.
 import { setPngDpi, slugify } from './exporter';
 
 /** Safe-area inset inside the trim line, mm. */
-export const SAFE_MARGIN_MM = 3;
+const SAFE_MARGIN_MM = 3;
 /** Pixel limits for the template canvas (WebKit canvas memory budget). */
 const MAX_SIDE_PX = 12000;
 const MAX_PIXELS = 60_000_000;
@@ -46,7 +46,7 @@ const T = {
   tooLarge: 'Template too large to render',
 };
 
-export interface TemplateRenderResult {
+interface TemplateRenderResult {
   blob: Blob;
   /** Effective resolution (may be lower than requested for very large templates). */
   dpi: number;
@@ -96,7 +96,7 @@ export async function renderTemplateDetailed(
 }
 
 /** Resolve slot.template (object or function of params). Null if none / invalid. */
-export function resolveTemplate(slot: ImageSlotDef, params?: ParamValues): PrintTemplate | null {
+function resolveTemplate(slot: ImageSlotDef, params?: ParamValues): PrintTemplate | null {
   const t = slot.template;
   if (!t) return null;
   const tpl = typeof t === 'function' ? t(params ?? {}) : t;
@@ -105,7 +105,7 @@ export function resolveTemplate(slot: ImageSlotDef, params?: ParamValues): Print
 }
 
 /** Highest dpi ≤ requested that keeps the canvas within MAX_SIDE_PX and MAX_PIXELS. */
-export function effectiveDpi(tpl: PrintTemplate, requested: number): number {
+function effectiveDpi(tpl: PrintTemplate, requested: number): number {
   const bySide = (MAX_SIDE_PX * 25.4) / Math.max(tpl.widthMm, tpl.heightMm);
   const byArea = Math.sqrt(MAX_PIXELS / (tpl.widthMm * tpl.heightMm)) * 25.4;
   return Math.max(1, Math.min(requested, bySide, byArea));
@@ -135,7 +135,7 @@ function drawTemplate(
   const d = new Draw(g, k);
   g.fillStyle = '#ffffff';
   g.fillRect(0, 0, wPx, hPx);
-  if (tpl.circle) drawCircleTemplate(d, tpl, slot);
+  if (tpl.circle) drawCircleTemplate(d, tpl, tpl.circle, slot);
   else drawRectTemplate(d, tpl, slot);
   drawLegend(d, tpl, slot, dpi, requestedDpi, wPx, hPx);
 }
@@ -266,11 +266,15 @@ function fitLabel(d: Draw, label: string, dims: string, maxW: number, maxH: numb
   return Math.min(maxFont, byW, byH);
 }
 
-function drawCircleTemplate(d: Draw, tpl: PrintTemplate, slot: ImageSlotDef): void {
+function drawCircleTemplate(
+  d: Draw,
+  tpl: PrintTemplate,
+  circle: NonNullable<PrintTemplate['circle']>,
+  slot: ImageSlotDef,
+): void {
   const g = d.g;
   const W = tpl.widthMm;
   const H = tpl.heightMm;
-  const circle = tpl.circle!;
   const cx = W / 2;
   const cy = H / 2;
   const R = circle.outerMm / 2;

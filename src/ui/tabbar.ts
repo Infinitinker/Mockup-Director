@@ -11,7 +11,7 @@ import type { Documents, TabInfo } from './documents';
 import { h, clear, isMac, shortcutLabel, type Signal } from './dom';
 import { ICONS } from './icons';
 
-export interface TabBarOptions {
+interface TabBarOptions {
   onNew(): void;
   onClose(id: string): void;
   onActivate(id: string): void;

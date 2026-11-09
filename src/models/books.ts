@@ -1394,7 +1394,7 @@ const ICON_NOTEBOOK = svg(
 /** Front-left 3/4 view: the spine (or the coil) sits on the left (-X) side. */
 const BOOK_CAMERA = { yaw: -32, pitch: 12 };
 
-export const hardcoverModel: ModelDefinition = {
+const hardcoverModel: ModelDefinition = {
   id: 'book-hardcover',
   category: 'book',
   name: 'Hardcover book',
@@ -1407,7 +1407,7 @@ export const hardcoverModel: ModelDefinition = {
   build: (ctx) => buildBook(ctx, 'hard'),
 };
 
-export const paperbackModel: ModelDefinition = {
+const paperbackModel: ModelDefinition = {
   id: 'book-paperback',
   category: 'book',
   name: 'Paperback book',
@@ -1419,7 +1419,7 @@ export const paperbackModel: ModelDefinition = {
   build: (ctx) => buildBook(ctx, 'soft'),
 };
 
-export const spiralNotebookModel: ModelDefinition = {
+const spiralNotebookModel: ModelDefinition = {
   id: 'notebook-spiral',
   category: 'book',
   name: 'Spiral notebook',

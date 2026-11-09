@@ -35,10 +35,10 @@ import { dielineBoxModel } from './box/dieline';
 import { slimBoxModel } from './box/slim';
 
 /** Default retail software / product box, mm. */
-export const BOX_DEFAULTS = { w: 135, h: 190, d: 40 } as const;
+const BOX_DEFAULTS = { w: 135, h: 190, d: 40 } as const;
 
 /** Box slot ids (stable – composite models reuse them). */
-export type BoxSlotId = 'front' | 'back' | 'left' | 'right' | 'top' | 'bottom';
+type BoxSlotId = 'front' | 'back' | 'left' | 'right' | 'top' | 'bottom';
 
 interface FaceSpec {
   slot: BoxSlotId;
@@ -130,7 +130,7 @@ export function buildBox(ctx: ModelContext): THREE.Object3D {
     const primary = spec.slot === 'front';
     if (primary || ctx.hasImage(spec.slot)) {
       const tpl = boxFaceTemplate(spec, p);
-      uv[spec.face] = regionMapper(tpl, tpl.regions![0]);
+      uv[spec.face] = regionMapper(tpl, 0);
       materials[FACE_INDEX[spec.face]] = surfaceMaterial(finish, { map: ctx.getTexture(spec.slot) });
     } else {
       plain ??= surfaceMaterial(finish, { color: colorOf(p, 'sideColor', sideColorParam.default) });

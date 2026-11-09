@@ -16,13 +16,13 @@ export interface Control {
 /* Number: label + numeric field on top, slider below                  */
 /* ------------------------------------------------------------------ */
 
-export interface NumberOpts {
+interface NumberOpts {
   label: string;
   min: number;
   max: number;
   step: number;
   /** Unit shown after the field ('mm', '°', '%', 'px' ...). */
-  unit?: string;
+  unit?: string | undefined;
   /** Display value = stored value * factor (e.g. 100 to show 0..1 as %). */
   factor?: number;
   /** Decimals shown in the field (default derived from step). */
@@ -134,7 +134,7 @@ export function numberControl(o: NumberOpts): Control {
 /* Switch                                                              */
 /* ------------------------------------------------------------------ */
 
-export interface SwitchOpts {
+interface SwitchOpts {
   label: string;
   title?: string;
   get(): boolean;
@@ -167,7 +167,7 @@ export function switchControl(o: SwitchOpts): Control {
 /* Segmented control (radio group)                                     */
 /* ------------------------------------------------------------------ */
 
-export interface SegOption<T extends string> {
+interface SegOption<T extends string> {
   value: T;
   label: string;
   icon?: string;
@@ -175,7 +175,7 @@ export interface SegOption<T extends string> {
   disabled?: boolean;
 }
 
-export interface SegmentedOpts<T extends string> {
+interface SegmentedOpts<T extends string> {
   label?: string;
   options: SegOption<T>[];
   get(): T;
@@ -259,7 +259,7 @@ export function segmentedControl<T extends string>(o: SegmentedOpts<T>): Control
 /* Select                                                              */
 /* ------------------------------------------------------------------ */
 
-export interface SelectOpts {
+interface SelectOpts {
   label: string;
   options: { value: string; label: string; disabled?: boolean }[];
   get(): string;
@@ -293,7 +293,7 @@ export function selectControl(o: SelectOpts): Control {
 /* Colour: native picker + hex field                                   */
 /* ------------------------------------------------------------------ */
 
-export interface ColorOpts {
+interface ColorOpts {
   label: string;
   get(): string;
   set(v: string): void;
@@ -303,7 +303,7 @@ export interface ColorOpts {
 const HEX6 = /^#?([0-9a-f]{6})$/i;
 const HEX3 = /^#?([0-9a-f])([0-9a-f])([0-9a-f])$/i;
 
-export function normalizeHex(v: string): string | null {
+function normalizeHex(v: string): string | null {
   const s = v.trim();
   const m6 = HEX6.exec(s);
   if (m6) return `#${m6[1].toLowerCase()}`;

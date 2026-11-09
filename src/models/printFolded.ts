@@ -830,7 +830,7 @@ const ICON_TRIFOLD =
   '<path d="M6 13l17 5v37L6 50z"/><path d="M23 18l18-5v37l-18 5z"/><path d="M41 13l17 5v37l-17-5z"/>' +
   '<path d="M45 24l9 2.6M45 30l9 2.6"/></svg>';
 
-export const trifoldModel: ModelDefinition = {
+const trifoldModel: ModelDefinition = {
   id: 'print-trifold',
   category: 'print',
   name: 'Tri-fold leaflet',
@@ -1070,7 +1070,7 @@ const ICON_CARD =
   '<path d="M26 8v48l26 3V11z"/><path d="M26 8L10 14v44l16-2"/>' +
   '<path d="M39 29c-2-3-6-1-4 2l4 4 4-4c2-3-2-5-4-2z"/></svg>';
 
-export const greetingCardModel: ModelDefinition = cardModel(GREETING, {
+const greetingCardModel: ModelDefinition = cardModel(GREETING, {
   id: 'print-greeting-card',
   name: 'Greeting card',
   description:
@@ -1105,7 +1105,7 @@ const ICON_BIFOLD =
   '<path d="M18 8h34v48H18z"/><path d="M18 8l-8 5v47l8-4"/>' +
   '<path d="M25 20h20M25 27h20M25 34h13"/></svg>';
 
-export const bifoldModel: ModelDefinition = cardModel(BIFOLD, {
+const bifoldModel: ModelDefinition = cardModel(BIFOLD, {
   id: 'print-bifold',
   name: 'Bi-fold brochure',
   description: 'Brochure from a sheet folded in half (A4 → A5 by default), lying flat or standing slightly open.',

@@ -19,7 +19,7 @@
  */
 import * as THREE from 'three';
 
-export interface ShadowRect {
+interface ShadowRect {
   minX: number;
   maxX: number;
   minZ: number;
@@ -54,7 +54,7 @@ export interface ShadowLayout {
   key_: string;
 }
 
-export interface ShadowInput {
+interface ShadowInput {
   /** Model bounds (world, min.y ≈ 0). */
   bounds: THREE.Box3;
   /** Unit vector pointing TOWARDS the key light (world space). */

@@ -240,8 +240,7 @@ export class GifAnimationEncoder {
   /** Diff mode: mark unchanged pixels in `keep`; returns the changed rectangle (null = none). */
   private markUnchanged(): { x0: number; y0: number; x1: number; y1: number } | null {
     const { w, h, rgb } = this;
-    const keep = this.keep!;
-    const shown = this.shown!;
+    const { keep, shown } = this.diffBuffers();
     if (this.frames === 0) {
       keep.fill(0);
       return { x0: 0, y0: 0, x1: w - 1, y1: h - 1 };
@@ -272,8 +271,9 @@ export class GifAnimationEncoder {
 
   /** Diff mode: remember the source colour of every pixel drawn in this frame. */
   private rememberShown(): void {
-    const keep = this.frames > 0 ? this.keep! : null;
-    const shown = this.shown!;
+    const buffers = this.diffBuffers();
+    const keep = this.frames > 0 ? buffers.keep : null;
+    const shown = buffers.shown;
     const rgb = this.rgb;
     const n = this.w * this.h;
     for (let p = 0; p < n; p++) {
@@ -282,6 +282,13 @@ export class GifAnimationEncoder {
       shown[p * 3 + 1] = rgb[p * 3 + 1];
       shown[p * 3 + 2] = rgb[p * 3 + 2];
     }
+  }
+
+  /** Diff mode: the buffers made together with the global palette. */
+  private diffBuffers(): { keep: Uint8Array; shown: Uint8Array } {
+    const { keep, shown } = this;
+    if (!keep || !shown) throw new Error('The GIF encoder used diff mode before its buffers were made.');
+    return { keep, shown };
   }
 
   private crop(x0: number, y0: number, x1: number, y1: number): Uint8Array {

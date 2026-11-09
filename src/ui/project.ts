@@ -36,7 +36,7 @@ export const isPlain = (v: unknown): v is Plain => typeof v === 'object' && v !=
  * (or is a nested object) is taken from `src`. Unknown keys and wrong types are ignored, so a
  * damaged or older file can never put garbage into the state.
  */
-export function mergeKnown<T>(base: T, src: unknown): T {
+function mergeKnown<T>(base: T, src: unknown): T {
   if (!isPlain(base) || !isPlain(src)) return base;
   const out: Plain = { ...base };
   for (const [k, bv] of Object.entries(base)) {
@@ -80,7 +80,7 @@ export function sanitizeScene(raw: unknown): SceneSettings {
   return s;
 }
 
-export function sanitizeExport(raw: unknown): ExportSettings {
+function sanitizeExport(raw: unknown): ExportSettings {
   const e = mergeKnown({ ...DEFAULT_EXPORT }, raw);
   e.width = Math.round(clamp(e.width, 16, MAX_EXPORT_SIZE));
   e.height = Math.round(clamp(e.height, 16, MAX_EXPORT_SIZE));

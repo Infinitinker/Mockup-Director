@@ -702,7 +702,7 @@ const ICON_BUSINESS_CARD =
   '<path d="M14 22V16.5a2.5 2.5 0 0 1 2.5-2.5h39a2.5 2.5 0 0 1 2.5 2.5v21a2.5 2.5 0 0 1-2.5 2.5H50"/>' +
   '<rect x="6" y="22" width="44" height="26" rx="2.5"/><path d="M13 31h17M13 37h11"/></svg>';
 
-export const businessCardModel: ModelDefinition = {
+const businessCardModel: ModelDefinition = {
   id: 'print-business-card',
   category: 'print',
   name: 'Business card',
@@ -780,7 +780,7 @@ const ICON_FLYER =
   '<rect x="15" y="5" width="34" height="54" rx="1.5"/><rect x="21" y="12" width="22" height="16" rx="1"/>' +
   '<path d="M21 35h22M21 41h22M21 47h13"/></svg>';
 
-export const flyerModel: ModelDefinition = {
+const flyerModel: ModelDefinition = {
   id: 'print-flyer',
   category: 'print',
   name: 'Flyer',
@@ -895,7 +895,7 @@ const ICON_POSTCARD =
   '<rect x="5" y="14" width="54" height="36" rx="2"/><path d="M33 20v24"/><rect x="44" y="19" width="9" height="11" rx="1"/>' +
   '<path d="M38 37h15M38 43h15M11 24h16M11 30h11"/></svg>';
 
-export const postcardModel: ModelDefinition = {
+const postcardModel: ModelDefinition = {
   id: 'print-postcard',
   category: 'print',
   name: 'Postcard',
@@ -1039,7 +1039,7 @@ const ICON_PLASTIC_CARD =
 const PLASTIC_TEMPLATE_W = ID1.w;
 const PLASTIC_TEMPLATE_H = ID1.h;
 
-export const plasticCardModel: ModelDefinition = {
+const plasticCardModel: ModelDefinition = {
   id: 'print-plastic-card',
   category: 'print',
   name: 'Plastic card',
@@ -1225,7 +1225,7 @@ interface SectionPt {
   s: number;
 }
 
-export const brochureModel: ModelDefinition = {
+const brochureModel: ModelDefinition = {
   id: 'print-brochure',
   category: 'print',
   name: 'Brochure / catalogue',

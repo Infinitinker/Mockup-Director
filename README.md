@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="src-tauri/icons/128x128@2x.png" alt="Mockup Director icon: a product box whose front is a film clapperboard" width="128">
+  <img src="docs/images/icon.png" alt="Mockup Director icon: a product box whose front is a film clapperboard" width="128">
 </p>
 
 <h1 align="center">Mockup Director</h1>

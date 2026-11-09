@@ -22,8 +22,8 @@ import { rectMapper, type FaceUVMapper } from './roundedBox';
 /* ------------------------------------------------------------------ */
 
 export const G_DIM = 'Dimensions';
-export const G_MAT = 'Material';
-export const G_ART = 'Artwork';
+const G_MAT = 'Material';
+const G_ART = 'Artwork';
 
 /** Standard print bleed. */
 export const BLEED_MM = 3;
@@ -173,7 +173,9 @@ export function bandTemplate(panels: { w: number; label: string }[], h: number, 
  * UV mapper for a template region: the region's trim rectangle (measured from the template's
  * top-left, bleed included) is mapped edge-to-edge onto a face.
  */
-export function regionMapper(tpl: PrintTemplate, region: TemplateRegion): FaceUVMapper {
+export function regionMapper(tpl: PrintTemplate, index: number): FaceUVMapper {
+  const region = tpl.regions?.[index];
+  if (!region) throw new Error(`The print template has no region ${index}.`);
   const u0 = region.xMm / tpl.widthMm;
   const u1 = (region.xMm + region.wMm) / tpl.widthMm;
   const v1 = 1 - region.yMm / tpl.heightMm; // image top = v 1

@@ -34,7 +34,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-      # package.json and src-tauri/Cargo.toml have the same version; one with a hyphen is a pre-release.
+      # The version in package.json, of the form 1.2.3; one with a hyphen is a pre-release.
       - name: Read the version
         id: version
         run: node tools/release.mjs check

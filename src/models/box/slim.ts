@@ -161,13 +161,13 @@ function buildSlimBox(ctx: ModelContext): THREE.Object3D {
   const lidUV: Partial<Record<FaceId, FaceUVMapper>> = {};
   const lidMats: THREE.Material[] = new Array<THREE.Material>(6);
   const lidTpl = lidTemplate(p);
-  lidUV.py = regionMapper(lidTpl, lidTpl.regions![0]);
+  lidUV.py = regionMapper(lidTpl, 0);
   lidMats[FACE_INDEX.py] = surfaceMaterial(finish, { map: ctx.getTexture('lid') });
 
   const lidSidesMat = ctx.hasImage('lidSides') ? surfaceMaterial(finish, { map: ctx.getTexture('lidSides') }) : null;
   const sidesTpl = lidSidesTemplate(p);
   WALL_FACES.forEach((face, i) => {
-    if (lidSidesMat) lidUV[face] = regionMapper(sidesTpl, sidesTpl.regions![i]);
+    if (lidSidesMat) lidUV[face] = regionMapper(sidesTpl, i);
     lidMats[FACE_INDEX[face]] = lidSidesMat ?? sidePlain();
   });
   // Underside of the lid: the narrow rim around the base – or the whole bottom of a full-telescope box.
@@ -198,7 +198,7 @@ function buildSlimBox(ctx: ModelContext): THREE.Object3D {
     const maxT = (regionH + bleedOf(p)) / regionH;
     WALL_FACES.forEach((face, i) => {
       if (baseMat) {
-        const m = regionMapper(tpl, tpl.regions![i]);
+        const m = regionMapper(tpl, i);
         baseUV[face] = (s, tt) => m(s, Math.min(maxT, (tt * hb) / baseVis));
       }
       baseMats[FACE_INDEX[face]] = baseMat ?? basePlain();

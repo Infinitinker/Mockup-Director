@@ -17,8 +17,8 @@
 import type { ExportSettings, ImageAsset, ParamValues, SceneSettings } from '../core/types';
 import { disposeImageAsset } from '../core/images';
 
-export type ChangeKind = 'model' | 'params' | 'images' | 'scene' | 'camera' | 'export';
-export type ChangeSource = 'ui' | 'stage' | 'history' | 'project' | 'init' | 'document';
+type ChangeKind = 'model' | 'params' | 'images' | 'scene' | 'camera' | 'export';
+type ChangeSource = 'ui' | 'stage' | 'history' | 'project' | 'init' | 'document';
 
 /** modelId -> slotId -> image */
 export type ImageMap = Record<string, Record<string, ImageAsset>>;
@@ -38,7 +38,7 @@ export interface ChangeEvent {
   source: ChangeSource;
 }
 
-export interface UpdateOptions {
+interface UpdateOptions {
   source?: ChangeSource;
 }
 

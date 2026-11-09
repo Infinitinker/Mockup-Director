@@ -14,10 +14,10 @@ interface DialogOptions {
 
 interface DialogButton<T> {
   label: string;
-  primary?: boolean;
-  danger?: boolean;
+  primary?: boolean | undefined;
+  danger?: boolean | undefined;
   /** The button Enter presses and the first focus goes to (unless the dialog has a text field). */
-  isDefault?: boolean;
+  isDefault?: boolean | undefined;
   result: () => T;
 }
 
@@ -145,7 +145,7 @@ export function promptDialog(
   return openDialog({ ...opts, body }, okCancel(opts, value, null), null);
 }
 
-export interface DialogChoice {
+interface DialogChoice {
   id: string;
   label: string;
   /** The default choice: highlighted, focused first and pressed by Enter. */

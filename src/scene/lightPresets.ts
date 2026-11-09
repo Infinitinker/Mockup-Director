@@ -5,7 +5,7 @@
  */
 import type { LightSettings, ReflectionSettings, ShadowSettings } from '../core/types';
 
-export interface LightPreset {
+interface LightPreset {
   id: string;
   label: string;
   light: LightSettings;

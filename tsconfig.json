@@ -3,10 +3,17 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    // The oldest engine the app runs on is Safari 15.0 (WKWebView): only the parts of ES2022 it
+    // supports are listed, so tsc rejects newer APIs such as Array.prototype.at and Object.hasOwn.
+    "lib": ["ES2021", "ES2022.Error", "ES2022.RegExp", "DOM", "DOM.Iterable"],
     "strict": true,
+    // noUncheckedIndexedAccess stays off: the models, geometry and byte-format code index arrays
+    // in bounded loops throughout, and it would take about 650 checks that can never fail.
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
     "noUnusedLocals": true,
-    "noUnusedParameters": false,
+    "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "skipLibCheck": true,
     "isolatedModules": true,

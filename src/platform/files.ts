@@ -2,13 +2,13 @@
  * File I/O that works both in the Tauri v2 desktop shell (WKWebView on macOS) and in a browser
  * (dev mode / web preview).
  *
- * Desktop save contract (implemented on the Rust side by the Tauri agent):
+ * Desktop save contract (the `save_file` command in src-tauri/src/lib.rs):
  *   invoke('save_file', <raw bytes as Uint8Array>, { headers: { 'x-path': encodeURIComponent(path) } })
  * The raw body avoids the JSON-encoding overhead of large PNGs (a 4000×4000 PNG can be 30+ MB).
  */
 import { isTauri, invoke } from '@tauri-apps/api/core';
 
-export interface FileFilter {
+interface FileFilter {
   name: string;
   extensions: string[];
 }
@@ -75,11 +75,6 @@ export function pickFiles(accept: string, multiple = false): Promise<File[]> {
   });
 }
 
-/** Read a picked file as text (project files). */
-export function readFileText(file: File): Promise<string> {
-  return file.text();
-}
-
 /* ------------------------------------------------------------------ */
 /* Desktop (Tauri)                                                     */
 /* ------------------------------------------------------------------ */
@@ -101,14 +96,16 @@ async function saveInDesktopApp(blob: Blob, suggestedName: string, filters: File
  * The macOS save panel normally appends the extension, but users can delete it; make sure the file
  * keeps an extension from the filters (otherwise Finder / Photoshop will not recognise it).
  */
-export function ensureExtension(path: string, filters: FileFilter[], suggestedName: string): string {
+function ensureExtension(path: string, filters: FileFilter[], suggestedName: string): string {
   const exts = filters.flatMap((f) => f.extensions.map((e) => stripDot(e).toLowerCase()));
   if (exts.length === 0 || exts.includes('*')) return path;
   const base = path.split(/[\\/]/).pop() ?? path;
   const dot = base.lastIndexOf('.');
   const ext = dot > 0 ? base.slice(dot + 1).toLowerCase() : '';
   if (ext && exts.includes(ext)) return path;
-  const sugExt = suggestedName.includes('.') ? suggestedName.split('.').pop()!.toLowerCase() : '';
+  const sugExt = suggestedName.includes('.')
+    ? suggestedName.slice(suggestedName.lastIndexOf('.') + 1).toLowerCase()
+    : '';
   return `${path}.${exts.includes(sugExt) ? sugExt : exts[0]}`;
 }
 
@@ -155,7 +152,7 @@ async function saveInBrowser(blob: Blob, suggestedName: string, filters: FileFil
           const mime = blob.type || MIME_BY_EXT[exts[0].slice(1)] || 'application/octet-stream';
           return { description: f.name, accept: { [mime]: exts } };
         });
-      const handle = await w.showSaveFilePicker({ suggestedName, types: types.length ? types : undefined });
+      const handle = await w.showSaveFilePicker(types.length ? { suggestedName, types } : { suggestedName });
       const writable = await handle.createWritable();
       await writable.write(blob);
       await writable.close();
@@ -171,7 +168,7 @@ async function saveInBrowser(blob: Blob, suggestedName: string, filters: FileFil
 }
 
 /** Trigger a classic browser download (cannot detect cancel – always "saved"). */
-export function downloadBlob(blob: Blob, name: string): void {
+function downloadBlob(blob: Blob, name: string): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

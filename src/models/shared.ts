@@ -3,7 +3,7 @@
  * files, but should not change the behaviour of these.
  */
 import * as THREE from 'three';
-import type { ModelContext, NumberParamDef, ParamValues } from '../core/types';
+import type { NumberParamDef, ParamValues } from '../core/types';
 
 /** Dispose geometries and materials of a tree (and textures flagged userData.disposeWithModel). */
 export function disposeObject(root: THREE.Object3D | null | undefined): void {
@@ -166,7 +166,17 @@ export function mmParam(
   step = 1,
   group?: string,
 ): NumberParamDef {
-  return { id, label, type: 'number', min, max, step, default: def, unit: 'mm', group };
+  return {
+    id,
+    label,
+    type: 'number',
+    min,
+    max,
+    step,
+    default: def,
+    unit: 'mm',
+    ...(group === undefined ? {} : { group }),
+  };
 }
 
 /** Mark every mesh in the tree as shadow-casting. */
@@ -188,5 +198,3 @@ export function placeOnGround(root: THREE.Object3D): THREE.Object3D {
   root.position.y -= box.min.y;
   return root;
 }
-
-export type { ModelContext };

@@ -352,34 +352,27 @@ describe.each(MODELS.map((m) => [m.id, m] as const))('%s', (_id, model) => {
     }
   });
 
-  const templated = model.slots.filter((s) => s.template !== undefined);
+  const templated = model.slots.flatMap((s) => (s.template === undefined ? [] : [[s.id, s, s.template] as const]));
   if (templated.length > 0) {
-    it.each(templated.map((s) => [s.id, s] as const))(
-      'slot %s has a template with a positive size',
-      (_slotId, slot) => {
-        const template = slot.template!;
-        const sets: ParamValues[] = [
-          paramValues(model, 'defaults'),
-          paramValues(model, 'all at min'),
-          paramValues(model, 'all at max'),
-          ...singleLimits(model).map(([, params]) => params),
-          {},
-        ];
-        for (const params of sets) {
-          const t = resolve(template, params);
-          expect(t.widthMm).toBeGreaterThan(0);
-          expect(t.heightMm).toBeGreaterThan(0);
-        }
-      },
-    );
+    it.each(templated)('slot %s has a template with a positive size', (_slotId, _slot, template) => {
+      const sets: ParamValues[] = [
+        paramValues(model, 'defaults'),
+        paramValues(model, 'all at min'),
+        paramValues(model, 'all at max'),
+        ...singleLimits(model).map(([, params]) => params),
+        {},
+      ];
+      for (const params of sets) {
+        const t = resolve(template, params);
+        expect(t.widthMm).toBeGreaterThan(0);
+        expect(t.heightMm).toBeGreaterThan(0);
+      }
+    });
 
-    it.each(templated.map((s) => [s.id, s] as const))(
-      'slot %s has the aspect of its template at the defaults',
-      (_slotId, slot) => {
-        const t = resolve(slot.template!, paramValues(model, 'defaults'));
-        expect(Math.abs(slot.aspect / (t.widthMm / t.heightMm) - 1)).toBeLessThan(ASPECT_TOLERANCE);
-      },
-    );
+    it.each(templated)('slot %s has the aspect of its template at the defaults', (_slotId, slot, template) => {
+      const t = resolve(template, paramValues(model, 'defaults'));
+      expect(Math.abs(slot.aspect / (t.widthMm / t.heightMm) - 1)).toBeLessThan(ASPECT_TOLERANCE);
+    });
   }
 
   if (model.slots.length > 0) {

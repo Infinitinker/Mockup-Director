@@ -1,6 +1,6 @@
 /**
  * Tests the byte-level image helpers in src/export/png.ts: CRC-32, the pHYs chunk that sets a
- * PNG's resolution, reading it back, and the JFIF density of a JPEG.
+ * PNG's resolution, and the JFIF density of a JPEG.
  */
 import { describe, expect, it } from 'vitest';
 import {
@@ -9,7 +9,6 @@ import {
   dpiToPixelsPerMetre,
   isJpeg,
   isPng,
-  readPngDpi,
   setJpegDensity,
   setPngPhys,
 } from '../../src/export/png';
@@ -173,13 +172,16 @@ describe('setPngPhys', () => {
     expect(readPngChunks(twice).filter((c) => c.type === 'pHYs')).toHaveLength(1);
   });
 
-  it('round-trips every whole dpi from 1 to 2400 through readPngDpi', () => {
+  it('stores every whole dpi from 1 to 2400 to within 0.02 dpi', () => {
     const png = plainPng();
     for (let dpi = 1; dpi <= 2400; dpi++) {
       const out = setPngPhys(png, dpi);
       const phys = new DataView(out.buffer, 33 + 8, 9);
-      expect(phys.getUint32(0)).toBe(dpiToPixelsPerMetre(dpi));
-      expect(Math.abs((readPngDpi(out) ?? 0) - dpi)).toBeLessThanOrEqual(0.02);
+      const pixelsPerMeter = phys.getUint32(0);
+      expect(pixelsPerMeter).toBe(dpiToPixelsPerMetre(dpi));
+      expect(phys.getUint32(4)).toBe(pixelsPerMeter);
+      expect(phys.getUint8(8)).toBe(1);
+      expect(Math.abs(pixelsPerMeter * 0.0254 - dpi)).toBeLessThanOrEqual(0.02);
     }
   });
 
@@ -188,22 +190,6 @@ describe('setPngPhys', () => {
     expect(() => setPngPhys(Uint8Array.of(0xff, 0xd8, 0xff, 0xe0), 300)).toThrow();
     expect(() => setPngPhys(png.subarray(0, png.length - 12 - 3), 300)).toThrow();
     expect(() => setPngPhys(buildPng([TEXT, IDAT, IEND], crc32), 300)).toThrow();
-  });
-});
-
-describe('readPngDpi', () => {
-  it('reads the resolution in dpi, rounded to hundredths', () => {
-    expect(readPngDpi(setPngPhys(plainPng(), 300))).toBe(300);
-    expect(readPngDpi(setPngPhys(plainPng(), 72))).toBe(72.01);
-    expect(readPngDpi(pngWithPhys(physData(3780, 1)))).toBe(96.01);
-  });
-
-  it('gives null without a pHYs chunk in meters before the image data', () => {
-    expect(readPngDpi(Uint8Array.of(0xff, 0xd8, 0xff, 0xe0))).toBeNull();
-    expect(readPngDpi(plainPng())).toBeNull();
-    expect(readPngDpi(pngWithPhys(physData(11811, 0)))).toBeNull();
-    const late = buildPng([IHDR, IDAT, { type: 'pHYs', data: physData(11811, 1) }, IEND], crc32);
-    expect(readPngDpi(late)).toBeNull();
   });
 });
 

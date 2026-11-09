@@ -753,7 +753,7 @@ const ICON_LAPTOP =
   '<rect x="13" y="12" width="38" height="28" rx="2.5"/><path d="M17.5 36h29"/>' +
   '<path d="M7 44h50l-3 6H10z"/><path d="M28 47h8"/></svg>';
 
-export const laptopModel: ModelDefinition = {
+const laptopModel: ModelDefinition = {
   id: 'device-laptop',
   category: 'device',
   name: 'Laptop',
@@ -1039,7 +1039,7 @@ const ICON_MONITOR =
   '<rect x="6" y="10" width="52" height="33" rx="2.5"/><path d="M6 37.5h52"/>' +
   '<path d="M32 43v9"/><path d="M21 53h22"/></svg>';
 
-export const monitorModel: ModelDefinition = {
+const monitorModel: ModelDefinition = {
   id: 'device-monitor',
   category: 'device',
   name: 'Monitor',

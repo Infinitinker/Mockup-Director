@@ -110,8 +110,12 @@ export function createModelPanel(ctx: AppContext): { el: HTMLElement } {
     for (const def of model.params) {
       const key = def.group ?? '__general';
       const title = def.group ?? 'General';
-      if (!groups.has(key)) groups.set(key, { title, defs: [] });
-      groups.get(key)!.defs.push(def);
+      let group = groups.get(key);
+      if (!group) {
+        group = { title, defs: [] };
+        groups.set(key, group);
+      }
+      group.defs.push(def);
     }
     for (const [key, g] of groups) {
       const ctls = g.defs.map(controlFor);

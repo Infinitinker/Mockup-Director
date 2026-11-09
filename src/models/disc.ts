@@ -24,7 +24,7 @@ import { bool, castShadows, clearPlastic, num, round1, str } from './shared';
 /* ------------------------------------------------------------------ */
 
 export const DISC_DIAMETER = 120;
-export const DISC_THICKNESS = 1.2;
+const DISC_THICKNESS = 1.2;
 const R = DISC_DIAMETER / 2;
 const T = DISC_THICKNESS;
 const R_HOLE = 7.5;
@@ -295,7 +295,7 @@ function labelMaterial(map: THREE.Texture, glossy: boolean): THREE.MeshPhysicalM
 /* ------------------------------------------------------------------ */
 
 /** Printable annulus (inner / outer DIAMETER, mm) for the current params. */
-export function discPrintArea(params: ParamValues): { inner: number; outer: number } {
+function discPrintArea(params: ParamValues): { inner: number; outer: number } {
   if (bool(params, 'discFullFace', false)) return { inner: FULL_FACE_INNER, outer: FULL_FACE_OUTER };
   const inner = Math.max(R_HOLE * 2, Math.min(46, num(params, 'discInner', 36)));
   return { inner, outer: PRINT_OUTER };

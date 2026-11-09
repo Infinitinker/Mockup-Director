@@ -3,12 +3,7 @@
  * ../exporter.ts).
  */
 
-export type AnimationErrorCode =
-  | 'unsupported'
-  | 'webp-unsupported'
-  | 'mp4-unsupported'
-  | 'render-failed'
-  | 'encode-failed';
+type AnimationErrorCode = 'unsupported' | 'webp-unsupported' | 'mp4-unsupported' | 'render-failed' | 'encode-failed';
 
 export class AnimationError extends Error {
   readonly code: AnimationErrorCode;

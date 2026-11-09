@@ -123,22 +123,6 @@ export function setPngPhys(png: Uint8Array, dpi: number): Uint8Array<ArrayBuffer
   return out;
 }
 
-/** Read the pHYs resolution of a PNG in dpi (rounded to 0.01), or null if absent / not in metres. */
-export function readPngDpi(png: Uint8Array): number | null {
-  if (!isPng(png)) return null;
-  let o = 8;
-  while (o + 12 <= png.length) {
-    const len = readU32(png, o);
-    const type = chunkType(png, o);
-    if (type === 'pHYs' && len === 9 && png[o + 16] === 1) {
-      return Math.round(readU32(png, o + 8) * 0.0254 * 100) / 100;
-    }
-    if (type === 'IDAT' || type === 'IEND') return null;
-    o += 12 + len;
-  }
-  return null;
-}
-
 /**
  * Return a copy of a JPEG with JFIF density set to `dpi` (units = dots per inch).
  * If the file has no JFIF APP0 segment as its first segment, one is inserted after SOI.

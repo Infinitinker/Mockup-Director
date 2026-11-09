@@ -14,7 +14,7 @@ const DEG = Math.PI / 180;
 let scratch = new Float64Array(0);
 
 /** Orthonormal camera basis for the given angles (camera looks along -back). */
-export interface CameraBasis {
+interface CameraBasis {
   right: THREE.Vector3;
   up: THREE.Vector3;
   /** Unit vector from the pivot towards the camera. */

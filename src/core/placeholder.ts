@@ -20,7 +20,8 @@ export function getPlaceholderTexture(slot: ImageSlotDef): THREE.Texture {
   const canvas = document.createElement('canvas');
   canvas.width = Math.max(8, w);
   canvas.height = Math.max(8, h);
-  const g = canvas.getContext('2d')!;
+  const g = canvas.getContext('2d');
+  if (!g) throw new Error('No 2D canvas context for the placeholder artwork (out of memory?).');
 
   const grad = g.createLinearGradient(0, 0, canvas.width, canvas.height);
   grad.addColorStop(0, '#eef0f4');

@@ -97,4 +97,4 @@ export function animationFileName(modelId: string, format: AnimationFormat, date
 
 export { animationFileFilter };
 export { isAnimationCancelled, type AnimationProgress } from '../export/animation';
-export { extensionFor, mimeFor } from '../export/exporter';
+export { extensionFor } from '../export/exporter';

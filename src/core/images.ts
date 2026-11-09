@@ -18,12 +18,12 @@ import * as THREE from 'three';
 import type { ImageAsset } from './types';
 
 /** Longest side of the GPU texture. Originals stay untouched in the data URL. */
-export const MAX_TEXTURE_SIZE = 4096;
+const MAX_TEXTURE_SIZE = 4096;
 /** SVGs are rasterised so their longest side is this many px (unless that exceeds the texture cap). */
 const SVG_RASTER_SIZE = 3072;
 
 /** Error with a message that can be shown to the user. */
-export class ImageLoadError extends Error {
+class ImageLoadError extends Error {
   constructor(message: string, cause?: unknown) {
     super(message);
     this.name = 'ImageLoadError';
@@ -265,7 +265,7 @@ function parseDataUrl(url: string): { mime: string; bytes: Uint8Array<ArrayBuffe
  * Determine the real MIME type from magic bytes (file.type is often empty or wrong,
  * e.g. files without extension or from some file pickers). Falls back to the declared type.
  */
-export function sniffMime(b: Uint8Array, declared: string, name = ''): string {
+function sniffMime(b: Uint8Array, declared: string, name = ''): string {
   const at = (o: number, ...v: number[]) => v.every((x, i) => b[o + i] === x);
   const ascii = (o: number, s: string) => at(o, ...Array.from(s, (c) => c.charCodeAt(0)));
   if (at(0, 0x89, 0x50, 0x4e, 0x47)) return 'image/png';
@@ -292,7 +292,7 @@ export function sniffMime(b: Uint8Array, declared: string, name = ''): string {
  * Rewrite the root <svg> tag with width/height = (tw, th) px. If it has no viewBox, one is added
  * from its intrinsic size (vw, vh in user units = CSS px) so the drawing scales instead of clipping.
  */
-export function sizeSvgRoot(svg: string, tw: number, th: number, vw: number, vh: number): string {
+function sizeSvgRoot(svg: string, tw: number, th: number, vw: number, vh: number): string {
   const m = /<svg\b[^>]*>/i.exec(svg);
   if (!m) return svg;
   let tag = m[0];
@@ -306,7 +306,7 @@ export function sizeSvgRoot(svg: string, tw: number, th: number, vw: number, vh:
 }
 
 /** Intrinsic size of an SVG document from width/height (absolute units) or the viewBox. */
-export function svgIntrinsicSize(svg: string): { width: number; height: number } | null {
+function svgIntrinsicSize(svg: string): { width: number; height: number } | null {
   const tag = /<svg\b[^>]*>/i.exec(svg)?.[0];
   if (!tag) return null;
   const attr = (n: string) => new RegExp(`\\s${n}\\s*=\\s*["']([^"']*)["']`, 'i').exec(tag)?.[1];

@@ -18,23 +18,13 @@ import { AnimationCancelled, AnimationError } from './errors';
 import { GifAnimationEncoder } from './gif';
 import { AnimatedWebpWriter } from './webp';
 import { Mp4Writer, mp4EncodingAvailable } from './mp4';
-import { frameCountOf, normaliseAnimationSettings, outputSizeOf } from './settings';
+import { normaliseAnimationSettings, outputSizeOf } from './settings';
 import { frameDelays, turntableAngles } from './turntable';
 
-export { AnimationCancelled, AnimationError, isAnimationCancelled } from './errors';
+export { isAnimationCancelled } from './errors';
 export { mp4EncodingAvailable } from './mp4';
-export {
-  defaultFpsFor,
-  frameCountOf,
-  maxFpsFor,
-  maxMarginFor,
-  maxSizeFor,
-  normaliseAnimationSettings,
-  outputSizeOf,
-} from './settings';
-export { turntableAngles } from './turntable';
 
-export type AnimationPhase = 'prepare' | 'palette' | 'frames' | 'finalize';
+type AnimationPhase = 'prepare' | 'palette' | 'frames' | 'finalize';
 
 export interface AnimationProgress {
   phase: AnimationPhase;
@@ -44,7 +34,7 @@ export interface AnimationProgress {
   total: number;
 }
 
-export interface AnimationExportOptions {
+interface AnimationExportOptions {
   /** Scene preview background (used for background 'scene'). */
   background: BackgroundSettings;
   /** Can the engine encode WebP stills? (supportsWebpEncoding() from ../exporter). */
@@ -67,11 +57,6 @@ const MAX_RENDER_PIXELS = 6_000_000;
 const PALETTE_SAMPLES = 8;
 
 const QUALITY_WEBP: Record<AnimationSettings['quality'], number> = { low: 0.6, medium: 0.8, high: 0.92 };
-
-/** MIME type and file extension of an animation format. */
-export function animationMime(format: AnimationFormat): string {
-  return format === 'mp4' ? 'video/mp4' : `image/${format}`;
-}
 
 /** Save-dialog filter for an animation format. */
 export function animationFileFilter(format: AnimationFormat): { name: string; extensions: string[] } {
@@ -169,9 +154,10 @@ export async function exportAnimation(
     out = outCanvas;
     const og = get2d(outCanvas, s.format === 'gif');
     checkAbort();
-    session = stage.beginAnimation({ angles, width: rw, height: rh, useViewZoomPan: s.useViewZoomPan });
+    const activeSession = stage.beginAnimation({ angles, width: rw, height: rh, useViewZoomPan: s.useViewZoomPan });
+    session = activeSession;
     const frame = (i: number) => {
-      session!.renderFrame(i, renderCanvas);
+      activeSession.renderFrame(i, renderCanvas);
       og.clearRect(0, 0, W, H);
       if (bg) og.drawImage(bg, 0, 0);
       og.imageSmoothingEnabled = true;
@@ -216,7 +202,8 @@ export async function exportAnimation(
     let blob: Blob;
     if (gif) blob = gif.finish();
     else if (webp) blob = webp.finish();
-    else blob = await mp4!.finish();
+    else if (mp4) blob = await mp4.finish();
+    else throw new Error('The animation export has no encoder.');
     finished = true;
     // Cancel pressed while the file was being finished: do not hand the file to the save dialog.
     checkAbort();
@@ -322,9 +309,4 @@ function mp4Unsupported(cause?: unknown): AnimationError {
     'This system cannot encode H.264 video (MP4) at this size. WebView2 / Chromium, Safari 16.4+ (macOS 13.3+) or a recent WebKitGTK is required. Choose GIF or a smaller size.',
     cause,
   );
-}
-
-/** Frame count shown in the UI (same rule as the exporter). */
-export function estimatedFrames(s: Pick<AnimationSettings, 'fps' | 'duration'>): number {
-  return frameCountOf(s);
 }

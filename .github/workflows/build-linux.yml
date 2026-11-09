@@ -149,7 +149,6 @@ jobs:
         with:
           sparse-checkout: |
             package.json
-            src-tauri/Cargo.toml
             tools/release.mjs
           sparse-checkout-cone-mode: false
       - uses: actions/setup-node@v7

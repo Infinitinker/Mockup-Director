@@ -139,7 +139,7 @@ const INLAY_TEMPLATE: PrintTemplate = {
   ],
 };
 
-export const bookletSlot: ImageSlotDef = {
+const bookletSlot: ImageSlotDef = {
   id: 'booklet',
   label: 'Booklet (cover)',
   hint: 'Booklet front 120 × 120 mm + 3 mm bleed (file 126 × 126 mm). Shown under the clear lid.',
@@ -147,7 +147,7 @@ export const bookletSlot: ImageSlotDef = {
   template: BOOKLET_TEMPLATE,
 };
 
-export const inlaySlot: ImageSlotDef = {
+const inlaySlot: ImageSlotDef = {
   id: 'inlay',
   label: 'Back inlay (tray card)',
   hint: '151 × 118 mm (spine 6.5 | back 138 | spine 6.5) + 3 mm bleed = 157 × 124 mm. The template’s left spine ends up on the case’s right (opening) side, the right one on the hinge side. Slim cases show only the back (with a clear tray).',
@@ -163,7 +163,7 @@ const G_DIM = 'Dimensions';
 const G_MAT = 'Material';
 const G_CONTENT = 'Contents';
 
-export const jewelCaseParams: ParamDef[] = [
+const jewelCaseParams: ParamDef[] = [
   {
     id: 'variant',
     type: 'select',

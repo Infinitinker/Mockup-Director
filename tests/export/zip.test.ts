@@ -246,7 +246,7 @@ describe('ZipWriter limits', () => {
     const archive = readZip(bytes);
     expect(archive.end.entries).toBe(0xfffe);
     expect(archive.end.entriesOnDisk).toBe(0xfffe);
-    expect(archive.entries.at(-1)?.name).toBe(`${0xfffe - 1}`);
+    expect(archive.entries[archive.entries.length - 1]?.name).toBe(`${0xfffe - 1}`);
     expect(archive.end.centralOffset + archive.end.centralSize + 22).toBe(bytes.length);
   });
 });

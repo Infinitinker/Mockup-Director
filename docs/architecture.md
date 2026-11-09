@@ -22,7 +22,7 @@ Its main ideas:
 
 ## What runs where
 
-Mockup Director is a [Tauri v2](https://v2.tauri.app/) app. The whole app is a web UI written in TypeScript (strict) with [three.js](https://threejs.org/) for the 3D scene, built with Vite, with no UI framework. A small Rust shell opens the window and provides native file dialogs and file writing.
+Mockup Director is a [Tauri v2](https://v2.tauri.app/) app. The whole app is a web UI written in TypeScript (strict) with [three.js](https://threejs.org/) for the 3D scene, built with Vite, with no UI framework. A small Rust shell opens the window and provides the native save dialog and file writing.
 
 | Part | Runs in | Why |
 |---|---|---|
@@ -40,7 +40,7 @@ The page and the shell talk through these commands and events. Only `src/platfor
 | `take_opened_files` (`src-tauri/src/opened.rs`) | page → shell | Hands out the queued project files the system asked the app to open, once each, as `{ files: [{ name, contents }], errors: [message] }`. Only queued paths can be read. Called by `src/platform/launch.ts`. |
 | `files-opened` event (`FILES_OPENED_EVENT` in `src-tauri/src/opened.rs`) | shell → page | Emitted with no payload when project files arrive while the app runs (a second launch on Windows and Linux, `RunEvent::Opened` on macOS). `src/platform/launch.ts` listens and calls `take_opened_files`. |
 
-The page also uses Tauri's own APIs, allowed in `src-tauri/capabilities/default.json`: the dialog plugin's `save` (`src/platform/files.ts`), the window's `setTitle` and `onCloseRequested` (`src/platform/window.ts`, which saves the session before the window closes, waiting at most 2 seconds), and dragging the window by the toolbar (`data-tauri-drag-region` in `src/ui/toolbar.ts`). Files are opened with an `<input type="file">` (`pickFiles`), in the desktop app too.
+The page also uses Tauri's own APIs, allowed in `src-tauri/capabilities/default.json`: the dialog plugin's `save` (`src/platform/files.ts`), the window's `setTitle` and `onCloseRequested` (`src/platform/window.ts`, which saves the session before the window closes, waiting at most 2 seconds), dragging the window by the toolbar (`data-tauri-drag-region` in `src/ui/toolbar.ts`), and the event API's `listen` for `files-opened` (`src/platform/launch.ts`). `onCloseRequested` needs the event permissions too, since it listens for the close request, and the window's `destroy` to close the window afterwards. In builds run from source, Tauri's devtools shortcut (Ctrl+Shift+I, Cmd+Option+I on macOS) is allowed as well. Files are opened with an `<input type="file">` (`pickFiles`), in the desktop app too.
 
 ## How a mockup is made
 
@@ -83,9 +83,9 @@ src/
                 print templates (templates.ts), ZIP (zip.ts), and animation/: the turntable export
                 (index.ts, turntable.ts, settings.ts, errors.ts) and its encoders (gif.ts, lzw.ts,
                 quantize.ts, webp.ts, mp4.ts)
-  platform/     reading and saving files (files.ts: Tauri dialogs in the desktop app, the browser
-                otherwise), project files the operating system asks the app to open (launch.ts), and
-                the window: its title and a last save before it closes (window.ts)
+  platform/     reading and saving files (files.ts: the Tauri save dialog in the desktop app, the
+                browser otherwise), project files the operating system asks the app to open
+                (launch.ts), and the window: its title and a last save before it closes (window.ts)
   ui/           the interface (vanilla TypeScript + CSS): the app shell (app.ts), the shared context and
                 actions (context.ts), state and undo history (state.ts), project tabs (documents.ts,
                 tabbar.ts), the session autosave (session.ts), project files (project.ts), looks
@@ -95,21 +95,25 @@ src/
                 (modelUtils.ts), number formatting and parsing (numbers.ts), shortcuts, icons and DOM
                 helpers (dom.ts)
 tests/          unit tests (Vitest, config in vitest.config.ts); their folders mirror src/ and tools/;
-                shared test data in fixtures.ts, a seeded random generator in random.ts, and the
-                checks of header and banner comments in layout.test.ts
+                shared test data in fixtures.ts, a seeded random generator in random.ts, the checks
+                of header and banner comments in layout.test.ts, and the checks of tauri.conf.json
+                against package.json and LICENSE in tauriConfig.test.ts
 src-tauri/      the Tauri v2 shell (Rust): main.rs starts lib.rs, which sets up the window, the dialogs,
                 a single app process and the commands; writing files (files.rs), opened project files
                 (opened.rs), closing the window if the page never answers (closing.rs); build.rs
                 generates the Tauri context; tests in src-tauri/tests/
-  Cargo.toml                the crate (library mockup_director_lib) and its dependencies
+  Cargo.toml                the crate (library mockup_director_lib) and its dependencies; no version
+                            (the one in package.json is the app's)
   tauri.conf.json           shared configuration
   tauri.windows.conf.json   Windows: no Tauri installer (tools/installer.iss makes it), merged by
                             Tauri automatically
   tauri.linux.conf.json     Linux additions (AppImage, .deb, .rpm), merged by Tauri automatically
   tauri.dev.conf.json       a separate identifier for the app run from source (npm run app:dev)
   linux/                    the .mdproj MIME definition and the .desktop template for the Linux packages
-  capabilities/default.json what the window may do
-  icons/                    the app icons, written by tools/draw-icon.mjs
+  capabilities/default.json the Tauri APIs the window may call: events, the default window queries,
+                            dragging, the title, destroying the window, the save dialog and the
+                            devtools shortcut in builds run from source
+  icons/                    the app icons that bundle.icon lists, written by tools/draw-icon.mjs
   deny.toml                 allowed licenses of Rust dependencies (cargo-deny)
   about.toml, about.hbs     the Rust part of the third-party notices (cargo-about)
 .github/
@@ -118,7 +122,7 @@ src-tauri/      the Tauri v2 shell (Rust): main.rs starts lib.rs, which sets up 
   ISSUE_TEMPLATE/    the issue forms: bug report, model request; a link to report a security
                      problem privately (GitHub's advisory form, see SECURITY.md)
 .github/workflows/
-  checks.yml         the Checks: Lint, Web (build, tests), Licenses, and clippy and the
+  checks.yml         the Checks: Lint (Biome, rustfmt), Web (build, tests), Licenses, and clippy and the
                      Rust tests on Windows and Linux; for main, dev and pull requests
   build-windows.yml  the installer (x64, Inno Setup) and a portable ZIP, built with MSYS2; then checks
                      the files
@@ -128,10 +132,9 @@ src-tauri/      the Tauri v2 shell (Rust): main.rs starts lib.rs, which sets up 
                      provenance attestations; by hand, the same without drafting
 .github/actions/notices/    the license checks and the notices check, for checks.yml and release.yml
 index.html                  the page Vite builds the app from
-package.json                the npm package, its scripts and dependencies
+package.json                the npm package, its scripts and dependencies, and the app's version
 vite.config.ts              the build: port 1420 for development, Safari 15 as the target
 tsconfig.json, biome.json   TypeScript settings, and the linter and formatter (Biome)
-app-icon.svg                the app icon, written by tools/draw-icon.mjs (with src/ui/app-logo.svg)
 LICENSE                     the MIT license; every package of the app contains it as LICENSE.txt
 THIRD-PARTY-NOTICES.md      the licenses of the app's dependencies, written by tools/notices.mjs;
                             every package contains it as THIRD-PARTY-NOTICES.txt
@@ -139,18 +142,20 @@ tools/licenses.mjs          license check of npm packages (npm run licenses)
 tools/notices.mjs           writes THIRD-PARTY-NOTICES.md (npm run notices)
 tools/licenses/             license texts that come from no package: the Windows runtime parts, and
                             npm packages that contain no license file
-tools/release.mjs           the release rules: version and tag, the files, the notes (checks.yml, the
-                            build workflows, release.yml)
+tools/release.mjs           the release rules: version and tag, the files, the notes (the build
+                            workflows, release.yml)
 tools/release-notes.md      the template of the release notes
 tools/installer.iss         the Windows installer (Inno Setup 7): files, the .mdproj association,
                             WebView2, uninstalling
 tools/installer.mjs         builds it (npm run installer)
-tools/draw-icon.mjs         draws the app icon and writes every icon file (npm run icons)
+tools/draw-icon.mjs         draws the app icon and writes the icon files in use: src-tauri/icons/,
+                            src/ui/app-logo.svg and docs/images/icon.png (npm run icons)
 start.bat, start.sh         run the desktop app from source (npm run app:dev), see docs/development.md
 README.md                   for users
 CONTRIBUTING.md, SECURITY.md how to contribute, and how to report a security problem
 docs/                       this documentation
-docs/images/                the README's screenshots: the app at 1440 × 900, with made-up artwork only
+docs/images/                the README's screenshots (the app at 1440 × 900, with made-up artwork
+                            only) and its icon, icon.png (written by tools/draw-icon.mjs)
 ```
 
 How the folders are organized:

@@ -37,7 +37,7 @@ const DEFAULTS = { w: 135, h: 190, d: 40 } as const;
 const NET_FACES: readonly FaceId[] = ['py', 'nx', 'pz', 'px', 'nz', 'ny'];
 
 /** Exact net template for a W x H x D box (mm) with bleed b. */
-export function netTemplate(W: number, H: number, D: number, b: number): PrintTemplate {
+function netTemplate(W: number, H: number, D: number, b: number): PrintTemplate {
   const regions: TemplateRegion[] = [
     { xMm: b + D, yMm: b, wMm: W, hMm: D, label: 'Top' },
     { xMm: b, yMm: b + D, wMm: D, hMm: H, label: 'Left side' },
@@ -72,7 +72,7 @@ function buildDielineBox(ctx: ModelContext): THREE.Object3D {
   const tpl = templateFor(p);
   const uv: Partial<Record<FaceId, FaceUVMapper>> = {};
   NET_FACES.forEach((face, i) => {
-    uv[face] = regionMapper(tpl, tpl.regions![i]);
+    uv[face] = regionMapper(tpl, i);
   });
 
   const geo = roundedBoxGeometry({ width: W, height: H, depth: D, radius: edgeRadius(p, W, H, D), uv });

@@ -585,7 +585,7 @@ const ICON_SCREENSHOT =
   '<rect x="7" y="12" width="50" height="33" rx="3.5"/><path d="M7 38l13-11 10 8 8-6 19 14"/>' +
   '<circle cx="42" cy="21" r="3"/><path d="M17 53h30"/></svg>';
 
-export const screenshotModel: ModelDefinition = {
+const screenshotModel: ModelDefinition = {
   id: 'device-screenshot',
   category: 'device',
   name: 'Screenshot',
@@ -883,7 +883,7 @@ const ICON_BROWSER =
   '<circle cx="12.5" cy="15.5" r="1.2" fill="currentColor"/><circle cx="17.5" cy="15.5" r="1.2" fill="currentColor"/>' +
   '<circle cx="22.5" cy="15.5" r="1.2" fill="currentColor"/><rect x="29" y="13.5" width="22" height="4" rx="2"/></svg>';
 
-export const browserWindowModel: ModelDefinition = {
+const browserWindowModel: ModelDefinition = {
   id: 'device-browser',
   category: 'device',
   name: 'Browser window',

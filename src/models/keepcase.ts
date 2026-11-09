@@ -24,7 +24,7 @@ import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { ImageSlotDef, ModelContext, ModelDefinition, ParamDef, ParamValues, PrintTemplate } from '../core/types';
 import { bool, clearPlastic, num, printMaterial, round1, str } from './shared';
 
-export type KeepCaseVariant = 'dvd' | 'bluray';
+type KeepCaseVariant = 'dvd' | 'bluray';
 
 /* ------------------------------------------------------------------ */
 /* Specs                                                               */
@@ -126,18 +126,6 @@ function edgeRadius(thickness: number): number {
   return clamp(thickness * 0.18, 1.2, 2.2);
 }
 
-/** Outer size of the case (for composites / layout). */
-export function keepCaseSize(
-  params: ParamValues,
-  variant: KeepCaseVariant,
-): { width: number; height: number; depth: number } {
-  const spec = SPECS[variant];
-  const t = thicknessOf(params, variant);
-  return spec.band
-    ? { width: spec.width + 2 * BAND_PROUD, height: spec.height, depth: t + 2 * BAND_PROUD }
-    : { width: spec.width, height: spec.height, depth: t };
-}
-
 /* ------------------------------------------------------------------ */
 /* Print templates                                                     */
 /* ------------------------------------------------------------------ */
@@ -146,7 +134,7 @@ const TRIM = 'Trim line';
 const FOLD = 'Fold line';
 
 /** Wrap insert: Back | Spine | Front, left to right, with 3 mm bleed. */
-export function keepCaseCoverTemplate(params: ParamValues, variant: KeepCaseVariant): PrintTemplate {
+function keepCaseCoverTemplate(params: ParamValues, variant: KeepCaseVariant): PrintTemplate {
   const spec = SPECS[variant];
   const t = thicknessOf(params, variant);
   const pw = spec.panelWidth;

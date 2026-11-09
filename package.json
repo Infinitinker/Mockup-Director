@@ -5,16 +5,17 @@
   "license": "MIT",
   "description": "Mockup Director – photorealistic 3D mockups of packaging, books, print and devices for Windows, macOS and Linux",
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "typecheck": "tsc --noEmit",
     "lint": "biome check --error-on-warnings",
     "format": "biome check --write",
     "test": "vitest run",
     "licenses": "node tools/licenses.mjs",
     "notices": "node tools/notices.mjs",
-    "preview": "vite preview",
     "tauri": "tauri",
     "app:dev": "tauri dev --config src-tauri/tauri.dev.conf.json",
     "icons": "node tools/draw-icon.mjs",

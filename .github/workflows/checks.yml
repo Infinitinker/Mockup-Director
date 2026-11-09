@@ -19,8 +19,8 @@ permissions:
 
 jobs:
   # Biome (format and lint of TypeScript, the tool scripts, CSS and every JSON file, so also the Tauri
-  # configuration), rustfmt, and the same version in package.json and Cargo.toml. The results are the
-  # same on every system, so it runs once, on the fastest runner.
+  # configuration) and rustfmt. The results are the same on every system, so it runs once, on the
+  # fastest runner.
   lint:
     name: Lint
     runs-on: ubuntu-latest
@@ -41,9 +41,6 @@ jobs:
           components: rustfmt
       - name: Format
         run: cargo fmt --manifest-path src-tauri/Cargo.toml --check
-      # package.json and src-tauri/Cargo.toml have the same version (tools/release.mjs).
-      - name: Version
-        run: node tools/release.mjs check
 
   # The web UI: the TypeScript type-check and the Vite build, and the unit tests (Vitest, tests/). It
   # runs in Node.js, the same on every system.

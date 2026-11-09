@@ -9,7 +9,7 @@ import { sanitizeScene } from './project';
 
 export const PRESETS_KEY = 'mockup-director.presets';
 
-export interface BuiltinPreset {
+interface BuiltinPreset {
   id: string;
   name: string;
   scene: ScenePreset['scene'];

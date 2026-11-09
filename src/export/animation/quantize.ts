@@ -316,7 +316,7 @@ export class PaletteMapper {
 
 export type DitherMode = 'floyd' | 'ordered' | 'none';
 
-export interface MapFrameOptions {
+interface MapFrameOptions {
   /** Interleaved RGB, width * height * 3. */
   rgb: Uint8Array;
   width: number;

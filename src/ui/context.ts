@@ -52,7 +52,7 @@ export interface AppContext {
   loadingSlots: Signal<ReadonlySet<string>>;
 }
 
-export interface ViewPreset {
+interface ViewPreset {
   label: string;
   yaw: number;
   pitch: number;

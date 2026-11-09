@@ -10,7 +10,7 @@ import type { BackgroundSettings, CameraSettings } from '../core/types';
 import { applyCssBackground } from '../scene/background';
 import { segmentedControl, type Control } from './controls';
 
-export interface ViewportShell {
+interface ViewportShell {
   el: HTMLElement;
   /** Element the stage renders into. */
   host: HTMLElement;
@@ -19,7 +19,7 @@ export interface ViewportShell {
 }
 
 /** CSS background for the preview (also visible when the stage renders with alpha). */
-export function applyPreviewBackground(el: HTMLElement, bg: BackgroundSettings): void {
+function applyPreviewBackground(el: HTMLElement, bg: BackgroundSettings): void {
   // Same implementation as the stage wrapper and the exporter (scene/background.ts), so the host
   // (visible only before the stage exists or when WebGL is unavailable) can never drift from them.
   el.classList.remove('checkerboard');

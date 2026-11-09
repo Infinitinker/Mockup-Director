@@ -1,13 +1,12 @@
 #!/usr/bin/env node
 /**
- * The release rules, used by the checks, build and release workflows in .github/workflows (see
- * docs/releasing.md).
+ * The release rules, used by the build and release workflows in .github/workflows (see
+ * docs/releasing.md). The version is the one in package.json, the app's only version.
  *
  *   node tools/release.mjs check [tag]
- *     Checks that package.json and src-tauri/Cargo.toml have the same version and, given a tag, that
- *     the tag is v<version>. Prints the version and whether it is a pre-release (a version with a
- *     hyphen, such as 0.3.0-beta.1); in GitHub Actions also as the step outputs `version` and
- *     `prerelease`.
+ *     Checks that the version is of the form 1.2.3 or 1.2.3-beta.1 and, given a tag, that the tag is
+ *     v<version>. Prints the version and whether it is a pre-release (a version with a hyphen, such
+ *     as 0.3.0-beta.1); in GitHub Actions also as the step outputs `version` and `prerelease`.
  *
  *   node tools/release.mjs files <windows|macos|linux> <folder>
  *     Checks that <folder> holds exactly the files that build makes for a release, as files.
@@ -45,33 +44,19 @@ export function releaseFiles(version, part) {
   return suffixes.map((suffix) => `MockupDirector-${version}-${suffix}`);
 }
 
-/** The version in the [package] section of a Cargo.toml file, or null. */
-export function cargoVersion(toml) {
-  const section = /^\[package\]\s*$([\s\S]*?)(?=^\[|(?![\s\S]))/m.exec(toml);
-  const version = section && /^version\s*=\s*"([^"]+)"/m.exec(section[1]);
-  return version ? version[1] : null;
-}
-
 /**
- * Checks the versions (and the tag, if there is one). Returns the version, the tag and whether it is
- * a pre-release, or the list of what is wrong.
+ * Checks the version in package.json (and the tag, if there is one). Returns the version, the tag
+ * and whether it is a pre-release, or the list of what is wrong.
  */
-export function checkVersions({ packageVersion, cargoVersion: cargo, tag }) {
+export function checkVersion({ version, tag }) {
+  if (!version) return { errors: ['package.json has no version.'] };
   const errors = [];
-  if (!packageVersion) errors.push('package.json has no version.');
-  if (!cargo) errors.push('src-tauri/Cargo.toml has no version in its [package] section.');
-  if (packageVersion && cargo && packageVersion !== cargo)
-    errors.push(
-      `package.json has the version ${packageVersion}, but src-tauri/Cargo.toml has ${cargo}. Give both the same version.`,
-    );
-  if (packageVersion && !/^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/.test(packageVersion))
-    errors.push(`The version ${packageVersion} is not of the form 1.2.3 or 1.2.3-beta.1.`);
-  if (tag !== undefined && packageVersion && tag !== `v${packageVersion}`)
-    errors.push(
-      `The tag is ${tag}, but the version in package.json is ${packageVersion}: the tag must be v${packageVersion}.`,
-    );
+  if (!/^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/.test(version))
+    errors.push(`The version ${version} is not of the form 1.2.3 or 1.2.3-beta.1.`);
+  if (tag !== undefined && tag !== `v${version}`)
+    errors.push(`The tag is ${tag}, but the version in package.json is ${version}: the tag must be v${version}.`);
   if (errors.length) return { errors };
-  return { errors, version: packageVersion, tag: `v${packageVersion}`, prerelease: packageVersion.includes('-') };
+  return { errors, version, tag: `v${version}`, prerelease: version.includes('-') };
 }
 
 /** Checks that the folder holds exactly the files of the release, or of one part of it. */
@@ -108,10 +93,9 @@ function fail(errors) {
   process.exit(1);
 }
 
-function readVersions(tag) {
-  const packageVersion = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).version;
-  const cargo = cargoVersion(readFileSync(join(ROOT, 'src-tauri', 'Cargo.toml'), 'utf8'));
-  return checkVersions({ packageVersion, cargoVersion: cargo, tag });
+function readVersion(tag) {
+  const { version } = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
+  return checkVersion({ version, tag });
 }
 
 /** The names in a folder of downloaded release files. */
@@ -122,14 +106,14 @@ function listFolder(folder) {
 
 function main([command, ...args]) {
   if (command === 'check') {
-    const result = readVersions(args[0]);
+    const result = readVersion(args[0]);
     if (result.errors.length) fail(result.errors);
     console.log(`version ${result.version}${result.prerelease ? ' (pre-release)' : ''}`);
     if (process.env.GITHUB_OUTPUT)
       appendFileSync(process.env.GITHUB_OUTPUT, `version=${result.version}\nprerelease=${result.prerelease}\n`);
   } else if (command === 'files' && args.length === 2 && Object.hasOwn(PARTS, args[0])) {
     const [part, folder] = args;
-    const result = readVersions(undefined);
+    const result = readVersion(undefined);
     if (result.errors.length) fail(result.errors);
     const names = listFolder(folder);
     const errors = checkFiles(names, result.version, part);
@@ -139,7 +123,7 @@ function main([command, ...args]) {
     console.log(`the ${part} files of ${result.version} are complete: ${names.join(', ')}`);
   } else if (command === 'notes' && args.length === 2) {
     const [folder, out] = args;
-    const result = readVersions(undefined);
+    const result = readVersion(undefined);
     if (result.errors.length) fail(result.errors);
     const names = listFolder(folder);
     const errors = checkFiles(names, result.version);

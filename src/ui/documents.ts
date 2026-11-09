@@ -26,7 +26,7 @@ export interface TabSnapshot {
   readonly state: DocumentState;
 }
 
-export interface AddOptions {
+interface AddOptions {
   name?: string;
   /** The tab starts with unsaved changes (e.g. restored unsaved work). */
   dirty?: boolean;
@@ -190,8 +190,8 @@ export class Documents {
   snapshot(): TabSnapshot[] {
     return this.entries.map((e) => {
       const isActive = e === this.active;
-      const state: DocumentState = isActive ? { ...this.store.state } : e.doc!.state;
-      const revision = isActive ? this.store.revision : e.doc!.revision;
+      const state: DocumentState = isActive ? { ...this.store.state } : this.parkedDoc(e).state;
+      const revision = isActive ? this.store.revision : this.parkedDoc(e).revision;
       return { id: e.id, name: e.name, dirty: this.isDirty(e), revision, state };
     });
   }
@@ -199,8 +199,14 @@ export class Documents {
   /* ---------------------------------------------------------------- */
 
   private isDirty(e: Entry): boolean {
-    const revision = e === this.active ? this.store.revision : e.doc!.revision;
+    const revision = e === this.active ? this.store.revision : this.parkedDoc(e).revision;
     return revision !== e.savedRevision;
+  }
+
+  /** The document of a tab that is not active (the active tab's document is in the store). */
+  private parkedDoc(e: Entry): StoreDocument {
+    if (!e.doc) throw new Error(`The inactive tab ${e.id} has no document.`);
+    return e.doc;
   }
 
   private freeUntitledNumber(): number {

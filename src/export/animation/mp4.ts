@@ -29,13 +29,13 @@ export function mp4EncodingAvailable(): boolean {
   );
 }
 
-export function bitrateFor(width: number, height: number, fps: number, quality: 'low' | 'medium' | 'high'): number {
+function bitrateFor(width: number, height: number, fps: number, quality: 'low' | 'medium' | 'high'): number {
   const bps = width * height * fps * (BPP[quality] ?? BPP.medium);
   return Math.round(Math.min(50_000_000, Math.max(400_000, bps)));
 }
 
 /** Codec strings to try for a size / fps, the lowest sufficient level first. */
-export function avcCandidates(width: number, height: number, fps: number): string[] {
+function avcCandidates(width: number, height: number, fps: number): string[] {
   const mbw = Math.ceil(width / 16);
   const mbh = Math.ceil(height / 16);
   const fs = mbw * mbh;
@@ -50,7 +50,7 @@ export function avcCandidates(width: number, height: number, fps: number): strin
 }
 
 /** Find a supported encoder configuration (null = H.264 encoding unsupported for this size). */
-export async function findAvcConfig(
+async function findAvcConfig(
   width: number,
   height: number,
   fps: number,
@@ -105,7 +105,8 @@ export class Mp4Writer {
     let writer: Mp4Writer | null = null;
     const encoder = new VideoEncoder({
       output: (chunk, meta) => {
-        const w = writer!;
+        const w = writer;
+        if (!w) throw new Error('The MP4 encoder produced output before its writer was made.');
         // Packets must reach the muxer in decode order – chain the (async) adds.
         w.chain = w.chain
           .then(() => source.add(mb.EncodedPacket.fromEncodedChunk(chunk), meta))

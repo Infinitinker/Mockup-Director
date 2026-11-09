@@ -845,7 +845,9 @@ export function createStage(container: HTMLElement): StageAPI {
             low.width = RW;
             low.height = RH;
           }
-          ctx = low.getContext('2d')!;
+          const lowCtx = low.getContext('2d');
+          if (!lowCtx) throw new StageError('Not enough memory for an animation frame.');
+          ctx = lowCtx;
           ctx.clearRect(0, 0, RW, RH);
         }
         try {
@@ -940,7 +942,9 @@ export function createStage(container: HTMLElement): StageAPI {
         target = document.createElement('canvas');
         target.width = RW;
         target.height = RH;
-        ctx = target.getContext('2d')!;
+        const targetCtx = target.getContext('2d');
+        if (!targetCtx) throw new StageError('Not enough memory for an image this large. Reduce the export size.');
+        ctx = targetCtx;
       }
       const prevRatio = renderer.getPixelRatio();
       const prevSize = renderer.getSize(new THREE.Vector2());
