@@ -29,4 +29,6 @@ To check a download, compare its checksum with this list: `Get-FileHash <file>` 
 {checksums}
 ```
 
+Each file's build can be checked with the [GitHub CLI](https://cli.github.com/): `gh attestation verify <file> --repo {repository}` shows that it was built by this repository's Release workflow.
+
 The licenses of the libraries inside the app are in [MockupDirector-{version}-third-party-notices.md]({download}/MockupDirector-{version}-third-party-notices.md).

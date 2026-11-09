@@ -110,7 +110,7 @@ The first time you start it, Windows or macOS may warn you about the app, and so
 
 ### Check a download
 
-The notes of every release list the SHA-256 checksum of each file. To check that a download is complete and unchanged, compare its checksum with the list: `Get-FileHash <file>` in PowerShell on Windows, `shasum -a 256 <file>` on macOS, `sha256sum <file>` on Linux.
+The notes of every release list the SHA-256 checksum of each file. To check that a download is complete and unchanged, compare its checksum with the list: `Get-FileHash <file>` in PowerShell on Windows, `shasum -a 256 <file>` on macOS, `sha256sum <file>` on Linux. With the [GitHub CLI](https://cli.github.com/), `gh attestation verify <file> --repo Infinitinker/Mockup-Director` also shows that a file was built by this repository's Release workflow.
 
 ## Models
 

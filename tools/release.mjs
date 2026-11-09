@@ -1,12 +1,16 @@
 #!/usr/bin/env node
 /**
- * The release rules, used by .github/workflows/release.yml (see docs/releasing.md).
+ * The release rules, used by the checks, build and release workflows in .github/workflows (see
+ * docs/releasing.md).
  *
  *   node tools/release.mjs check [tag]
  *     Checks that package.json and src-tauri/Cargo.toml have the same version and, given a tag, that
  *     the tag is v<version>. Prints the version and whether it is a pre-release (a version with a
- *     hyphen, such as 0.3.0-beta.1); in GitHub Actions also as the step outputs `version`, `tag` and
+ *     hyphen, such as 0.3.0-beta.1); in GitHub Actions also as the step outputs `version` and
  *     `prerelease`.
+ *
+ *   node tools/release.mjs files <windows|macos|linux> <folder>
+ *     Checks that <folder> holds exactly the files that build makes for a release, as files.
  *
  *   node tools/release.mjs notes <folder> <notes.md>
  *     Checks that <folder> holds exactly the files of a release, and writes the release notes from
@@ -15,24 +19,30 @@
  * Exits with code 1 and a message saying what to fix when a rule is broken.
  */
 import { createHash } from 'node:crypto';
-import { appendFileSync, readdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, readdirSync, readFileSync, realpathSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
-/** The files of a release, in the order the notes list them. */
-export function releaseFiles(version) {
-  const name = (suffix) => `MockupDirector-${version}-${suffix}`;
-  return [
-    name('windows-x64-setup.exe'),
-    name('windows-x64-portable.zip'),
-    name('macos-universal.dmg'),
-    name('linux-x86_64.AppImage'),
-    name('linux-x86_64.deb'),
-    name('linux-x86_64.rpm'),
-    name('third-party-notices.md'),
-  ];
+/** The files of a release by the job that makes them (the three builds and the notices), in the order the notes list them. */
+export const PARTS = {
+  windows: ['windows-x64-setup.exe', 'windows-x64-portable.zip'],
+  macos: ['macos-universal.dmg'],
+  linux: ['linux-x86_64.AppImage', 'linux-x86_64.deb', 'linux-x86_64.rpm'],
+  notices: ['third-party-notices.md'],
+};
+
+/**
+ * The files of a release, or of one part of it.
+ * @param {string} version
+ * @param {string} [part] a key of PARTS
+ * @returns {string[]}
+ */
+export function releaseFiles(version, part) {
+  const suffixes = part === undefined ? Object.values(PARTS).flat() : PARTS[part];
+  if (!suffixes) throw new Error(`${part} is not a part of the release: ${Object.keys(PARTS).join(', ')}.`);
+  return suffixes.map((suffix) => `MockupDirector-${version}-${suffix}`);
 }
 
 /** The version in the [package] section of a Cargo.toml file, or null. */
@@ -43,7 +53,7 @@ export function cargoVersion(toml) {
 }
 
 /**
- * Checks the versions (and the tag, if there is one; an empty tag is none). Returns the version, the tag and whether it is
+ * Checks the versions (and the tag, if there is one). Returns the version, the tag and whether it is
  * a pre-release, or the list of what is wrong.
  */
 export function checkVersions({ packageVersion, cargoVersion: cargo, tag }) {
@@ -56,7 +66,7 @@ export function checkVersions({ packageVersion, cargoVersion: cargo, tag }) {
     );
   if (packageVersion && !/^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/.test(packageVersion))
     errors.push(`The version ${packageVersion} is not of the form 1.2.3 or 1.2.3-beta.1.`);
-  if (tag && packageVersion && tag !== `v${packageVersion}`)
+  if (tag !== undefined && packageVersion && tag !== `v${packageVersion}`)
     errors.push(
       `The tag is ${tag}, but the version in package.json is ${packageVersion}: the tag must be v${packageVersion}.`,
     );
@@ -64,11 +74,12 @@ export function checkVersions({ packageVersion, cargoVersion: cargo, tag }) {
   return { errors, version: packageVersion, tag: `v${packageVersion}`, prerelease: packageVersion.includes('-') };
 }
 
-/** Checks that the folder holds exactly the files of the release. */
-export function checkFiles(names, version) {
-  const expected = releaseFiles(version);
+/** Checks that the folder holds exactly the files of the release, or of one part of it. */
+export function checkFiles(names, version, part) {
+  const expected = releaseFiles(version, part);
   const errors = expected.filter((f) => !names.includes(f)).map((f) => `${f} is missing.`);
-  for (const f of names) if (!expected.includes(f)) errors.push(`${f} is not a file of the release.`);
+  const of = part === undefined ? 'the release' : `the ${part} build`;
+  for (const f of names) if (!expected.includes(f)) errors.push(`${f} is not a file of ${of}.`);
   return errors;
 }
 
@@ -103,21 +114,34 @@ function readVersions(tag) {
   return checkVersions({ packageVersion, cargoVersion: cargo, tag });
 }
 
+/** The names in a folder of downloaded release files. */
+function listFolder(folder) {
+  if (!existsSync(folder)) fail([`${folder} does not exist: download the release files into it first.`]);
+  return readdirSync(folder);
+}
+
 function main([command, ...args]) {
   if (command === 'check') {
     const result = readVersions(args[0]);
     if (result.errors.length) fail(result.errors);
     console.log(`version ${result.version}${result.prerelease ? ' (pre-release)' : ''}`);
     if (process.env.GITHUB_OUTPUT)
-      appendFileSync(
-        process.env.GITHUB_OUTPUT,
-        `version=${result.version}\ntag=${result.tag}\nprerelease=${result.prerelease}\n`,
-      );
+      appendFileSync(process.env.GITHUB_OUTPUT, `version=${result.version}\nprerelease=${result.prerelease}\n`);
+  } else if (command === 'files' && args.length === 2 && Object.hasOwn(PARTS, args[0])) {
+    const [part, folder] = args;
+    const result = readVersions(undefined);
+    if (result.errors.length) fail(result.errors);
+    const names = listFolder(folder);
+    const errors = checkFiles(names, result.version, part);
+    for (const name of names)
+      if (!statSync(join(folder, name)).isFile()) errors.push(`${name} did not arrive as a file.`);
+    if (errors.length) fail(errors);
+    console.log(`the ${part} files of ${result.version} are complete: ${names.join(', ')}`);
   } else if (command === 'notes' && args.length === 2) {
     const [folder, out] = args;
     const result = readVersions(undefined);
     if (result.errors.length) fail(result.errors);
-    const names = readdirSync(folder);
+    const names = listFolder(folder);
     const errors = checkFiles(names, result.version);
     if (errors.length) fail(errors);
     const checksums = releaseFiles(result.version).map((name) => ({ name, sha256: sha256(join(folder, name)) }));
@@ -126,7 +150,9 @@ function main([command, ...args]) {
     writeFileSync(out, renderNotes(template, { version: result.version, tag: result.tag, repository, checksums }));
     console.log(`release notes written to ${out}`);
   } else {
-    fail(['Usage: node tools/release.mjs check [tag] | notes <folder> <notes.md>']);
+    fail([
+      'Usage: node tools/release.mjs check [tag] | files <windows|macos|linux> <folder> | notes <folder> <notes.md>',
+    ]);
   }
 }
 

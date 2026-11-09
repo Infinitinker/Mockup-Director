@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import packageJson from '../../package.json';
 import cargoToml from '../../src-tauri/Cargo.toml?raw';
 import template from '../../tools/release-notes.md?raw';
-import { cargoVersion, checkFiles, checkVersions, releaseFiles, renderNotes } from '../../tools/release.mjs';
+import { cargoVersion, checkFiles, checkVersions, PARTS, releaseFiles, renderNotes } from '../../tools/release.mjs';
 
 describe('cargoVersion', () => {
   it('reads the version of the [package] section only', () => {
@@ -55,13 +55,6 @@ describe('checkVersions', () => {
     });
   });
 
-  it('takes an empty tag as no tag, as CI passes it for runs that are not for a tag', () => {
-    expect(checkVersions({ packageVersion: '0.2.0', cargoVersion: '0.2.0', tag: '' })).toMatchObject({
-      errors: [],
-      tag: 'v0.2.0',
-    });
-  });
-
   it('refuses different versions in package.json and Cargo.toml', () => {
     const { errors } = checkVersions({ packageVersion: '0.2.0', cargoVersion: '0.1.0', tag: undefined });
     expect(errors).toEqual([
@@ -85,6 +78,20 @@ describe('checkVersions', () => {
 describe('checkFiles', () => {
   it('accepts exactly the files of the release', () => {
     expect(checkFiles(releaseFiles('0.2.0'), '0.2.0')).toEqual([]);
+  });
+
+  it('checks the files of one build on their own', () => {
+    expect(releaseFiles('0.2.0', 'macos')).toEqual(['MockupDirector-0.2.0-macos-universal.dmg']);
+    expect(checkFiles(releaseFiles('0.2.0', 'windows'), '0.2.0', 'windows')).toEqual([]);
+    expect(checkFiles(releaseFiles('0.2.0', 'windows'), '0.2.0', 'linux')).toContain(
+      'MockupDirector-0.2.0-windows-x64-setup.exe is not a file of the linux build.',
+    );
+  });
+
+  it('makes up the whole release from its parts', () => {
+    const parts = Object.keys(PARTS).flatMap((part) => releaseFiles('0.2.0', part));
+    expect(parts).toEqual(releaseFiles('0.2.0'));
+    expect(() => releaseFiles('0.2.0', 'android')).toThrow(/android is not a part/);
   });
 
   it('names missing and unexpected files', () => {

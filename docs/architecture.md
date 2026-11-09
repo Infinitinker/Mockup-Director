@@ -39,13 +39,13 @@ src-tauri/      the Tauri v2 shell (Rust): window, dialogs, a single app process
   ISSUE_TEMPLATE/    the issue forms: bug report, model request, translation; a link to report a security
                      problem privately (GitHub's advisory form, see SECURITY.md)
 .github/workflows/
-  checks.yml         the Checks: lint, web build and tests, translations, licenses, Rust on Windows and
-                     Linux; for main, dev and pull requests
-  build-windows.yml  the NSIS installer (x64) and a portable ZIP, built with MSYS2
-  build-macos.yml    a universal .dmg
-  build-linux.yml    .AppImage, .deb and .rpm (x86_64)
-  release.yml        for a v* tag: checks the version, calls the three builds, drafts the release; a
-                     trial without a release for pull requests that change it, and on demand
+  checks.yml         the Checks: Lint, Web (build, tests, translations), Licenses, and clippy and the
+                     Rust tests on Windows and Linux; for main, dev and pull requests
+  build-windows.yml  the NSIS installer (x64) and a portable ZIP, built with MSYS2; then checks the files
+  build-macos.yml    a universal .dmg; then checks the file
+  build-linux.yml    .AppImage, .deb and .rpm (x86_64); then checks the files
+  release.yml        for a v* tag: checks the version, calls the three builds, drafts the release with
+                     provenance attestations; by hand, the same without drafting
 .github/actions/notices/    the license checks and the notices check, for checks.yml and release.yml
 LICENSE                     the MIT license; every package of the app contains it as LICENSE.txt
 THIRD-PARTY-NOTICES.md      the licenses of the app's dependencies, written by tools/notices.mjs;
@@ -54,7 +54,8 @@ tools/licenses.mjs          license check of npm packages (npm run licenses)
 tools/notices.mjs           writes THIRD-PARTY-NOTICES.md (npm run notices)
 tools/licenses/             license texts that come from no package: the Windows runtime parts, and
                             npm packages that contain no license file
-tools/release.mjs           the release rules: version and tag, the files, the notes (release.yml)
+tools/release.mjs           the release rules: version and tag, the files, the notes (checks.yml, the
+                            build workflows, release.yml)
 tools/release-notes.md      the template of the release notes
 tools/draw-icon.mjs         draws the app icon and writes every icon file (npm run icons)
 tools/check-i18n.mjs        checks that every text has a translation (npm run check:i18n)
