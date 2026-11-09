@@ -62,3 +62,15 @@ Without secrets, the workflow builds an ad-hoc signed app (`signingIdentity: "-"
 Signing is turned on when the first three secrets are set; notarization needs the other three too. Missing secrets are skipped, so the build still succeeds without them.
 
 Windows builds and the Linux packages are not signed.
+
+## Repository settings
+
+These settings are made on GitHub, not in files.
+
+To protect `main`, add a branch ruleset (**Settings → Rules → Rulesets → New branch ruleset**): target *Include default branch*, with the rules *Restrict deletions*, *Block force pushes*, *Require a pull request before merging* (0 approvals if you work alone) and *Require status checks to pass* with the checks `Lint`, `Web`, `Licenses`, `Windows` and `Linux`, each from the GitHub Actions app. These are the jobs of the Checks workflow (`.github/workflows/checks.yml`). The builds are not required checks: they take ten minutes and more, and the push to `dev` builds the same commit the pull request merges. In a private repository on a free GitHub plan, rulesets are not enforced: they need a public repository or GitHub Pro.
+
+Under **Settings → General → Pull Requests**, allow only merge commits, so the history of `dev` is kept on `main`.
+
+When the repository is public, turn on **Settings → Code security → Private vulnerability reporting**: [SECURITY.md](../SECURITY.md) and the issue chooser's "Security problem" link (`.github/ISSUE_TEMPLATE/config.yml`) send reporters to it.
+
+The issue forms in `.github/ISSUE_TEMPLATE/` add the labels `bug`, `model` and `translation`, which must exist in the repository (**Issues → Labels**); a form leaves out a label that does not.

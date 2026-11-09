@@ -2,7 +2,7 @@ name: Checks
 
 # Pushes to the two long-lived branches, and pull requests, also from forks. The jobs finish in a few
 # minutes and have short, fixed names, so they are the required status checks of the main branch
-# ruleset (docs/development.md). The desktop apps are built by build-windows.yml, build-macos.yml and
+# ruleset (docs/releasing.md). The desktop apps are built by build-windows.yml, build-macos.yml and
 # build-linux.yml.
 on:
   push:

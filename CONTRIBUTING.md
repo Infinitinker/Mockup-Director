@@ -1,21 +1,21 @@
 # Contributing to Mockup Director
 
-Thank you for helping! New models and translations are the most welcome contributions; fixes, ideas and bug reports are welcome too.
+Thank you for helping! New models are the most welcome contributions; fixes, ideas and bug reports are welcome too.
 
 - **Found a bug?** Open an issue with the bug report form. Say which version you use: hold the pointer over **Mockup Director** at the left of the toolbar.
 - **Missing a model?** Open an issue with the model form, or build it yourself (below).
-- **Want the app in your language?** Open an issue with the translation form, or translate it yourself (below).
 - **Found a security problem?** Report it privately, as [SECURITY.md](SECURITY.md) describes, not in an issue.
 
-Everything in the project is written in English: code, comments, documentation and commit messages. Other languages exist only as translations in `src/i18n/`. Models stay generic: no third-party names, logos, artwork or shapes that copy a real product. Contributions are accepted under the project's [MIT license](LICENSE).
+Everything in the project is written in English: code, comments, documentation, commit messages and the interface. Models stay generic: no third-party names, logos, artwork or shapes that copy a real product. Contributions are accepted under the project's [MIT license](LICENSE).
 
 ## Contributing a model
 
-A model is one file in `src/models/` and a line in `src/models/registry.ts`; the interface is built from it, with no UI code. [docs/models.md](docs/models.md) explains how, with the 3D conventions every model follows. Add the translations of its texts too (`npm run check:i18n` lists what is missing).
+A model needs no UI code: the interface is built from its definition. [docs/models.md](docs/models.md) describes the contract and the 3D conventions every model follows.
 
-## Contributing a translation
-
-A language is one file, `src/i18n/<code>.ts`, that translates the English messages and texts. [docs/translations.md](docs/translations.md) explains how to add a language and keep it complete. You don't need Rust for this: `npm run dev` shows the app in a browser.
+1. Create the model's file in `src/models/`, with its parameters, slots and `build()` function.
+2. Register it in `MODELS` in `src/models/registry.ts`.
+3. Add the translations of its texts to every locale in `src/i18n/`, and its tests to `tests/models/`.
+4. Run the checks: `npm run lint`, `npm run build`, `npm test` and `npm run check:i18n` (which lists missing translations).
 
 ## Code
 

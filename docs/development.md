@@ -105,7 +105,28 @@ cargo fmt --check --manifest-path src-tauri/Cargo.toml
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 ```
 
-The **Checks** workflow (`.github/workflows/checks.yml`) runs all of these for every push to `main` and `dev` and for every pull request, in a few minutes: `Lint` (Biome and rustfmt), `Web` (type-check, build, unit tests, translations), `Licenses`, and clippy and the Rust tests on two systems, `Windows` (with MSYS2 and the GNU toolchain) and `Linux`. The Rust code differs per system and clippy only sees the code of the system it runs on, hence two runs; the macOS code is compiled by the macOS build. Once a month Dependabot opens a pull request to `dev` with new versions of the actions the workflows use (`.github/dependabot.yml`).
+The **Checks** workflow (`.github/workflows/checks.yml`) runs all of these for every push to `main` and `dev` and for every pull request, in a few minutes: `Lint` (Biome, rustfmt, and that `package.json` and `src-tauri/Cargo.toml` have the same version), `Web` (type-check, build, unit tests, translations), `Licenses`, and clippy and the Rust tests on two systems, `Windows` (with MSYS2 and the GNU toolchain) and `Linux`. The Rust code differs per system and clippy only sees the code of the system it runs on, hence two runs; the macOS code is compiled by the macOS build. Once a month Dependabot opens a pull request to `dev` with new versions of the actions the workflows use (`.github/dependabot.yml`).
+
+## Interface texts
+
+The interface's texts are the messages in `src/i18n/en.ts`, shown with `t(key)` (and carried by errors with `msg(key, vars)`), and the labels and hints of models and presets, written in the code with `L('…')` or `Lctx(context, '…')`. How they reach other languages is described in [translations.md](translations.md). Every new or changed text follows these rules:
+
+| Rule | Write | Not |
+| --- | --- | --- |
+| English only, with American spelling. | Color, Center, Analyzing colors | Colour, Centre, Analysing colours |
+| Sentence case for labels, buttons, menu items, tab names and headings. | Save current look, Restore defaults, Batch export | Save Current Look |
+| The ellipsis character `…`, never three dots, and only on a command that asks for more before it acts, and on a progress text. A command that acts at once has none. | Open project…, Save project…, Export image…, Choose…, Loading…, Exporting… | Loading..., Restore defaults… |
+| Hints and descriptions are full sentences ending with a period. Labels have no period. | This model has no settings. (hint); Lock aspect ratio (label) | Small = flat telephoto look, large = strong perspective (hint) |
+| Clauses are joined with a colon. The en dash `–` is only for ranges and as a separator in names and labels. | They are still open: save them to keep them. Ø 22–119.5 mm, A5 – 148 × 210 mm, Inside – left | Drop artwork – it fills the empty slots of the model |
+| Curly quotes “ ” and the apostrophe ’. | Save changes to “{name}”?, Don’t save | Could not decode the image "{name}", Don't save |
+| No "Please". | Choose PNG or JPEG. | Please choose PNG or JPEG. |
+| A count is written as "Label: {n}". | Files chosen: {n}, Imported looks: {n} | {n} files chosen, Errors ({n}) |
+| A control with a shortcut shows it as "Action (shortcut)", in its tooltip. `shortcutLabel` in `src/ui/dom.ts` writes the keys for the system. | Undo (Ctrl+Z), New tab (⌘T) | Ctrl+Z: Undo |
+| An error message says what happened, then what to do. | Not enough memory for an image this large. Reduce the export size. The file could not be read: it is not a Mockup Director project. Choose a .mdproj file. | This is not a Mockup Director project file. |
+| One name per concept: the terms in [architecture.md](architecture.md#terms). | look, artwork, light preset, view | preset or style for a look, image for artwork |
+| Millimeters as mm after a space, degrees as ° with no space, × between dimensions. | Standard 10.4 mm, 120 × 120 mm, 360° turn, ±{a}° | 10.4mm, 90 deg, 120x120 mm |
+
+Today's texts take values through `{placeholders}` (see [translations.md](translations.md)), never through concatenated strings: `'Save changes to “{name}”?'`, not `'Save changes to “' + name + '”?'`.
 
 ## Building the desktop app
 
@@ -137,9 +158,7 @@ GitHub Actions builds all three systems on every push to `dev` and `main` and fo
 
 `main` is the stable version; day-to-day work happens on `dev`. Changes reach `main` through a pull request from `dev`. Every push to `dev` and `main` (merging a pull request too) builds the apps and runs the Checks.
 
-To protect `main` (**Settings → Rules → Rulesets → New branch ruleset**): target *Include default branch*, with the rules *Restrict deletions*, *Block force pushes*, *Require a pull request before merging* (0 approvals if you work alone) and *Require status checks to pass* with the checks `Lint`, `Web`, `Licenses`, `Windows` and `Linux`, each from the GitHub Actions app. The builds are not required checks: they take ten minutes and more, and the push to `dev` builds the same commit the pull request merges. Under *General → Pull Requests*, allowing only merge commits keeps the history of `dev` on `main`. In a private repository on a free GitHub plan, rulesets are not enforced: they need a public repository or GitHub Pro.
-
-When the repository is public, also turn on **Settings → Code security → Private vulnerability reporting**: [SECURITY.md](../SECURITY.md) and the issue chooser's "Security problem" link send reporters to it. The issue forms in `.github/ISSUE_TEMPLATE/` add the labels `bug`, `model` and `translation`, which must exist in the repository (**Issues → Labels**); a form leaves out a label that does not.
+How `main` is protected on GitHub is described in [releasing.md](releasing.md#repository-settings).
 
 ## The app icon
 

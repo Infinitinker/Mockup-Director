@@ -166,7 +166,7 @@ On macOS use ⌘ instead of Ctrl, except for switching tabs (Ctrl+Tab / Ctrl+Shi
 
 ## Language
 
-Mockup Director speaks English and Polish. On the first start it follows your system language (Polish systems get Polish, everyone else English); switch it any time with **EN / PL** in the toolbar. Want the app in your language? See [Contributing](#contributing).
+Mockup Director speaks English and Polish. On the first start it follows your system language (Polish systems get Polish, everyone else English); switch it any time with **EN / PL** in the toolbar.
 
 ## Questions
 
@@ -215,7 +215,7 @@ Hold the pointer over **Mockup Director** at the left of the toolbar.
 
 ## Contributing
 
-New models, translations, fixes and ideas are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md). Found a security problem? Please report it privately, as [SECURITY.md](SECURITY.md) describes.
+New models, fixes and ideas are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md). Found a security problem? Please report it privately, as [SECURITY.md](SECURITY.md) describes.
 
 Further documentation, for developers and translators:
 
