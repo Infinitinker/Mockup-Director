@@ -67,6 +67,8 @@ npm test
 
 `npx vitest` runs them in watch mode while you work.
 
+`tests/layout.test.ts` checks the repository's source files: every module opens with its header comment, and no banner comment splits a file into sections. Its allow-lists name the files that do not follow these rules yet; they may only shrink. `tests/models/ids.test.ts` pins the IDs saved in project files in a snapshot; [models.md](models.md#testing) says when it may be updated.
+
 Every text in the code has a translation in every interface language (see [translations.md](translations.md)):
 
 ```bash

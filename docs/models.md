@@ -205,7 +205,7 @@ To add a composite, export the base model's build function from its file, define
    ```
 
    Texts that already exist (such as `'Front'` or `'Width'`) are translated once for all models. See [translations.md](translations.md), also for texts with numbers in them and for contexts.
-5. Write its tests (see [Testing](#testing)), then run the checks:
+5. Its new IDs and slots change the snapshots of the model tests (see [Testing](#testing)): update them with `npx vitest run -u tests/models`, and check in the diff that they only add. Add tests for what the model does beyond the contract, then run the checks:
 
    ```bash
    npm run lint
@@ -227,11 +227,20 @@ To add a composite, export the base model's build function from its file, define
 
 ## Testing
 
-Model tests go in `tests/models/`, mirroring `src/models/`. Like every test (`vitest.config.ts`), they run in Node: no WebGL and no DOM. `build` needs neither, since it only creates three.js objects: give it a context with plain `THREE.Texture` objects as artwork. Models that draw a texture on a 2D canvas (`books.ts`, `printFlat.ts`, `screen.ts`) call `document.createElement`, which Node lacks: the tests replace `document` (`vi.stubGlobal`) with a fake whose canvases have no 2D context, which those models already handle by leaving the drawing out.
+Every model in `MODELS` is checked by `tests/models/registry.test.ts`, so a new model is covered as soon as it is registered. Like every test (`vitest.config.ts`), it runs in Node: no WebGL and no DOM. `build` needs neither, since it only creates three.js objects. `tests/models/fakeContext.ts` holds the fakes: a context whose artwork is plain `THREE.Texture` objects shaped like each slot's aspect, with or without artwork in the slots, and a `document` whose canvases have no 2D context, which the models that draw on a 2D canvas (`books.ts`, `printFlat.ts`, `screen.ts`) already handle by leaving the drawing out. Tests for what one model does beyond the contract go in `tests/models/` too, mirroring `src/models/`.
 
-A model's tests check:
+The registry test checks:
 
-- **Parameters:** IDs are unique; every number has `min <= default <= max` and a `step` above 0; every select's default is one of its options; every color's default is `#rrggbb`. Slot IDs are unique and every `aspect` is above 0.
-- **Geometry:** built with the defaults, and with each number parameter at its `min` and at its `max`, the object has no `NaN` in any vertex position, its lowest point is at `y = 0`, it is centered on `x` and `z`, and its front faces `+Z` (the primary slot's artwork is on faces whose normals point to `+Z`).
-- **Shared textures:** after a build, the textures from `getTexture` are unchanged (`repeat`, `offset`, `rotation`, `center`, `flipY`) and not disposed, and `disposeObject` on the result leaves them alone.
-- **Templates:** a template function gives a positive size with the defaults, with each number parameter at its limits, and with an empty object.
+- **Registry:** model IDs are unique and kebab-case, and `getModel` finds each model by its ID and falls back to the first one for an unknown ID.
+- **Definition:** the category is a known one and the icon has a 64 × 64 view box.
+- **Parameters:** IDs are unique and camelCase; every number has `min <= default <= max` and a `step` above 0; every boolean's default is a boolean; every select's option values are unique and its default is one of them; every color's default is `#rrggbb`.
+- **Slots:** IDs are unique and camelCase, and every `aspect` is a finite number above 0.
+- **Templates:** a template function gives a positive size with the defaults, with all number parameters at their `min`, with all at their `max`, with each one alone at its `min` and at its `max`, and with an empty object. At the defaults, the slot's `aspect` matches the template's width / height within 0.1 %.
+- **Front:** at the defaults, the primary slot's artwork is on faces whose normals point to `+Z`, within about 25 degrees.
+- **Placement:** built with the defaults and with all number parameters at their `min` and at their `max`, each with and without artwork, with each number parameter alone at its `min` and at its `max`, and with 20 sets of seeded random parameter values, the object has no `NaN` in any vertex position, its lowest point is at `y = 0` and it is centered on `x` and `z`, within 0.01 mm.
+- **Shared textures:** after a build with the defaults and with all number parameters at their `min` and at their `max`, with and without artwork, and with each option of each select, the textures from `getTexture` keep their state (`repeat`, `offset`, `center`, `rotation`, wrapping, `flipY`, color space, anisotropy, filters, mipmaps, `version`, `matrixAutoUpdate` and `userData`) and their image, and are not disposed, also after `disposeObject` on the result.
+- **Shown slots:** the slots whose texture is on a material at the defaults, with and without artwork, match a snapshot; update it (`npx vitest run -u tests/models`) only when a model is meant to show other slots.
+
+A model that cannot meet a check yet is listed as an exception in the test, never left out: `PLACEMENT_EXCEPTIONS` lists models placed less exactly, for all parameter values or only for those its `when` picks, with a tolerance per axis as a fraction of the largest size (or none, which skips that axis), and `FRONT_EXCEPTIONS` lists models whose primary artwork faces `+Y` at the defaults. Every entry gives its reason; a known issue says so, and its entry goes when the issue is fixed.
+
+`tests/models/ids.test.ts` pins the IDs that project files save: every model's ID and category, its slot IDs, its parameter IDs with their kind, the range and step of number parameters, and the values of select options. They are unique, and every select's default is one of its options. A snapshot diff that removes or narrows an entry means something saved in project files was renamed or narrowed, which must not happen (see [Naming](#naming)): never update the snapshot to make the test pass. A new model, slot, parameter or option, or a wider range, only adds or widens: update the snapshots with `npx vitest run -u tests/models`, and check in the diff that this is all they do.

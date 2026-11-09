@@ -96,7 +96,8 @@ src/
                 batch export (batch.ts), the bridge to export (exportBridge.ts), model helpers
                 (modelUtils.ts), shortcuts, icons and DOM helpers (dom.ts)
 tests/          unit tests (Vitest, config in vitest.config.ts); their folders mirror src/ and tools/;
-                shared test data in fixtures.ts
+                shared test data in fixtures.ts, a seeded random generator in random.ts, and the
+                checks of header and banner comments in layout.test.ts
 src-tauri/      the Tauri v2 shell (Rust): main.rs starts lib.rs, which sets up the window, the dialogs,
                 a single app process and the commands; writing files (files.rs), opened project files
                 (opened.rs), closing the window if the page never answers (closing.rs); build.rs

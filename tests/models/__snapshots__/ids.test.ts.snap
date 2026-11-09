@@ -1,0 +1,2023 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`saved ids > match the snapshot 1`] = `
+{
+  "bluray-case": {
+    "category": "disc",
+    "params": {
+      "bandColor": {
+        "kind": "color",
+      },
+      "bandEmboss": {
+        "kind": "boolean",
+      },
+      "cornerRadius": {
+        "kind": "number",
+        "max": 4.5,
+        "min": 2.5,
+        "step": 0.1,
+      },
+      "coverFinish": {
+        "kind": "select",
+        "options": [
+          "glossy",
+          "matte",
+          "satin",
+        ],
+      },
+      "plastic": {
+        "kind": "select",
+        "options": [
+          "black",
+          "blue",
+          "clear",
+          "green",
+          "purple",
+          "red",
+          "smoke",
+          "white",
+        ],
+      },
+      "sideColor": {
+        "kind": "color",
+      },
+      "sleeveGloss": {
+        "kind": "number",
+        "max": 100,
+        "min": 0,
+        "step": 1,
+      },
+      "thickness": {
+        "kind": "select",
+        "options": [
+          "11",
+          "12",
+          "7",
+        ],
+      },
+    },
+    "slots": [
+      "back",
+      "cover",
+      "front",
+      "spine",
+    ],
+  },
+  "bluray-case-disc": {
+    "category": "disc",
+    "params": {
+      "bandColor": {
+        "kind": "color",
+      },
+      "bandEmboss": {
+        "kind": "boolean",
+      },
+      "cornerRadius": {
+        "kind": "number",
+        "max": 4.5,
+        "min": 2.5,
+        "step": 0.1,
+      },
+      "coverFinish": {
+        "kind": "select",
+        "options": [
+          "glossy",
+          "matte",
+          "satin",
+        ],
+      },
+      "discAngle": {
+        "kind": "number",
+        "max": 45,
+        "min": -45,
+        "step": 1,
+      },
+      "discDataSide": {
+        "kind": "select",
+        "options": [
+          "dark",
+          "gold",
+          "silver",
+          "violet",
+        ],
+      },
+      "discFinish": {
+        "kind": "select",
+        "options": [
+          "glossy",
+          "matte",
+        ],
+      },
+      "discFullFace": {
+        "kind": "boolean",
+      },
+      "discInner": {
+        "kind": "number",
+        "max": 46,
+        "min": 15,
+        "step": 0.5,
+      },
+      "discLabelBase": {
+        "kind": "select",
+        "options": [
+          "silver",
+          "white",
+        ],
+      },
+      "discOffset": {
+        "kind": "number",
+        "max": 100,
+        "min": 0,
+        "step": 1,
+      },
+      "discPlacement": {
+        "kind": "select",
+        "options": [
+          "behind",
+          "flat",
+          "front",
+        ],
+      },
+      "plastic": {
+        "kind": "select",
+        "options": [
+          "black",
+          "blue",
+          "clear",
+          "green",
+          "purple",
+          "red",
+          "smoke",
+          "white",
+        ],
+      },
+      "sideColor": {
+        "kind": "color",
+      },
+      "sleeveGloss": {
+        "kind": "number",
+        "max": 100,
+        "min": 0,
+        "step": 1,
+      },
+      "thickness": {
+        "kind": "select",
+        "options": [
+          "11",
+          "12",
+          "7",
+        ],
+      },
+    },
+    "slots": [
+      "back",
+      "cover",
+      "disc",
+      "front",
+      "spine",
+    ],
+  },
+  "book-hardcover": {
+    "category": "book",
+    "params": {
+      "boardThickness": {
+        "kind": "number",
+        "max": 4,
+        "min": 1.5,
+        "step": 0.1,
+      },
+      "coverFinish": {
+        "kind": "select",
+        "options": [
+          "gloss",
+          "matte",
+          "satin",
+        ],
+      },
+      "headband": {
+        "kind": "boolean",
+      },
+      "headbandColor": {
+        "kind": "color",
+      },
+      "height": {
+        "kind": "number",
+        "max": 600,
+        "min": 80,
+        "step": 1,
+      },
+      "pageColor": {
+        "kind": "color",
+      },
+      "sideColor": {
+        "kind": "color",
+      },
+      "spine": {
+        "kind": "select",
+        "options": [
+          "flat",
+          "rounded",
+        ],
+      },
+      "squares": {
+        "kind": "number",
+        "max": 6,
+        "min": 1,
+        "step": 0.5,
+      },
+      "thickness": {
+        "kind": "number",
+        "max": 120,
+        "min": 2,
+        "step": 0.5,
+      },
+      "width": {
+        "kind": "number",
+        "max": 450,
+        "min": 60,
+        "step": 1,
+      },
+    },
+    "slots": [
+      "back",
+      "cover",
+      "front",
+      "spine",
+    ],
+  },
+  "book-paperback": {
+    "category": "book",
+    "params": {
+      "coverFinish": {
+        "kind": "select",
+        "options": [
+          "gloss",
+          "matte",
+          "satin",
+        ],
+      },
+      "height": {
+        "kind": "number",
+        "max": 600,
+        "min": 80,
+        "step": 1,
+      },
+      "hingeScore": {
+        "kind": "boolean",
+      },
+      "pageColor": {
+        "kind": "color",
+      },
+      "sideColor": {
+        "kind": "color",
+      },
+      "thickness": {
+        "kind": "number",
+        "max": 90,
+        "min": 2,
+        "step": 0.5,
+      },
+      "width": {
+        "kind": "number",
+        "max": 450,
+        "min": 60,
+        "step": 1,
+      },
+    },
+    "slots": [
+      "back",
+      "cover",
+      "front",
+      "spine",
+    ],
+  },
+  "box": {
+    "category": "box",
+    "params": {
+      "bevel": {
+        "kind": "number",
+        "max": 6,
+        "min": 0,
+        "step": 0.1,
+      },
+      "bleed": {
+        "kind": "boolean",
+      },
+      "depth": {
+        "kind": "number",
+        "max": 600,
+        "min": 10,
+        "step": 1,
+      },
+      "finish": {
+        "kind": "select",
+        "options": [
+          "glossy",
+          "matte",
+          "satin",
+        ],
+      },
+      "height": {
+        "kind": "number",
+        "max": 600,
+        "min": 10,
+        "step": 1,
+      },
+      "sideColor": {
+        "kind": "color",
+      },
+      "width": {
+        "kind": "number",
+        "max": 600,
+        "min": 10,
+        "step": 1,
+      },
+    },
+    "slots": [
+      "back",
+      "bottom",
+      "front",
+      "left",
+      "right",
+      "top",
+    ],
+  },
+  "box-dieline": {
+    "category": "box",
+    "params": {
+      "bevel": {
+        "kind": "number",
+        "max": 6,
+        "min": 0,
+        "step": 0.1,
+      },
+      "bleed": {
+        "kind": "boolean",
+      },
+      "depth": {
+        "kind": "number",
+        "max": 600,
+        "min": 10,
+        "step": 1,
+      },
+      "finish": {
+        "kind": "select",
+        "options": [
+          "glossy",
+          "matte",
+          "satin",
+        ],
+      },
+      "height": {
+        "kind": "number",
+        "max": 600,
+        "min": 10,
+        "step": 1,
+      },
+      "width": {
+        "kind": "number",
+        "max": 600,
+        "min": 10,
+        "step": 1,
+      },
+    },
+    "slots": [
+      "net",
+    ],
+  },
+  "box-disc": {
+    "category": "box",
+    "params": {
+      "bevel": {
+        "kind": "number",
+        "max": 6,
+        "min": 0,
+        "step": 0.1,
+      },
+      "bleed": {
+        "kind": "boolean",
+      },
+      "depth": {
+        "kind": "number",
+        "max": 600,
+        "min": 10,
+        "step": 1,
+      },
+      "discAngle": {
+        "kind": "number",
+        "max": 45,
+        "min": -45,
+        "step": 1,
+      },
+      "discDataSide": {
+        "kind": "select",
+        "options": [
+          "dark",
+          "gold",
+          "silver",
+          "violet",
+        ],
+      },
+      "discFinish": {
+        "kind": "select",
+        "options": [
+          "glossy",
+          "matte",
+        ],
+      },
+      "discFullFace": {
+        "kind": "boolean",
+      },
+      "discInner": {
+        "kind": "number",
+        "max": 46,
+        "min": 15,
+        "step": 0.5,
+      },
+      "discLabelBase": {
+        "kind": "select",
+        "options": [
+          "silver",
+          "white",
+        ],
+      },
+      "discOffset": {
+        "kind": "number",
+        "max": 100,
+        "min": 0,
+        "step": 1,
+      },
+      "discPlacement": {
+        "kind": "select",
+        "options": [
+          "behind",
+          "flat",
+          "front",
+        ],
+      },
+      "finish": {
+        "kind": "select",
+        "options": [
+          "glossy",
+          "matte",
+          "satin",
+        ],
+      },
+      "height": {
+        "kind": "number",
+        "max": 600,
+        "min": 10,
+        "step": 1,
+      },
+      "sideColor": {
+        "kind": "color",
+      },
+      "width": {
+        "kind": "number",
+        "max": 600,
+        "min": 10,
+        "step": 1,
+      },
+    },
+    "slots": [
+      "back",
+      "bottom",
+      "disc",
+      "front",
+      "left",
+      "right",
+      "top",
+    ],
+  },
+  "box-slim": {
+    "category": "box",
+    "params": {
+      "baseColor": {
+        "kind": "color",
+      },
+      "bevel": {
+        "kind": "number",
+        "max": 6,
+        "min": 0,
+        "step": 0.1,
+      },
+      "bleed": {
+        "kind": "boolean",
+      },
+      "depth": {
+        "kind": "number",
+        "max": 200,
+        "min": 5,
+        "step": 1,
+      },
+      "finish": {
+        "kind": "select",
+        "options": [
+          "glossy",
+          "matte",
+          "satin",
+        ],
+      },
+      "height": {
+        "kind": "number",
+        "max": 600,
+        "min": 20,
+        "step": 1,
+      },
+      "lidCover": {
+        "kind": "number",
+        "max": 100,
+        "min": 30,
+        "step": 1,
+      },
+      "orientation": {
+        "kind": "select",
+        "options": [
+          "flat",
+          "upright",
+        ],
+      },
+      "sideColor": {
+        "kind": "color",
+      },
+      "width": {
+        "kind": "number",
+        "max": 600,
+        "min": 20,
+        "step": 1,
+      },
+    },
+    "slots": [
+      "base",
+      "lid",
+      "lidSides",
+    ],
+  },
+  "cd-case": {
+    "category": "disc",
+    "params": {
+      "discDataSide": {
+        "kind": "select",
+        "options": [
+          "dark",
+          "gold",
+          "silver",
+          "violet",
+        ],
+      },
+      "discFinish": {
+        "kind": "select",
+        "options": [
+          "glossy",
+          "matte",
+        ],
+      },
+      "discFullFace": {
+        "kind": "boolean",
+      },
+      "discInner": {
+        "kind": "number",
+        "max": 46,
+        "min": 15,
+        "step": 0.5,
+      },
+      "discLabelBase": {
+        "kind": "select",
+        "options": [
+          "silver",
+          "white",
+        ],
+      },
+      "inlayColor": {
+        "kind": "color",
+      },
+      "paperFinish": {
+        "kind": "select",
+        "options": [
+          "gloss",
+          "matte",
+          "satin",
+        ],
+      },
+      "showBooklet": {
+        "kind": "boolean",
+      },
+      "showDisc": {
+        "kind": "boolean",
+      },
+      "trayColor": {
+        "kind": "select",
+        "options": [
+          "black",
+          "clear",
+          "smoke",
+          "white",
+        ],
+      },
+      "variant": {
+        "kind": "select",
+        "options": [
+          "slim",
+          "standard",
+        ],
+      },
+    },
+    "slots": [
+      "booklet",
+      "disc",
+      "inlay",
+    ],
+  },
+  "cd-case-disc": {
+    "category": "disc",
+    "params": {
+      "discAngle": {
+        "kind": "number",
+        "max": 45,
+        "min": -45,
+        "step": 1,
+      },
+      "discDataSide": {
+        "kind": "select",
+        "options": [
+          "dark",
+          "gold",
+          "silver",
+          "violet",
+        ],
+      },
+      "discFinish": {
+        "kind": "select",
+        "options": [
+          "glossy",
+          "matte",
+        ],
+      },
+      "discFullFace": {
+        "kind": "boolean",
+      },
+      "discInner": {
+        "kind": "number",
+        "max": 46,
+        "min": 15,
+        "step": 0.5,
+      },
+      "discLabelBase": {
+        "kind": "select",
+        "options": [
+          "silver",
+          "white",
+        ],
+      },
+      "discOffset": {
+        "kind": "number",
+        "max": 100,
+        "min": 0,
+        "step": 1,
+      },
+      "discPlacement": {
+        "kind": "select",
+        "options": [
+          "behind",
+          "flat",
+          "front",
+        ],
+      },
+      "inlayColor": {
+        "kind": "color",
+      },
+      "paperFinish": {
+        "kind": "select",
+        "options": [
+          "gloss",
+          "matte",
+          "satin",
+        ],
+      },
+      "showBooklet": {
+        "kind": "boolean",
+      },
+      "trayColor": {
+        "kind": "select",
+        "options": [
+          "black",
+          "clear",
+          "smoke",
+          "white",
+        ],
+      },
+      "variant": {
+        "kind": "select",
+        "options": [
+          "slim",
+          "standard",
+        ],
+      },
+    },
+    "slots": [
+      "booklet",
+      "disc",
+      "inlay",
+    ],
+  },
+  "device-browser": {
+    "category": "device",
+    "params": {
+      "address": {
+        "kind": "select",
+        "options": [
+          "app.example.com",
+          "empty",
+          "example.com",
+          "localhost:3000",
+          "none",
+          "shop.example.com",
+          "www.example.com",
+        ],
+      },
+      "barScale": {
+        "kind": "number",
+        "max": 200,
+        "min": 50,
+        "step": 5,
+      },
+      "bodyFinish": {
+        "kind": "select",
+        "options": [
+          "gloss",
+          "metal",
+          "plastic",
+        ],
+      },
+      "buttons": {
+        "kind": "select",
+        "options": [
+          "color",
+          "grey",
+          "none",
+        ],
+      },
+      "cornerRadius": {
+        "kind": "number",
+        "max": 60,
+        "min": 0,
+        "step": 0.5,
+      },
+      "curvature": {
+        "kind": "number",
+        "max": 100,
+        "min": -100,
+        "step": 1,
+      },
+      "finish": {
+        "kind": "select",
+        "options": [
+          "printGloss",
+          "printMatte",
+          "screen",
+          "screenMatte",
+        ],
+      },
+      "glow": {
+        "kind": "number",
+        "max": 200,
+        "min": 0,
+        "step": 5,
+      },
+      "theme": {
+        "kind": "select",
+        "options": [
+          "dark",
+          "light",
+        ],
+      },
+      "thickness": {
+        "kind": "number",
+        "max": 10,
+        "min": 0.5,
+        "step": 0.1,
+      },
+      "tilt": {
+        "kind": "number",
+        "max": 75,
+        "min": 0,
+        "step": 1,
+      },
+      "width": {
+        "kind": "number",
+        "max": 2000,
+        "min": 40,
+        "step": 1,
+      },
+    },
+    "slots": [
+      "screen",
+    ],
+  },
+  "device-laptop": {
+    "category": "device",
+    "params": {
+      "brightness": {
+        "kind": "number",
+        "max": 200,
+        "min": 0,
+        "step": 5,
+      },
+      "color": {
+        "kind": "select",
+        "options": [
+          "black",
+          "darkGrey",
+          "silver",
+          "white",
+        ],
+      },
+      "fit": {
+        "kind": "select",
+        "options": [
+          "fill",
+          "stretch",
+        ],
+      },
+      "openAngle": {
+        "kind": "number",
+        "max": 180,
+        "min": 0,
+        "step": 1,
+      },
+      "screenFinish": {
+        "kind": "select",
+        "options": [
+          "glossy",
+          "matte",
+        ],
+      },
+      "screenOn": {
+        "kind": "boolean",
+      },
+      "size": {
+        "kind": "select",
+        "options": [
+          "13",
+          "14",
+          "16",
+        ],
+      },
+    },
+    "slots": [
+      "screen",
+    ],
+  },
+  "device-monitor": {
+    "category": "device",
+    "params": {
+      "brightness": {
+        "kind": "number",
+        "max": 200,
+        "min": 0,
+        "step": 5,
+      },
+      "color": {
+        "kind": "select",
+        "options": [
+          "black",
+          "silver",
+          "white",
+        ],
+      },
+      "curve": {
+        "kind": "select",
+        "options": [
+          "flat",
+          "r1800",
+          "r3800",
+        ],
+      },
+      "fit": {
+        "kind": "select",
+        "options": [
+          "fill",
+          "stretch",
+        ],
+      },
+      "screenFinish": {
+        "kind": "select",
+        "options": [
+          "glossy",
+          "matte",
+        ],
+      },
+      "screenOn": {
+        "kind": "boolean",
+      },
+      "size": {
+        "kind": "select",
+        "options": [
+          "24",
+          "27",
+          "32",
+          "34",
+        ],
+      },
+      "stand": {
+        "kind": "select",
+        "options": [
+          "arm",
+          "pedestal",
+        ],
+      },
+      "standHeight": {
+        "kind": "number",
+        "max": 200,
+        "min": 30,
+        "step": 1,
+      },
+      "tilt": {
+        "kind": "number",
+        "max": 20,
+        "min": -5,
+        "step": 0.5,
+      },
+    },
+    "slots": [
+      "screen",
+    ],
+  },
+  "device-phone": {
+    "category": "device",
+    "params": {
+      "bezel": {
+        "kind": "number",
+        "max": 8,
+        "min": 1.3,
+        "step": 0.1,
+      },
+      "brightness": {
+        "kind": "number",
+        "max": 150,
+        "min": 0,
+        "step": 1,
+      },
+      "buttons": {
+        "kind": "boolean",
+      },
+      "cornerRadius": {
+        "kind": "number",
+        "max": 20,
+        "min": 3,
+        "step": 0.5,
+      },
+      "frame": {
+        "kind": "select",
+        "options": [
+          "black",
+          "blue",
+          "custom",
+          "gold",
+          "graphite",
+          "silver",
+          "white",
+        ],
+      },
+      "frameColor": {
+        "kind": "color",
+      },
+      "frontCamera": {
+        "kind": "select",
+        "options": [
+          "none",
+          "punch",
+        ],
+      },
+      "height": {
+        "kind": "number",
+        "max": 180,
+        "min": 110,
+        "step": 0.5,
+      },
+      "orientation": {
+        "kind": "select",
+        "options": [
+          "landscape",
+          "portrait",
+        ],
+      },
+      "rearCamera": {
+        "kind": "boolean",
+      },
+      "screenFinish": {
+        "kind": "select",
+        "options": [
+          "glossy",
+          "matte",
+        ],
+      },
+      "thickness": {
+        "kind": "number",
+        "max": 12,
+        "min": 5,
+        "step": 0.1,
+      },
+      "width": {
+        "kind": "number",
+        "max": 90,
+        "min": 55,
+        "step": 0.5,
+      },
+    },
+    "slots": [
+      "screen",
+    ],
+  },
+  "device-screenshot": {
+    "category": "device",
+    "params": {
+      "bodyColor": {
+        "kind": "color",
+      },
+      "bodyFinish": {
+        "kind": "select",
+        "options": [
+          "gloss",
+          "metal",
+          "plastic",
+        ],
+      },
+      "cornerRadius": {
+        "kind": "number",
+        "max": 60,
+        "min": 0,
+        "step": 0.5,
+      },
+      "curvature": {
+        "kind": "number",
+        "max": 100,
+        "min": -100,
+        "step": 1,
+      },
+      "finish": {
+        "kind": "select",
+        "options": [
+          "printGloss",
+          "printMatte",
+          "screen",
+          "screenMatte",
+        ],
+      },
+      "frame": {
+        "kind": "select",
+        "options": [
+          "dark",
+          "light",
+          "none",
+        ],
+      },
+      "frameWidth": {
+        "kind": "number",
+        "max": 40,
+        "min": 1,
+        "step": 0.5,
+      },
+      "glow": {
+        "kind": "number",
+        "max": 200,
+        "min": 0,
+        "step": 5,
+      },
+      "thickness": {
+        "kind": "number",
+        "max": 10,
+        "min": 0.5,
+        "step": 0.1,
+      },
+      "tilt": {
+        "kind": "number",
+        "max": 75,
+        "min": 0,
+        "step": 1,
+      },
+      "width": {
+        "kind": "number",
+        "max": 2000,
+        "min": 40,
+        "step": 1,
+      },
+    },
+    "slots": [
+      "screen",
+    ],
+  },
+  "device-tablet": {
+    "category": "device",
+    "params": {
+      "bezel": {
+        "kind": "number",
+        "max": 20,
+        "min": 2,
+        "step": 0.1,
+      },
+      "brightness": {
+        "kind": "number",
+        "max": 150,
+        "min": 0,
+        "step": 1,
+      },
+      "buttons": {
+        "kind": "boolean",
+      },
+      "cornerRadius": {
+        "kind": "number",
+        "max": 25,
+        "min": 4,
+        "step": 0.5,
+      },
+      "frame": {
+        "kind": "select",
+        "options": [
+          "black",
+          "blue",
+          "custom",
+          "gold",
+          "graphite",
+          "silver",
+          "white",
+        ],
+      },
+      "frameColor": {
+        "kind": "color",
+      },
+      "frontCamera": {
+        "kind": "select",
+        "options": [
+          "none",
+          "punch",
+        ],
+      },
+      "height": {
+        "kind": "number",
+        "max": 320,
+        "min": 170,
+        "step": 0.5,
+      },
+      "orientation": {
+        "kind": "select",
+        "options": [
+          "landscape",
+          "portrait",
+        ],
+      },
+      "rearCamera": {
+        "kind": "boolean",
+      },
+      "screenFinish": {
+        "kind": "select",
+        "options": [
+          "glossy",
+          "matte",
+        ],
+      },
+      "stylus": {
+        "kind": "boolean",
+      },
+      "thickness": {
+        "kind": "number",
+        "max": 10,
+        "min": 4.5,
+        "step": 0.1,
+      },
+      "width": {
+        "kind": "number",
+        "max": 240,
+        "min": 120,
+        "step": 0.5,
+      },
+    },
+    "slots": [
+      "screen",
+    ],
+  },
+  "disc": {
+    "category": "disc",
+    "params": {
+      "discDataSide": {
+        "kind": "select",
+        "options": [
+          "dark",
+          "gold",
+          "silver",
+          "violet",
+        ],
+      },
+      "discFinish": {
+        "kind": "select",
+        "options": [
+          "glossy",
+          "matte",
+        ],
+      },
+      "discFullFace": {
+        "kind": "boolean",
+      },
+      "discInner": {
+        "kind": "number",
+        "max": 46,
+        "min": 15,
+        "step": 0.5,
+      },
+      "discLabelBase": {
+        "kind": "select",
+        "options": [
+          "silver",
+          "white",
+        ],
+      },
+      "pose": {
+        "kind": "select",
+        "options": [
+          "flat",
+          "leaning",
+          "tilted",
+          "upright",
+        ],
+      },
+      "spin": {
+        "kind": "number",
+        "max": 180,
+        "min": -180,
+        "step": 1,
+      },
+    },
+    "slots": [
+      "disc",
+    ],
+  },
+  "dvd-case": {
+    "category": "disc",
+    "params": {
+      "cornerRadius": {
+        "kind": "number",
+        "max": 4.5,
+        "min": 2.5,
+        "step": 0.1,
+      },
+      "coverFinish": {
+        "kind": "select",
+        "options": [
+          "glossy",
+          "matte",
+          "satin",
+        ],
+      },
+      "plastic": {
+        "kind": "select",
+        "options": [
+          "black",
+          "blue",
+          "clear",
+          "green",
+          "purple",
+          "red",
+          "smoke",
+          "white",
+        ],
+      },
+      "sideColor": {
+        "kind": "color",
+      },
+      "sleeveGloss": {
+        "kind": "number",
+        "max": 100,
+        "min": 0,
+        "step": 1,
+      },
+      "thickness": {
+        "kind": "select",
+        "options": [
+          "14",
+          "7",
+          "9",
+        ],
+      },
+    },
+    "slots": [
+      "back",
+      "cover",
+      "front",
+      "spine",
+    ],
+  },
+  "dvd-case-disc": {
+    "category": "disc",
+    "params": {
+      "cornerRadius": {
+        "kind": "number",
+        "max": 4.5,
+        "min": 2.5,
+        "step": 0.1,
+      },
+      "coverFinish": {
+        "kind": "select",
+        "options": [
+          "glossy",
+          "matte",
+          "satin",
+        ],
+      },
+      "discAngle": {
+        "kind": "number",
+        "max": 45,
+        "min": -45,
+        "step": 1,
+      },
+      "discDataSide": {
+        "kind": "select",
+        "options": [
+          "dark",
+          "gold",
+          "silver",
+          "violet",
+        ],
+      },
+      "discFinish": {
+        "kind": "select",
+        "options": [
+          "glossy",
+          "matte",
+        ],
+      },
+      "discFullFace": {
+        "kind": "boolean",
+      },
+      "discInner": {
+        "kind": "number",
+        "max": 46,
+        "min": 15,
+        "step": 0.5,
+      },
+      "discLabelBase": {
+        "kind": "select",
+        "options": [
+          "silver",
+          "white",
+        ],
+      },
+      "discOffset": {
+        "kind": "number",
+        "max": 100,
+        "min": 0,
+        "step": 1,
+      },
+      "discPlacement": {
+        "kind": "select",
+        "options": [
+          "behind",
+          "flat",
+          "front",
+        ],
+      },
+      "plastic": {
+        "kind": "select",
+        "options": [
+          "black",
+          "blue",
+          "clear",
+          "green",
+          "purple",
+          "red",
+          "smoke",
+          "white",
+        ],
+      },
+      "sideColor": {
+        "kind": "color",
+      },
+      "sleeveGloss": {
+        "kind": "number",
+        "max": 100,
+        "min": 0,
+        "step": 1,
+      },
+      "thickness": {
+        "kind": "select",
+        "options": [
+          "14",
+          "7",
+          "9",
+        ],
+      },
+    },
+    "slots": [
+      "back",
+      "cover",
+      "disc",
+      "front",
+      "spine",
+    ],
+  },
+  "notebook-spiral": {
+    "category": "book",
+    "params": {
+      "backColor": {
+        "kind": "color",
+      },
+      "binding": {
+        "kind": "select",
+        "options": [
+          "left",
+          "top",
+        ],
+      },
+      "coil": {
+        "kind": "select",
+        "options": [
+          "spiral",
+          "wireo",
+        ],
+      },
+      "coilColor": {
+        "kind": "select",
+        "options": [
+          "black",
+          "silver",
+          "white",
+        ],
+      },
+      "cornerRadius": {
+        "kind": "number",
+        "max": 15,
+        "min": 0,
+        "step": 0.5,
+      },
+      "coverFinish": {
+        "kind": "select",
+        "options": [
+          "gloss",
+          "matte",
+          "satin",
+        ],
+      },
+      "coverThickness": {
+        "kind": "number",
+        "max": 3,
+        "min": 0.2,
+        "step": 0.1,
+      },
+      "height": {
+        "kind": "number",
+        "max": 600,
+        "min": 60,
+        "step": 1,
+      },
+      "pageColor": {
+        "kind": "color",
+      },
+      "thickness": {
+        "kind": "number",
+        "max": 40,
+        "min": 2,
+        "step": 0.5,
+      },
+      "width": {
+        "kind": "number",
+        "max": 420,
+        "min": 60,
+        "step": 1,
+      },
+    },
+    "slots": [
+      "back",
+      "front",
+    ],
+  },
+  "print-bifold": {
+    "category": "print",
+    "params": {
+      "customHeight": {
+        "kind": "number",
+        "max": 500,
+        "min": 30,
+        "step": 0.5,
+      },
+      "customWidth": {
+        "kind": "number",
+        "max": 500,
+        "min": 30,
+        "step": 0.5,
+      },
+      "finish": {
+        "kind": "select",
+        "options": [
+          "gloss",
+          "matte",
+          "satin",
+        ],
+      },
+      "openAngle": {
+        "kind": "number",
+        "max": 180,
+        "min": 0,
+        "step": 1,
+      },
+      "orientation": {
+        "kind": "select",
+        "options": [
+          "portrait",
+          "top",
+        ],
+      },
+      "paperColor": {
+        "kind": "color",
+      },
+      "pose": {
+        "kind": "select",
+        "options": [
+          "lying",
+          "standing",
+        ],
+      },
+      "size": {
+        "kind": "select",
+        "options": [
+          "a4",
+          "a5",
+          "a6",
+          "custom",
+          "dl",
+          "letter",
+          "square",
+        ],
+      },
+      "thickness": {
+        "kind": "number",
+        "max": 0.8,
+        "min": 0.06,
+        "step": 0.01,
+      },
+    },
+    "slots": [
+      "inside",
+      "outside",
+    ],
+  },
+  "print-brochure": {
+    "category": "print",
+    "params": {
+      "finish": {
+        "kind": "select",
+        "options": [
+          "gloss",
+          "matte",
+          "satin",
+        ],
+      },
+      "height": {
+        "kind": "number",
+        "max": 450,
+        "min": 80,
+        "step": 1,
+      },
+      "layout": {
+        "kind": "select",
+        "options": [
+          "flat",
+          "standing",
+        ],
+      },
+      "pages": {
+        "kind": "number",
+        "max": 96,
+        "min": 8,
+        "step": 4,
+      },
+      "paper": {
+        "kind": "select",
+        "options": [
+          "115",
+          "135",
+          "170",
+          "200",
+          "90",
+        ],
+      },
+      "paperColor": {
+        "kind": "color",
+      },
+      "size": {
+        "kind": "select",
+        "options": [
+          "a4",
+          "a5",
+          "custom",
+          "letter",
+        ],
+      },
+      "staples": {
+        "kind": "boolean",
+      },
+      "width": {
+        "kind": "number",
+        "max": 350,
+        "min": 80,
+        "step": 1,
+      },
+    },
+    "slots": [
+      "back",
+      "cover",
+      "front",
+    ],
+  },
+  "print-business-card": {
+    "category": "print",
+    "params": {
+      "cornerRadius": {
+        "kind": "number",
+        "max": 6,
+        "min": 0,
+        "step": 0.5,
+      },
+      "finish": {
+        "kind": "select",
+        "options": [
+          "gloss",
+          "matte",
+          "satin",
+        ],
+      },
+      "height": {
+        "kind": "number",
+        "max": 150,
+        "min": 30,
+        "step": 0.5,
+      },
+      "layout": {
+        "kind": "select",
+        "options": [
+          "flat",
+          "leaning",
+          "pair",
+          "stack",
+        ],
+      },
+      "orientation": {
+        "kind": "select",
+        "options": [
+          "landscape",
+          "portrait",
+        ],
+      },
+      "paperColor": {
+        "kind": "color",
+      },
+      "size": {
+        "kind": "select",
+        "options": [
+          "85x55",
+          "89x51",
+          "90x50",
+          "custom",
+        ],
+      },
+      "stackCount": {
+        "kind": "number",
+        "max": 12,
+        "min": 2,
+        "step": 1,
+      },
+      "thickness": {
+        "kind": "number",
+        "max": 0.8,
+        "min": 0.3,
+        "step": 0.05,
+      },
+      "width": {
+        "kind": "number",
+        "max": 150,
+        "min": 30,
+        "step": 0.5,
+      },
+    },
+    "slots": [
+      "back",
+      "front",
+    ],
+  },
+  "print-flyer": {
+    "category": "print",
+    "params": {
+      "bend": {
+        "kind": "number",
+        "max": 100,
+        "min": 0,
+        "step": 1,
+      },
+      "finish": {
+        "kind": "select",
+        "options": [
+          "gloss",
+          "matte",
+          "satin",
+        ],
+      },
+      "height": {
+        "kind": "number",
+        "max": 500,
+        "min": 50,
+        "step": 1,
+      },
+      "layout": {
+        "kind": "select",
+        "options": [
+          "flat",
+          "leaning",
+          "pair",
+        ],
+      },
+      "orientation": {
+        "kind": "select",
+        "options": [
+          "landscape",
+          "portrait",
+        ],
+      },
+      "paperColor": {
+        "kind": "color",
+      },
+      "size": {
+        "kind": "select",
+        "options": [
+          "a4",
+          "a5",
+          "a6",
+          "custom",
+          "dl",
+        ],
+      },
+      "thickness": {
+        "kind": "number",
+        "max": 0.4,
+        "min": 0.06,
+        "step": 0.01,
+      },
+      "width": {
+        "kind": "number",
+        "max": 500,
+        "min": 50,
+        "step": 1,
+      },
+    },
+    "slots": [
+      "back",
+      "front",
+    ],
+  },
+  "print-greeting-card": {
+    "category": "print",
+    "params": {
+      "customHeight": {
+        "kind": "number",
+        "max": 500,
+        "min": 30,
+        "step": 0.5,
+      },
+      "customWidth": {
+        "kind": "number",
+        "max": 500,
+        "min": 30,
+        "step": 0.5,
+      },
+      "finish": {
+        "kind": "select",
+        "options": [
+          "gloss",
+          "matte",
+          "satin",
+        ],
+      },
+      "openAngle": {
+        "kind": "number",
+        "max": 180,
+        "min": 0,
+        "step": 1,
+      },
+      "orientation": {
+        "kind": "select",
+        "options": [
+          "portrait",
+          "top",
+        ],
+      },
+      "paperColor": {
+        "kind": "color",
+      },
+      "pose": {
+        "kind": "select",
+        "options": [
+          "lying",
+          "standing",
+        ],
+      },
+      "size": {
+        "kind": "select",
+        "options": [
+          "a5",
+          "a6",
+          "custom",
+          "dl",
+          "square",
+        ],
+      },
+      "thickness": {
+        "kind": "number",
+        "max": 0.8,
+        "min": 0.06,
+        "step": 0.01,
+      },
+    },
+    "slots": [
+      "inside",
+      "outside",
+    ],
+  },
+  "print-plastic-card": {
+    "category": "print",
+    "params": {
+      "chip": {
+        "kind": "select",
+        "options": [
+          "gold",
+          "none",
+          "silver",
+        ],
+      },
+      "coreColor": {
+        "kind": "color",
+      },
+      "finish": {
+        "kind": "select",
+        "options": [
+          "gloss",
+          "matte",
+          "satin",
+        ],
+      },
+      "layout": {
+        "kind": "select",
+        "options": [
+          "flat",
+          "leaning",
+          "pair",
+          "stack",
+        ],
+      },
+      "magstripe": {
+        "kind": "boolean",
+      },
+      "stackCount": {
+        "kind": "number",
+        "max": 12,
+        "min": 2,
+        "step": 1,
+      },
+    },
+    "slots": [
+      "back",
+      "front",
+    ],
+  },
+  "print-postcard": {
+    "category": "print",
+    "params": {
+      "backPattern": {
+        "kind": "boolean",
+      },
+      "cornerRadius": {
+        "kind": "number",
+        "max": 8,
+        "min": 0,
+        "step": 0.5,
+      },
+      "finish": {
+        "kind": "select",
+        "options": [
+          "gloss",
+          "matte",
+          "satin",
+        ],
+      },
+      "height": {
+        "kind": "number",
+        "max": 300,
+        "min": 60,
+        "step": 0.5,
+      },
+      "layout": {
+        "kind": "select",
+        "options": [
+          "flat",
+          "leaning",
+          "pair",
+        ],
+      },
+      "orientation": {
+        "kind": "select",
+        "options": [
+          "landscape",
+          "portrait",
+        ],
+      },
+      "paperColor": {
+        "kind": "color",
+      },
+      "size": {
+        "kind": "select",
+        "options": [
+          "a6",
+          "custom",
+          "us",
+        ],
+      },
+      "thickness": {
+        "kind": "number",
+        "max": 0.9,
+        "min": 0.25,
+        "step": 0.05,
+      },
+      "width": {
+        "kind": "number",
+        "max": 300,
+        "min": 60,
+        "step": 0.5,
+      },
+    },
+    "slots": [
+      "back",
+      "front",
+    ],
+  },
+  "print-trifold": {
+    "category": "print",
+    "params": {
+      "finish": {
+        "kind": "select",
+        "options": [
+          "gloss",
+          "matte",
+          "satin",
+        ],
+      },
+      "flapInset": {
+        "kind": "number",
+        "max": 6,
+        "min": 0,
+        "step": 0.5,
+      },
+      "foldType": {
+        "kind": "select",
+        "options": [
+          "roll",
+          "z",
+        ],
+      },
+      "height": {
+        "kind": "number",
+        "max": 400,
+        "min": 50,
+        "step": 0.5,
+      },
+      "openAngle": {
+        "kind": "number",
+        "max": 180,
+        "min": 0,
+        "step": 1,
+      },
+      "panelWidth": {
+        "kind": "number",
+        "max": 200,
+        "min": 50,
+        "step": 0.5,
+      },
+      "paperColor": {
+        "kind": "color",
+      },
+      "pose": {
+        "kind": "select",
+        "options": [
+          "lying",
+          "standing",
+        ],
+      },
+      "thickness": {
+        "kind": "number",
+        "max": 0.8,
+        "min": 0.06,
+        "step": 0.01,
+      },
+    },
+    "slots": [
+      "inside",
+      "outside",
+    ],
+  },
+}
+`;
