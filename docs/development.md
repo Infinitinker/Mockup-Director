@@ -53,12 +53,6 @@ npm run lint
 
 Warnings fail it too, as in CI. `npm run format` rewrites the files the way Biome formats them and applies its safe fixes. When a lint rule is wrong for one line, keep the code and say why in a comment above it: `// biome-ignore lint/<group>/<rule>: <reason>` (`/* … */` in CSS).
 
-The formatting of the whole code base was done in one commit, which `git blame` can skip:
-
-```bash
-git config blame.ignoreRevsFile .git-blame-ignore-revs
-```
-
 Type-check and production build of the web part:
 
 ```bash
