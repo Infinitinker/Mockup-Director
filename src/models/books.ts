@@ -963,7 +963,7 @@ function bookParams(kind: BookKind): ParamDef[] {
 /* ------------------------------------------------------------------ */
 
 type Binding = 'left' | 'top';
-type CoilStyle = 'wireo' | 'spiral';
+type CoilStyle = 'doubleLoop' | 'spiral';
 
 interface NoteGeom {
   W: number;
@@ -1000,7 +1000,7 @@ function noteGeom(p: ParamValues): NoteGeom {
   const tc = clamp(num(p, 'coverThickness', 0.8), 0.15, 4);
   const rc = clamp(num(p, 'cornerRadius', 3), 0, Math.min(W, H) / 2 - 1);
   const binding: Binding = str(p, 'binding', 'left') === 'top' ? 'top' : 'left';
-  const coil: CoilStyle = str(p, 'coil', 'wireo') === 'spiral' ? 'spiral' : 'wireo';
+  const coil: CoilStyle = str(p, 'coil', 'doubleLoop') === 'spiral' ? 'spiral' : 'doubleLoop';
   const Tf = P / 2 + tc;
   const hd = 5;
   // The ring passes through the hole on the front and back surfaces and must clear the binding
@@ -1012,7 +1012,7 @@ function noteGeom(p: ParamValues): NoteGeom {
   let pairGap = 0;
   let holeAlong: number;
   let holeAcross: number;
-  if (coil === 'wireo') {
+  if (coil === 'doubleLoop') {
     // Double loop wire: 3:1 pitch up to 9/16" loops, 2:1 above.
     const small = 2 * R <= 14.3;
     pitch = small ? INCH / 3 : INCH / 2;
@@ -1223,7 +1223,7 @@ function buildNotebook(ctx: ModelContext): THREE.Object3D {
   };
   const wireMat = coilMaterial(str(p, 'coilColor', 'silver'));
 
-  if (g.coil === 'wireo') {
+  if (g.coil === 'doubleLoop') {
     // Only the visible part of each loop (front hole -> round the edge -> back hole), extended a
     // little so the open tube ends stay hidden under the covers. One geometry shared by all loops.
     const eps = 0.3;
@@ -1342,10 +1342,10 @@ function notebookParams(): ParamDef[] {
       label: 'Binding type',
       group: G_MAT,
       options: [
-        { value: 'wireo', label: 'Double loop wire' },
+        { value: 'doubleLoop', label: 'Double loop wire' },
         { value: 'spiral', label: 'Single coil' },
       ],
-      default: 'wireo',
+      default: 'doubleLoop',
     },
     {
       id: 'coilColor',

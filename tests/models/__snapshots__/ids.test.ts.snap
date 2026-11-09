@@ -1430,8 +1430,8 @@ exports[`saved ids > match the snapshot 1`] = `
       "coil": {
         "kind": "select",
         "options": [
+          "doubleLoop",
           "spiral",
-          "wireo",
         ],
       },
       "coilColor": {
