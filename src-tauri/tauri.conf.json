@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Mockup Director",
-  "version": "0.1.0",
+  "version": "../package.json",
   "identifier": "io.github.infinitinker.mockupdirector",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -23,7 +23,10 @@
         "dragDropEnabled": false,
         "titleBarStyle": "Overlay",
         "hiddenTitle": true,
-        "trafficLightPosition": { "x": 18, "y": 18 }
+        "trafficLightPosition": {
+          "x": 18,
+          "y": 28
+        }
       }
     ],
     "security": {
@@ -35,21 +38,34 @@
   "bundle": {
     "active": true,
     "targets": ["app", "dmg"],
-    "icon": [
-      "icons/32x32.png",
-      "icons/128x128.png",
-      "icons/128x128@2x.png",
-      "icons/icon.icns",
-      "icons/icon.ico"
-    ],
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"],
     "category": "public.app-category.graphics-design",
+    "resources": {
+      "../LICENSE": "LICENSE.txt",
+      "../THIRD-PARTY-NOTICES.md": "THIRD-PARTY-NOTICES.txt"
+    },
     "copyright": "© 2026 Infinitinker",
     "publisher": "Infinitinker",
-    "shortDescription": "Fotorealistyczne mockupy 3D pudełek i płyt",
-    "longDescription": "Mockup Director zamienia płaskie projekty graficzne w fotorealistyczne mockupy 3D: pudełka produktowe, opakowania DVD / Blu-ray, pudełka CD i płyty – z oświetleniem, miękkim cieniem, odbiciem i eksportem przezroczystego PNG do 4000 × 4000 px.",
+    "shortDescription": "Photorealistic 3D mockups of packaging, books, print and devices",
+    "longDescription": "Mockup Director turns flat artwork into photorealistic 3D mockups: product boxes, DVD / Blu-ray / CD cases and discs, books and notebooks, print (business cards, flyers, brochures, cards) and devices and screens – with lighting, soft shadows and reflections. Export to PNG/JPEG/WebP up to 4000 × 4000 px, GIF/WebP/MP4 animations and batch export to ZIP.",
     "macOS": {
       "minimumSystemVersion": "12.0",
       "signingIdentity": "-"
-    }
+    },
+    "fileAssociations": [
+      {
+        "ext": ["mdproj"],
+        "name": "Mockup Director project",
+        "description": "Mockup Director project",
+        "role": "Editor",
+        "rank": "Owner",
+        "mimeType": "application/x-mockup-director-project",
+        "contentTypes": ["io.github.infinitinker.mockupdirector.project"],
+        "exportedType": {
+          "identifier": "io.github.infinitinker.mockupdirector.project",
+          "conformsTo": ["public.json"]
+        }
+      }
+    ]
   }
 }

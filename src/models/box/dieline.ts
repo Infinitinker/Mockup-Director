@@ -40,12 +40,12 @@ const NET_FACES: readonly FaceId[] = ['py', 'nx', 'pz', 'px', 'nz', 'ny'];
 /** Exact net template for a W x H x D box (mm) with bleed b. */
 export function netTemplate(W: number, H: number, D: number, b: number): PrintTemplate {
   const regions: TemplateRegion[] = [
-    { xMm: b + D, yMm: b, wMm: W, hMm: D, label: L('Góra', 'Top') },
-    { xMm: b, yMm: b + D, wMm: D, hMm: H, label: L('Lewy bok', 'Left side') },
-    { xMm: b + D, yMm: b + D, wMm: W, hMm: H, label: L('Przód', 'Front') },
-    { xMm: b + D + W, yMm: b + D, wMm: D, hMm: H, label: L('Prawy bok', 'Right side') },
-    { xMm: b + 2 * D + W, yMm: b + D, wMm: W, hMm: H, label: L('Tył', 'Back') },
-    { xMm: b + D, yMm: b + D + H, wMm: W, hMm: D, label: L('Spód', 'Bottom') },
+    { xMm: b + D, yMm: b, wMm: W, hMm: D, label: L('Top') },
+    { xMm: b, yMm: b + D, wMm: D, hMm: H, label: L('Left side') },
+    { xMm: b + D, yMm: b + D, wMm: W, hMm: H, label: L('Front') },
+    { xMm: b + D + W, yMm: b + D, wMm: D, hMm: H, label: L('Right side') },
+    { xMm: b + 2 * D + W, yMm: b + D, wMm: W, hMm: H, label: L('Back') },
+    { xMm: b + D, yMm: b + D + H, wMm: W, hMm: D, label: L('Bottom') },
   ];
   return {
     widthMm: 2 * W + 2 * D + 2 * b,
@@ -92,11 +92,8 @@ function buildDielineBox(ctx: ModelContext): THREE.Object3D {
 export const dielineBoxModel: ModelDefinition = {
   id: 'box-dieline',
   category: 'box',
-  name: L('Pudełko – siatka (jedno zdjęcie)', 'Box – dieline (single image)'),
-  description: L(
-    'To samo pudełko, ale cała grafika w jednym pliku: rozkładówka w kształcie krzyża.',
-    'The same box, with all artwork in one file: a cross-shaped net.',
-  ),
+  name: L('Box – dieline (single image)'),
+  description: L('The same box, with all artwork in one file: a cross-shaped net.'),
   icon: icon(
     '<path d="M8 24 H16 V16 H32 V24 H56 V40 H32 V48 H16 V40 H8 Z"/>' +
       '<path d="M16 24 V40 M32 24 V40 M40 24 V40 M16 24 H32 M16 40 H32" stroke-width="2" stroke-dasharray="2.5 3"/>',
@@ -104,11 +101,8 @@ export const dielineBoxModel: ModelDefinition = {
   slots: [
     {
       id: 'net',
-      label: L('Siatka pudełka', 'Box net'),
-      hint: L(
-        'Rząd: lewy bok | przód | prawy bok | tył; góra nad przodem, spód pod przodem. Pobierz szablon.',
-        'Row: left | front | right | back; top above the front, bottom below it. Download the template.',
-      ),
+      label: L('Box net'),
+      hint: L('Row: left | front | right | back; top above the front, bottom below it. Download the template.'),
       aspect: aspectOf(netTemplate(DEFAULTS.w, DEFAULTS.h, DEFAULTS.d, BLEED_MM)),
       template: templateFor,
     },

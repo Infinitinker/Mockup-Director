@@ -1,13 +1,16 @@
 /**
- * Print templates (owner: export agent).
+ * Print templates.
  *
  * Renders a PNG "bottom layer" for Photoshop / Affinity at the exact physical artwork size:
  * white artboard, bleed zone (light red), dashed trim line, dashed safe area (3 mm inside trim),
  * labelled regions (front / spine / back …) with their sizes, fold guides, disc circles and a
  * small legend. The PNG carries a pHYs chunk, so the document opens at the right print size.
+ *
+ * Templates are drawn in the language they are requested in (`lang`), not the interface language.
  */
 import type { ImageSlotDef, Lang, LocalizedText, ParamValues, PrintTemplate, TemplateRegion } from '../core/types';
 import { setPngDpi, slugify } from './exporter';
+import { L, formatDecimalIn, ltIn, tIn } from '../i18n';
 
 /** Safe-area inset inside the trim line, mm. */
 export const SAFE_MARGIN_MM = 3;
@@ -31,18 +34,19 @@ const C = {
 };
 
 const T = {
-  bleed: { pl: 'Spad', en: 'Bleed' },
-  trim: { pl: 'Linia cięcia', en: 'Trim' },
-  safe: { pl: 'Strefa bezpieczna', en: 'Safe area' },
-  fold: { pl: 'Zgięcie', en: 'Fold' },
-  foldLegend: { pl: 'Linia zgięcia', en: 'Fold line' },
-  artboard: { pl: 'Format pliku', en: 'Artwork size' },
-  inclBleed: { pl: 'ze spadem', en: 'incl. bleed' },
-  hole: { pl: 'Otwór', en: 'Hole' },
-  hub: { pl: 'Strefa piasty (często bez nadruku)', en: 'Hub area (often unprinted)' },
-  disc: { pl: 'Płyta', en: 'Disc' },
-  reduced: { pl: 'obniżono z', en: 'reduced from' },
-  hint: { pl: 'Warstwa pomocnicza – ukryj przed eksportem', en: 'Guide layer – hide before export' },
+  bleed: L('Bleed'),
+  trim: L('Trim'),
+  safe: L('Safe area'),
+  fold: L('Fold'),
+  foldLegend: L('Fold line'),
+  artboard: L('Artwork size'),
+  inclBleed: L('incl. bleed'),
+  hole: L('Hole'),
+  hub: L('Hub area (often unprinted)'),
+  disc: L('Disc'),
+  reduced: L('reduced from'),
+  hint: L('Guide layer – hide before export'),
+  tooLarge: L('Template too large to render'),
 } satisfies Record<string, LocalizedText>;
 
 export interface TemplateRenderResult {
@@ -101,7 +105,8 @@ export async function renderTemplateDetailed(
     }
     eff = Math.max(30, Math.floor(eff * 0.7));
   }
-  throw new Error('Template too large to render / Szablon zbyt duży do wygenerowania');
+  // Not tied to the template language: the message is shown in English and Polish, as before.
+  throw new Error(`${ltIn('en', T.tooLarge)} / ${ltIn('pl', T.tooLarge)}`);
 }
 
 /** Resolve slot.template (object or function of params). Null if none / invalid. */
@@ -120,12 +125,15 @@ export function effectiveDpi(tpl: PrintTemplate, requested: number): number {
   return Math.max(1, Math.min(requested, bySide, byArea));
 }
 
-/** e.g. "mockup-director-szablon-okladka-273x183mm-300dpi.png" */
+/**
+ * e.g. "mockup-director-template-cover-273x183mm-300dpi.png" (the word and the slot name are in
+ * `lang`; the size always uses a decimal point).
+ */
 export function templateFileName(slot: ImageSlotDef, lang: Lang, dpi: number, params?: ParamValues): string {
   const tpl = resolveTemplate(slot, params);
-  const word = lang === 'pl' ? 'szablon' : 'template';
-  const size = tpl ? `-${fmtNum(tpl.widthMm, 'en')}x${fmtNum(tpl.heightMm, 'en')}mm` : '';
-  return `mockup-director-${word}-${slugify(slot.label[lang]) || slot.id}${size}-${Math.round(dpi)}dpi.png`;
+  const word = tIn(lang, 'templateFilePrefix');
+  const size = tpl ? `-${fmtMm(tpl.widthMm, 'en')}x${fmtMm(tpl.heightMm, 'en')}mm` : '';
+  return `mockup-director-${word}-${slugify(ltIn(lang, slot.label)) || slot.id}${size}-${Math.round(dpi)}dpi.png`;
 }
 
 /* ------------------------------------------------------------------ */
@@ -184,7 +192,7 @@ function drawRectTemplate(d: Draw, tpl: PrintTemplate, slot: ImageSlotDef, lang:
   }
 
   // Fold guides.
-  for (const gd of tpl.guides ?? []) drawGuide(d, gd.orientation, gd.posMm, gd.label?.[lang] ?? T.fold[lang], W, H, trim);
+  for (const gd of tpl.guides ?? []) drawGuide(d, gd.orientation, gd.posMm, ltIn(lang, gd.label ?? T.fold), W, H, trim);
 
   // Trim line (on top of everything else). Without bleed it coincides with the artboard edge,
   // so inset it by half the stroke to keep it fully visible.
@@ -196,7 +204,16 @@ function drawRectTemplate(d: Draw, tpl: PrintTemplate, slot: ImageSlotDef, lang:
     // Small "cut" caption in the top bleed area.
     const fs = Math.min(b * 0.6, 2.4);
     if (fs >= 0.9) {
-      d.text(`${T.trim[lang]} · ${T.bleed[lang]} ${fmtNum(b, lang)} mm`, trim.x + 2, b / 2, fs, C.trim, 'left', 'middle', 500);
+      d.text(
+        `${ltIn(lang, T.trim)} · ${ltIn(lang, T.bleed)} ${fmtMm(b, lang)} mm`,
+        trim.x + 2,
+        b / 2,
+        fs,
+        C.trim,
+        'left',
+        'middle',
+        500,
+      );
     }
   }
 
@@ -205,9 +222,15 @@ function drawRectTemplate(d: Draw, tpl: PrintTemplate, slot: ImageSlotDef, lang:
   if (regions.length) {
     regions.forEach((r) => {
       const v = intersect(r, trim);
-      if (v) drawRegionLabel(d, { xMm: v.x, yMm: v.y, wMm: v.w, hMm: v.h, label: r.label }, r.label[lang], lang);
+      if (v) drawRegionLabel(d, { xMm: v.x, yMm: v.y, wMm: v.w, hMm: v.h, label: r.label }, ltIn(lang, r.label), lang);
     });
-  } else drawRegionLabel(d, { xMm: trim.x, yMm: trim.y, wMm: trim.w, hMm: trim.h, label: slot.label }, slot.label[lang], lang);
+  } else
+    drawRegionLabel(
+      d,
+      { xMm: trim.x, yMm: trim.y, wMm: trim.w, hMm: trim.h, label: slot.label },
+      ltIn(lang, slot.label),
+      lang,
+    );
 }
 
 function drawGuide(
@@ -245,7 +268,7 @@ function drawGuide(
 
 /** Big centred label + size line; rotated 90° for tall narrow regions (spines). */
 function drawRegionLabel(d: Draw, r: TemplateRegion, label: string, lang: Lang): void {
-  const dims = `${fmtNum(r.wMm, lang)} × ${fmtNum(r.hMm, lang)} mm`;
+  const dims = `${fmtMm(r.wMm, lang)} × ${fmtMm(r.hMm, lang)} mm`;
   const maxFont = 16;
   const fitH = fitLabel(d, label, dims, r.wMm * 0.86, r.hMm * 0.8, maxFont);
   const fitV = fitLabel(d, label, dims, r.hMm * 0.86, r.wMm * 0.8, maxFont);
@@ -351,22 +374,38 @@ function drawCircleTemplate(d: Draw, tpl: PrintTemplate, slot: ImageSlotDef, lan
 
   // Fold guides (unusual on discs, but honour them).
   for (const gd of tpl.guides ?? []) {
-    drawGuide(d, gd.orientation, gd.posMm, gd.label?.[lang] ?? T.fold[lang], W, H, { x: b, y: b, w: W - 2 * b, h: H - 2 * b });
+    drawGuide(d, gd.orientation, gd.posMm, ltIn(lang, gd.label ?? T.fold), W, H, {
+      x: b,
+      y: b,
+      w: W - 2 * b,
+      h: H - 2 * b,
+    });
   }
 
   // Labels: slot name in the upper printable band, diameters in the lower one, hub note near it.
   const band = R - hubR;
-  const fs = Math.min(12, band * 0.28, (R * 1.2) / Math.max(1, slot.label[lang].length * 0.55));
+  const name = ltIn(lang, slot.label);
+  const fs = Math.min(12, band * 0.28, (R * 1.2) / Math.max(1, name.length * 0.55));
   if (fs >= 0.8) {
-    d.text(slot.label[lang], cx, cy - hubR - band * 0.5, fs, C.label, 'center', 'middle', 700);
-    const dims = `Ø ${fmtNum(circle.outerMm, lang)} mm · ${T.hole[lang]} Ø ${fmtNum(circle.innerMm, lang)} mm`;
+    d.text(name, cx, cy - hubR - band * 0.5, fs, C.label, 'center', 'middle', 700);
+    const dims = `Ø ${fmtMm(circle.outerMm, lang)} mm · ${ltIn(lang, T.hole)} Ø ${fmtMm(circle.innerMm, lang)} mm`;
     // Kept in the upper half of the lower band so it stays clear of the corner legend.
     d.text(dims, cx, cy + hubR + band * 0.4, fs * 0.42, C.labelDim, 'center', 'middle', 500);
   }
   const hubFs = Math.min(2.2, (hubR - r) * 0.22);
-  if (hubR > r && hubFs >= 0.8) d.text(T.hub[lang], cx, cy + hubR + hubFs * 1.1, hubFs, C.safe, 'center', 'middle', 500);
+  if (hubR > r && hubFs >= 0.8)
+    d.text(ltIn(lang, T.hub), cx, cy + hubR + hubFs * 1.1, hubFs, C.safe, 'center', 'middle', 500);
   if (R - SAFE_MARGIN_MM > hubR) {
-    d.text(T.safe[lang], cx, cy - R + SAFE_MARGIN_MM + 2.2, Math.min(2.2, band * 0.12), C.safe, 'center', 'middle', 500);
+    d.text(
+      ltIn(lang, T.safe),
+      cx,
+      cy - R + SAFE_MARGIN_MM + 2.2,
+      Math.min(2.2, band * 0.12),
+      C.safe,
+      'center',
+      'middle',
+      500,
+    );
   }
 }
 
@@ -385,27 +424,35 @@ function drawLegend(
   const H = tpl.heightMm;
   const b = clampBleed(tpl);
   // Circle templates have little free corner space – use the smallest legend there.
-  const fs = tpl.circle ? Math.max(1.4, Math.min(2.4, Math.min(W, H) * 0.012)) : Math.max(1.6, Math.min(3.2, Math.min(W, H) * 0.02));
+  const fs = tpl.circle
+    ? Math.max(1.4, Math.min(2.4, Math.min(W, H) * 0.012))
+    : Math.max(1.6, Math.min(3.2, Math.min(W, H) * 0.02));
   const lh = fs * 1.45;
   const sw = fs * 2.4; // swatch width
 
   type Item = { kind: 'bleed' | 'trim' | 'safe' | 'fold' | 'hole' | 'none'; text: string; bold?: boolean };
-  const items: Item[] = [{ kind: 'none', text: slot.label[lang], bold: true }];
-  if (b > 0) items.push({ kind: 'bleed', text: `${T.bleed[lang]}: ${fmtNum(b, lang)} mm` });
-  const net = b > 0 ? `: ${fmtNum(W - 2 * b, lang)} × ${fmtNum(H - 2 * b, lang)} mm` : '';
-  items.push({ kind: 'trim', text: tpl.circle ? `${T.trim[lang]}: Ø ${fmtNum(tpl.circle.outerMm, lang)} mm` : `${T.trim[lang]}${net}` });
-  items.push({ kind: 'safe', text: `${T.safe[lang]}: ${fmtNum(SAFE_MARGIN_MM, lang)} mm` });
-  if (tpl.guides?.length) items.push({ kind: 'fold', text: T.foldLegend[lang] });
-  if (tpl.circle && tpl.circle.innerMm > 0) items.push({ kind: 'hole', text: `${T.hole[lang]}: Ø ${fmtNum(tpl.circle.innerMm, lang)} mm` });
-  const sizeTxt = `${T.artboard[lang]}: ${fmtNum(W, lang)} × ${fmtNum(H, lang)} mm${b > 0 ? ` (${T.inclBleed[lang]})` : ''}`;
+  const items: Item[] = [{ kind: 'none', text: ltIn(lang, slot.label), bold: true }];
+  if (b > 0) items.push({ kind: 'bleed', text: `${ltIn(lang, T.bleed)}: ${fmtMm(b, lang)} mm` });
+  const net = b > 0 ? `: ${fmtMm(W - 2 * b, lang)} × ${fmtMm(H - 2 * b, lang)} mm` : '';
+  items.push({
+    kind: 'trim',
+    text: tpl.circle ? `${ltIn(lang, T.trim)}: Ø ${fmtMm(tpl.circle.outerMm, lang)} mm` : `${ltIn(lang, T.trim)}${net}`,
+  });
+  items.push({ kind: 'safe', text: `${ltIn(lang, T.safe)}: ${fmtMm(SAFE_MARGIN_MM, lang)} mm` });
+  if (tpl.guides?.length) items.push({ kind: 'fold', text: ltIn(lang, T.foldLegend) });
+  if (tpl.circle && tpl.circle.innerMm > 0)
+    items.push({ kind: 'hole', text: `${ltIn(lang, T.hole)}: Ø ${fmtMm(tpl.circle.innerMm, lang)} mm` });
+  const sizeTxt = `${ltIn(lang, T.artboard)}: ${fmtMm(W, lang)} × ${fmtMm(H, lang)} mm${b > 0 ? ` (${ltIn(lang, T.inclBleed)})` : ''}`;
   items.push({ kind: 'none', text: sizeTxt });
   const dpiTxt =
     `${Math.round(dpi)} DPI · ${wPx} × ${hPx} px` +
-    (Math.round(dpi) < Math.round(requestedDpi) ? ` (${T.reduced[lang]} ${Math.round(requestedDpi)} DPI)` : '');
+    (Math.round(dpi) < Math.round(requestedDpi) ? ` (${ltIn(lang, T.reduced)} ${Math.round(requestedDpi)} DPI)` : '');
   items.push({ kind: 'none', text: dpiTxt });
-  items.push({ kind: 'none', text: T.hint[lang] });
+  items.push({ kind: 'none', text: ltIn(lang, T.hint) });
 
-  const textW = Math.max(...items.map((it) => d.measure(it.text, fs, it.bold ? 700 : 500) + (it.kind === 'none' ? 0 : sw + fs * 0.6)));
+  const textW = Math.max(
+    ...items.map((it) => d.measure(it.text, fs, it.bold ? 700 : 500) + (it.kind === 'none' ? 0 : sw + fs * 0.6)),
+  );
   const pad = fs * 0.7;
   const boxW = textW + pad * 2;
   const boxH = items.length * lh + pad * 2 - (lh - fs);
@@ -433,11 +480,18 @@ function drawLegend(
           g.strokeRect(d.px(sx), d.px(sy - fs * 0.4), d.px(sw), d.px(fs * 0.8));
         }
       } else {
-        const style = it.kind === 'trim' ? ([C.trim, 0.25, [3, 1.5]] as const)
-          : it.kind === 'safe' ? ([C.safe, 0.2, [1.6, 1.0]] as const)
-          : ([C.fold, 0.22, [2.2, 0.8, 0.5, 0.8]] as const);
+        const style =
+          it.kind === 'trim'
+            ? ([C.trim, 0.25, [3, 1.5]] as const)
+            : it.kind === 'safe'
+              ? ([C.safe, 0.2, [1.6, 1.0]] as const)
+              : ([C.fold, 0.22, [2.2, 0.8, 0.5, 0.8]] as const);
         // Scale dashes down so the pattern is recognisable inside the small swatch.
-        d.stroke(style[0], style[1], style[2].map((v) => v * Math.min(1, sw / 8)));
+        d.stroke(
+          style[0],
+          style[1],
+          style[2].map((v) => v * Math.min(1, sw / 8)),
+        );
         g.beginPath();
         g.moveTo(d.px(sx), d.px(sy));
         g.lineTo(d.px(sx + sw), d.px(sy));
@@ -535,7 +589,8 @@ class Draw {
       const h = sizeMm * this.k;
       const pad = h * 0.2;
       const left = align === 'center' ? xPx - w / 2 : align === 'right' || align === 'end' ? xPx - w : xPx;
-      const top = baseline === 'middle' ? yPx - h / 2 : baseline === 'bottom' || baseline === 'alphabetic' ? yPx - h : yPx;
+      const top =
+        baseline === 'middle' ? yPx - h / 2 : baseline === 'bottom' || baseline === 'alphabetic' ? yPx - h : yPx;
       g.fillStyle = 'rgba(255,255,255,0.85)';
       g.fillRect(left - pad, top - pad * 0.5, w + pad * 2, h + pad);
     }
@@ -551,7 +606,7 @@ class Draw {
 function clampBleed(tpl: PrintTemplate): number {
   // Never let the bleed swallow the whole artboard.
   const b = Math.min(tpl.bleedMm ?? 0, tpl.widthMm / 2 - 0.5, tpl.heightMm / 2 - 0.5);
-  return b > 0 ? b : 0;
+  return Math.max(b, 0);
 }
 
 function intersect(
@@ -569,8 +624,7 @@ function nonNull<T>(v: T | null): v is T {
   return v !== null;
 }
 
-/** mm with at most 1 decimal; Polish uses a decimal comma. */
-function fmtNum(n: number, lang: Lang): string {
-  const s = String(Math.round(n * 10) / 10);
-  return lang === 'pl' ? s.replace('.', ',') : s;
+/** mm with at most 1 decimal, with the decimal separator of `lang`. */
+function fmtMm(n: number, lang: Lang): string {
+  return formatDecimalIn(lang, Math.round(n * 10) / 10);
 }

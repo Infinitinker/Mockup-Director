@@ -105,19 +105,38 @@ export class Reflection {
 
     const content = new THREE.Group();
     // Colour copy and depth pre-pass copy share the same transform hierarchy.
-    content.add(this.cloneTree(model, (mesh) => {
-      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-      const out = mats.map(patch);
-      return Array.isArray(mesh.material) ? out : out[0];
-    }, -2));
-    content.add(this.cloneTree(model, (mesh) => {
-      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-      // Only fully opaque, non-cut-out materials write the pre-pass depth.
-      const ok = mats.every((m) => m.visible && !m.transparent && !m.alphaTest && !(m as THREE.MeshStandardMaterial).alphaMap && !m.alphaHash);
-      if (!ok) return null;
-      const side = mats[0]?.side ?? THREE.FrontSide;
-      return this.depthMats[side] ?? this.depthMats[THREE.FrontSide];
-    }, -3));
+    content.add(
+      this.cloneTree(
+        model,
+        (mesh) => {
+          const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+          const out = mats.map(patch);
+          return Array.isArray(mesh.material) ? out : out[0];
+        },
+        -2,
+      ),
+    );
+    content.add(
+      this.cloneTree(
+        model,
+        (mesh) => {
+          const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+          // Only fully opaque, non-cut-out materials write the pre-pass depth.
+          const ok = mats.every(
+            (m) =>
+              m.visible &&
+              !m.transparent &&
+              !m.alphaTest &&
+              !(m as THREE.MeshStandardMaterial).alphaMap &&
+              !m.alphaHash,
+          );
+          if (!ok) return null;
+          const side = mats[0]?.side ?? THREE.FrontSide;
+          return this.depthMats[side] ?? this.depthMats[THREE.FrontSide];
+        },
+        -3,
+      ),
+    );
     // The model root sits under the stage's identity-transformed model holder, so copying its
     // local matrix is the same as its world matrix.
     content.traverse((o) => o.layers.set(REFLECTION_LAYER));
@@ -204,7 +223,10 @@ export class Reflection {
     const srcKey = src.customProgramCacheKey();
     m.onBeforeCompile = (shader, renderer) => {
       srcHook.call(m, shader, renderer);
-      if (!shader.vertexShader.includes('#include <project_vertex>') || !shader.fragmentShader.includes('#include <opaque_fragment>')) {
+      if (
+        !shader.vertexShader.includes('#include <project_vertex>') ||
+        !shader.fragmentShader.includes('#include <opaque_fragment>')
+      ) {
         return; // unknown shader layout – falls back to plain (unfaded) transparency below
       }
       shader.uniforms.uReflTop = u.uReflTop;

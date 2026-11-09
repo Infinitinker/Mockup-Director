@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Tells Linux desktops that *.mdproj files are Mockup Director projects (installed by the .deb
+     and .rpm packages into /usr/share/mime/packages/; see tauri.linux.conf.json). -->
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/x-mockup-director-project">
+    <comment>Mockup Director project</comment>
+    <sub-class-of type="application/json"/>
+    <glob pattern="*.mdproj"/>
+  </mime-type>
+</mime-info>

@@ -3,10 +3,24 @@
 //! The whole app is the web UI in `../src`; the Rust side only provides:
 //!  - the native dialog plugin (save / open panels),
 //!  - `save_file`: writes bytes produced by the web UI (PNG exports, project files) to a path
-//!    chosen by the user in the native save panel.
+//!    chosen by the user in the native save panel,
+//!  - `take_opened_files`: the project files the operating system asked the app to open,
+//!  - a single app process: on Windows and Linux, launching the app again hands the new launch's
+//!    project files to the running app (which opens them in tabs) and brings its window forward;
+//!    on macOS the system itself sends them to the running app, as an event,
+//!  - a close watchdog (`closing.rs`): the window closes even when the page does not answer.
 
-use std::fs;
-use std::path::{Path, PathBuf};
+pub mod closing;
+pub mod files;
+pub mod opened;
+
+#[cfg(not(target_os = "macos"))]
+use std::path::Path;
+use std::path::PathBuf;
+
+use tauri::{AppHandle, Emitter, Manager, WindowEvent};
+
+use files::{percent_decode, validate_target, write_atomically};
 
 /// Writes the raw request body to the path given in the `x-path` header.
 ///
@@ -41,103 +55,76 @@ fn save_file(request: tauri::ipc::Request) -> Result<(), String> {
     write_atomically(&path, bytes).map_err(|e| format!("Cannot write {}: {e}", path.display()))
 }
 
-/// Decodes `%XX` escapes (as produced by JavaScript's `encodeURIComponent`) into a UTF-8 string.
-/// `+` is kept literally (encodeURIComponent encodes a real plus sign as `%2B`).
-fn percent_decode(input: &str) -> Result<String, String> {
-    let src = input.as_bytes();
-    let mut out = Vec::with_capacity(src.len());
-    let mut i = 0;
-    while i < src.len() {
-        if src[i] == b'%' {
-            let hi = src.get(i + 1).and_then(|b| hex_value(*b));
-            let lo = src.get(i + 2).and_then(|b| hex_value(*b));
-            match (hi, lo) {
-                (Some(hi), Some(lo)) => {
-                    out.push(hi << 4 | lo);
-                    i += 3;
-                }
-                _ => return Err("save_file: malformed percent-encoding in x-path".into()),
-            }
-        } else {
-            out.push(src[i]);
-            i += 1;
-        }
+/// Queues project files for the web UI and tells it they arrived.
+fn hand_over(app: &AppHandle, paths: Vec<PathBuf>) {
+    if paths.is_empty() {
+        return;
     }
-    String::from_utf8(out).map_err(|_| "save_file: x-path is not valid UTF-8".to_string())
-}
-
-fn hex_value(b: u8) -> Option<u8> {
-    match b {
-        b'0'..=b'9' => Some(b - b'0'),
-        b'a'..=b'f' => Some(b - b'a' + 10),
-        b'A'..=b'F' => Some(b - b'A' + 10),
-        _ => None,
+    app.state::<opened::OpenedFiles>().push(paths);
+    if let Err(e) = app.emit(opened::FILES_OPENED_EVENT, ()) {
+        eprintln!("Cannot tell the window that project files were opened: {e}");
     }
 }
 
-fn validate_target(path: &Path) -> Result<(), String> {
-    if path.as_os_str().is_empty() {
-        return Err("save_file: empty path".into());
-    }
-    if !path.is_absolute() {
-        return Err(format!("save_file: path must be absolute: {}", path.display()));
-    }
-    if path.file_name().is_none() || path.is_dir() {
-        return Err(format!("save_file: not a file path: {}", path.display()));
-    }
-    Ok(())
-}
-
-/// Writes to a temporary sibling file and renames it over the target, so an existing file is
-/// never left half-written (e.g. disk full while exporting a large PNG over an older export).
-fn write_atomically(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
-    let file_name = path.file_name().unwrap_or_default().to_string_lossy();
-    let tmp = path.with_file_name(format!(".{file_name}.mockup-director-tmp"));
-    match fs::write(&tmp, bytes).and_then(|_| fs::rename(&tmp, path)) {
-        Ok(()) => Ok(()),
-        Err(e) => {
-            let _ = fs::remove_file(&tmp);
-            if e.kind() == std::io::ErrorKind::PermissionDenied {
-                // The folder may allow modifying an existing file but not creating new entries:
-                // fall back to a direct write, surfacing the original error if that fails too.
-                fs::write(path, bytes).map_err(|_| e)
-            } else {
-                Err(e)
-            }
-        }
+/// Called in the running app when the app is launched again (Windows and Linux): the new launch
+/// exits right away and passes its arguments (the first one is the program) and its working
+/// directory here.
+#[cfg(not(target_os = "macos"))]
+fn on_second_launch(app: &AppHandle, args: Vec<String>, cwd: String) {
+    let paths = opened::project_paths(args.into_iter().skip(1), Path::new(&cwd));
+    hand_over(app, paths);
+    let Some(window) = app.get_webview_window("main") else {
+        eprintln!("Cannot bring the window forward: the main window does not exist");
+        return;
+    };
+    let shown = window
+        .unminimize()
+        .and_then(|()| window.show())
+        .and_then(|()| window.set_focus());
+    if let Err(e) = shown {
+        eprintln!("Cannot bring the window forward: {e}");
     }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    // Windows and Linux pass double-clicked project files as arguments. If the working directory
+    // cannot be read, relative paths stay relative (and fail with a clear error when read).
+    let opened = opened::OpenedFiles::default();
+    let cwd = std::env::current_dir().unwrap_or_default();
+    // args_os, not args: an argument that is not valid Unicode (such as a Latin-1 file name on
+    // Linux) is kept as it is instead of crashing the app.
+    opened.push(opened::project_paths(std::env::args_os().skip(1), &cwd));
+
+    let builder = tauri::Builder::default();
+    // First, so that a second launch hands over and exits before anything else starts.
+    #[cfg(not(target_os = "macos"))]
+    let builder = builder.plugin(tauri_plugin_single_instance::init(on_second_launch));
+    builder
+        .manage(opened)
+        .manage(closing::CloseWatchdog::default())
         .plugin(tauri_plugin_dialog::init())
-        .invoke_handler(tauri::generate_handler![save_file])
-        .run(tauri::generate_context!())
-        .expect("error while running Mockup Director");
-}
-
-#[cfg(test)]
-mod tests {
-    use super::percent_decode;
-
-    #[test]
-    fn decodes_encode_uri_component_output() {
-        // encodeURIComponent('/Users/ania/Projekty/Okładka 1+1.png')
-        let enc = "%2FUsers%2Fania%2FProjekty%2FOk%C5%82adka%201%2B1.png";
-        assert_eq!(percent_decode(enc).unwrap(), "/Users/ania/Projekty/Okładka 1+1.png");
-    }
-
-    #[test]
-    fn keeps_unescaped_characters() {
-        assert_eq!(percent_decode("/tmp/a-b_c.d~e!(x)'*").unwrap(), "/tmp/a-b_c.d~e!(x)'*");
-    }
-
-    #[test]
-    fn rejects_malformed_escapes() {
-        assert!(percent_decode("%").is_err());
-        assert!(percent_decode("%2").is_err());
-        assert!(percent_decode("%zz").is_err());
-        assert!(percent_decode("%C5").is_err()); // truncated UTF-8 sequence
-    }
+        .on_window_event(|window, event| {
+            if let WindowEvent::CloseRequested { .. } = event {
+                closing::on_close_requested(window);
+            }
+        })
+        .invoke_handler(tauri::generate_handler![
+            save_file,
+            opened::take_opened_files
+        ])
+        .build(tauri::generate_context!())
+        .expect("error while starting Mockup Director")
+        .run(|_app, _event| {
+            // macOS sends opened files as an event, at start-up and while the app runs.
+            #[cfg(target_os = "macos")]
+            if let tauri::RunEvent::Opened { urls } = _event {
+                let paths = urls
+                    .into_iter()
+                    .filter_map(|url| url.to_file_path().ok())
+                    .filter(|path| opened::is_project_path(path))
+                    .collect();
+                hand_over(_app, paths);
+            }
+        });
 }

@@ -1,6 +1,18 @@
+# Dependencies and build output
 node_modules
 dist
 src-tauri/target
 src-tauri/gen
+
+# Local settings: environment, editors, Claude Code (only the shared launch.json is tracked)
+.env
+.env.*
+.vscode/
+.idea/
+.claude/*
+!.claude/launch.json
+
+# System and log files
 .DS_Store
+Thumbs.db
 *.log

@@ -3,7 +3,7 @@
  */
 import type { ScenePreset } from '../../core/types';
 import type { AppContext } from '../context';
-import { lt, t } from '../i18n';
+import { lt, t } from '../../i18n';
 import { errorMessage, h, nextId } from '../dom';
 import { ICONS } from '../icons';
 import { iconButton, section } from '../controls';
@@ -22,8 +22,13 @@ import {
 
 function swatch(p: ScenePreset['scene']): HTMLElement {
   const b = p.background;
-  const bg = b.mode === 'gradient' ? `linear-gradient(180deg, ${b.color}, ${b.color2})` : b.mode === 'color' ? b.color : '';
-  return h('span', { class: `preset-swatch${b.mode === 'transparent' ? ' checkerboard' : ''}`, style: bg ? `background:${bg}` : undefined, attrs: { 'aria-hidden': 'true' } });
+  const bg =
+    b.mode === 'gradient' ? `linear-gradient(180deg, ${b.color}, ${b.color2})` : b.mode === 'color' ? b.color : '';
+  return h('span', {
+    class: `preset-swatch${b.mode === 'transparent' ? ' checkerboard' : ''}`,
+    style: bg ? `background:${bg}` : undefined,
+    attrs: { 'aria-hidden': 'true' },
+  });
 }
 
 export function createStylesPanel(ctx: AppContext): { el: HTMLElement; render(): void } {
@@ -56,20 +61,40 @@ export function createStylesPanel(ctx: AppContext): { el: HTMLElement; render():
     const actions = h('span', { class: 'preset-actions' });
     if (index !== null) {
       actions.append(
-        iconButton(ICONS.pencil, t('rename'), async () => {
-          const v = await promptDialog({ title: t('renameStyle'), label: t('styleName'), value: presets[index].name, okLabel: t('rename') });
-          if (!v) return;
-          presets[index] = { ...presets[index], name: uniqueName(v, presets, index) };
-          persist();
-          render();
-        }, { cls: 'btn-icon-only btn-ghost' }),
-        iconButton(ICONS.trash, t('delete'), async () => {
-          const ok = await confirmDialog({ title: t('deleteStyleTitle', { name: presets[index].name }), message: t('deleteStyleMsg'), okLabel: t('delete'), danger: true });
-          if (!ok) return;
-          presets.splice(index, 1);
-          persist();
-          render();
-        }, { cls: 'btn-icon-only btn-ghost' }),
+        iconButton(
+          ICONS.pencil,
+          t('rename'),
+          async () => {
+            const v = await promptDialog({
+              title: t('renameStyle'),
+              label: t('styleName'),
+              value: presets[index].name,
+              okLabel: t('rename'),
+            });
+            if (!v) return;
+            presets[index] = { ...presets[index], name: uniqueName(v, presets, index) };
+            persist();
+            render();
+          },
+          { cls: 'btn-icon-only btn-ghost' },
+        ),
+        iconButton(
+          ICONS.trash,
+          t('delete'),
+          async () => {
+            const ok = await confirmDialog({
+              title: t('deleteStyleTitle', { name: presets[index].name }),
+              message: t('deleteStyleMsg'),
+              okLabel: t('delete'),
+              danger: true,
+            });
+            if (!ok) return;
+            presets.splice(index, 1);
+            persist();
+            render();
+          },
+          { cls: 'btn-icon-only btn-ghost' },
+        ),
       );
     }
     return h('li', { class: 'preset-row' }, applyBtn, actions);
@@ -82,7 +107,10 @@ export function createStylesPanel(ctx: AppContext): { el: HTMLElement; render():
     // Save current look.
     const nameId = nextId('pn');
     const camId = nextId('pc');
-    const nameInput = h('input', { class: 'text-input', attrs: { id: nameId, type: 'text', maxlength: 80, placeholder: t('styleNamePlaceholder'), autocomplete: 'off' } });
+    const nameInput = h('input', {
+      class: 'text-input',
+      attrs: { id: nameId, type: 'text', maxlength: 80, placeholder: t('styleNamePlaceholder'), autocomplete: 'off' },
+    });
     const camInput = h('input', { attrs: { id: camId, type: 'checkbox' } });
     const save = () => {
       const raw = nameInput.value.trim() || t('styleDefaultName');
@@ -99,31 +127,51 @@ export function createStylesPanel(ctx: AppContext): { el: HTMLElement; render():
       }
     });
     const saveSection = section('styles.save', t('saveCurrentStyle'), [
-      h('div', { class: 'ctl' }, h('label', { class: 'ctl-label', text: t('styleName'), attrs: { for: nameId } }), nameInput),
+      h(
+        'div',
+        { class: 'ctl' },
+        h('label', { class: 'ctl-label', text: t('styleName'), attrs: { for: nameId } }),
+        nameInput,
+      ),
       h('label', { class: 'check-row', attrs: { for: camId } }, camInput, h('span', { text: t('includeCamera') })),
       h(
         'div',
         { class: 'ctl-actions' },
-        h('button', { class: 'btn btn-primary btn-small', attrs: { type: 'button' }, on: { click: save } }, h('span', { class: 'btn-icon', html: ICONS.plus }), h('span', { class: 'btn-text', text: t('saveStyle') })),
+        h(
+          'button',
+          { class: 'btn btn-primary btn-small', attrs: { type: 'button' }, on: { click: save } },
+          h('span', { class: 'btn-icon', html: ICONS.plus }),
+          h('span', { class: 'btn-text', text: t('saveStyle') }),
+        ),
       ),
     ]);
 
     // User presets.
     const userList = h('ul', { class: 'preset-list', attrs: { role: 'list' } });
-    presets.forEach((p, i) => userList.appendChild(row(p.name, p.scene, i)));
+    presets.forEach((p, i) => {
+      userList.appendChild(row(p.name, p.scene, i));
+    });
     const userSection = section('styles.user', t('myStyles'), [
       presets.length ? userList : h('p', { class: 'empty-state small', text: t('noUserStyles') }),
       h(
         'div',
         { class: 'ctl-actions' },
-        iconButton(ICONS.upload, t('importStyles'), () => void importPresets(), { cls: 'btn-small', text: t('import') }),
-        iconButton(ICONS.download, t('exportStyles'), () => void exportPresets(), { cls: 'btn-small', text: t('exportJson') }),
+        iconButton(ICONS.upload, t('importStyles'), () => void importPresets(), {
+          cls: 'btn-small',
+          text: t('import'),
+        }),
+        iconButton(ICONS.download, t('exportStyles'), () => void exportPresets(), {
+          cls: 'btn-small',
+          text: t('exportJson'),
+        }),
       ),
     ]);
 
     // Built-ins.
     const builtinList = h('ul', { class: 'preset-list', attrs: { role: 'list' } });
-    BUILTIN_PRESETS.forEach((p) => builtinList.appendChild(row(lt(p.name), p.scene, null)));
+    BUILTIN_PRESETS.forEach((p) => {
+      builtinList.appendChild(row(lt(p.name), p.scene, null));
+    });
     const builtinSection = section('styles.builtin', t('builtinStyles'), [builtinList]);
 
     el.append(saveSection, userSection, builtinSection);
@@ -159,9 +207,11 @@ export function createStylesPanel(ctx: AppContext): { el: HTMLElement; render():
         notify.info(t('noUserStyles'));
         return;
       }
-      const blob = new Blob([JSON.stringify({ app: 'mockup-director', kind: 'presets', presets }, null, 2)], { type: 'application/json' });
-      const ok = await saveBlob(blob, 'mockup-director-style.json', [{ name: 'JSON', extensions: ['json'] }]);
-      if (ok) notify.success(t('saved'), 'mockup-director-style.json');
+      const blob = new Blob([JSON.stringify({ app: 'mockup-director', kind: 'presets', presets }, null, 2)], {
+        type: 'application/json',
+      });
+      const saved = await saveBlob(blob, 'mockup-director-style.json', [{ name: 'JSON', extensions: ['json'] }]);
+      if (saved) notify.success(t('saved'), saved);
     } catch (e) {
       notify.error(t('errExportStyles'), errorMessage(e));
     }

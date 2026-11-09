@@ -1,27 +1,36 @@
 /**
- * Project files (*.mockup, JSON; legacy *.coverbox) – serialisation, validation and hydration – plus the
- * IndexedDB autosave of the current project.
+ * Project files (*.mdproj, JSON): serialisation, validation and hydration. The session autosave
+ * (src/ui/session.ts) stores the open tabs in this format too.
  */
 import type { ExportSettings, ImageAsset, ParamValues, ProjectFile, SceneSettings } from '../core/types';
 import { DEFAULT_EXPORT, DEFAULT_SCENE, MAX_EXPORT_SIZE, cloneScene } from '../core/defaults';
 import { loadImageDataUrl } from '../core/images';
 import { MODELS, getModel } from '../models/registry';
-import type { AppState, ImageMap } from './state';
+import type { DocumentState, ImageMap } from './state';
 import { sanitizeParam } from './modelUtils';
 import { clamp } from './dom';
-import { t } from './i18n';
-import { webpEncodingSupported } from './exportBridge';
+import { t } from '../i18n';
+import { animationFormatSupport, webpEncodingSupported } from './exportBridge';
+import { normaliseAnimationSettings } from '../export/animation/settings';
 
-export const PROJECT_EXT = 'mockup';
-/** Older project files (before the rename) are still accepted when opening. */
-const LEGACY_APP_IDS: readonly string[] = ['coverbox'];
+/** The extension of project files, the only one the app saves and opens. */
+export const PROJECT_EXT = 'mdproj';
+
+export function isProjectFileName(name: string): boolean {
+  return name.toLowerCase().endsWith(`.${PROJECT_EXT}`);
+}
+
+/** The file name without the project extension, e.g. "Box.mdproj" → "Box". */
+export function projectNameOf(fileName: string): string {
+  return isProjectFileName(fileName) ? fileName.slice(0, -PROJECT_EXT.length - 1) : fileName;
+}
 
 /* ------------------------------------------------------------------ */
 /* Generic deep merge that only accepts values of the same type        */
 /* ------------------------------------------------------------------ */
 
 type Plain = Record<string, unknown>;
-const isPlain = (v: unknown): v is Plain => typeof v === 'object' && v !== null && !Array.isArray(v);
+export const isPlain = (v: unknown): v is Plain => typeof v === 'object' && v !== null && !Array.isArray(v);
 
 /**
  * Returns a copy of `base` where every key whose value in `src` has the SAME primitive type
@@ -83,6 +92,12 @@ export function sanitizeExport(raw: unknown): ExportSettings {
   if (e.format === 'webp' && !webpEncodingSupported()) e.format = 'png';
   if (e.sizing !== 'canvas' && e.sizing !== 'trim') e.sizing = DEFAULT_EXPORT.sizing;
   if (e.background !== 'transparent' && e.background !== 'scene') e.background = DEFAULT_EXPORT.background;
+  // Animation settings are optional (older projects have none); mergeKnown() skips the key because
+  // DEFAULT_EXPORT has no animation – validate it separately (formats this engine cannot encode fall
+  // back to GIF).
+  const anim = isPlain(raw) ? raw.animation : undefined;
+  if (isPlain(anim)) e.animation = normaliseAnimationSettings(anim, animationFormatSupport());
+  else delete e.animation;
   return e;
 }
 
@@ -90,7 +105,7 @@ export function sanitizeExport(raw: unknown): ExportSettings {
 /* Serialise                                                           */
 /* ------------------------------------------------------------------ */
 
-export function toProjectFile(s: AppState): ProjectFile {
+export function toProjectFile(s: DocumentState): ProjectFile {
   const images: ProjectFile['images'] = {};
   for (const [modelId, slots] of Object.entries(s.images)) {
     const entries = Object.entries(slots).filter(([, a]) => !!a);
@@ -105,7 +120,7 @@ export function toProjectFile(s: AppState): ProjectFile {
     params: JSON.parse(JSON.stringify(s.params)) as Record<string, ParamValues>,
     images,
     scene: cloneScene(s.scene),
-    export: { ...s.export },
+    export: { ...s.export, ...(s.export.animation ? { animation: { ...s.export.animation } } : {}) },
   };
 }
 
@@ -117,10 +132,11 @@ export class ProjectError extends Error {}
 
 /** Validate untrusted JSON and return a clean ProjectFile. Throws ProjectError with a localized message. */
 export function parseProjectFile(json: unknown): ProjectFile {
-  if (!isPlain(json) || (json.app !== 'mockup-director' && !LEGACY_APP_IDS.includes(json.app as string))) throw new ProjectError(t('errNotProject'));
+  if (!isPlain(json) || json.app !== 'mockup-director') throw new ProjectError(t('errNotProject'));
   if (typeof json.version !== 'number' || json.version > 1) throw new ProjectError(t('errProjectVersion'));
 
-  const modelId = typeof json.modelId === 'string' && MODELS.some((m) => m.id === json.modelId) ? json.modelId : MODELS[0].id;
+  const modelId =
+    typeof json.modelId === 'string' && MODELS.some((m) => m.id === json.modelId) ? json.modelId : MODELS[0].id;
 
   const params: Record<string, ParamValues> = {};
   if (isPlain(json.params)) {
@@ -144,7 +160,12 @@ export function parseProjectFile(json: unknown): ProjectFile {
       for (const [sid, img] of Object.entries(slots)) {
         if (!model.slots.some((s) => s.id === sid) || !isPlain(img)) continue;
         if (typeof img.dataUrl !== 'string' || !/^data:image\//i.test(img.dataUrl)) continue;
-        (images[mid] ??= {})[sid] = { name: typeof img.name === 'string' ? img.name.slice(0, 255) : sid, dataUrl: img.dataUrl };
+        const forModel = images[mid] ?? {};
+        images[mid] = forModel;
+        forModel[sid] = {
+          name: typeof img.name === 'string' ? img.name.slice(0, 255) : sid,
+          dataUrl: img.dataUrl,
+        };
       }
     }
   }
@@ -161,7 +182,7 @@ export function parseProjectFile(json: unknown): ProjectFile {
 }
 
 /** Decode all images of a project. Broken images are skipped and counted. */
-export async function hydrateProject(file: ProjectFile): Promise<{ state: Omit<AppState, 'lang'>; failed: number }> {
+export async function hydrateProject(file: ProjectFile): Promise<{ state: DocumentState; failed: number }> {
   const images: ImageMap = {};
   let failed = 0;
   const jobs: Promise<void>[] = [];
@@ -170,7 +191,9 @@ export async function hydrateProject(file: ProjectFile): Promise<{ state: Omit<A
       jobs.push(
         loadImageDataUrl(img.dataUrl, img.name)
           .then((asset: ImageAsset) => {
-            (images[mid] ??= {})[sid] = asset;
+            const forModel = images[mid] ?? {};
+            images[mid] = forModel;
+            forModel[sid] = asset;
           })
           .catch((e: unknown) => {
             failed += 1;
@@ -186,63 +209,4 @@ export async function hydrateProject(file: ProjectFile): Promise<{ state: Omit<A
     state: { modelId, params: file.params, images, scene: file.scene, export: file.export },
     failed,
   };
-}
-
-/* ------------------------------------------------------------------ */
-/* IndexedDB autosave                                                  */
-/* ------------------------------------------------------------------ */
-
-const DB_NAME = 'mockup-director';
-const DB_STORE = 'autosave';
-const DB_KEY = 'current';
-
-function openDb(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    if (typeof indexedDB === 'undefined') {
-      reject(new Error('IndexedDB unavailable'));
-      return;
-    }
-    const req = indexedDB.open(DB_NAME, 1);
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains(DB_STORE)) db.createObjectStore(DB_STORE);
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error ?? new Error('IndexedDB open failed'));
-    req.onblocked = () => reject(new Error('IndexedDB blocked'));
-  });
-}
-
-let dbPromise: Promise<IDBDatabase> | null = null;
-function db(): Promise<IDBDatabase> {
-  if (!dbPromise) {
-    dbPromise = openDb().catch((e) => {
-      dbPromise = null;
-      throw e;
-    });
-  }
-  return dbPromise;
-}
-
-export async function saveAutosave(file: ProjectFile): Promise<void> {
-  const d = await db();
-  await new Promise<void>((resolve, reject) => {
-    const tx = d.transaction(DB_STORE, 'readwrite');
-    tx.objectStore(DB_STORE).put({ savedAt: Date.now(), file }, DB_KEY);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error ?? new Error('autosave failed'));
-    tx.onabort = () => reject(tx.error ?? new Error('autosave aborted'));
-  });
-}
-
-export async function loadAutosave(): Promise<ProjectFile | null> {
-  const d = await db();
-  const raw = await new Promise<unknown>((resolve, reject) => {
-    const tx = d.transaction(DB_STORE, 'readonly');
-    const req = tx.objectStore(DB_STORE).get(DB_KEY);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error ?? new Error('autosave read failed'));
-  });
-  if (!isPlain(raw) || !isPlain(raw.file)) return null;
-  return parseProjectFile(raw.file);
 }

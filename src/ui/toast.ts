@@ -4,7 +4,7 @@
  */
 import { h } from './dom';
 import { ICONS } from './icons';
-import { t } from './i18n';
+import { t } from '../i18n';
 
 export type ToastKind = 'info' | 'success' | 'error' | 'warning';
 
@@ -26,7 +26,7 @@ export function toast(kind: ToastKind, title: string, detail?: string): void {
 
   if (!container) {
     // UI not mounted yet – at least log it.
-    (kind === 'error' ? console.error : console.info)(`[mockup-director] ${title}${detail ? ': ' + detail : ''}`);
+    (kind === 'error' ? console.error : console.info)(`[mockup-director] ${title}${detail ? `: ${detail}` : ''}`);
     return;
   }
   const icon = kind === 'success' ? ICONS.check : kind === 'error' || kind === 'warning' ? ICONS.warn : ICONS.info;
@@ -34,7 +34,12 @@ export function toast(kind: ToastKind, title: string, detail?: string): void {
     'div',
     { class: `toast toast-${kind}`, attrs: { role: kind === 'error' ? 'alert' : 'status' } },
     h('span', { class: 'toast-icon', html: icon }),
-    h('div', { class: 'toast-body' }, h('div', { class: 'toast-title', text: title }), detail ? h('div', { class: 'toast-detail', text: detail }) : null),
+    h(
+      'div',
+      { class: 'toast-body' },
+      h('div', { class: 'toast-title', text: title }),
+      detail ? h('div', { class: 'toast-detail', text: detail }) : null,
+    ),
   );
   const close = h('button', {
     class: 'toast-close',

@@ -1,5 +1,5 @@
 /**
- * Final image export (owner: export agent).
+ * Final image export.
  *
  * Pipeline:
  *  1. Render the stage TRANSPARENTLY at a supersampled size (≈2× the target content box,
@@ -12,7 +12,8 @@
  *     composite the content over it – so the background always fills the whole output.
  *  5. Encode and embed the print resolution (PNG pHYs / JPEG JFIF density, default 300 dpi).
  */
-import type { BackgroundSettings, ExportFormat, ExportSettings, LocalizedText, StageAPI } from '../core/types';
+import type { BackgroundSettings, ExportFormat, ExportSettings, StageAPI } from '../core/types';
+import { msg, mtIn, type Message } from '../i18n';
 import { DEFAULT_EXPORT, MAX_EXPORT_SIZE } from '../core/defaults';
 import { clampInt, findAlphaBounds, fitInside, supersampleSize, type PixelRect } from './layout';
 import { isJpeg, isPng, setJpegDensity, setPngPhys } from './png';
@@ -55,12 +56,12 @@ export interface ExportResult {
 
 export type ExportErrorCode = 'webp-unsupported' | 'encode-failed' | 'render-failed';
 
-/** Export failure with a localized, user-presentable message. `message` holds "PL / EN". */
+/** Export failure with a user-presentable message: `text` is shown in the interface language, `message` is the English text. */
 export class ExportError extends Error {
   readonly code: ExportErrorCode;
-  readonly text: LocalizedText;
-  constructor(code: ExportErrorCode, text: LocalizedText) {
-    super(`${text.pl} / ${text.en}`);
+  readonly text: Message;
+  constructor(code: ExportErrorCode, text: Message) {
+    super(mtIn('en', text));
     this.name = 'ExportError';
     this.code = code;
     this.text = text;
@@ -111,10 +112,7 @@ export async function exportImageDetailed(
   const rw = src.width;
   const rh = src.height;
   if (!rw || !rh) {
-    throw new ExportError('render-failed', {
-      pl: 'Nie udało się wyrenderować sceny (za mało pamięci GPU?).',
-      en: 'Rendering failed (not enough GPU memory?).',
-    });
+    throw new ExportError('render-failed', msg('errRenderFailed'));
   }
 
   // --- 2. content bounds from alpha --------------------------------------------------------
@@ -171,10 +169,7 @@ export async function exportImageDetailed(
     if (format === 'webp' && options.webpFallback === 'png' && blob.type === 'image/png') format = 'png';
     else if (format === 'webp') throw webpError();
     else {
-      throw new ExportError('encode-failed', {
-        pl: `Nie udało się zakodować obrazu jako ${format.toUpperCase()}.`,
-        en: `Could not encode the image as ${format.toUpperCase()}.`,
-      });
+      throw new ExportError('encode-failed', msg('errEncodeAs', { format: format.toUpperCase() }));
     }
   }
   if (dpi > 0) {
@@ -236,7 +231,7 @@ export function suggestFileName(modelId: string, format: ExportFormat, date: Dat
   return `mockup-director-${slugify(modelId) || 'mockup'}-${stamp}.${extensionFor(format)}`;
 }
 
-/** ASCII file-name slug (Polish diacritics transliterated). */
+/** ASCII file-name slug. Polish letters are mapped by hand first (ł has no Unicode decomposition), other accents are stripped. */
 export function slugify(s: string): string {
   const map: Record<string, string> = { ą: 'a', ć: 'c', ę: 'e', ł: 'l', ń: 'n', ó: 'o', ś: 's', ź: 'z', ż: 'z' };
   return s
@@ -302,10 +297,7 @@ function normaliseSettings(s: ExportSettings): ExportSettings {
 }
 
 function webpError(): ExportError {
-  return new ExportError('webp-unsupported', {
-    pl: 'Ten system nie potrafi zapisać formatu WebP. Wybierz PNG lub JPEG.',
-    en: 'WebP encoding is not supported on this system. Please choose PNG or JPEG.',
-  });
+  return new ExportError('webp-unsupported', msg('errWebpImage'));
 }
 
 function measureContent(src: HTMLCanvasElement): PixelRect | null {
@@ -366,12 +358,7 @@ function canvasToBlob(c: HTMLCanvasElement, mime: string, quality?: number): Pro
       (b) => {
         if (b) resolve(b);
         else {
-          reject(
-            new ExportError('encode-failed', {
-              pl: 'Nie udało się zakodować obrazu (za mało pamięci?).',
-              en: 'Could not encode the image (out of memory?).',
-            }),
-          );
+          reject(new ExportError('encode-failed', msg('errEncodeImage')));
         }
       },
       mime,
@@ -390,10 +377,7 @@ function createCanvas(w: number, h: number): HTMLCanvasElement {
 function get2d(c: HTMLCanvasElement): CanvasRenderingContext2D {
   const g = c.getContext('2d');
   if (!g) {
-    throw new ExportError('render-failed', {
-      pl: 'Za mało pamięci na obraz tej wielkości. Zmniejsz rozmiar eksportu.',
-      en: 'Not enough memory for an image this large. Reduce the export size.',
-    });
+    throw new ExportError('render-failed', msg('errImageTooLarge'));
   }
   return g;
 }

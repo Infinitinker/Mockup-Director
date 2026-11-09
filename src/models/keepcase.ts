@@ -6,10 +6,10 @@
  * front (-X side), the open edge on the right (+X).
  *
  * Industry dimensions used (trim sizes, 3 mm bleed added in the print templates):
- *  - DVD keep case ("Amaray" style): 135 (W) x 190 (H) x 14 mm; slim variants 9 mm and 7 mm.
+ *  - DVD keep case (standard): 135 (W) x 190 (H) x 14 mm; slim variants 9 mm and 7 mm.
  *    Insert (wrap) 183 mm high, back 129.5 | spine = case thickness | front 129.5
  *    -> 273 x 183 (14 mm), 268 x 183 (9 mm), 266 x 183 (7 mm).
- *  - Blu-ray keep case ("Elite" style): 135 (W) x 171.5 (H) x 12 mm (11 mm eco, 7 mm slim).
+ *  - Blu-ray keep case (standard): 135 (W) x 171.5 (H) x 12 mm (11 mm eco, 7 mm slim).
  *    Insert 148 mm high, back 129 | spine = case thickness | front 129 -> 270 x 148 (12 mm).
  *    The insert is shorter than on DVD because of the moulded, translucent top band.
  *
@@ -30,7 +30,7 @@ import type {
   ParamValues,
   PrintTemplate,
 } from '../core/types';
-import { L, bool, clearPlastic, num, printMaterial, str } from './shared';
+import { L, Lctx, bool, clearPlastic, num, printMaterial, round1, str } from './shared';
 
 export type KeepCaseVariant = 'dvd' | 'bluray';
 
@@ -62,9 +62,9 @@ const SPECS: Record<KeepCaseVariant, CaseSpec> = {
     panelWidth: 129.5,
     insertBottom: 3.5,
     thicknessOptions: [
-      { value: '14', label: L('Standard 14 mm', 'Standard 14 mm') },
-      { value: '9', label: L('Slim 9 mm', 'Slim 9 mm') },
-      { value: '7', label: L('Slim 7 mm', 'Slim 7 mm') },
+      { value: '14', label: L('Standard 14 mm') },
+      { value: '9', label: L('Slim 9 mm') },
+      { value: '7', label: L('Slim 7 mm') },
     ],
     defaultThickness: '14',
     defaultPlastic: 'black',
@@ -77,9 +77,9 @@ const SPECS: Record<KeepCaseVariant, CaseSpec> = {
     panelWidth: 129,
     insertBottom: 3,
     thicknessOptions: [
-      { value: '12', label: L('Standard 12 mm', 'Standard 12 mm') },
-      { value: '11', label: L('Eco 11 mm', 'Eco 11 mm') },
-      { value: '7', label: L('Slim 7 mm', 'Slim 7 mm') },
+      { value: '12', label: L('Standard 12 mm') },
+      { value: '11', label: L('Eco 11 mm') },
+      { value: '7', label: L('Slim 7 mm') },
     ],
     defaultThickness: '12',
     defaultPlastic: 'blue',
@@ -104,14 +104,14 @@ interface PlasticDef {
 }
 
 const PLASTICS: Record<string, PlasticDef> = {
-  black: { label: L('Czarny', 'Black'), color: '#141416', roughness: 0.45 },
-  clear: { label: L('Przezroczysty', 'Clear'), color: '#eef3f6', roughness: 0.06, opacity: 0.3 },
-  smoke: { label: L('Dymiony', 'Smoke'), color: '#33363b', roughness: 0.08, opacity: 0.62 },
-  blue: { label: L('Niebieski półprzezroczysty', 'Translucent blue'), color: '#1f5fc4', roughness: 0.1, opacity: 0.6 },
-  white: { label: L('Biały', 'White'), color: '#eceae6', roughness: 0.4 },
-  red: { label: L('Czerwony', 'Red'), color: '#a8121b', roughness: 0.4 },
-  green: { label: L('Zielony', 'Green'), color: '#1b6b39', roughness: 0.4 },
-  purple: { label: L('Fioletowy', 'Purple'), color: '#4f2a7d', roughness: 0.4 },
+  black: { label: L('Black'), color: '#141416', roughness: 0.45 },
+  clear: { label: Lctx('keep case', 'Clear'), color: '#eef3f6', roughness: 0.06, opacity: 0.3 },
+  smoke: { label: L('Smoke'), color: '#33363b', roughness: 0.08, opacity: 0.62 },
+  blue: { label: L('Translucent blue'), color: '#1f5fc4', roughness: 0.1, opacity: 0.6 },
+  white: { label: L('White'), color: '#eceae6', roughness: 0.4 },
+  red: { label: L('Red'), color: '#a8121b', roughness: 0.4 },
+  green: { label: L('Green'), color: '#1b6b39', roughness: 0.4 },
+  purple: { label: L('Purple'), color: '#4f2a7d', roughness: 0.4 },
 };
 
 const FINISH_ROUGHNESS: Record<string, number> = { glossy: 0.3, satin: 0.5, matte: 0.78 };
@@ -134,14 +134,11 @@ function edgeRadius(thickness: number): number {
   return clamp(thickness * 0.18, 1.2, 2.2);
 }
 
-/** "129,5" (PL) / "129.5" (EN). */
-const fmt = (v: number, lang: 'pl' | 'en') => {
-  const s = (Math.round(v * 10) / 10).toString();
-  return lang === 'pl' ? s.replace('.', ',') : s;
-};
-
 /** Outer size of the case (for composites / layout). */
-export function keepCaseSize(params: ParamValues, variant: KeepCaseVariant): { width: number; height: number; depth: number } {
+export function keepCaseSize(
+  params: ParamValues,
+  variant: KeepCaseVariant,
+): { width: number; height: number; depth: number } {
   const spec = SPECS[variant];
   const t = thicknessOf(params, variant);
   return spec.band
@@ -153,10 +150,10 @@ export function keepCaseSize(params: ParamValues, variant: KeepCaseVariant): { w
 /* Print templates                                                     */
 /* ------------------------------------------------------------------ */
 
-const TRIM = L('Linia cięcia', 'Trim line');
-const FOLD = L('Linia zgięcia', 'Fold line');
+const TRIM = L('Trim line');
+const FOLD = L('Fold line');
 
-/** Wrap insert: Tył | Grzbiet | Przód, left to right, with 3 mm bleed. */
+/** Wrap insert: Back | Spine | Front, left to right, with 3 mm bleed. */
 export function keepCaseCoverTemplate(params: ParamValues, variant: KeepCaseVariant): PrintTemplate {
   const spec = SPECS[variant];
   const t = thicknessOf(params, variant);
@@ -176,9 +173,9 @@ export function keepCaseCoverTemplate(params: ParamValues, variant: KeepCaseVari
       { orientation: 'h', posMm: b + hi, label: TRIM },
     ],
     regions: [
-      { xMm: b, yMm: b, wMm: pw, hMm: hi, label: L('Tył', 'Back') },
-      { xMm: b + pw, yMm: b, wMm: t, hMm: hi, label: L('Grzbiet', 'Spine') },
-      { xMm: b + pw + t, yMm: b, wMm: pw, hMm: hi, label: L('Przód', 'Front') },
+      { xMm: b, yMm: b, wMm: pw, hMm: hi, label: L('Back') },
+      { xMm: b + pw, yMm: b, wMm: t, hMm: hi, label: L('Spine') },
+      { xMm: b + pw + t, yMm: b, wMm: pw, hMm: hi, label: L('Front') },
     ],
   };
 }
@@ -206,57 +203,51 @@ function makeSlots(variant: KeepCaseVariant): ImageSlotDef[] {
   const pw = spec.panelWidth;
   const hi = spec.insertHeight;
   const wrapW = 2 * pw + t0;
-  const tFor = (lang: 'pl' | 'en') => spec.thicknessOptions.map((o) => fmt(parseFloat(o.value), lang)).join(' / ');
-  const onlyIfNoCover = L(
-    'Używane tylko, gdy nie dodano obrazu „Okładka (całość)”.',
-    'Used only when no “Cover wrap” image is added.',
-  );
+  // The thickness options are whole millimetres ("14 / 9 / 7"), so the list has no decimal
+  // separator and reads the same in every language.
+  const spines = spec.thicknessOptions.map((o) => String(parseFloat(o.value))).join(' / ');
+  const onlyIfNoCover = L('Used only when no “Cover wrap” image is added.');
   return [
     {
       id: 'cover',
-      label: L('Okładka (całość)', 'Cover wrap'),
+      label: L('Cover wrap'),
       hint: L(
-        `Cała wkładka pod folią, od lewej: Tył | Grzbiet | Przód. Format ${fmt(wrapW, 'pl')} × ${fmt(hi, 'pl')} mm ` +
-          `+ 3 mm spadu (szerokość = 2 × ${fmt(pw, 'pl')} mm + grzbiet ${tFor('pl')} mm – pobierz szablon). ` +
-          'Ma pierwszeństwo przed osobnymi polami Przód / Grzbiet / Tył.',
-        `The whole insert under the sleeve, left to right: Back | Spine | Front. ${fmt(wrapW, 'en')} × ${fmt(hi, 'en')} mm ` +
-          `+ 3 mm bleed (width = 2 × ${fmt(pw, 'en')} mm + spine ${tFor('en')} mm – download the template). ` +
+        'The whole insert under the sleeve, left to right: Back | Spine | Front. {w} × {h} mm ' +
+          '+ 3 mm bleed (width = 2 × {panel} mm + spine {spines} mm – download the template). ' +
           'Takes priority over the separate Front / Spine / Back slots.',
+        { w: round1(wrapW), h: round1(hi), panel: round1(pw), spines },
       ),
       aspect: (wrapW + 2 * BLEED) / (hi + 2 * BLEED),
       template: (params) => keepCaseCoverTemplate(params, variant),
     },
     {
       id: 'front',
-      label: L('Przód', 'Front'),
-      hint: L(
-        `${onlyIfNoCover.pl} ${fmt(pw, 'pl')} × ${fmt(hi, 'pl')} mm + 3 mm spadu.`,
-        `${onlyIfNoCover.en} ${fmt(pw, 'en')} × ${fmt(hi, 'en')} mm + 3 mm bleed.`,
-      ),
+      label: L('Front'),
+      hint: L('{onlyIfNoCover} {w} × {h} mm + 3 mm bleed.', { onlyIfNoCover, w: round1(pw), h: round1(hi) }),
       aspect: (pw + 2 * BLEED) / (hi + 2 * BLEED),
-      template: panelTemplate(pw, hi, L('Przód', 'Front')),
+      template: panelTemplate(pw, hi, L('Front')),
     },
     {
       id: 'spine',
-      label: L('Grzbiet', 'Spine'),
+      label: L('Spine'),
       hint: L(
-        `${onlyIfNoCover.pl} Pionowy pasek jak na szablonie: szerokość = grubość pudełka (${tFor('pl')} mm) × ${fmt(hi, 'pl')} mm + 3 mm spadu. ` +
-          'Bez obrazu grzbiet ma kolor „Kolor grzbietu i tyłu”.',
-        `${onlyIfNoCover.en} A vertical strip as in the template: width = case thickness (${tFor('en')} mm) × ${fmt(hi, 'en')} mm + 3 mm bleed. ` +
+        '{onlyIfNoCover} A vertical strip as in the template: width = case thickness ({spines} mm) × {h} mm + 3 mm bleed. ' +
           'Without an image the spine uses “Spine & back colour”.',
+        { onlyIfNoCover, spines, h: round1(hi) },
       ),
       aspect: (t0 + 2 * BLEED) / (hi + 2 * BLEED),
-      template: (params) => panelTemplate(thicknessOf(params, variant), hi, L('Grzbiet', 'Spine')),
+      template: (params) => panelTemplate(thicknessOf(params, variant), hi, L('Spine')),
     },
     {
       id: 'back',
-      label: L('Tył', 'Back'),
-      hint: L(
-        `${onlyIfNoCover.pl} ${fmt(pw, 'pl')} × ${fmt(hi, 'pl')} mm + 3 mm spadu. Bez obrazu tył ma kolor „Kolor grzbietu i tyłu”.`,
-        `${onlyIfNoCover.en} ${fmt(pw, 'en')} × ${fmt(hi, 'en')} mm + 3 mm bleed. Without an image the back uses “Spine & back colour”.`,
-      ),
+      label: L('Back'),
+      hint: L('{onlyIfNoCover} {w} × {h} mm + 3 mm bleed. Without an image the back uses “Spine & back colour”.', {
+        onlyIfNoCover,
+        w: round1(pw),
+        h: round1(hi),
+      }),
       aspect: (pw + 2 * BLEED) / (hi + 2 * BLEED),
-      template: panelTemplate(pw, hi, L('Tył', 'Back')),
+      template: panelTemplate(pw, hi, L('Back')),
     },
   ];
 }
@@ -265,9 +256,9 @@ function makeSlots(variant: KeepCaseVariant): ImageSlotDef[] {
 /* Params                                                              */
 /* ------------------------------------------------------------------ */
 
-const G_DIM = L('Wymiary', 'Dimensions');
-const G_MAT = L('Materiał', 'Material');
-const G_ART = L('Grafika', 'Artwork');
+const G_DIM = L('Dimensions');
+const G_MAT = L('Material');
+const G_ART = L('Artwork');
 
 function makeParams(variant: KeepCaseVariant): ParamDef[] {
   const spec = SPECS[variant];
@@ -275,7 +266,7 @@ function makeParams(variant: KeepCaseVariant): ParamDef[] {
     {
       id: 'thickness',
       type: 'select',
-      label: L('Grubość pudełka', 'Case thickness'),
+      label: L('Case thickness'),
       group: G_DIM,
       options: spec.thicknessOptions,
       default: spec.defaultThickness,
@@ -283,7 +274,7 @@ function makeParams(variant: KeepCaseVariant): ParamDef[] {
     {
       id: 'cornerRadius',
       type: 'number',
-      label: L('Zaokrąglenie narożników', 'Corner radius'),
+      label: L('Corner radius'),
       group: G_DIM,
       min: 2.5,
       max: 4.5,
@@ -294,7 +285,7 @@ function makeParams(variant: KeepCaseVariant): ParamDef[] {
     {
       id: 'plastic',
       type: 'select',
-      label: L('Kolor plastiku', 'Plastic colour'),
+      label: L('Plastic colour'),
       group: G_MAT,
       options: Object.entries(PLASTICS).map(([value, d]) => ({ value, label: d.label })),
       default: spec.defaultPlastic,
@@ -305,14 +296,14 @@ function makeParams(variant: KeepCaseVariant): ParamDef[] {
       {
         id: 'bandColor',
         type: 'color',
-        label: L('Kolor górnego paska', 'Top band colour'),
+        label: L('Top band colour'),
         group: G_MAT,
         default: '#1d62cc',
       },
       {
         id: 'bandEmboss',
         type: 'boolean',
-        label: L('Tłoczenie na pasku', 'Embossed band panel'),
+        label: L('Embossed band panel'),
         group: G_MAT,
         default: true,
       },
@@ -322,19 +313,19 @@ function makeParams(variant: KeepCaseVariant): ParamDef[] {
     {
       id: 'coverFinish',
       type: 'select',
-      label: L('Papier wkładki', 'Insert paper'),
+      label: L('Insert paper'),
       group: G_MAT,
       options: [
-        { value: 'glossy', label: L('Błyszczący', 'Glossy') },
-        { value: 'satin', label: L('Satynowy', 'Satin') },
-        { value: 'matte', label: L('Matowy', 'Matte') },
+        { value: 'glossy', label: Lctx('keep case', 'Glossy') },
+        { value: 'satin', label: Lctx('keep case', 'Satin') },
+        { value: 'matte', label: Lctx('keep case', 'Matte') },
       ],
       default: 'satin',
     },
     {
       id: 'sleeveGloss',
       type: 'number',
-      label: L('Połysk folii', 'Sleeve film gloss'),
+      label: L('Sleeve film gloss'),
       group: G_MAT,
       min: 0,
       max: 100,
@@ -345,7 +336,7 @@ function makeParams(variant: KeepCaseVariant): ParamDef[] {
     {
       id: 'sideColor',
       type: 'color',
-      label: L('Kolor grzbietu i tyłu (bez grafiki)', 'Spine & back colour (no artwork)'),
+      label: L('Spine & back colour (no artwork)'),
       group: G_ART,
       default: '#1c1c1f',
     },
@@ -675,7 +666,13 @@ export function buildKeepCase(ctx: ModelContext, variant: KeepCaseVariant): THRE
     return m;
   };
   const solidPaper = () =>
-    new THREE.MeshPhysicalMaterial({ color: sideColor, roughness: paperRough, metalness: 0, clearcoat, clearcoatRoughness });
+    new THREE.MeshPhysicalMaterial({
+      color: sideColor,
+      roughness: paperRough,
+      metalness: 0,
+      clearcoat,
+      clearcoatRoughness,
+    });
 
   const addSheet = (geo: THREE.BufferGeometry, mat: THREE.Material, name: string) => {
     const m = new THREE.Mesh(geo, mat);
@@ -696,7 +693,11 @@ export function buildKeepCase(ctx: ModelContext, variant: KeepCaseVariant): THRE
     const panel = (s0: number, s1: number, width: number) =>
       ribbon(slicePath(sheet, s0, s1), 'xz', y0, y1, (s, y) => [(BLEED + (s - s0)) / (width + 2 * BLEED), v(y, hTot)]);
     addSheet(panel(sSpine1, sTotal, pw), paper(ctx.getTexture('front')), 'front');
-    addSheet(panel(sSpine0, sSpine1, T), ctx.hasImage('spine') ? paper(ctx.getTexture('spine')) : solidPaper(), 'spine');
+    addSheet(
+      panel(sSpine0, sSpine1, T),
+      ctx.hasImage('spine') ? paper(ctx.getTexture('spine')) : solidPaper(),
+      'spine',
+    );
     addSheet(panel(0, sSpine0, pw), ctx.hasImage('back') ? paper(ctx.getTexture('back')) : solidPaper(), 'back');
   }
 
@@ -743,7 +744,14 @@ export function buildKeepCase(ctx: ModelContext, variant: KeepCaseVariant): THRE
       const ring = roundedRect(-pwE / 2, cy - ph / 2, pwE / 2, cy + ph / 2, ph / 2, ph / 2);
       const inset = 0.9;
       ring.holes.push(
-        roundedRect(-pwE / 2 + inset, cy - ph / 2 + inset, pwE / 2 - inset, cy + ph / 2 - inset, ph / 2 - inset, ph / 2 - inset),
+        roundedRect(
+          -pwE / 2 + inset,
+          cy - ph / 2 + inset,
+          pwE / 2 - inset,
+          cy + ph / 2 - inset,
+          ph / 2 - inset,
+          ph / 2 - inset,
+        ),
       );
       const emb = new THREE.ExtrudeGeometry(ring, {
         depth: 0.18,
@@ -847,11 +855,8 @@ const KEEPCASE_CAMERA = { yaw: -30, pitch: 12 };
 export const dvdModel: ModelDefinition = {
   id: 'dvd-case',
   category: 'disc',
-  name: L('Pudełko DVD', 'DVD case'),
-  description: L(
-    'Pudełko DVD 190 × 135 mm (14 / 9 / 7 mm) z wkładką pod przezroczystą folią.',
-    'DVD keep case 190 × 135 mm (14 / 9 / 7 mm) with a printed insert under a clear sleeve.',
-  ),
+  name: L('DVD case'),
+  description: L('DVD keep case 190 × 135 mm (14 / 9 / 7 mm) with a printed insert under a clear sleeve.'),
   icon: ICON_DVD,
   slots: makeSlots('dvd'),
   params: makeParams('dvd'),
@@ -862,9 +867,8 @@ export const dvdModel: ModelDefinition = {
 export const blurayModel: ModelDefinition = {
   id: 'bluray-case',
   category: 'disc',
-  name: L('Pudełko Blu-ray', 'Blu-ray case'),
+  name: L('Blu-ray case'),
   description: L(
-    'Pudełko Blu-ray 171,5 × 135 mm (12 / 11 / 7 mm) z półprzezroczystym górnym paskiem i wkładką pod folią.',
     'Blu-ray keep case 171.5 × 135 mm (12 / 11 / 7 mm) with a translucent top band and a printed insert under a clear sleeve.',
   ),
   icon: ICON_BLURAY,

@@ -1,0 +1,33 @@
+# Checks the licenses of every npm package and Rust crate against the allow lists, and that the
+# committed THIRD-PARTY-NOTICES.md, which every package of the app contains, matches the dependencies
+# (docs/licenses.md). Used by the Licenses check (checks.yml) and by the release (release.yml). Needs a
+# checkout, Node.js and `npm ci` first.
+name: License check and notices
+description: Fails on a dependency license outside the allow lists, or on out-of-date third-party notices.
+
+runs:
+  using: composite
+  steps:
+    # Fails on any npm package (shipped or build-only) with a license outside the allow list.
+    - name: Check npm licenses
+      shell: bash
+      run: node tools/licenses.mjs
+
+    # Exact versions, raised by hand (Dependabot does not see them): the notices of a release should
+    # not change because a tool changed. tools/notices.mjs checks it runs with this cargo-about.
+    - name: Install cargo-deny and cargo-about
+      uses: taiki-e/install-action@v2
+      with:
+        tool: cargo-deny@0.20.2,cargo-about@0.9.3
+
+    # Fails on any Rust crate (for the Windows, macOS and Linux targets) with a license outside the
+    # allow list in src-tauri/deny.toml.
+    - name: Check Rust licenses (cargo-deny)
+      shell: bash
+      run: cargo deny --manifest-path src-tauri/Cargo.toml --config src-tauri/deny.toml check licenses
+
+    # Writes the notices again and compares them with the committed file; fails on a shipped part
+    # without a license text, too.
+    - name: Check the third-party notices
+      shell: bash
+      run: node tools/notices.mjs --check

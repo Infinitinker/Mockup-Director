@@ -1,5 +1,5 @@
-# cargo-about configuration – generates the Rust part of THIRD-PARTY-NOTICES.md in CI.
-#   cargo about generate --manifest-path src-tauri/Cargo.toml --config src-tauri/about.toml src-tauri/about.hbs
+# cargo-about configuration: the Rust part of THIRD-PARTY-NOTICES.md, which tools/notices.mjs
+# writes with it (npm run notices).
 # Keep `accepted` in sync with src-tauri/deny.toml.
 accepted = [
   "MIT",
@@ -18,10 +18,12 @@ accepted = [
   "Unlicense",
   "MPL-2.0",
 ]
+# Keep in sync with `targets` in src-tauri/deny.toml.
 targets = [
-  "x86_64-pc-windows-msvc",
+  "x86_64-pc-windows-gnu",
   "x86_64-apple-darwin",
   "aarch64-apple-darwin",
+  "x86_64-unknown-linux-gnu",
 ]
 ignore-dev-dependencies = true
 ignore-build-dependencies = false

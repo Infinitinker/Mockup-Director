@@ -1,19 +1,25 @@
 [package]
 name = "mockup-director"
 version = "0.1.0"
-description = "Mockup Director – fotorealistyczne mockupy 3D pudełek i płyt"
+description = "Mockup Director – photorealistic 3D mockups of packaging, books, print and devices"
 authors = ["Infinitinker"]
 license = "MIT"
 repository = "https://github.com/Infinitinker/Mockup-Director"
 edition = "2021"
-rust-version = "1.77.2"
+rust-version = "1.90"
 publish = false
 
-# The library holds the actual app (`run()`); `main.rs` only calls it. This is the standard
-# Tauri v2 layout, which also keeps the door open for mobile targets.
+# The library holds the actual app (`run()`); `main.rs` only calls it (the standard Tauri v2 layout).
+# Only an rlib: the desktop apps link it into the executable. Tauri's mobile targets would also need
+# "staticlib" and "cdylib", but as a Windows DLL built with the GNU toolchain (MSYS2) the cdylib
+# exceeds the 65,535 exported symbols a DLL may have, and nothing uses it on the desktop.
 [lib]
 name = "mockup_director_lib"
-crate-type = ["staticlib", "cdylib", "rlib"]
+crate-type = ["rlib"]
+# Tests live in tests/ (mirroring src/). Windows needs the app manifest in every test executable
+# (see build.rs), and Cargo can add it only to tests/ targets, not to unit tests inside src/.
+test = false
+doctest = false
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
@@ -23,11 +29,18 @@ tauri-build = { version = "2", features = [] }
 # (tauri-build verifies that these features match tauri.conf.json.)
 # Pinned to the same MINOR as the npm packages (@tauri-apps/api 2.12.x, @tauri-apps/plugin-dialog
 # 2.8.x): the Tauri CLI fails the build when the Rust crate and its npm counterpart differ in
-# major.minor. Bump these together with package.json (see README "Wydanie nowej wersji").
+# major.minor. Bump these together with package.json (see docs/releasing.md).
 tauri = { version = "~2.12", features = [] }
 tauri-plugin-dialog = "~2.8"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+
+# One app process on Windows and Linux: a second launch (double-clicking another project file) hands
+# its files to the running app, which opens them in tabs. Rust only; it has no npm package. Not on
+# macOS: there the system itself sends files to the running app (RunEvent::Opened), and the plugin
+# would only add a socket in /tmp shared by all users.
+[target.'cfg(not(target_os = "macos"))'.dependencies]
+tauri-plugin-single-instance = "2.5"
 
 [profile.release]
 codegen-units = 1

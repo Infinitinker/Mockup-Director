@@ -3,9 +3,10 @@
  */
 import { h } from './dom';
 import { ICONS } from './icons';
-import { t } from './i18n';
+import { t } from '../i18n';
 import { VIEW_PRESETS, type AppContext } from './context';
 import { hasAny } from './state';
+import { isProjectFileName } from './project';
 import type { BackgroundSettings, CameraSettings } from '../core/types';
 import { applyCssBackground } from '../scene/background';
 import { segmentedControl, type Control } from './controls';
@@ -30,7 +31,7 @@ function isImageFile(f: File): boolean {
   return f.type.startsWith('image/') || /\.(png|jpe?g|webp|gif|bmp|tiff?|avif|heic|svg)$/i.test(f.name);
 }
 function isProjectFile(f: File): boolean {
-  return /\.(mockup|coverbox)$/i.test(f.name);
+  return isProjectFileName(f.name);
 }
 
 export function createViewportShell(): ViewportShell {
@@ -70,7 +71,13 @@ export function createViewportShell(): ViewportShell {
     });
     const reset = h(
       'button',
-      { class: 'vb-btn vb-icon', title: t('resetView'), label: t('resetView'), attrs: { type: 'button' }, on: { click: () => c.actions.resetView() } },
+      {
+        class: 'vb-btn vb-icon',
+        title: t('resetView'),
+        label: t('resetView'),
+        attrs: { type: 'button' },
+        on: { click: () => c.actions.resetView() },
+      },
       h('span', { class: 'btn-icon', html: ICONS.reset }),
     );
     const proj = segmentedControl<CameraSettings['projection']>({
@@ -100,14 +107,31 @@ export function createViewportShell(): ViewportShell {
     proj.el.title = t('projection');
     bg.el.title = t('previewBackground');
     controls = [proj, bg];
-    bar.append(views, h('div', { class: 'vb-sep' }), reset, h('div', { class: 'vb-sep' }), proj.el, h('div', { class: 'vb-sep' }), bg.el);
+    bar.append(
+      views,
+      h('div', { class: 'vb-sep' }),
+      reset,
+      h('div', { class: 'vb-sep' }),
+      proj.el,
+      h('div', { class: 'vb-sep' }),
+      bg.el,
+    );
     hint.textContent = t('viewportHint');
-    overlay.replaceChildren(h('div', { class: 'drop-card' }, h('span', { class: 'drop-icon', html: ICONS.image }), h('div', { text: t('dropHere') })));
+    overlay.replaceChildren(
+      h(
+        'div',
+        { class: 'drop-card' },
+        h('span', { class: 'drop-icon', html: ICONS.image }),
+        h('div', { text: t('dropHere') }),
+      ),
+    );
   };
 
   const sync = () => {
     if (!ctx) return;
-    controls.forEach((c) => c.sync());
+    controls.forEach((c) => {
+      c.sync();
+    });
     applyPreviewBackground(host, ctx.store.state.scene.background);
   };
 

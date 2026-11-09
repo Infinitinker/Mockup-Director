@@ -1,23 +1,44 @@
 /**
  * Mockup Director application shell: builds the layout, owns the store and wires the stage,
- * models, export and project handling together.
+ * models, export and project handling together. Every open project is a tab (./documents); the
+ * store works on the active one, and the whole set of tabs is autosaved as a session (./session).
  */
 import type { CameraSettings, ImageAsset, Lang, ModelContext, ParamValues, StageAPI } from '../core/types';
-import { DEFAULT_EXPORT, DEFAULT_SCENE, cloneScene } from '../core/defaults';
+import { DEFAULT_ANIMATION, DEFAULT_EXPORT, DEFAULT_SCENE, cloneScene } from '../core/defaults';
 import { getPlaceholderTexture } from '../core/placeholder';
-import { loadImageFile } from '../core/images';
+import { disposeImageAsset, loadImageFile } from '../core/images';
 import { MODELS, getModel } from '../models/registry';
 import { createStage } from '../scene/stage';
 import { inDesktopApp, pickFiles, saveBlob } from '../platform/files';
-import { Signal, errorMessage, frameCoalescer, h, isMac, nextFrame } from './dom';
-import { getLang, initLang, lt, setLang, t } from './i18n';
-import { Store, countImages, disposeImageMap, hasAny, type AppState, type ImageMap } from './state';
+import { handleOpenedFiles } from '../platform/launch';
+import { onWindowClose, setWindowTitle } from '../platform/window';
+import { Signal, errorMessage, frameCoalescer, h, isMac, nextFrame, safeStorage } from './dom';
+
+/** localStorage key of the interface language the user picked. */
+const LANG_KEY = 'mockup-director.lang';
+import { getLang, initLang, lt, setLang, t } from '../i18n';
+import { Store, hasAny, type DocumentState, type ImageMap } from './state';
+import { Documents } from './documents';
+import { loadSession, SessionSaver } from './session';
+import { createTabBar, tabLabel } from './tabbar';
 import { VIEW_PRESETS, type Actions, type AppContext, type TabId } from './context';
 import { completeParams, slotFor } from './modelUtils';
-import { exportBlob, extensionFor, fileNameFor, templateBlob, webpEncodingSupported } from './exportBridge';
-import { PROJECT_EXT, ProjectError, hydrateProject, loadAutosave, parseProjectFile, saveAutosave, toProjectFile } from './project';
+import {
+  animationFileFilter,
+  animationFileName,
+  exportAnimationBlob,
+  exportBlob,
+  extensionFor,
+  fileNameFor,
+  isAnimationCancelled,
+  templateBlob,
+  webpEncodingSupported,
+  type AnimationProgress,
+} from './exportBridge';
+import { PROJECT_EXT, ProjectError, hydrateProject, parseProjectFile, projectNameOf, toProjectFile } from './project';
 import { mountToasts, notify } from './toast';
-import { confirmDialog } from './dialog';
+import { choiceDialog } from './dialog';
+import { openBatchDialog, type BatchHost } from './batch';
 import { createToolbar } from './toolbar';
 import { createGallery } from './gallery';
 import { createViewportShell } from './viewport';
@@ -27,7 +48,7 @@ import { installShortcuts } from './shortcuts';
 const AUTOSAVE_MS = 1500;
 
 /** Fresh document for a model: defaults + the model's suggested camera. */
-function freshDocument(modelId: string): Omit<AppState, 'lang'> {
+function freshDocument(modelId: string): DocumentState {
   const model = getModel(modelId);
   const scene = cloneScene(DEFAULT_SCENE);
   scene.camera = { ...scene.camera, ...(model.defaultCamera ?? {}) };
@@ -77,7 +98,7 @@ function createNullStage(): StageAPI {
 }
 
 export function startApp(root: HTMLElement): void {
-  initLang();
+  initLang(safeStorage.get(LANG_KEY), navigator.languages ?? [navigator.language]);
   document.documentElement.lang = getLang();
   root.classList.add('app');
   try {
@@ -91,9 +112,24 @@ export function startApp(root: HTMLElement): void {
 
   /* State ------------------------------------------------------------ */
   const store = new Store({ ...freshDocument(MODELS[0].id), lang: getLang() });
+  /** The open projects (tabs); the store holds the active one. */
+  const docs = new Documents(store, () => freshDocument(store.state.modelId));
   const exportBusy = new Signal(false);
+  const animationProgress = new Signal<AnimationProgress | null>(null);
+  /** Aborts the running animation export. */
+  let animationAbort: AbortController | null = null;
+  /**
+   * While an animation renders, the stage must keep its model (the frames are rendered from it):
+   * rebuilds requested meanwhile are deferred and run right after the export.
+   */
+  let modelLocked = false;
+  let rebuildDeferred = false;
+  /**
+   * While a batch export runs it drives the stage with temporary models and scene settings; the
+   * document's scene must not be pushed to the stage meanwhile (it is restored when the batch ends).
+   */
+  let batchActive = false;
   const loadingSlots = new Signal<ReadonlySet<string>>(new Set());
-  let projectName = '';
 
   /* Stage ------------------------------------------------------------ */
   const viewport = createViewportShell();
@@ -108,6 +144,10 @@ export function startApp(root: HTMLElement): void {
 
   /* Model rebuild (coalesced to one per frame) ------------------------ */
   const rebuild = frameCoalescer(() => {
+    if (modelLocked) {
+      rebuildDeferred = true;
+      return;
+    }
     const s = store.state;
     const model = getModel(s.modelId);
     const imgs = s.images[model.id] ?? {};
@@ -125,6 +165,7 @@ export function startApp(root: HTMLElement): void {
     }
   });
   const applyScene = frameCoalescer(() => {
+    if (batchActive) return; // re-applied by batchHost.end()
     try {
       stage.applySettings(store.state.scene);
     } catch (e) {
@@ -133,30 +174,50 @@ export function startApp(root: HTMLElement): void {
     }
   });
 
-  /* Autosave ----------------------------------------------------------- */
+  /* Session autosave: every open tab, restored on the next start ---------- */
+  const session = new SessionSaver();
   let restoring = true;
+  /**
+   * False when the last session could not be read: autosave then stays off for this run, so the
+   * stored tabs are kept for the next start instead of being overwritten.
+   */
+  let sessionReadable = false;
   let autosaveTimer = 0;
   let autosaveDirty = false;
-  const autosaveNow = () => {
+  let autosaveFailureShown = false;
+  /** The save in progress (or the last one); the close flush waits for it. Never rejects. */
+  let saving: Promise<void> = Promise.resolve();
+  const autosaveNow = (): Promise<void> => {
     clearTimeout(autosaveTimer);
-    if (!autosaveDirty) return;
+    if (!autosaveDirty || restoring || !sessionReadable) return saving;
     autosaveDirty = false;
-    saveAutosave(toProjectFile(store.state)).catch((e) => console.warn('[mockup-director] autosave failed', e));
+    saving = session.save(docs.snapshot(), docs.activeId).catch((e: unknown) => {
+      console.error('[mockup-director] autosave failed', e);
+      // Once per run: the work is still open, but would not come back after a restart.
+      if (!autosaveFailureShown) {
+        autosaveFailureShown = true;
+        notify.error(t('errAutosave'), errorMessage(e));
+      }
+    });
+    return saving;
   };
   const scheduleAutosave = () => {
     autosaveDirty = true;
-    // While the autosave is being restored, only remember that there is unsaved work; the restore
-    // flushes it when done (writing now could overwrite the snapshot we are still reading).
+    // While the session is being restored, only remember that there is unsaved work; the restore
+    // flushes it when done (writing now could overwrite the records we are still reading).
     if (restoring) return;
     clearTimeout(autosaveTimer);
-    autosaveTimer = window.setTimeout(autosaveNow, AUTOSAVE_MS);
+    autosaveTimer = window.setTimeout(() => void autosaveNow(), AUTOSAVE_MS);
   };
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') autosaveNow();
-  });
-  window.addEventListener('pagehide', autosaveNow);
+  // Tabs opened, closed, renamed or switched change the session too.
+  docs.subscribe(scheduleAutosave);
+  onWindowClose(autosaveNow);
 
   store.subscribe((e) => {
+    // A new / opened / restored document disposes the old document's image textures, which the
+    // (locked) model of a running animation export still renders – stop the export before its next
+    // frame instead of encoding frames with blank artwork.
+    if (modelLocked && (e.source === 'project' || e.source === 'document')) animationAbort?.abort();
     if (hasAny(e, 'model', 'params', 'images', 'lang')) rebuild.schedule();
     // Camera changes made in the viewport are already applied there – never push them back.
     if (e.kinds.has('scene') || (e.kinds.has('camera') && e.source !== 'stage')) applyScene.schedule();
@@ -167,9 +228,13 @@ export function startApp(root: HTMLElement): void {
   stage.onCameraChange((cam) => {
     const c = normalizeCamera(cam);
     if (cameraEquals(c, store.state.scene.camera)) return;
-    store.update(['camera'], (s) => {
-      s.scene.camera = c;
-    }, { source: 'stage' });
+    store.update(
+      ['camera'],
+      (s) => {
+        s.scene.camera = c;
+      },
+      { source: 'stage' },
+    );
   });
 
   /* Actions ------------------------------------------------------------ */
@@ -177,8 +242,63 @@ export function startApp(root: HTMLElement): void {
 
   const setLoading = (keys: string[], on: boolean) => {
     const next = new Set(loadingSlots.value);
-    keys.forEach((k) => (on ? next.add(k) : next.delete(k)));
+    for (const k of keys) {
+      if (on) next.add(k);
+      else next.delete(k);
+    }
     loadingSlots.set(next);
+  };
+
+  /**
+   * Opens project files, each in its own tab; the first may take the place of an untouched new tab.
+   * A file that cannot be opened is reported and skipped.
+   */
+  /** Project files that arrived while an export ran; they open when it ends. */
+  let waitingFiles: File[] = [];
+  exportBusy.subscribe((busy) => {
+    if (busy || !waitingFiles.length) return;
+    const files = waitingFiles;
+    waitingFiles = [];
+    void openProjectFiles(files);
+  });
+
+  const openProjectFiles = async (files: File[]): Promise<void> => {
+    if (!files.length) return;
+    if (exportBusy.value) {
+      waitingFiles.push(...files);
+      notify.info(t('openAfterExport', { n: files.length }));
+      return;
+    }
+    document.body.classList.add('is-busy');
+    try {
+      for (const f of files) {
+        try {
+          let json: unknown;
+          try {
+            json = JSON.parse(await f.text());
+          } catch {
+            throw new ProjectError(t('errNotProject'));
+          }
+          const { state, failed } = await hydrateProject(parseProjectFile(json));
+          const name = projectNameOf(f.name);
+          // An export may have started while the file was read: the stage must keep its project.
+          if (exportBusy.value) {
+            docs.add(state, { name, activate: false });
+          } else if (docs.activeIsPristine()) {
+            store.replace(state, 'project');
+            docs.markActiveOpened(name);
+          } else {
+            docs.add(state, { name });
+          }
+          notify.success(t('projectOpened'), f.name);
+          if (failed) notify.warning(t('imagesFailed', { n: failed }));
+        } catch (e) {
+          notify.error(t('errOpen'), `${f.name}: ${errorMessage(e)}`);
+        }
+      }
+    } finally {
+      document.body.classList.remove('is-busy');
+    }
   };
 
   const actions: Actions = {
@@ -187,7 +307,7 @@ export function startApp(root: HTMLElement): void {
       const model = getModel(id);
       const prevId = store.state.modelId;
       // Carry artwork and matching params over to a related model the user has not touched yet
-      // (e.g. "Pudełko DVD" -> "DVD z płytą"): same slot/param ids mean the same thing.
+      // (e.g. "DVD case" -> "DVD with disc"): same slot/param ids mean the same thing.
       // Assets are shared by reference; the store's GC keeps them alive while any model uses them.
       const prevImages = store.state.images[prevId] ?? {};
       const inheritImages: Record<string, ImageAsset> = {};
@@ -217,66 +337,81 @@ export function startApp(root: HTMLElement): void {
     setLang(lang: Lang) {
       if (lang === store.state.lang) return;
       setLang(lang);
-      store.update(['lang'], (s) => {
-        s.lang = lang;
-      }, { history: false });
+      safeStorage.set(LANG_KEY, lang);
+      store.update(
+        ['lang'],
+        (s) => {
+          s.lang = lang;
+        },
+        { history: false },
+      );
     },
 
     async newProject() {
-      try {
-        if (countImages(store.state) > 0) {
-          const ok = await confirmDialog({ title: t('newProjectTitle'), message: t('newProjectMsg'), okLabel: t('newProjectOk'), danger: true });
-          if (!ok) return;
-        }
-        store.replace(freshDocument(store.state.modelId), 'project');
-        projectName = '';
-        notify.info(t('newProjectDone'));
-      } catch (e) {
-        notify.error(t('errUnexpected'), errorMessage(e));
-      }
+      if (exportBusy.value) return;
+      docs.add(freshDocument(store.state.modelId));
     },
 
     async openProject(file?: File) {
       try {
-        let f = file;
-        if (!f) {
-          const files = await pickFiles(`.${PROJECT_EXT},.coverbox,application/json`, false);
-          f = files[0];
-        }
-        if (!f) return;
-        let json: unknown;
-        try {
-          json = JSON.parse(await f.text());
-        } catch {
-          throw new ProjectError(t('errNotProject'));
-        }
-        const parsed = parseProjectFile(json);
-        document.body.classList.add('is-busy');
-        const { state, failed } = await hydrateProject(parsed);
-        store.replace(state, 'project');
-        projectName = f.name.replace(/\.(mockup|coverbox|json)$/i, '');
-        notify.success(t('projectOpened'), f.name);
-        if (failed) notify.warning(t('imagesFailed', { n: failed }));
+        const files = file ? [file] : await pickFiles(`.${PROJECT_EXT}`, true);
+        await openProjectFiles(files);
       } catch (e) {
         notify.error(t('errOpen'), errorMessage(e));
-      } finally {
-        document.body.classList.remove('is-busy');
       }
     },
 
-    async saveProject() {
+    async saveProject(tabId = docs.activeId) {
       try {
+        // Everything is taken from the tab now: other tabs may become active while the save dialog
+        // is open (a project opened from the system), and edits may continue while it writes.
+        if (!docs.tab(tabId)) return false;
+        docs.activate(tabId);
+        const revision = store.revision;
         const file = toProjectFile(store.state);
         const blob = new Blob([JSON.stringify(file)], { type: 'application/json' });
-        const name = `${projectName || t('defaultProjectName')}.${PROJECT_EXT}`;
-        const ok = await saveBlob(blob, name, [{ name: 'Mockup Director', extensions: [PROJECT_EXT] }]);
-        if (ok) {
-          notify.success(t('projectSaved'), name);
-          projectName = name.replace(/\.mockup$/i, '');
-        }
+        const suggested = `${docs.tab(tabId)?.name || t('defaultProjectName')}.${PROJECT_EXT}`;
+        const saved = await saveBlob(blob, suggested, [{ name: t('projectFileType'), extensions: [PROJECT_EXT] }]);
+        if (!saved) return false;
+        docs.markSaved(tabId, revision, projectNameOf(saved));
+        notify.success(t('projectSaved'), saved);
+        return true;
       } catch (e) {
         notify.error(t('errSave'), errorMessage(e));
+        return false;
       }
+    },
+
+    async closeProject(tabId = docs.activeId) {
+      if (exportBusy.value) return;
+      const tab = docs.tab(tabId);
+      if (!tab) return;
+      if (tab.dirty) {
+        // Show the project the question is about.
+        docs.activate(tabId);
+        const choice = await choiceDialog({
+          title: t('unsavedTitle', { name: tabLabel(tab) }),
+          message: t('unsavedMsg'),
+          choices: [
+            { id: 'save', label: t('save'), primary: true },
+            { id: 'discard', label: t('dontSave'), danger: true },
+            { id: 'cancel', label: t('cancel') },
+          ],
+        });
+        // The tab may have been closed meanwhile; save exactly this tab, whatever is active now.
+        if (!docs.tab(tabId)) return;
+        if (choice === 'save') {
+          if (!(await actions.saveProject(tabId))) return;
+        } else if (choice !== 'discard') {
+          return;
+        }
+      }
+      docs.close(tabId);
+    },
+
+    switchProject(step) {
+      if (exportBusy.value) return;
+      docs.cycle(step);
     },
 
     async exportImage() {
@@ -295,14 +430,77 @@ export function startApp(root: HTMLElement): void {
         if (!blob || blob.size === 0) throw new Error(t('errExportEmpty'));
         const name = fileNameFor(s.modelId, settings.format);
         const ext = extensionFor(settings.format);
-        const ok = await saveBlob(blob, name, [{ name: settings.format === 'jpeg' ? 'JPEG' : settings.format.toUpperCase(), extensions: [ext] }]);
-        if (ok) notify.success(t('saved'), name);
+        const saved = await saveBlob(blob, name, [
+          { name: settings.format === 'jpeg' ? 'JPEG' : settings.format.toUpperCase(), extensions: [ext] },
+        ]);
+        if (saved) notify.success(t('saved'), saved);
       } catch (e) {
         console.error('[mockup-director] export failed', e);
         notify.error(t('errExport'), errorMessage(e));
       } finally {
         exportBusy.set(false);
       }
+    },
+
+    async exportAnimation() {
+      if (exportBusy.value) return;
+      exportBusy.set(true);
+      const abort = new AbortController();
+      animationAbort = abort;
+      animationProgress.set({ phase: 'prepare', done: 0, total: 0 });
+      try {
+        rebuild.flush();
+        applyScene.flush();
+        await nextFrame();
+        await nextFrame();
+        const s = store.state;
+        const modelId = s.modelId;
+        const settings = { ...(s.export.animation ?? DEFAULT_ANIMATION) };
+        modelLocked = true;
+        let result: Awaited<ReturnType<typeof exportAnimationBlob>>;
+        try {
+          result = await exportAnimationBlob(
+            stage,
+            settings,
+            { ...s.scene.background },
+            (p) => animationProgress.set(p),
+            abort.signal,
+          );
+        } finally {
+          modelLocked = false;
+          if (rebuildDeferred) {
+            rebuildDeferred = false;
+            rebuild.schedule();
+          }
+        }
+        animationProgress.set(null);
+        const name = animationFileName(modelId, result.format);
+        const saved = await saveBlob(result.blob, name, [animationFileFilter(result.format)]);
+        if (saved) notify.success(t('saved'), saved);
+      } catch (e) {
+        if (isAnimationCancelled(e)) {
+          notify.info(t('animCancelled'));
+        } else {
+          console.error('[mockup-director] animation export failed', e);
+          notify.error(t('errExportAnimation'), errorMessage(e));
+        }
+      } finally {
+        animationAbort = null;
+        animationProgress.set(null);
+        exportBusy.set(false);
+      }
+    },
+
+    cancelAnimation() {
+      animationAbort?.abort();
+    },
+
+    openBatchExport() {
+      if (exportBusy.value) {
+        notify.warning(t('batchBusy'));
+        return;
+      }
+      openBatchDialog(ctx, batchHost);
     },
 
     undo() {
@@ -353,6 +551,8 @@ export function startApp(root: HTMLElement): void {
       }
       if (files.length > targets.length) notify.info(t('tooManyFiles', { n: files.length - targets.length }));
       const pairs = targets.map((slotId, i) => ({ slotId, file: files[i] }));
+      // Decoding takes a while: the images belong to this tab, even if another one is shown by then.
+      const tabId = docs.activeId;
       const keys = pairs.map((p) => `${model.id}/${p.slotId}`);
       setLoading(keys, true);
       try {
@@ -362,7 +562,11 @@ export function startApp(root: HTMLElement): void {
           if (r.status === 'fulfilled') loaded[pairs[i].slotId] = r.value;
           else notify.error(t('errImage', { name: pairs[i].file.name }), errorMessage(r.reason));
         });
-        if (Object.keys(loaded).length) {
+        if (Object.keys(loaded).length && !docs.tab(tabId)) {
+          // The tab was closed meanwhile.
+          Object.values(loaded).forEach(disposeImageAsset);
+        } else if (Object.keys(loaded).length) {
+          docs.activate(tabId);
           store.endBurst();
           store.update(['images'], (s) => {
             s.images[model.id] = { ...(s.images[model.id] ?? {}), ...loaded };
@@ -407,8 +611,8 @@ export function startApp(root: HTMLElement): void {
           return;
         }
         const { blob, name } = res;
-        const ok = await saveBlob(blob, name, [{ name: 'PNG', extensions: ['png'] }]);
-        if (ok) notify.success(t('saved'), name);
+        const saved = await saveBlob(blob, name, [{ name: 'PNG', extensions: ['png'] }]);
+        if (saved) notify.success(t('saved'), saved);
       } catch (e) {
         notify.error(t('errTemplate'), errorMessage(e));
       }
@@ -419,17 +623,79 @@ export function startApp(root: HTMLElement): void {
     },
   };
 
-  const ctx: AppContext = { store, stage, actions, exportBusy, loadingSlots };
+  const ctx: AppContext = { store, stage, actions, exportBusy, animationProgress, loadingSlots };
+
+  /**
+   * Exclusive stage access for the batch export (src/ui/batch.ts). The batch never touches the store:
+   * it renders temporary models / scene settings, and end() puts the document back on the stage –
+   * the exact scene settings and camera from the store plus a normal rebuild of the document's model.
+   */
+  const batchHost: BatchHost = {
+    begin() {
+      if (exportBusy.value || batchActive) return false;
+      // Make sure the stage shows the latest document before it is frozen.
+      rebuild.flush();
+      applyScene.flush();
+      exportBusy.set(true);
+      modelLocked = true;
+      batchActive = true;
+      return true;
+    },
+    end() {
+      if (!batchActive) return;
+      batchActive = false;
+      modelLocked = false;
+      rebuildDeferred = false;
+      try {
+        stage.applySettings(store.state.scene);
+      } catch (e) {
+        console.error('[mockup-director] applySettings failed', e);
+      }
+      // Rebuild the document's model right away (replaces – and disposes – the last temporary model).
+      rebuild.schedule();
+      rebuild.flush();
+      exportBusy.set(false);
+    },
+  };
 
   /* Layout -------------------------------------------------------------- */
   const toolbar = createToolbar(ctx);
   const gallery = createGallery(ctx);
   const inspector = createInspector(ctx);
+  const tabBar = createTabBar(docs, {
+    onNew: () => void actions.newProject(),
+    onClose: (id) => void actions.closeProject(id),
+    onActivate: (id) => {
+      if (!exportBusy.value) docs.activate(id);
+    },
+    busy: exportBusy,
+  });
   showTab = inspector.show;
   viewport.mount(ctx);
-  root.replaceChildren(toolbar.el, h('div', { class: 'workspace' }, gallery.el, viewport.el, inspector.el));
+  root.replaceChildren(
+    toolbar.el,
+    h(
+      'div',
+      { class: 'workspace' },
+      gallery.el,
+      h('div', { class: 'workspace-center' }, tabBar.el, viewport.el),
+      inspector.el,
+    ),
+  );
+
+  /** The window title names the active project, with a • when it has unsaved changes. */
+  const updateTitle = () => {
+    const tab = docs.tab(docs.activeId);
+    setWindowTitle(tab ? `${tabLabel(tab)}${tab.dirty ? ' •' : ''} – Mockup Director` : 'Mockup Director');
+  };
+  docs.subscribe(updateTitle);
+  updateTitle();
   store.subscribe((e) => {
-    if (e.kinds.has('lang')) toolbar.render();
+    if (e.kinds.has('lang')) {
+      toolbar.render();
+      tabBar.render();
+      updateTitle();
+    }
   });
 
   installShortcuts(ctx);
@@ -459,24 +725,49 @@ export function startApp(root: HTMLElement): void {
   rebuild.schedule();
   rebuild.flush();
 
-  loadAutosave()
-    .then(async (file) => {
-      if (!file) return;
-      const { state, failed } = await hydrateProject(file);
-      // The user already started working while we were loading – don't overwrite that, and free the
-      // decoded images (GPU textures + full-size canvases) the restore will never use.
-      if (store.canUndo || countImages(store.state) > 0) {
-        disposeImageMap(state.images);
-        return;
-      }
-      store.replace(state, 'init');
-      if (countImages(store.state) > 0) notify.info(t('restored'));
-      if (failed) notify.warning(t('imagesFailed', { n: failed }));
+  restoreSession()
+    .catch((e) => {
+      console.error('[mockup-director] session restore failed', e);
+      notify.error(t('errRestore'), errorMessage(e));
     })
-    .catch((e) => console.warn('[mockup-director] autosave restore skipped', e))
     .finally(() => {
       restoring = false;
       // Edits made during the restore window were only marked dirty – save them now.
       if (autosaveDirty) scheduleAutosave();
+      // Projects the operating system asked to open (a double-clicked .mdproj), each in a tab.
+      void handleOpenedFiles(
+        (files) => void openProjectFiles(files),
+        (e) => notify.error(t('errOpen'), errorMessage(e)),
+      );
     });
+
+  /** Reopens the tabs of the last session (their unsaved changes included). */
+  async function restoreSession(): Promise<void> {
+    const loaded = await loadSession();
+    // Read without an error (also when nothing was stored): autosave may write from now on.
+    sessionReadable = true;
+    if (!loaded) return;
+    const { session: stored, skipped } = loaded;
+    const restored: { id: string; name: string; dirty: boolean; state: DocumentState }[] = [];
+    let failedImages = 0;
+    for (const tab of stored.tabs) {
+      const { state, failed } = await hydrateProject(tab.file);
+      failedImages += failed;
+      restored.push({ id: tab.id, name: tab.name, dirty: tab.dirty, state });
+    }
+    // The user may already have started working in the first tab while we were loading: keep it.
+    const initial = docs.activeId;
+    const replaceInitial = docs.activeIsPristine() && restored.length > 0;
+    for (const r of restored)
+      docs.add(r.state, { id: r.id, name: r.name, dirty: r.dirty, activate: false, position: 'end' });
+    // Tab records that were not restored (damaged ones) are not the saver's to delete.
+    session.adopt(restored.map((r) => r.id));
+    if (replaceInitial) {
+      docs.activate(restored.some((r) => r.id === stored.activeId) ? stored.activeId : restored[0].id);
+      docs.close(initial);
+    }
+    if (restored.length) notify.info(t('restoredTabs', { n: restored.length }));
+    if (skipped) notify.warning(t('restoreSkipped', { n: skipped }));
+    if (failedImages) notify.warning(t('imagesFailed', { n: failedImages }));
+  }
 }

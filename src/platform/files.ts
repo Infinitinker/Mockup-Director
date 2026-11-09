@@ -8,7 +8,10 @@
  */
 import { isTauri, invoke } from '@tauri-apps/api/core';
 
-export interface FileFilter { name: string; extensions: string[] }
+export interface FileFilter {
+  name: string;
+  extensions: string[];
+}
 
 /** True when running inside the Tauri desktop shell. */
 export function inDesktopApp(): boolean {
@@ -19,13 +22,17 @@ export function inDesktopApp(): boolean {
   }
 }
 
-/** Ask where to save and write the blob. Resolves false if the user cancelled. */
-export async function saveBlob(blob: Blob, suggestedName: string, filters: FileFilter[]): Promise<boolean> {
+/**
+ * Asks where to save and writes the blob. Resolves with the name of the saved file (without its
+ * folder), which the user may have changed in the save dialog, or null if the user cancelled.
+ * A classic browser download cannot report either, so it resolves with the suggested name.
+ */
+export async function saveBlob(blob: Blob, suggestedName: string, filters: FileFilter[]): Promise<string | null> {
   if (inDesktopApp()) return saveInDesktopApp(blob, suggestedName, filters);
   return saveInBrowser(blob, suggestedName, filters);
 }
 
-/** Let the user pick file(s). `accept` like "image/*" or ".mockup,application/json". */
+/** Let the user pick file(s). `accept` like "image/*" or ".mdproj". */
 export function pickFiles(accept: string, multiple = false): Promise<File[]> {
   return new Promise<File[]>((resolve) => {
     const input = document.createElement('input');
@@ -77,17 +84,17 @@ export function readFileText(file: File): Promise<string> {
 /* Desktop (Tauri)                                                     */
 /* ------------------------------------------------------------------ */
 
-async function saveInDesktopApp(blob: Blob, suggestedName: string, filters: FileFilter[]): Promise<boolean> {
+async function saveInDesktopApp(blob: Blob, suggestedName: string, filters: FileFilter[]): Promise<string | null> {
   const { save } = await import('@tauri-apps/plugin-dialog');
   const picked = await save({
     defaultPath: suggestedName,
     filters: filters.map((f) => ({ name: f.name, extensions: f.extensions.map(stripDot) })),
   });
-  if (!picked) return false; // cancelled
+  if (!picked) return null; // cancelled
   const path = ensureExtension(picked, filters, suggestedName);
   const bytes = new Uint8Array(await blob.arrayBuffer());
   await invoke('save_file', bytes, { headers: { 'x-path': encodeURIComponent(path) } });
-  return true;
+  return path.split(/[\\/]/).pop() || suggestedName;
 }
 
 /**
@@ -117,7 +124,10 @@ interface SavePickerWindow {
   showSaveFilePicker?: (options: {
     suggestedName?: string;
     types?: { description?: string; accept: Record<string, string[]> }[];
-  }) => Promise<{ createWritable(): Promise<{ write(data: Blob): Promise<void>; close(): Promise<void> }> }>;
+  }) => Promise<{
+    name: string;
+    createWritable(): Promise<{ write(data: Blob): Promise<void>; close(): Promise<void> }>;
+  }>;
 }
 
 const MIME_BY_EXT: Record<string, string> = {
@@ -125,21 +135,23 @@ const MIME_BY_EXT: Record<string, string> = {
   jpg: 'image/jpeg',
   jpeg: 'image/jpeg',
   webp: 'image/webp',
+  gif: 'image/gif',
+  mp4: 'video/mp4',
   json: 'application/json',
-  mockup: 'application/json',
-  coverbox: 'application/json',
+  mdproj: 'application/json',
   svg: 'image/svg+xml',
   pdf: 'application/pdf',
+  zip: 'application/zip',
 };
 
-async function saveInBrowser(blob: Blob, suggestedName: string, filters: FileFilter[]): Promise<boolean> {
+async function saveInBrowser(blob: Blob, suggestedName: string, filters: FileFilter[]): Promise<string | null> {
   const w = window as unknown as SavePickerWindow;
   if (typeof w.showSaveFilePicker === 'function') {
     try {
       const types = filters
         .filter((f) => f.extensions.length && !f.extensions.includes('*'))
         .map((f) => {
-          const exts = f.extensions.map((e) => '.' + stripDot(e).toLowerCase());
+          const exts = f.extensions.map((e) => `.${stripDot(e).toLowerCase()}`);
           const mime = blob.type || MIME_BY_EXT[exts[0].slice(1)] || 'application/octet-stream';
           return { description: f.name, accept: { [mime]: exts } };
         });
@@ -147,15 +159,15 @@ async function saveInBrowser(blob: Blob, suggestedName: string, filters: FileFil
       const writable = await handle.createWritable();
       await writable.write(blob);
       await writable.close();
-      return true;
+      return handle.name;
     } catch (err) {
-      if (err instanceof DOMException && err.name === 'AbortError') return false; // user cancelled
+      if (err instanceof DOMException && err.name === 'AbortError') return null; // user cancelled
       // NotAllowedError/SecurityError (e.g. user activation expired after a long render),
       // unsupported types… → fall through to a classic download.
     }
   }
   downloadBlob(blob, suggestedName);
-  return true;
+  return suggestedName;
 }
 
 /** Trigger a classic browser download (cannot detect cancel – always "saved"). */

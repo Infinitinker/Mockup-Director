@@ -4,17 +4,31 @@
 import type { Lang, StageAPI } from '../core/types';
 import type { Signal } from './dom';
 import type { Store } from './state';
-import type { DictKey } from './i18n';
+import type { MessageKey } from '../i18n';
+import type { AnimationProgress } from './exportBridge';
 
 export type TabId = 'images' | 'model' | 'scene' | 'export' | 'styles';
 
 export interface Actions {
   selectModel(id: string): void;
   setLang(lang: Lang): void;
+  /** A new project in a new tab. */
   newProject(): Promise<void>;
+  /** Opens project files, each in its own tab (an untouched new tab is reused). Without files: asks for one. */
   openProject(file?: File): Promise<void>;
-  saveProject(): Promise<void>;
+  /** Saves a tab's project (the active one by default). Resolves true when it was saved. */
+  saveProject(tabId?: string): Promise<boolean>;
+  /** Closes a project tab (the active one by default), asking first when it has unsaved changes. */
+  closeProject(tabId?: string): Promise<void>;
+  /** Switches to the next (+1) or previous (-1) project tab. */
+  switchProject(step: 1 | -1): void;
   exportImage(): Promise<void>;
+  /** Render + save the turntable animation (Export panel → Animation). */
+  exportAnimation(): Promise<void>;
+  /** Cancel a running animation export (no-op otherwise). */
+  cancelAnimation(): void;
+  /** Open the batch export dialog (many mockups → one ZIP file). */
+  openBatchExport(): void;
   undo(): void;
   redo(): void;
   /** Apply preset view by index into VIEW_PRESETS. */
@@ -34,12 +48,14 @@ export interface AppContext {
   actions: Actions;
   /** true while an export is running */
   exportBusy: Signal<boolean>;
+  /** Progress of a running animation export (null when none is running). */
+  animationProgress: Signal<AnimationProgress | null>;
   /** "modelId/slotId" keys of slots whose image is being decoded */
   loadingSlots: Signal<ReadonlySet<string>>;
 }
 
 export interface ViewPreset {
-  key: DictKey;
+  key: MessageKey;
   yaw: number;
   pitch: number;
 }

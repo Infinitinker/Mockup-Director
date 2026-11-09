@@ -1,6 +1,9 @@
 /**
  * Keyboard shortcuts: ⌘ on macOS, Ctrl elsewhere.
- *  ⌘N new · ⌘O open · ⌘S save · ⌘E export · ⌘Z undo · ⇧⌘Z redo (also Ctrl+Y off-mac) · 1–6 preset views.
+ *  ⌘N / ⌘T new project tab · ⌘O open · ⌘S save · ⌘W close the tab · ⌘E export · ⌘Z undo ·
+ *  ⇧⌘Z redo (also Ctrl+Y off-mac) · 1–6 preset views.
+ *  Next / previous tab: Ctrl+Tab / Ctrl+Shift+Tab and Ctrl+PageDown / Ctrl+PageUp everywhere (also on
+ *  macOS, like its browsers), plus ⇧⌘] / ⇧⌘[ on macOS.
  */
 import { isMac, isTextEditing } from './dom';
 import { VIEW_PRESETS, type AppContext } from './context';
@@ -14,11 +17,27 @@ export function installShortcuts(ctx: AppContext): () => void {
     const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
     const a = ctx.actions;
 
+    if (e.ctrlKey && !e.metaKey && !e.altKey && (e.key === 'Tab' || e.key === 'PageDown' || e.key === 'PageUp')) {
+      e.preventDefault();
+      a.switchProject(e.key === 'PageUp' || (e.key === 'Tab' && e.shiftKey) ? -1 : 1);
+      return;
+    }
+    if (isMac && e.metaKey && e.shiftKey && !e.altKey && (e.code === 'BracketRight' || e.code === 'BracketLeft')) {
+      e.preventDefault();
+      a.switchProject(e.code === 'BracketLeft' ? -1 : 1);
+      return;
+    }
+
     if (mod && !e.altKey) {
       switch (key) {
         case 'n':
+        case 't':
           e.preventDefault();
           void a.newProject();
+          return;
+        case 'w':
+          e.preventDefault();
+          void a.closeProject();
           return;
         case 'o':
           e.preventDefault();

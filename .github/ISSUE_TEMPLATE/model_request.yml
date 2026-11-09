@@ -1,0 +1,25 @@
+name: Model request
+description: Ask for a new model, or for more options in an existing one.
+labels: [model]
+body:
+  - type: input
+    id: model
+    attributes:
+      label: Model
+      description: What it is, and its usual sizes in millimetres.
+      placeholder: "Vinyl record sleeve, 314 × 314 mm"
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: What it should look like
+      description: >
+        Its parts, the faces your artwork goes on, materials and options. Photos or drawings of a
+        generic one help; models show no brands or logos, and no shape that copies a real product.
+    validations:
+      required: true
+  - type: textarea
+    id: use
+    attributes:
+      label: What you would use it for

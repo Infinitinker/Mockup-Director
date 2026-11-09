@@ -6,6 +6,7 @@ import type { CameraSettings, LocalizedText, SceneSettings, ScenePreset } from '
 import { DEFAULT_SCENE, cloneScene } from '../core/defaults';
 import { safeStorage } from './dom';
 import { sanitizeScene } from './project';
+import { L } from '../i18n';
 
 export const PRESETS_KEY = 'mockup-director.presets';
 
@@ -25,7 +26,7 @@ const base = (): Omit<SceneSettings, 'camera'> => {
 export const BUILTIN_PRESETS: BuiltinPreset[] = [
   {
     id: 'studio-light',
-    name: { pl: 'Jasne studio', en: 'Bright studio' },
+    name: L('Bright studio'),
     scene: {
       ...base(),
       light: { azimuth: -35, elevation: 45, intensity: 1.2, ambient: 0.55, environment: 1, color: '#ffffff' },
@@ -36,7 +37,7 @@ export const BUILTIN_PRESETS: BuiltinPreset[] = [
   },
   {
     id: 'dark-stage',
-    name: { pl: 'Ciemna scena', en: 'Dark stage' },
+    name: L('Dark stage'),
     scene: {
       ...base(),
       light: { azimuth: 40, elevation: 35, intensity: 1.6, ambient: 0.25, environment: 0.8, color: '#fff4e6' },
@@ -47,7 +48,7 @@ export const BUILTIN_PRESETS: BuiltinPreset[] = [
   },
   {
     id: 'clean-catalog',
-    name: { pl: 'Katalog – bez odbicia', en: 'Catalogue – no reflection' },
+    name: L('Catalogue – no reflection'),
     scene: {
       ...base(),
       light: { azimuth: -20, elevation: 60, intensity: 1.05, ambient: 0.7, environment: 1.1, color: '#ffffff' },
@@ -58,7 +59,7 @@ export const BUILTIN_PRESETS: BuiltinPreset[] = [
   },
   {
     id: 'glossy-hero',
-    name: { pl: 'Błyszczący hero shot', en: 'Glossy hero shot' },
+    name: L('Glossy hero shot'),
     scene: {
       ...base(),
       camera: { yaw: 28, pitch: 8, roll: 0, fov: 30, projection: 'perspective', zoom: 1, panX: 0, panY: 0 },

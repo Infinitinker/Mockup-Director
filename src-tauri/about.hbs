@@ -1,11 +1,11 @@
 ## Rust crates
 
 {{#each licenses}}
-### {{name}}
+### {{{name}}}
 
 Used by:
 {{#each used_by}}
-- {{crate.name}} {{crate.version}}
+- {{crate.name}} {{crate.version}}{{#if crate.repository}}: {{crate.repository}}{{/if}}
 {{/each}}
 
 ```

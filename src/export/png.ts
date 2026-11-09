@@ -93,7 +93,7 @@ export function setPngPhys(png: Uint8Array, dpi: number): Uint8Array<ArrayBuffer
     const len = readU32(png, o);
     const type = chunkType(png, o);
     const end = o + 12 + len;
-    if (end > png.length) throw new Error('Truncated PNG chunk ' + type);
+    if (end > png.length) throw new Error(`Truncated PNG chunk ${type}`);
     if (type === 'IHDR') ihdrEnd = end;
     else if (type === 'pHYs') drop.push([o, end]);
     o = end;
@@ -167,8 +167,24 @@ export function setJpegDensity(jpeg: Uint8Array, dpi: number): Uint8Array<ArrayB
     return out;
   }
   const app0 = new Uint8Array([
-    0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01, 0x01, 0x01,
-    d >> 8, d & 0xff, d >> 8, d & 0xff, 0x00, 0x00,
+    0xff,
+    0xe0,
+    0x00,
+    0x10,
+    0x4a,
+    0x46,
+    0x49,
+    0x46,
+    0x00,
+    0x01,
+    0x01,
+    0x01,
+    d >> 8,
+    d & 0xff,
+    d >> 8,
+    d & 0xff,
+    0x00,
+    0x00,
   ]);
   const out = new Uint8Array(jpeg.length + app0.length);
   out.set(jpeg.subarray(0, 2), 0);

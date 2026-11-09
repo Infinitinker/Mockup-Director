@@ -16,12 +16,9 @@
  *    towards +X (front + RIGHT side visible). Pitch: positive = camera above, looking down.
  */
 import type * as THREE from 'three';
+import type { LocalizedText } from '../i18n/types';
 
-export type Lang = 'pl' | 'en';
-export interface LocalizedText {
-  pl: string;
-  en: string;
-}
+export type { Lang, LocalizedText } from '../i18n/types';
 
 /* ------------------------------------------------------------------ */
 /* Models                                                              */
@@ -33,7 +30,7 @@ export type ParamValues = Record<string, ParamValue>;
 interface ParamBase {
   id: string;
   label: LocalizedText;
-  /** Optional grouping label for the UI ("Wymiary", "Materiał", ...). */
+  /** Optional grouping label for the UI ("Dimensions", "Material", ...). */
   group?: LocalizedText;
 }
 export interface NumberParamDef extends ParamBase {
@@ -99,6 +96,11 @@ export interface ImageSlotDef {
   /** Expected artwork aspect ratio (width / height) – used by the UI to warn about mismatches. */
   aspect: number;
   /**
+   * The slot accepts artwork of ANY aspect ratio (e.g. a screenshot panel whose size follows the image).
+   * `aspect` then only shapes the placeholder and the UI shows no aspect-mismatch warning.
+   */
+  anyAspect?: boolean;
+  /**
    * Print template description – used to generate a downloadable PNG template.
    * May be a function of the model's current params (e.g. box dimensions).
    */
@@ -114,7 +116,7 @@ export interface ModelContext {
   params: ParamValues;
 }
 
-export type ModelCategory = 'box' | 'disc';
+export type ModelCategory = 'box' | 'disc' | 'book' | 'print' | 'device';
 
 export interface ModelDefinition {
   id: string;
@@ -220,14 +222,80 @@ export interface StageAPI {
    * Must restore the on-screen viewport afterwards.
    */
   renderToCanvas(options: RenderOptions): HTMLCanvasElement;
+  /**
+   * OPTIONAL (animation export): start a turntable render session with ONE fixed framing that fits
+   * the union of all frames (the composition never jumps, breathes or gets cropped). The on-screen
+   * viewport is frozen until `end()` is called; renderToCanvas() keeps its still-export behaviour.
+   */
+  beginAnimation?(options: AnimationFramingOptions): AnimationRenderSession;
   /** Call when the viewport container is resized (the stage may also observe it itself). */
   resize(): void;
   dispose(): void;
 }
 
+/** Options of StageAPI.beginAnimation(). */
+export interface AnimationFramingOptions {
+  /**
+   * Product rotation of every frame in degrees around the vertical axis through the model's centre,
+   * relative to the current view (+ = counter-clockwise seen from above). Frame i shows angles[i].
+   */
+  angles: number[];
+  /** Pixel size of every rendered frame. */
+  width: number;
+  height: number;
+  /** Apply the viewport's zoom and pan on top of the fixed framing (may crop when zoomed in). */
+  useViewZoomPan?: boolean;
+}
+
+/** A running turntable render session (see StageAPI.beginAnimation). */
+export interface AnimationRenderSession {
+  readonly frameCount: number;
+  /**
+   * Render frame `index` TRANSPARENTLY into `target` (resized to the session size if needed).
+   * Throws when the stage changed (model replaced, WebGL context lost) since the session began.
+   */
+  renderFrame(index: number, target: HTMLCanvasElement): void;
+  /** Restore the on-screen viewport. Idempotent – always call it (try/finally). */
+  end(): void;
+}
+
 /* ------------------------------------------------------------------ */
 /* Export                                                              */
 /* ------------------------------------------------------------------ */
+
+export type AnimationFormat = 'gif' | 'webp' | 'mp4';
+
+/** Turntable animation export settings (stored in ExportSettings.animation). */
+export interface AnimationSettings {
+  format: AnimationFormat;
+  /** Output size in px (GIF / WebP max 1200, MP4 max 1920 – MP4 sizes are rounded down to even). */
+  width: number;
+  height: number;
+  /** Margin in px between the (fixed) composition box and the frame edge. */
+  margin: number;
+  /** Frames per second (GIF / WebP max 30, MP4 max 60). */
+  fps: number;
+  /** Length of one loop in seconds (1..20). */
+  duration: number;
+  /** 'loop' = full 360° turn, 'swing' = back and forth between -swingAngle and +swingAngle. */
+  motion: 'loop' | 'swing';
+  /** Swing amplitude in degrees (A in ±A). */
+  swingAngle: number;
+  /** Turn direction seen from above. */
+  direction: 'cw' | 'ccw';
+  /** Swing easing: 'sine' = ease-in-out (slows down at the turning points), 'linear'. */
+  easing: 'sine' | 'linear';
+  /** 'transparent' (GIF 1-bit / WebP alpha; MP4 uses white) or 'scene' (preview background). */
+  background: 'transparent' | 'scene';
+  /** GIF dithering. */
+  dither: 'floyd' | 'ordered' | 'none';
+  /** GIF palette: one global palette (stable colours, smaller files) or one per frame. */
+  palette: 'global' | 'frame';
+  /** WebP quality / MP4 bitrate preset. */
+  quality: 'low' | 'medium' | 'high';
+  /** Use the viewport zoom & pan on top of the fitted framing (off = whole composition, never cropped). */
+  useViewZoomPan: boolean;
+}
 
 export type ExportFormat = 'png' | 'jpeg' | 'webp';
 
@@ -248,6 +316,11 @@ export interface ExportSettings {
   sizing: 'canvas' | 'trim';
   /** 'transparent' (png/webp only; jpeg falls back to white) or 'scene' (use the preview background). */
   background: 'transparent' | 'scene';
+  /**
+   * Turntable animation settings (optional – older projects have none; see DEFAULT_ANIMATION).
+   * Never share this object between documents: copy it (it is mutated in place by the UI).
+   */
+  animation?: AnimationSettings;
 }
 
 /* ------------------------------------------------------------------ */
@@ -263,7 +336,7 @@ export interface ImageAsset {
   texture: THREE.Texture;
 }
 
-/** Serialisable project file (*.mockup, JSON). */
+/** Serialisable project file (*.mdproj, JSON). */
 export interface ProjectFile {
   app: 'mockup-director';
   version: 1;

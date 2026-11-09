@@ -2,9 +2,26 @@
  * Thin adapter between the UI and src/export/*. Keeps the UI's call sites small and puts the
  * file-naming / WebP-capability decisions in one place.
  */
-import { exportImage, suggestFileName, supportsWebpEncoding } from '../export/exporter';
+import { exportImage, slugify, suggestFileName, supportsWebpEncoding } from '../export/exporter';
 import { renderTemplateDetailed, templateFileName } from '../export/templates';
-import type { BackgroundSettings, ExportFormat, ExportSettings, ImageSlotDef, Lang, ParamValues, StageAPI } from '../core/types';
+import type {
+  AnimationFormat,
+  AnimationSettings,
+  BackgroundSettings,
+  ExportFormat,
+  ExportSettings,
+  ImageSlotDef,
+  Lang,
+  ParamValues,
+  StageAPI,
+} from '../core/types';
+import {
+  animationFileFilter,
+  exportAnimation,
+  mp4EncodingAvailable,
+  type AnimationProgress,
+  type AnimationResult,
+} from '../export/animation';
 
 /** Render the final image. `background` = scene.background, so 'As preview' matches the viewport. */
 export function exportBlob(stage: StageAPI, settings: ExportSettings, background: BackgroundSettings): Promise<Blob> {
@@ -25,7 +42,10 @@ export async function templateBlob(
 ): Promise<{ blob: Blob; name: string } | null> {
   const res = await renderTemplateDetailed(slot, lang, dpi, params);
   if (!res) return null;
-  const name = templateFileName(slot, lang, res.dpi, params).replace(/^mockup-director-/, `mockup-director-${modelId}-`);
+  const name = templateFileName(slot, lang, res.dpi, params).replace(
+    /^mockup-director-/,
+    `mockup-director-${modelId}-`,
+  );
   return { blob: res.blob, name };
 }
 
@@ -47,4 +67,39 @@ export function webpEncodingSupported(): boolean {
   return webpCache;
 }
 
+/* ------------------------------------------------------------------ */
+/* Animation                                                           */
+/* ------------------------------------------------------------------ */
+
+/** Which animation formats this engine can produce (GIF always; WebP / MP4 depend on the engine). */
+export function animationFormatSupport(): Record<AnimationFormat, boolean> {
+  let mp4 = false;
+  try {
+    mp4 = mp4EncodingAvailable();
+  } catch {
+    mp4 = false;
+  }
+  return { gif: true, webp: webpEncodingSupported(), mp4 };
+}
+
+/** Render + encode the turntable animation. Rejects with AnimationCancelled when `signal` aborts. */
+export function exportAnimationBlob(
+  stage: StageAPI,
+  settings: AnimationSettings,
+  background: BackgroundSettings,
+  onProgress: (p: AnimationProgress) => void,
+  signal: AbortSignal,
+): Promise<AnimationResult> {
+  return exportAnimation(stage, settings, { background, webpSupported: webpEncodingSupported(), onProgress, signal });
+}
+
+/** Suggested animation file name, e.g. mockup-director-dvd-case-2026-11-04-1530.gif. */
+export function animationFileName(modelId: string, format: AnimationFormat, date: Date = new Date()): string {
+  const p = (n: number) => String(n).padStart(2, '0');
+  const stamp = `${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())}-${p(date.getHours())}${p(date.getMinutes())}`;
+  return `mockup-director-${slugify(modelId) || 'mockup'}-${stamp}.${format}`;
+}
+
+export { animationFileFilter };
+export { isAnimationCancelled, type AnimationProgress } from '../export/animation';
 export { extensionFor, mimeFor } from '../export/exporter';

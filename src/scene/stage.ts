@@ -19,10 +19,18 @@
  */
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import type { CameraSettings, RenderOptions, SceneSettings, StageAPI } from '../core/types';
+import type {
+  AnimationFramingOptions,
+  AnimationRenderSession,
+  CameraSettings,
+  RenderOptions,
+  SceneSettings,
+  StageAPI,
+} from '../core/types';
 import { DEFAULT_SCENE, cloneScene } from '../core/defaults';
+import { msg, mtIn, type Message } from '../i18n';
 import { disposeObject } from '../models/shared';
-import { fitCamera } from './framing';
+import { UnionFit, fitCamera, type FitResult } from './framing';
 import { GroundShadow, computeShadowLayout, type ShadowLayout } from './shadows';
 import { Reflection, REFLECTION_LAYER } from './reflection';
 import { applyCssBackground, paintBackground } from './background';
@@ -42,6 +50,11 @@ const ENV_SCALE = 0.3;
 const PREVIEW_SLACK = 1.18;
 /** Export: tight framing with a little slack – the exporter crops to the content afterwards. */
 const EXPORT_SLACK = 1.04;
+/**
+ * Animation: same slack as stills. Animations are NOT cropped to the alpha bounds afterwards (that
+ * would make the composition breathe), so the slack also keeps the soft shadow's faint tails in.
+ */
+const ANIM_SLACK = 1.04;
 const ZOOM_MIN = 0.2;
 const ZOOM_MAX = 8;
 const PITCH_LIMIT = 89;
@@ -69,9 +82,13 @@ interface ModelInfo {
 function boxCorners(b: THREE.Box3): Float32Array {
   const out = new Float32Array(24);
   let i = 0;
-  for (const x of [b.min.x, b.max.x]) for (const y of [b.min.y, b.max.y]) for (const z of [b.min.z, b.max.z]) {
-    out[i++] = x; out[i++] = y; out[i++] = z;
-  }
+  for (const x of [b.min.x, b.max.x])
+    for (const y of [b.min.y, b.max.y])
+      for (const z of [b.min.z, b.max.z]) {
+        out[i++] = x;
+        out[i++] = y;
+        out[i++] = z;
+      }
   return out;
 }
 
@@ -136,7 +153,7 @@ function finite(v: unknown, fallback: number): number {
 
 /** Wrap an angle to (-180, 180]. */
 function wrapDeg(a: number): number {
-  let x = ((a + 180) % 360 + 360) % 360 - 180;
+  let x = ((((a + 180) % 360) + 360) % 360) - 180;
   if (x === -180) x = 180;
   return x;
 }
@@ -158,8 +175,26 @@ function sanitizeCamera(c: Partial<CameraSettings> | undefined): CameraSettings 
 
 function cameraEquals(a: CameraSettings, b: CameraSettings): boolean {
   const eq = (x: number, y: number) => Math.abs(x - y) < 1e-6;
-  return eq(a.yaw, b.yaw) && eq(a.pitch, b.pitch) && eq(a.roll, b.roll) && eq(a.fov, b.fov) &&
-    a.projection === b.projection && eq(a.zoom, b.zoom) && eq(a.panX, b.panX) && eq(a.panY, b.panY);
+  return (
+    eq(a.yaw, b.yaw) &&
+    eq(a.pitch, b.pitch) &&
+    eq(a.roll, b.roll) &&
+    eq(a.fov, b.fov) &&
+    a.projection === b.projection &&
+    eq(a.zoom, b.zoom) &&
+    eq(a.panX, b.panX) &&
+    eq(a.panY, b.panY)
+  );
+}
+
+/** Stage failure with a user-presentable message (errorMessage() in the UI shows `text`; `message` is the English text). */
+class StageError extends Error {
+  readonly text: Message;
+  constructor(text: Message) {
+    super(mtIn('en', text));
+    this.name = 'StageError';
+    this.text = text;
+  }
 }
 
 /** Safari's non-standard trackpad pinch event. */
@@ -251,6 +286,8 @@ export function createStage(container: HTMLElement): StageAPI {
   let contextLost = false;
   const lightDir = new THREE.Vector3(0, 1, 0);
   let fitBuffer = new Float32Array(0);
+  /** The running animation session (the viewport is frozen while it exists). */
+  let anim: { end(): void } | null = null;
 
   const listeners = new Set<(c: CameraSettings) => void>();
   let emitPending = false;
@@ -271,7 +308,11 @@ export function createStage(container: HTMLElement): StageAPI {
   }
 
   /** Collect the points that must be visible: model, visible reflection, visible shadow. */
-  function buildFitPoints(reflDepth: number | null, gap: number, shadowRect: ShadowLayout['visible'] | null): Float32Array {
+  function buildFitPoints(
+    reflDepth: number | null,
+    gap: number,
+    shadowRect: ShadowLayout['visible'] | null,
+  ): Float32Array {
     const s = info.samples;
     const n = s.length / 3;
     const need = s.length * 2 + 12;
@@ -290,10 +331,14 @@ export function createStage(container: HTMLElement): StageAPI {
     }
     if (shadowRect) {
       for (const [x, z] of [
-        [shadowRect.minX, shadowRect.minZ], [shadowRect.maxX, shadowRect.minZ],
-        [shadowRect.minX, shadowRect.maxZ], [shadowRect.maxX, shadowRect.maxZ],
+        [shadowRect.minX, shadowRect.minZ],
+        [shadowRect.maxX, shadowRect.minZ],
+        [shadowRect.minX, shadowRect.maxZ],
+        [shadowRect.maxX, shadowRect.maxZ],
       ]) {
-        out[k++] = x; out[k++] = 0; out[k++] = z;
+        out[k++] = x;
+        out[k++] = 0;
+        out[k++] = z;
       }
     }
     return out.subarray(0, k);
@@ -309,40 +354,37 @@ export function createStage(container: HTMLElement): StageAPI {
     // Floor effects only make sense when the camera is above the floor.
     const aboveFloor = cam.pitch >= 0;
 
-    // Key light: azimuth relative to the camera yaw, elevation from the horizon.
-    const az = (cam.yaw + finite(s.light.azimuth, 0)) * DEG;
-    const el = THREE.MathUtils.clamp(finite(s.light.elevation, 45), -89, 89.5) * DEG;
-    lightDir.set(Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el)).normalize();
-    keyLight.position.copy(info.pivot).addScaledVector(lightDir, info.size * 4 + 100);
-    keyLight.target.position.copy(info.pivot);
-    keyLight.target.updateMatrixWorld();
-    try { keyLight.color.set(s.light.color); } catch { keyLight.color.set(0xffffff); }
-    const keyIntensity = THREE.MathUtils.clamp(finite(s.light.intensity, 1), 0, 3);
-    keyLight.intensity = keyIntensity * KEY_SCALE;
-    fillLight.intensity = THREE.MathUtils.clamp(finite(s.light.ambient, 0.5), 0, 2) * FILL_SCALE;
-    scene.environmentIntensity = THREE.MathUtils.clamp(finite(s.light.environment, 1), 0, 2) * ENV_SCALE;
-    scene.environmentRotation.set(0, cam.yaw * DEG, 0);
-
-    // Ground shadow.
-    let shadowLayout: ShadowLayout | null = null;
-    const shadowOn = !!model && s.shadow.enabled && s.shadow.opacity > 0 && aboveFloor;
-    if (shadowOn) {
-      shadowLayout = computeShadowLayout({ bounds: info.bounds, lightDir, softness: s.shadow.softness, keyIntensity });
-      shadow.update(model, shadowLayout, shadowRes);
-      shadow.setOpacity(s.shadow.opacity);
-    }
-    shadow.mesh.visible = shadowOn;
-
-    // Reflection.
-    reflection.update(s.reflection, aboveFloor);
+    const shadowLayout = layoutEffects(s, cam.yaw, aboveFloor, shadowRes);
     const reflOn = reflection.group.visible;
 
     // Camera fit.
     // Preview framing ignores the key-light shadow (it moves with the light); exports include it.
     const shadowFit = shadowLayout ? (interactive ? shadowLayout.contactVisible : shadowLayout.visible) : null;
-    const pts = buildFitPoints(reflOn ? reflection.visibleDepth(s.reflection) : null, Math.max(0, s.reflection.gap), shadowFit);
+    const pts = buildFitPoints(
+      reflOn ? reflection.visibleDepth(s.reflection) : null,
+      Math.max(0, s.reflection.gap),
+      shadowFit,
+    );
     const fit = fitCamera(pts, info.pivot, cam, aspect, slack);
-    const zoom = interactive ? cam.zoom : 1;
+    const c = applyCamera(cam, aspect, fit, interactive ? cam.zoom : 1);
+    if (interactive && (cam.panX !== 0 || cam.panY !== 0)) {
+      // Pan = shift of the (zoomed) view by a fraction of its half size; content follows +panX right, +panY up.
+      const fw = 1000 * aspect;
+      const fh = 1000;
+      c.setViewOffset(fw, fh, (-cam.panX * fw) / 2, (cam.panY * fh) / 2, fw, fh);
+    } else {
+      c.clearViewOffset();
+    }
+    c.updateProjectionMatrix();
+  }
+
+  /** Configure (and activate) the camera for a solved framing. The caller updates the projection. */
+  function applyCamera(
+    cam: CameraSettings,
+    aspect: number,
+    fit: FitResult,
+    zoom: number,
+  ): THREE.PerspectiveCamera | THREE.OrthographicCamera {
     let c: THREE.PerspectiveCamera | THREE.OrthographicCamera;
     if (cam.projection === 'orthographic') {
       const hh = fit.orthoHalfHeight;
@@ -362,21 +404,58 @@ export function createStage(container: HTMLElement): StageAPI {
     c.position.copy(fit.position);
     c.quaternion.copy(fit.quaternion);
     c.updateMatrixWorld(true);
-    if (interactive && (cam.panX !== 0 || cam.panY !== 0)) {
-      // Pan = shift of the (zoomed) view by a fraction of its half size; content follows +panX right, +panY up.
-      const fw = 1000 * aspect;
-      const fh = 1000;
-      c.setViewOffset(fw, fh, -cam.panX * fw / 2, cam.panY * fh / 2, fw, fh);
-    } else {
-      c.clearViewOffset();
-    }
-    c.updateProjectionMatrix();
     activeCam = c;
+    return c;
+  }
+
+  /** Unit vector TOWARDS the key light for a camera yaw (the light rig is camera-relative). */
+  function keyLightDir(s: SceneSettings, yaw: number, out: THREE.Vector3): THREE.Vector3 {
+    // Key light: azimuth relative to the camera yaw, elevation from the horizon.
+    const az = (yaw + finite(s.light.azimuth, 0)) * DEG;
+    const el = THREE.MathUtils.clamp(finite(s.light.elevation, 45), -89, 89.5) * DEG;
+    return out.set(Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el)).normalize();
+  }
+
+  /**
+   * Lights, environment rotation, ground shadow and reflection for a camera yaw.
+   * Returns the shadow layout (null = no shadow).
+   */
+  function layoutEffects(s: SceneSettings, yaw: number, aboveFloor: boolean, shadowRes: number): ShadowLayout | null {
+    keyLightDir(s, yaw, lightDir);
+    keyLight.position.copy(info.pivot).addScaledVector(lightDir, info.size * 4 + 100);
+    keyLight.target.position.copy(info.pivot);
+    keyLight.target.updateMatrixWorld();
+    try {
+      keyLight.color.set(s.light.color);
+    } catch {
+      keyLight.color.set(0xffffff);
+    }
+    const keyIntensity = THREE.MathUtils.clamp(finite(s.light.intensity, 1), 0, 3);
+    keyLight.intensity = keyIntensity * KEY_SCALE;
+    fillLight.intensity = THREE.MathUtils.clamp(finite(s.light.ambient, 0.5), 0, 2) * FILL_SCALE;
+    scene.environmentIntensity = THREE.MathUtils.clamp(finite(s.light.environment, 1), 0, 2) * ENV_SCALE;
+    scene.environmentRotation.set(0, yaw * DEG, 0);
+
+    // Ground shadow.
+    let shadowLayout: ShadowLayout | null = null;
+    const shadowOn = !!model && s.shadow.enabled && s.shadow.opacity > 0 && aboveFloor;
+    if (shadowOn) {
+      shadowLayout = computeShadowLayout({ bounds: info.bounds, lightDir, softness: s.shadow.softness, keyIntensity });
+      shadow.update(model, shadowLayout, shadowRes);
+      shadow.setOpacity(s.shadow.opacity);
+    }
+    shadow.mesh.visible = shadowOn;
+
+    // Reflection.
+    reflection.update(s.reflection, aboveFloor);
+    return shadowLayout;
   }
 
   function frame(): void {
     rafId = 0;
     if (disposed || contextLost) return;
+    // While an animation is rendered the viewport shows a frozen snapshot; repaint at the end.
+    if (anim) return;
     const { w, h } = viewSize();
     layoutScene(w / h, PREVIEW_SLACK, true, PREVIEW_SHADOW_RES);
     renderer.render(scene, activeCam);
@@ -387,14 +466,62 @@ export function createStage(container: HTMLElement): StageAPI {
       if (recentEmitted.length > 12) recentEmitted.shift();
       lastEmitTime = performance.now();
       for (const cb of [...listeners]) {
-        try { cb({ ...c }); } catch (err) { console.error(err); }
+        try {
+          cb({ ...c });
+        } catch (err) {
+          console.error(err);
+        }
+      }
+    }
+  }
+
+  /** Largest off-screen render side and the tile size the GPU allows. */
+  function gpuLimits(): { limit: number; tile: number } {
+    const gl = renderer.getContext();
+    const maxRB = finite(gl.getParameter(gl.MAX_RENDERBUFFER_SIZE), 4096);
+    const vp = gl.getParameter(gl.MAX_VIEWPORT_DIMS) as Int32Array | null;
+    const maxVP = vp ? Math.min(vp[0], vp[1]) : 4096;
+    return {
+      limit: Math.min(MAX_RENDER_SIZE, renderer.capabilities.maxTextureSize, maxRB),
+      tile: Math.max(256, Math.min(MAX_TILE, maxRB, maxVP)),
+    };
+  }
+
+  /**
+   * Render the active camera's view (already laid out for an RW × RH frame) tile by tile into ctx.
+   * Each tile is an off-axis slice of the same projection, drawn into the 2D canvas right after
+   * rendering (same task) – drawImage un-premultiplies correctly. shiftX / shiftY move the whole
+   * window (in px of the RW × RH frame) – used for the viewport pan in animations.
+   * The caller must set the pixel ratio to 1 and restore the renderer size afterwards.
+   */
+  function renderTiles(
+    ctx: CanvasRenderingContext2D,
+    RW: number,
+    RH: number,
+    tile: number,
+    shiftX: number,
+    shiftY: number,
+  ): void {
+    const cam = activeCam;
+    for (let y = 0; y < RH; y += tile) {
+      for (let x = 0; x < RW; x += tile) {
+        const tw = Math.min(tile, RW - x);
+        const th = Math.min(tile, RH - y);
+        renderer.setSize(tw, th, false);
+        cam.setViewOffset(RW, RH, x + shiftX, y + shiftY, tw, th);
+        cam.updateProjectionMatrix();
+        renderer.render(scene, cam);
+        ctx.drawImage(canvas, 0, 0, tw, th, x, y, tw, th);
       }
     }
   }
 
   /** Render the on-screen view right now (inside the current task). */
   function frameNow(): void {
-    if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+    if (rafId) {
+      cancelAnimationFrame(rafId);
+      rafId = 0;
+    }
     frame();
   }
 
@@ -451,7 +578,11 @@ export function createStage(container: HTMLElement): StageAPI {
   on(canvas, 'pointerdown', (e: PointerEvent) => {
     if (e.pointerType === 'mouse' && e.button > 2) return;
     e.preventDefault();
-    try { canvas.setPointerCapture(e.pointerId); } catch { /* ignore */ }
+    try {
+      canvas.setPointerCapture(e.pointerId);
+    } catch {
+      /* ignore */
+    }
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pointers.size === 2) pinch = pinchState();
     canvas.style.cursor = 'grabbing';
@@ -470,7 +601,10 @@ export function createStage(container: HTMLElement): StageAPI {
 
     if (pointers.size >= 2) {
       // Two fingers: pinch = zoom, move = pan.
-      if (!pinch) { pinch = pinchState(); return; }
+      if (!pinch) {
+        pinch = pinchState();
+        return;
+      }
       const now = pinchState();
       if (pinch.dist > 0 && now.dist > 0) {
         cam.zoom = THREE.MathUtils.clamp(cam.zoom * (now.dist / pinch.dist), ZOOM_MIN, ZOOM_MAX);
@@ -497,7 +631,11 @@ export function createStage(container: HTMLElement): StageAPI {
   const endPointer = (e: PointerEvent) => {
     if (!pointers.has(e.pointerId)) return;
     pointers.delete(e.pointerId);
-    try { canvas.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
+    try {
+      canvas.releasePointerCapture(e.pointerId);
+    } catch {
+      /* ignore */
+    }
     pinch = pointers.size >= 2 ? pinchState() : null;
     if (pointers.size === 0) canvas.style.cursor = 'grab';
   };
@@ -506,16 +644,21 @@ export function createStage(container: HTMLElement): StageAPI {
   on(canvas, 'lostpointercapture', endPointer);
   on(canvas, 'contextmenu', (e: MouseEvent) => e.preventDefault());
 
-  on(canvas, 'wheel', (e: WheelEvent) => {
-    e.preventDefault(); // also blocks browser pinch-zoom (ctrl+wheel)
-    if (gestureActive) return;
-    let dy = e.deltaY;
-    if (e.deltaMode === 1) dy *= 16;
-    else if (e.deltaMode === 2) dy *= viewSize().h;
-    // ctrlKey = trackpad pinch in Chromium/Firefox – deltas are small, so use a stronger factor.
-    const k = e.ctrlKey ? 0.01 : 0.0015;
-    zoomAt(e.clientX, e.clientY, Math.exp(-THREE.MathUtils.clamp(dy, -200, 200) * k));
-  }, { passive: false });
+  on(
+    canvas,
+    'wheel',
+    (e: WheelEvent) => {
+      e.preventDefault(); // also blocks browser pinch-zoom (ctrl+wheel)
+      if (gestureActive) return;
+      let dy = e.deltaY;
+      if (e.deltaMode === 1) dy *= 16;
+      else if (e.deltaMode === 2) dy *= viewSize().h;
+      // ctrlKey = trackpad pinch in Chromium/Firefox – deltas are small, so use a stronger factor.
+      const k = e.ctrlKey ? 0.01 : 0.0015;
+      zoomAt(e.clientX, e.clientY, Math.exp(-THREE.MathUtils.clamp(dy, -200, 200) * k));
+    },
+    { passive: false },
+  );
 
   // Safari / WKWebView trackpad pinch (non-standard GestureEvent). Harmless elsewhere.
   on(canvas, 'gesturestart', (e: Event) => {
@@ -548,7 +691,10 @@ export function createStage(container: HTMLElement): StageAPI {
   on(canvas, 'webglcontextlost', (e: Event) => {
     e.preventDefault();
     contextLost = true;
-    if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+    if (rafId) {
+      cancelAnimationFrame(rafId);
+      rafId = 0;
+    }
   });
   on(canvas, 'webglcontextrestored', () => {
     contextLost = false;
@@ -563,6 +709,179 @@ export function createStage(container: HTMLElement): StageAPI {
   ro.observe(container);
   on(window, 'resize', () => resize()); // devicePixelRatio changes (moving between displays)
   resize();
+
+  /* ---------------- Turntable animation ---------------- */
+
+  /**
+   * Turntable = the CAMERA orbits the vertical axis through the model's centre. Because the light
+   * rig, the environment rotation and the key-light shadow are all camera-relative, this is exactly
+   * what a product turning on a turntable in front of a fixed studio looks like: highlights stay
+   * put, the shadow swings around the product consistently and the floor reflection (a mirror
+   * about y = 0) is correct in every frame. The model itself is never touched.
+   *
+   * Framing: every frame is the base view rotated by Ry(-angle) around the pivot, so measuring the
+   * point clouds rotated by +angle in the BASE camera's frame gives one fit (UnionFit) that is
+   * valid for all frames – the composition is fixed and never cropped.
+   */
+  function startAnimation(o: AnimationFramingOptions): AnimationRenderSession {
+    if (disposed || contextLost) throw new StageError(msg('errStageUnavailable'));
+    anim?.end();
+
+    const angles = (Array.isArray(o.angles) ? o.angles : []).map((a) => finite(a, 0));
+    if (!angles.length) angles.push(0);
+    const W = Math.max(1, Math.round(finite(o.width, 1)));
+    const H = Math.max(1, Math.round(finite(o.height, 1)));
+    const { limit, tile } = gpuLimits();
+    const scale = Math.min(1, limit / Math.max(W, H));
+    const RW = Math.max(1, Math.floor(W * scale));
+    const RH = Math.max(1, Math.floor(H * scale));
+    const aspect = RW / RH;
+
+    // Snapshot: later UI changes must not leak into a running animation.
+    const snap = cloneScene(settings);
+    const baseCam = snap.camera;
+    const startModel = model;
+    const startInfo = info;
+    const aboveFloor = baseCam.pitch >= 0;
+    const useZoomPan = !!o.useViewZoomPan;
+
+    /* --- one framing for the union of all frames --- */
+    reflection.update(snap.reflection, aboveFloor);
+    const reflDepth = reflection.group.visible ? reflection.visibleDepth(snap.reflection) : null;
+    // Model + reflection samples are fixed in world space (copy: buildFitPoints reuses its buffer).
+    const basePts = buildFitPoints(reflDepth, Math.max(0, snap.reflection.gap), null).slice();
+    const shadowOn = !!startModel && snap.shadow.enabled && snap.shadow.opacity > 0 && aboveFloor;
+    const keyIntensity = THREE.MathUtils.clamp(finite(snap.light.intensity, 1), 0, 3);
+    const union = new UnionFit(startInfo.pivot, baseCam, aspect, ANIM_SLACK);
+    const dir = new THREE.Vector3();
+    const corners = new Float32Array(12);
+    const seen = new Set<number>();
+    for (const a of angles) {
+      const key = Math.round(a * 1e6);
+      if (seen.has(key)) continue; // swings repeat every angle twice
+      seen.add(key);
+      union.add(basePts, a);
+      if (shadowOn) {
+        // The key-light shadow follows the camera-relative light: its rectangle differs per frame.
+        keyLightDir(snap, baseCam.yaw - a, dir);
+        const r = computeShadowLayout({
+          bounds: startInfo.bounds,
+          lightDir: dir,
+          softness: snap.shadow.softness,
+          keyIntensity,
+        }).visible;
+        corners.set([r.minX, 0, r.minZ, r.maxX, 0, r.minZ, r.minX, 0, r.maxZ, r.maxX, 0, r.maxZ]);
+        union.add(corners, a);
+      }
+    }
+    const baseFit = union.result();
+
+    /* --- freeze the viewport --- */
+    frameNow(); // fresh pixels in the drawing buffer – copied below in the same task
+    const overlay = document.createElement('canvas');
+    overlay.width = canvas.width;
+    overlay.height = canvas.height;
+    try {
+      overlay.getContext('2d')?.drawImage(canvas, 0, 0);
+    } catch {
+      /* an empty overlay is fine */
+    }
+    overlay.className = 'mockup-director-stage-freeze';
+    overlay.setAttribute('aria-hidden', 'true');
+    Object.assign(overlay.style, {
+      position: 'absolute',
+      left: '0',
+      top: '0',
+      width: '100%',
+      height: '100%',
+      cursor: 'progress',
+      touchAction: 'none',
+    } satisfies Partial<CSSStyleDeclaration>);
+    wrapper.appendChild(overlay);
+    pointers.clear();
+    pinch = null;
+    canvas.style.cursor = 'grab';
+
+    const prevRatio = renderer.getPixelRatio();
+    const prevSize = renderer.getSize(new THREE.Vector2());
+    // Only needed when the GPU cannot render the requested size (rendered smaller, scaled up).
+    let low: HTMLCanvasElement | null = null;
+    const yAxis = new THREE.Vector3(0, 1, 0);
+    const dq = new THREE.Quaternion();
+    let ended = false;
+
+    const end = () => {
+      if (ended) return;
+      ended = true;
+      if (anim === handle) anim = null;
+      overlay.remove();
+      overlay.width = 0;
+      overlay.height = 0;
+      if (low) {
+        low.width = 0;
+        low.height = 0;
+        low = null;
+      }
+      if (disposed) return;
+      activeCam.clearViewOffset();
+      renderer.setPixelRatio(prevRatio);
+      renderer.setSize(prevSize.x, prevSize.y, false);
+      resize(); // the viewport may have been resized meanwhile
+      frameNow();
+    };
+    const handle = { end };
+    anim = handle;
+
+    return {
+      frameCount: angles.length,
+      renderFrame(index: number, target: HTMLCanvasElement) {
+        if (ended) throw new Error('The animation session has ended.');
+        if (disposed || contextLost || model !== startModel) {
+          throw new StageError(msg('errSceneChanged'));
+        }
+        const i = THREE.MathUtils.clamp(Math.round(finite(index, 0)), 0, angles.length - 1);
+        const a = angles[i];
+        if (target.width !== W) target.width = W;
+        if (target.height !== H) target.height = H;
+        const outCtx = target.getContext('2d');
+        if (!outCtx) {
+          throw new StageError(msg('errFrameMemory'));
+        }
+        outCtx.clearRect(0, 0, W, H);
+        let ctx = outCtx;
+        if (scale < 1) {
+          if (!low) {
+            low = document.createElement('canvas');
+            low.width = RW;
+            low.height = RH;
+          }
+          ctx = low.getContext('2d')!;
+          ctx.clearRect(0, 0, RW, RH);
+        }
+        try {
+          renderer.setPixelRatio(1);
+          layoutEffects(snap, baseCam.yaw - a, aboveFloor, EXPORT_SHADOW_RES);
+          // Camera yaw offset = -angle: rotate the base framing around the vertical pivot axis.
+          dq.setFromAxisAngle(yAxis, -a * DEG);
+          const position = baseFit.position.clone().sub(startInfo.pivot).applyQuaternion(dq).add(startInfo.pivot);
+          const quaternion = dq.clone().multiply(baseFit.quaternion);
+          applyCamera(baseCam, aspect, { ...baseFit, position, quaternion }, useZoomPan ? baseCam.zoom : 1);
+          const shiftX = useZoomPan ? (-baseCam.panX * RW) / 2 : 0;
+          const shiftY = useZoomPan ? (baseCam.panY * RH) / 2 : 0;
+          renderTiles(ctx, RW, RH, tile, shiftX, shiftY);
+          if (low) {
+            outCtx.imageSmoothingEnabled = true;
+            outCtx.imageSmoothingQuality = 'high';
+            outCtx.drawImage(low, 0, 0, RW, RH, 0, 0, W, H);
+          }
+        } finally {
+          activeCam.clearViewOffset();
+          activeCam.updateProjectionMatrix();
+        }
+      },
+      end,
+    };
+  }
 
   /* ---------------- API ---------------- */
   return {
@@ -604,7 +923,9 @@ export function createStage(container: HTMLElement): StageAPI {
 
     onCameraChange(cb) {
       listeners.add(cb);
-      return () => { listeners.delete(cb); };
+      return () => {
+        listeners.delete(cb);
+      };
     },
 
     renderToCanvas(o: RenderOptions): HTMLCanvasElement {
@@ -618,11 +939,7 @@ export function createStage(container: HTMLElement): StageAPI {
       if (!o.transparent) paintBackground(outCtx, W, H, settings.background);
       if (disposed || contextLost) return out;
 
-      const gl = renderer.getContext();
-      const maxRB = finite(gl.getParameter(gl.MAX_RENDERBUFFER_SIZE), 4096);
-      const vp = gl.getParameter(gl.MAX_VIEWPORT_DIMS) as Int32Array | null;
-      const maxVP = vp ? Math.min(vp[0], vp[1]) : 4096;
-      const limit = Math.min(MAX_RENDER_SIZE, renderer.capabilities.maxTextureSize, maxRB);
+      const { limit, tile } = gpuLimits();
       // If the GPU cannot render this big, render smaller and scale up into the exact size.
       const scale = Math.min(1, limit / Math.max(W, H));
       const RW = Math.max(1, Math.floor(W * scale));
@@ -635,27 +952,12 @@ export function createStage(container: HTMLElement): StageAPI {
         target.height = RH;
         ctx = target.getContext('2d')!;
       }
-      const tile = Math.max(256, Math.min(MAX_TILE, maxRB, maxVP));
-
       const prevRatio = renderer.getPixelRatio();
       const prevSize = renderer.getSize(new THREE.Vector2());
       try {
         renderer.setPixelRatio(1);
         layoutScene(RW / RH, EXPORT_SLACK, false, EXPORT_SHADOW_RES);
-        const cam = activeCam;
-        // Tiled rendering: each tile is an off-axis slice of the same projection, drawn into
-        // the 2D canvas right after rendering (same task) – drawImage un-premultiplies correctly.
-        for (let y = 0; y < RH; y += tile) {
-          for (let x = 0; x < RW; x += tile) {
-            const tw = Math.min(tile, RW - x);
-            const th = Math.min(tile, RH - y);
-            renderer.setSize(tw, th, false);
-            cam.setViewOffset(RW, RH, x, y, tw, th);
-            cam.updateProjectionMatrix();
-            renderer.render(scene, cam);
-            ctx.drawImage(canvas, 0, 0, tw, th, x, y, tw, th);
-          }
-        }
+        renderTiles(ctx, RW, RH, tile, 0, 0);
         if (target !== out) {
           outCtx.imageSmoothingEnabled = true;
           outCtx.imageSmoothingQuality = 'high';
@@ -673,8 +975,13 @@ export function createStage(container: HTMLElement): StageAPI {
 
     resize,
 
+    beginAnimation(o: AnimationFramingOptions): AnimationRenderSession {
+      return startAnimation(o);
+    },
+
     dispose() {
       if (disposed) return;
+      anim?.end();
       disposed = true;
       if (rafId) cancelAnimationFrame(rafId);
       rafId = 0;

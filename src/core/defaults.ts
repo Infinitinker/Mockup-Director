@@ -1,4 +1,4 @@
-import type { ExportSettings, ModelDefinition, ParamValues, SceneSettings } from './types';
+import type { AnimationSettings, ExportSettings, ModelDefinition, ParamValues, SceneSettings } from './types';
 
 export const DEFAULT_SCENE: SceneSettings = {
   camera: {
@@ -35,6 +35,38 @@ export const DEFAULT_EXPORT: ExportSettings = {
 };
 
 export const MAX_EXPORT_SIZE = 4000;
+
+/** Turntable animation defaults (copy before mutating – see ExportSettings.animation). */
+export const DEFAULT_ANIMATION: AnimationSettings = {
+  format: 'gif',
+  width: 800,
+  height: 800,
+  margin: 40,
+  fps: 20,
+  duration: 4,
+  motion: 'loop',
+  swingAngle: 30,
+  direction: 'cw',
+  easing: 'sine',
+  background: 'scene',
+  dither: 'floyd',
+  palette: 'global',
+  quality: 'medium',
+  useViewZoomPan: false,
+};
+/** Largest GIF / animated WebP side (px). */
+export const MAX_ANIMATION_SIZE = 1200;
+/** Largest MP4 side (px). */
+export const MAX_VIDEO_SIZE = 1920;
+export const MIN_ANIMATION_SIZE = 32;
+/** Max frames per second: GIF / WebP, MP4. */
+export const MAX_ANIMATION_FPS = 30;
+export const MAX_VIDEO_FPS = 60;
+/** Default fps per format. */
+export const DEFAULT_GIF_FPS = 20;
+export const DEFAULT_VIDEO_FPS = 30;
+export const MIN_ANIMATION_DURATION = 1;
+export const MAX_ANIMATION_DURATION = 20;
 
 export function defaultParams(model: ModelDefinition): ParamValues {
   const out: ParamValues = {};

@@ -15,10 +15,14 @@ export function disposeObject(root: THREE.Object3D | null | undefined): void {
     if (m.geometry) geos.add(m.geometry);
     if (m.material) {
       const list = Array.isArray(m.material) ? m.material : [m.material];
-      list.forEach((x) => mats.add(x));
+      list.forEach((x) => {
+        mats.add(x);
+      });
     }
   });
-  geos.forEach((g) => g.dispose());
+  geos.forEach((g) => {
+    g.dispose();
+  });
   mats.forEach((mat) => {
     for (const v of Object.values(mat as unknown as Record<string, unknown>)) {
       if (v instanceof THREE.Texture && v.userData?.disposeWithModel) v.dispose();
@@ -54,7 +58,13 @@ export function roundedRectShape(w: number, h: number, r: number): THREE.Shape {
 }
 
 /** Remap a geometry's existing 0..1 UVs into the sub-rectangle [u0,u1] x [v0,v1] (v = 0 is the image BOTTOM). */
-export function remapUVs(geo: THREE.BufferGeometry, u0: number, v0: number, u1: number, v1: number): THREE.BufferGeometry {
+export function remapUVs(
+  geo: THREE.BufferGeometry,
+  u0: number,
+  v0: number,
+  u1: number,
+  v1: number,
+): THREE.BufferGeometry {
   const uv = geo.getAttribute('uv') as THREE.BufferAttribute | undefined;
   if (!uv) return geo;
   for (let i = 0; i < uv.count; i++) {
@@ -91,7 +101,10 @@ export function planarUVs(
 }
 
 /** Printed paper/cardboard surface. */
-export function printMaterial(map: THREE.Texture, opts: { roughness?: number; metalness?: number; gloss?: number } = {}): THREE.MeshPhysicalMaterial {
+export function printMaterial(
+  map: THREE.Texture,
+  opts: { roughness?: number; metalness?: number; gloss?: number } = {},
+): THREE.MeshPhysicalMaterial {
   const gloss = opts.gloss ?? 0;
   return new THREE.MeshPhysicalMaterial({
     map,
@@ -111,7 +124,9 @@ export function solidPlastic(color: THREE.ColorRepresentation, roughness = 0.35)
  * Clear (see-through) plastic film / case. Uses plain alpha blending (no transmission pass) so it
  * stays fast and works with transparent exports.
  */
-export function clearPlastic(opts: { tint?: THREE.ColorRepresentation; opacity?: number; roughness?: number } = {}): THREE.MeshPhysicalMaterial {
+export function clearPlastic(
+  opts: { tint?: THREE.ColorRepresentation; opacity?: number; roughness?: number } = {},
+): THREE.MeshPhysicalMaterial {
   return new THREE.MeshPhysicalMaterial({
     color: opts.tint ?? '#ffffff',
     transparent: true,
@@ -139,9 +154,21 @@ export function str(params: ParamValues, id: string, fallback: string): string {
   return typeof v === 'string' ? v : fallback;
 }
 
-export const L = (pl: string, en: string): LocalizedText => ({ pl, en });
+/** Labels and hints are written in English; see src/i18n for how they are translated. */
+export { L, Lctx } from '../i18n';
 
-export function mmParam(id: string, label: LocalizedText, def: number, min: number, max: number, step = 1, group?: LocalizedText): NumberParamDef {
+/** Rounds to one decimal place for a `{name}` placeholder (shown as "129.5", or "129,5" in Polish). */
+export const round1 = (v: number): number => Math.round(v * 10) / 10;
+
+export function mmParam(
+  id: string,
+  label: LocalizedText,
+  def: number,
+  min: number,
+  max: number,
+  step = 1,
+  group?: LocalizedText,
+): NumberParamDef {
   return { id, label, type: 'number', min, max, step, default: def, unit: 'mm', group };
 }
 

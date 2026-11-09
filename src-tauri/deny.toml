@@ -1,18 +1,21 @@
-# cargo-deny configuration – used in CI (.github/workflows/ci.yml, job "licenses") to make sure no
+# cargo-deny configuration – used in CI (.github/workflows/checks.yml, job "Licenses") to make sure no
 # Rust dependency brings a copyleft license (GPL, AGPL, LGPL, …) into the app.
 #   cargo deny --manifest-path src-tauri/Cargo.toml --config src-tauri/deny.toml check licenses
 
 [graph]
-# Only the platforms we ship. Linux-only crates (GTK/WebKitGTK bindings) are not part of our builds.
+# Only the platforms we ship (keep in sync with `targets` in src-tauri/about.toml). The Linux target
+# pulls in the GTK / WebKitGTK binding crates (gtk-rs, webkit2gtk-rs); the C libraries themselves
+# come from the system (or the AppImage) and are not Rust dependencies.
 targets = [
-  "x86_64-pc-windows-msvc",
+  "x86_64-pc-windows-gnu",
   "x86_64-apple-darwin",
   "aarch64-apple-darwin",
+  "x86_64-unknown-linux-gnu",
 ]
 
 [licenses]
 # Permissive licenses, plus MPL-2.0 (weak, file-level copyleft that never extends to our code).
-# Keep in sync with ALLOWED in scripts/licenses.mjs and `accepted` in src-tauri/about.toml.
+# Keep in sync with ALLOWED in tools/licenses.mjs and `accepted` in src-tauri/about.toml.
 allow = [
   "MIT",
   "MIT-0",

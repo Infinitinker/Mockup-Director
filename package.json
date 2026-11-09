@@ -3,25 +3,36 @@
   "private": true,
   "version": "0.1.0",
   "license": "MIT",
-  "description": "Mockup Director – generator mockupów 3D (pudełka, płyty) na macOS i Windows",
+  "description": "Mockup Director – photorealistic 3D mockups of packaging, books, print and devices for Windows, macOS and Linux",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
-    "licenses": "node scripts/licenses.mjs",
+    "lint": "biome check --error-on-warnings",
+    "format": "biome check --write",
+    "test": "vitest run",
+    "licenses": "node tools/licenses.mjs",
+    "notices": "node tools/notices.mjs",
+    "check:i18n": "node tools/check-i18n.mjs",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "app:dev": "tauri dev --config src-tauri/tauri.dev.conf.json",
+    "icons": "node tools/draw-icon.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "~2.12.4",
     "@tauri-apps/plugin-dialog": "~2.8.4",
+    "mediabunny": "1.62.1",
     "three": "^0.187.0"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.6.6",
+    "@resvg/resvg-js": "2.6.2",
     "@tauri-apps/cli": "~2.12.4",
     "@types/three": "^0.187.0",
     "typescript": "^7.0.2",
-    "vite": "^8.3.5"
+    "vite": "^8.3.5",
+    "vitest": "^5.1.0"
   }
 }

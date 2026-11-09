@@ -1,5 +1,5 @@
 /**
- * Image decoding for user artwork (owner: export agent).
+ * Image decoding for user artwork.
  *
  * Design notes:
  *  - The ORIGINAL file is kept as a data URL (project files store it verbatim, no re-encoding).
@@ -15,18 +15,19 @@
  *  - GPU copies are downscaled so the longest side is ≤ 4096 px (high-quality step-down).
  */
 import * as THREE from 'three';
-import type { ImageAsset, LocalizedText } from './types';
+import { msg, mtIn, type Message } from '../i18n';
+import type { ImageAsset } from './types';
 
 /** Longest side of the GPU texture. Originals stay untouched in the data URL. */
 export const MAX_TEXTURE_SIZE = 4096;
 /** SVGs are rasterised so their longest side is this many px (unless that exceeds the texture cap). */
 const SVG_RASTER_SIZE = 3072;
 
-/** Error with a localized, user-presentable message. `message` holds "PL / EN". */
+/** Error with a user-presentable message: `text` is shown in the interface language, `message` is the English text. */
 export class ImageLoadError extends Error {
-  readonly text: LocalizedText;
-  constructor(text: LocalizedText, cause?: unknown) {
-    super(`${text.pl} / ${text.en}`);
+  readonly text: Message;
+  constructor(text: Message, cause?: unknown) {
+    super(mtIn('en', text));
     this.name = 'ImageLoadError';
     this.text = text;
     if (cause !== undefined) (this as { cause?: unknown }).cause = cause;
@@ -54,10 +55,7 @@ export async function loadImageDataUrl(dataUrl: string, name: string): Promise<I
   // Decoded manually instead of fetch(dataUrl): a strict CSP (connect-src) may block fetching data: URLs.
   const parsed = parseDataUrl(dataUrl);
   if (!parsed) {
-    throw new ImageLoadError({
-      pl: `Uszkodzony obraz w projekcie: ${name}`,
-      en: `Corrupted image in the project: ${name}`,
-    });
+    throw new ImageLoadError(msg('errImageCorrupt', { name }));
   }
   const mime = sniffMime(parsed.bytes, parsed.mime, name);
   const blob = new Blob([parsed.bytes], { type: mime });
@@ -85,13 +83,7 @@ async function decodeToAsset(blob: Blob, mime: string, dataUrl: string, name: st
     else canvas = await decodeRaster(blob, mime);
   } catch (err) {
     if (err instanceof ImageLoadError) throw err;
-    throw new ImageLoadError(
-      {
-        pl: `Nie udało się odczytać obrazu „${name}”. Obsługiwane formaty: PNG, JPEG, WebP, GIF, SVG, AVIF.`,
-        en: `Could not decode the image "${name}". Supported formats: PNG, JPEG, WebP, GIF, SVG, AVIF.`,
-      },
-      err,
-    );
+    throw new ImageLoadError(msg('errImageDecode', { name }), err);
   }
   return {
     name,
@@ -231,10 +223,7 @@ function createCanvas(w: number, h: number): HTMLCanvasElement {
 function get2d(c: HTMLCanvasElement): CanvasRenderingContext2D {
   const g = c.getContext('2d');
   if (!g) {
-    throw new ImageLoadError({
-      pl: 'Za mało pamięci, aby przetworzyć obraz.',
-      en: 'Not enough memory to process the image.',
-    });
+    throw new ImageLoadError(msg('errImageMemory'));
   }
   return g;
 }
@@ -292,6 +281,7 @@ export function sniffMime(b: Uint8Array, declared: string, name = ''): string {
   if (at(0, 0x49, 0x49, 0x2a, 0x00) || at(0, 0x4d, 0x4d, 0x00, 0x2a)) return 'image/tiff';
   // SVG: text starting (after optional BOM / whitespace / XML prolog / comments) with <svg
   const head = new TextDecoder('utf-8', { fatal: false }).decode(b.subarray(0, 2048)).toLowerCase();
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: control characters mark a binary file, not SVG text.
   if (/<svg[\s>]/.test(head) && !/[\x00-\x08]/.test(head)) return 'image/svg+xml';
   if (declared) return declared.toLowerCase();
   if (/\.svgz?$/i.test(name)) return 'image/svg+xml';
@@ -310,7 +300,7 @@ export function sizeSvgRoot(svg: string, tw: number, th: number, vw: number, vh:
   tag = tag.replace(/\s(width|height)\s*=\s*("[^"]*"|'[^']*')/gi, '');
   const selfClosing = /\/\s*>$/.test(tag);
   const head = tag.replace(/\/?\s*>$/, '');
-  const extra = ` width="${tw}" height="${th}"` + (hasViewBox ? '' : ` viewBox="0 0 ${vw} ${vh}" preserveAspectRatio="none"`);
+  const extra = ` width="${tw}" height="${th}"${hasViewBox ? '' : ` viewBox="0 0 ${vw} ${vh}" preserveAspectRatio="none"`}`;
   tag = head + extra + (selfClosing ? '/>' : '>');
   return svg.slice(0, m.index) + tag + svg.slice(m.index + m[0].length);
 }
@@ -331,7 +321,10 @@ export function svgIntrinsicSize(svg: string): { width: number; height: number }
   };
   const w = toPx(attr('width'));
   const h = toPx(attr('height'));
-  const vb = attr('viewBox')?.trim().split(/[\s,]+/).map(Number);
+  const vb = attr('viewBox')
+    ?.trim()
+    .split(/[\s,]+/)
+    .map(Number);
   const vbOk = vb && vb.length === 4 && vb[2] > 0 && vb[3] > 0;
   if (w && h) return { width: w, height: h };
   if (vbOk) {

@@ -5,7 +5,7 @@
  */
 import { clamp, h, nextId, safeStorage } from './dom';
 import { ICONS } from './icons';
-import { formatNumber, parseNumber } from './i18n';
+import { formatNumber, parseNumber } from '../i18n';
 
 export interface Control {
   el: HTMLElement;
@@ -66,7 +66,12 @@ export function numberControl(o: NumberOpts): Control {
   const el = h(
     'div',
     { class: 'ctl ctl-number', title: o.title },
-    h('div', { class: 'ctl-row' }, h('label', { class: 'ctl-label', text: o.label, attrs: { for: id } }), h('span', { class: 'num-wrap' }, field, unit)),
+    h(
+      'div',
+      { class: 'ctl-row' },
+      h('label', { class: 'ctl-label', text: o.label, attrs: { for: id } }),
+      h('span', { class: 'num-wrap' }, field, unit),
+    ),
     range,
   );
 
@@ -140,7 +145,12 @@ export interface SwitchOpts {
 export function switchControl(o: SwitchOpts): Control {
   const id = nextId('sw');
   const input = h('input', { class: 'switch', attrs: { id, type: 'checkbox', role: 'switch' } });
-  const el = h('div', { class: 'ctl ctl-switch', title: o.title }, h('label', { class: 'ctl-label', text: o.label, attrs: { for: id } }), input);
+  const el = h(
+    'div',
+    { class: 'ctl ctl-switch', title: o.title },
+    h('label', { class: 'ctl-label', text: o.label, attrs: { for: id } }),
+    input,
+  );
   input.addEventListener('change', () => o.set(input.checked));
   const sync = () => {
     input.checked = o.get();
@@ -179,7 +189,14 @@ export interface SegmentedOpts<T extends string> {
 
 export function segmentedControl<T extends string>(o: SegmentedOpts<T>): Control {
   const labelId = nextId('seg');
-  const group = h('div', { class: 'segmented', attrs: { role: 'radiogroup', 'aria-labelledby': o.label ? labelId : null, 'aria-label': o.label ? null : o.ariaLabel ?? null } });
+  const group = h('div', {
+    class: 'segmented',
+    attrs: {
+      role: 'radiogroup',
+      'aria-labelledby': o.label ? labelId : null,
+      'aria-label': o.label ? null : (o.ariaLabel ?? null),
+    },
+  });
   const buttons = o.options.map((opt) => {
     const b = h(
       'button',
@@ -253,9 +270,15 @@ export interface SelectOpts {
 export function selectControl(o: SelectOpts): Control {
   const id = nextId('sel');
   const select = h('select', { class: 'select', attrs: { id } });
-  for (const opt of o.options) select.appendChild(h('option', { text: opt.label, attrs: { value: opt.value, disabled: opt.disabled ?? false } }));
+  for (const opt of o.options)
+    select.appendChild(h('option', { text: opt.label, attrs: { value: opt.value, disabled: opt.disabled ?? false } }));
   select.addEventListener('change', () => o.set(select.value));
-  const el = h('div', { class: 'ctl ctl-select' }, h('label', { class: 'ctl-label', text: o.label, attrs: { for: id } }), select);
+  const el = h(
+    'div',
+    { class: 'ctl ctl-select' },
+    h('label', { class: 'ctl-label', text: o.label, attrs: { for: id } }),
+    select,
+  );
   const sync = () => {
     select.value = o.get();
     const dis = o.disabled?.() ?? false;
@@ -292,7 +315,10 @@ export function normalizeHex(v: string): string | null {
 export function colorControl(o: ColorOpts): Control {
   const id = nextId('col');
   const picker = h('input', { class: 'color-swatch', attrs: { type: 'color', 'aria-label': o.label } });
-  const hex = h('input', { class: 'hex-input', attrs: { id, type: 'text', maxlength: 7, autocomplete: 'off', spellcheck: 'false' } });
+  const hex = h('input', {
+    class: 'hex-input',
+    attrs: { id, type: 'text', maxlength: 7, autocomplete: 'off', spellcheck: 'false' },
+  });
   const el = h(
     'div',
     { class: 'ctl ctl-color' },
@@ -352,7 +378,12 @@ function collapsedSet(): Set<string> {
  * Collapsible inspector section. `key` identifies it for remembering the collapsed state.
  * `extra` is an optional element shown at the right of the header (e.g. an on/off switch).
  */
-export function section(key: string, title: string, children: (HTMLElement | null)[], extra?: HTMLElement): HTMLElement {
+export function section(
+  key: string,
+  title: string,
+  children: (HTMLElement | null)[],
+  extra?: HTMLElement,
+): HTMLElement {
   const bodyId = nextId('sec');
   const collapsed = collapsedSet().has(key);
   const toggle = h(
@@ -366,7 +397,12 @@ export function section(key: string, title: string, children: (HTMLElement | nul
   );
   const body = h('div', { class: 'section-body', attrs: { id: bodyId } });
   for (const c of children) if (c) body.appendChild(c);
-  const el = h('section', { class: `section${collapsed ? ' collapsed' : ''}` }, h('div', { class: 'section-head' }, toggle, extra ?? null), body);
+  const el = h(
+    'section',
+    { class: `section${collapsed ? ' collapsed' : ''}` },
+    h('div', { class: 'section-head' }, toggle, extra ?? null),
+    body,
+  );
   toggle.addEventListener('click', () => {
     const set = collapsedSet();
     const now = !el.classList.contains('collapsed');
@@ -381,7 +417,10 @@ export function section(key: string, title: string, children: (HTMLElement | nul
 
 /** Small switch used in section headers (no label row). */
 export function headerSwitch(label: string, get: () => boolean, set: (v: boolean) => void): Control {
-  const input = h('input', { class: 'switch small', attrs: { type: 'checkbox', role: 'switch', 'aria-label': label, title: label } });
+  const input = h('input', {
+    class: 'switch small',
+    attrs: { type: 'checkbox', role: 'switch', 'aria-label': label, title: label },
+  });
   input.addEventListener('click', (e) => e.stopPropagation());
   input.addEventListener('change', () => set(input.checked));
   const sync = () => {
@@ -393,7 +432,12 @@ export function headerSwitch(label: string, get: () => boolean, set: (v: boolean
 }
 
 /** Icon button helper. */
-export function iconButton(icon: string, label: string, onClick: () => void, opts: { cls?: string; text?: string; title?: string } = {}): HTMLButtonElement {
+export function iconButton(
+  icon: string,
+  label: string,
+  onClick: () => void,
+  opts: { cls?: string; text?: string; title?: string } = {},
+): HTMLButtonElement {
   return h(
     'button',
     {

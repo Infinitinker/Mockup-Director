@@ -4,7 +4,7 @@
  * Orientation: standing upright, front (booklet) faces +Z, hinge on the LEFT (-X),
  * x ∈ [-71, 71], y ∈ [0, 125], z ∈ [-depth/2, depth/2]. Millimetres.
  *
- * Real-world references (standard "jewel case", Philips/Sony design):
+ * Real-world references (standard CD jewel case):
  *   case 142 × 125 × 10.4 mm (slim: 142 × 125 × 5.2 mm)
  *   booklet 120 × 120 mm per page (cover = 120 × 120), print with 3 mm bleed
  *   inlay / tray card 151 × 118 mm = spine 6.5 | back 138 | spine 6.5, print with 3 mm bleed
@@ -22,7 +22,7 @@
  */
 import * as THREE from 'three';
 import type { ImageSlotDef, ModelContext, ModelDefinition, ParamDef, PrintTemplate } from '../core/types';
-import { L, bool, castShadows, clearPlastic, printMaterial, roundedRectShape, solidPlastic, str } from './shared';
+import { L, Lctx, bool, castShadows, clearPlastic, printMaterial, roundedRectShape, solidPlastic, str } from './shared';
 import { buildDisc, discParams, discSlot } from './disc';
 
 /* ------------------------------------------------------------------ */
@@ -116,7 +116,7 @@ const BOOKLET_TEMPLATE: PrintTemplate = {
   widthMm: BOOKLET + 2 * BLEED,
   heightMm: BOOKLET + 2 * BLEED,
   bleedMm: BLEED,
-  regions: [{ xMm: BLEED, yMm: BLEED, wMm: BOOKLET, hMm: BOOKLET, label: L('Przód (okładka)', 'Front (cover)') }],
+  regions: [{ xMm: BLEED, yMm: BLEED, wMm: BOOKLET, hMm: BOOKLET, label: L('Front (cover)') }],
 };
 
 const IW = INLAY_W + 2 * BLEED; // 157
@@ -129,32 +129,28 @@ const INLAY_TEMPLATE: PrintTemplate = {
   heightMm: IH,
   bleedMm: BLEED,
   regions: [
-    { xMm: BLEED, yMm: BLEED, wMm: INLAY_SPINE, hMm: INLAY_H, label: L('Grzbiet', 'Spine') },
-    { xMm: X_FOLD_L, yMm: BLEED, wMm: INLAY_BACK, hMm: INLAY_H, label: L('Tył', 'Back') },
-    { xMm: X_FOLD_R, yMm: BLEED, wMm: INLAY_SPINE, hMm: INLAY_H, label: L('Grzbiet', 'Spine') },
+    { xMm: BLEED, yMm: BLEED, wMm: INLAY_SPINE, hMm: INLAY_H, label: L('Spine') },
+    { xMm: X_FOLD_L, yMm: BLEED, wMm: INLAY_BACK, hMm: INLAY_H, label: L('Back') },
+    { xMm: X_FOLD_R, yMm: BLEED, wMm: INLAY_SPINE, hMm: INLAY_H, label: L('Spine') },
   ],
   guides: [
-    { orientation: 'v', posMm: X_FOLD_L, label: L('Zgięcie', 'Fold') },
-    { orientation: 'v', posMm: X_FOLD_R, label: L('Zgięcie', 'Fold') },
+    { orientation: 'v', posMm: X_FOLD_L, label: L('Fold') },
+    { orientation: 'v', posMm: X_FOLD_R, label: L('Fold') },
   ],
 };
 
 export const bookletSlot: ImageSlotDef = {
   id: 'booklet',
-  label: L('Książeczka (okładka)', 'Booklet (cover)'),
-  hint: L(
-    'Przód książeczki 120 × 120 mm + 3 mm spadu (plik 126 × 126 mm). Widoczny pod przezroczystą pokrywą.',
-    'Booklet front 120 × 120 mm + 3 mm bleed (file 126 × 126 mm). Shown under the clear lid.',
-  ),
+  label: L('Booklet (cover)'),
+  hint: L('Booklet front 120 × 120 mm + 3 mm bleed (file 126 × 126 mm). Shown under the clear lid.'),
   aspect: 1,
   template: BOOKLET_TEMPLATE,
 };
 
 export const inlaySlot: ImageSlotDef = {
   id: 'inlay',
-  label: L('Wkładka tylna (inlay)', 'Back inlay (tray card)'),
+  label: L('Back inlay (tray card)'),
   hint: L(
-    '151 × 118 mm (grzbiet 6,5 | tył 138 | grzbiet 6,5) + 3 mm spadu = 157 × 124 mm. Lewy grzbiet szablonu trafia na prawy bok pudełka (strona otwierania), prawy – na stronę zawiasu. W wersji slim widać tylko tył (przy przezroczystej tacce).',
     '151 × 118 mm (spine 6.5 | back 138 | spine 6.5) + 3 mm bleed = 157 × 124 mm. The template’s left spine ends up on the case’s right (opening) side, the right one on the hinge side. Slim cases show only the back (with a clear tray).',
   ),
   aspect: IW / IH,
@@ -165,56 +161,56 @@ export const inlaySlot: ImageSlotDef = {
 /* Params                                                              */
 /* ------------------------------------------------------------------ */
 
-const G_DIM = L('Wymiary', 'Dimensions');
-const G_MAT = L('Materiał', 'Material');
-const G_CONTENT = L('Zawartość', 'Contents');
+const G_DIM = L('Dimensions');
+const G_MAT = L('Material');
+const G_CONTENT = L('Contents');
 
 export const jewelCaseParams: ParamDef[] = [
   {
     id: 'variant',
     type: 'select',
-    label: L('Typ pudełka', 'Case type'),
+    label: L('Case type'),
     group: G_DIM,
     options: [
-      { value: 'standard', label: L('Standard 10,4 mm', 'Standard 10.4 mm') },
-      { value: 'slim', label: L('Slim 5,2 mm', 'Slim 5.2 mm') },
+      { value: 'standard', label: L('Standard 10.4 mm') },
+      { value: 'slim', label: L('Slim 5.2 mm') },
     ],
     default: 'standard',
   },
   {
     id: 'trayColor',
     type: 'select',
-    label: L('Tacka', 'Tray'),
+    label: L('Tray'),
     group: G_MAT,
     options: [
-      { value: 'black', label: L('Czarna', 'Black') },
-      { value: 'clear', label: L('Przezroczysta', 'Clear') },
-      { value: 'white', label: L('Biała', 'White') },
-      { value: 'smoke', label: L('Dymiona', 'Smoked') },
+      { value: 'black', label: Lctx('jewel case', 'Black') },
+      { value: 'clear', label: L('Clear') },
+      { value: 'white', label: Lctx('jewel case', 'White') },
+      { value: 'smoke', label: L('Smoked') },
     ],
     default: 'black',
   },
   {
     id: 'inlayColor',
     type: 'color',
-    label: L('Kolor wkładki (bez grafiki)', 'Inlay colour (no artwork)'),
+    label: L('Inlay colour (no artwork)'),
     group: G_MAT,
     default: '#ffffff',
   },
   {
     id: 'paperFinish',
     type: 'select',
-    label: L('Papier', 'Paper finish'),
+    label: L('Paper finish'),
     group: G_MAT,
     options: [
-      { value: 'matte', label: L('Matowy', 'Matte') },
-      { value: 'satin', label: L('Satynowy', 'Satin') },
-      { value: 'gloss', label: L('Błyszczący', 'Gloss') },
+      { value: 'matte', label: Lctx('jewel case', 'Matte') },
+      { value: 'satin', label: Lctx('jewel case', 'Satin') },
+      { value: 'gloss', label: Lctx('jewel case', 'Gloss') },
     ],
     default: 'satin',
   },
-  { id: 'showBooklet', type: 'boolean', label: L('Książeczka w pokrywie', 'Booklet in the lid'), group: G_CONTENT, default: true },
-  { id: 'showDisc', type: 'boolean', label: L('Płyta w środku', 'Disc inside'), group: G_CONTENT, default: false },
+  { id: 'showBooklet', type: 'boolean', label: L('Booklet in the lid'), group: G_CONTENT, default: true },
+  { id: 'showDisc', type: 'boolean', label: L('Disc inside'), group: G_CONTENT, default: false },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -266,7 +262,12 @@ function remapBoxFace(g: THREE.BoxGeometry, face: number, u0: number, v0: number
 }
 
 /** Plane facing the given axis whose UVs read correctly when viewed from that side, mapped into a template rect. */
-function facingPlane(w: number, h: number, facing: '-z' | '+z' | '+x' | '-x', rect: [number, number, number, number] = [0, 0, 1, 1]): THREE.PlaneGeometry {
+function facingPlane(
+  w: number,
+  h: number,
+  facing: '-z' | '+z' | '+x' | '-x',
+  rect: [number, number, number, number] = [0, 0, 1, 1],
+): THREE.PlaneGeometry {
   const g = new THREE.PlaneGeometry(w, h);
   if (facing === '-z') g.rotateY(Math.PI);
   else if (facing === '+x') g.rotateY(Math.PI / 2);
@@ -279,7 +280,14 @@ function facingPlane(w: number, h: number, facing: '-z' | '+z' | '+x' | '-x', re
 }
 
 /** Template rect (mm from the top-left, incl. bleed) → UV rect [u0, v0, u1, v1] (v = 0 bottom). */
-function uvRect(xMm: number, yMm: number, wMm: number, hMm: number, tw: number, th: number): [number, number, number, number] {
+function uvRect(
+  xMm: number,
+  yMm: number,
+  wMm: number,
+  hMm: number,
+  tw: number,
+  th: number,
+): [number, number, number, number] {
   return [xMm / tw, 1 - (yMm + hMm) / th, (xMm + wMm) / tw, 1 - yMm / th];
 }
 
@@ -337,7 +345,11 @@ function buildTray(
   const hole = new THREE.Path();
   hole.absarc(CX, CY, 60.6, 0, Math.PI * 2, true);
   rimShape.holes.push(hole);
-  const rim = new THREE.ExtrudeGeometry(rimShape, { depth: lay.trayFront - lay.trayFloor, bevelEnabled: false, curveSegments: 96 });
+  const rim = new THREE.ExtrudeGeometry(rimShape, {
+    depth: lay.trayFront - lay.trayFloor,
+    bevelEnabled: false,
+    curveSegments: 96,
+  });
   rim.translate(0, 0, lay.trayFloor);
   add(rim);
 
@@ -394,7 +406,11 @@ export function buildJewelCase(ctx: ModelContext): THREE.Object3D {
   };
 
   /* ---- Lid ------------------------------------------------------- */
-  const lidGeo = new THREE.ExtrudeGeometry(roundedRectShape(W, H, 1.2), { depth: Ly.lid1 - Ly.lid0, bevelEnabled: false, curveSegments: 6 });
+  const lidGeo = new THREE.ExtrudeGeometry(roundedRectShape(W, H, 1.2), {
+    depth: Ly.lid1 - Ly.lid0,
+    bevelEnabled: false,
+    curveSegments: 6,
+  });
   lidGeo.translate(0, CY, Ly.lid0);
   shell(lidGeo, [clearFace, clearEdge], 'lid');
 
@@ -428,8 +444,14 @@ export function buildJewelCase(ctx: ModelContext): THREE.Object3D {
 
   // Booklet tabs: small clips at the right edge and under the hinge strip.
   for (const yc of [25, H - 25]) {
-    shell(boxGeo(CX + BOOKLET / 2 - 0.8, CX + BOOKLET / 2 + 2.8, yc - 5, yc + 5, Ly.booklet0 - 0.3, Ly.lid0), boxMats('z'));
-    shell(boxGeo(CX - BOOKLET / 2 - 2.2, CX - BOOKLET / 2 + 1.6, yc - 5, yc + 5, Ly.booklet0 - 0.3, Ly.lid0), boxMats('z'));
+    shell(
+      boxGeo(CX + BOOKLET / 2 - 0.8, CX + BOOKLET / 2 + 2.8, yc - 5, yc + 5, Ly.booklet0 - 0.3, Ly.lid0),
+      boxMats('z'),
+    );
+    shell(
+      boxGeo(CX - BOOKLET / 2 - 2.2, CX - BOOKLET / 2 + 1.6, yc - 5, yc + 5, Ly.booklet0 - 0.3, Ly.lid0),
+      boxMats('z'),
+    );
   }
 
   /* ---- Booklet --------------------------------------------------- */
@@ -437,7 +459,11 @@ export function buildJewelCase(ctx: ModelContext): THREE.Object3D {
     const bt = Ly.booklet1 - Ly.booklet0;
     const bGeo = new THREE.BoxGeometry(BOOKLET, BOOKLET, bt);
     // Front face shows the trim area of the template (bleed falls outside the face).
-    remapBoxFace(bGeo, 4, ...uvRect(BLEED, BLEED, BOOKLET, BOOKLET, BOOKLET_TEMPLATE.widthMm, BOOKLET_TEMPLATE.heightMm));
+    remapBoxFace(
+      bGeo,
+      4,
+      ...uvRect(BLEED, BLEED, BOOKLET, BOOKLET, BOOKLET_TEMPLATE.widthMm, BOOKLET_TEMPLATE.heightMm),
+    );
     bGeo.translate(CX, CY, (Ly.booklet0 + Ly.booklet1) / 2);
     const paperEdge = new THREE.MeshPhysicalMaterial({ color: '#f1efe9', roughness: 0.85 });
     const front = printMaterial(ctx.getTexture('booklet'), { roughness: paper.roughness, gloss: paper.gloss });
@@ -472,7 +498,12 @@ export function buildJewelCase(ctx: ModelContext): THREE.Object3D {
   if (!slim || (hasInlay && trayIsSeeThrough)) {
     const outer = hasInlay
       ? printMaterial(ctx.getTexture('inlay'), { roughness: paper.roughness, gloss: paper.gloss })
-      : new THREE.MeshPhysicalMaterial({ color: str(p, 'inlayColor', '#ffffff'), roughness: paper.roughness, clearcoat: paper.gloss, clearcoatRoughness: 0.1 });
+      : new THREE.MeshPhysicalMaterial({
+          color: str(p, 'inlayColor', '#ffffff'),
+          roughness: paper.roughness,
+          clearcoat: paper.gloss,
+          clearcoatRoughness: 0.1,
+        });
     const inner = new THREE.MeshPhysicalMaterial({ color: '#f1efe9', roughness: 0.85 });
     const xb = INLAY_BACK / 2;
     const yc = CY;
@@ -525,11 +556,8 @@ export function buildJewelCase(ctx: ModelContext): THREE.Object3D {
 export const cdCaseModel: ModelDefinition = {
   id: 'cd-case',
   category: 'disc',
-  name: L('Pudełko CD', 'CD jewel case'),
-  description: L(
-    'Klasyczne pudełko CD 142 × 125 × 10,4 mm (lub slim 5,2 mm) z książeczką, wkładką tylną i grzbietami.',
-    'Classic CD jewel case 142 × 125 × 10.4 mm (or slim 5.2 mm) with booklet, back inlay and spines.',
-  ),
+  name: L('CD jewel case'),
+  description: L('Classic CD jewel case 142 × 125 × 10.4 mm (or slim 5.2 mm) with booklet, back inlay and spines.'),
   icon:
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">' +
     '<rect x="6" y="10" width="52" height="44" rx="2.5"/><path d="M12 10v44M15.5 14v36"/>' +
@@ -539,7 +567,7 @@ export const cdCaseModel: ModelDefinition = {
     inlaySlot,
     {
       ...discSlot,
-      hint: L('Kwadrat 120 × 120 mm. Widoczna, gdy włączysz „Płyta w środku” i wyłączysz książeczkę w pokrywie.', 'A 120 × 120 mm square. Visible when “Disc inside” is on and “Booklet in the lid” is off.'),
+      hint: L('A 120 × 120 mm square. Visible when “Disc inside” is on and “Booklet in the lid” is off.'),
     },
   ],
   params: [...jewelCaseParams, ...discParams],

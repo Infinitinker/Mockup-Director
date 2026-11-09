@@ -1,0 +1,188 @@
+# The checks for every push to main/dev and every pull request, also from forks. They finish in a few
+# minutes, and their job names are short and fixed, so they are the required status checks of the
+# main branch ruleset (docs/development.md):
+#   - Lint:     Biome (format and lint of TypeScript, the tool scripts, CSS and every JSON file, so
+#               also the Tauri configuration), rustfmt, and the same version in package.json and
+#               Cargo.toml; the same result on every system, so once.
+#   - Web:      TypeScript type-check, Vite production build, unit tests, translation check.
+#   - Licenses: no copyleft (GPL/AGPL/LGPL…) dependency in npm or Rust, and THIRD-PARTY-NOTICES.md
+#               (license texts of the app's dependencies) up to date with them.
+#   - Rust (Windows), Rust (Linux): clippy and the Rust tests. The shell has code for each system
+#               (#[cfg(target_os)]), and clippy only sees the code of the system it runs on, so it runs
+#               on each. On Windows with MSYS2 and Rust's GNU toolchain, the one the app is built
+#               with. macOS is left out: its runners count 10x against the free minutes, and the
+#               macOS build (build-macos.yml) compiles the macOS code on every push.
+# The desktop apps are built by build-windows.yml, build-macos.yml and build-linux.yml.
+name: Checks
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+  workflow_dispatch:
+
+# A newer push to the same branch or pull request cancels the run still going for the older one.
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      # Fails on a file Biome would format differently and on any lint warning (npm run lint).
+      - name: Biome
+        run: npx biome ci --error-on-warnings --reporter=github
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - name: rustfmt
+        run: cargo fmt --manifest-path src-tauri/Cargo.toml --check
+
+      # package.json and src-tauri/Cargo.toml have the same version (tools/release.mjs).
+      - name: Version
+        run: node tools/release.mjs check
+
+  web:
+    name: Web
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build (tsc --noEmit && vite build)
+        run: npm run build
+
+      # Unit tests (Vitest) in tests/.
+      - name: Test
+        run: npm test
+
+      # Every text written in English in the code has a translation in every interface language.
+      - name: Check translations
+        run: npm run check:i18n
+
+  licenses:
+    name: Licenses
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      # The same checks as a release (.github/actions/notices).
+      - name: Check licenses and notices
+        uses: ./.github/actions/notices
+
+  rust:
+    name: Rust (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows
+            os: windows-latest
+          - name: Linux
+            os: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+    steps:
+      # The Tauri v2 prerequisites for Debian/Ubuntu (see build-linux.yml).
+      - name: Install system libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev libxdo-dev libssl-dev librsvg2-dev
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      # The same MSYS2 and GNU toolchain setup as build-windows.yml, where the reasons are explained.
+      - name: Setup MSYS2 (MINGW64)
+        if: runner.os == 'Windows'
+        id: msys2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: false
+          install: mingw-w64-x86_64-gcc
+
+      - name: Setup Rust (GNU toolchain)
+        if: runner.os == 'Windows'
+        run: |
+          echo "${{ steps.msys2.outputs.msys2-location }}/mingw64/bin" >> "$GITHUB_PATH"
+          rustup toolchain install stable-x86_64-pc-windows-gnu --profile minimal --component clippy --no-self-update
+          rustup default stable-x86_64-pc-windows-gnu
+
+      - name: Setup Rust
+        if: runner.os == 'Linux'
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      # The shell embeds the web UI from dist/ when it is compiled, so the UI is built first.
+      - name: Build the web UI
+        run: |
+          npm ci
+          npm run build
+
+      - name: Clippy
+        working-directory: src-tauri
+        run: cargo clippy --all-targets --locked -- -D warnings
+
+      - name: Test
+        working-directory: src-tauri
+        run: cargo test --locked

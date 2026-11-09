@@ -6,8 +6,8 @@
 /* ------------------------------------------------------------------ */
 :root {
   color-scheme: light dark;
-  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', 'Segoe UI', Helvetica, Arial, sans-serif;
-  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
   --bg-window: #ececee;
   --bg-toolbar: rgba(246, 246, 248, 0.86);
@@ -113,6 +113,7 @@ body {
   cursor: default;
 }
 [hidden] {
+  /* biome-ignore lint/complexity/noImportantStyles: the hidden attribute must win over any display rule. */
   display: none !important;
 }
 button,
@@ -122,7 +123,7 @@ textarea {
   font: inherit;
   color: inherit;
 }
-input[type='text'],
+input[type="text"],
 textarea {
   -webkit-user-select: text;
   user-select: text;
@@ -140,6 +141,7 @@ p {
 }
 body.is-busy,
 body.is-busy * {
+  /* biome-ignore lint/complexity/noImportantStyles: the busy cursor must win over every element's own cursor. */
   cursor: progress !important;
 }
 
@@ -157,6 +159,16 @@ body.is-busy * {
   min-height: 0;
   display: grid;
   grid-template-columns: var(--left-w) minmax(0, 1fr) var(--right-w);
+}
+/* The middle column: the project tabs above the viewport, which takes the rest of the height. */
+.workspace-center {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+.workspace-center > .viewport {
+  flex: 1;
 }
 .sidebar {
   min-height: 0;
@@ -187,12 +199,17 @@ body.is-busy * {
   align-self: stretch;
   flex: none;
 }
-/* macOS traffic lights (Tauri titleBarStyle "Overlay") */
+/* macOS traffic lights (Tauri titleBarStyle "Overlay"). Their vertical position comes from
+   trafficLightPosition.y in src-tauri/tauri.conf.json: Tauri grows the system title bar to
+   (button height + y). y = 28 was tuned on a real Mac so the buttons line up with the toolbar
+   items (52 px toolbar, --toolbar-h); the plain maths says 26 but the buttons then sit ~2 pt high. */
 .has-traffic-lights .toolbar {
   padding-left: 0;
 }
 .has-traffic-lights .tb-traffic {
-  width: 78px;
+  /* Space for the three buttons (they end at ~77 pt) plus a gap to the logo a bit wider than the
+     gap between the buttons themselves. */
+  width: 88px;
 }
 .tb-brand {
   display: flex;
@@ -272,6 +289,169 @@ body.is-busy * {
 }
 
 /* ------------------------------------------------------------------ */
+/* Project tabs                                                        */
+/* ------------------------------------------------------------------ */
+.doctabs {
+  flex: none;
+  height: 34px;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 6px 0 3px;
+  background: var(--bg-toolbar);
+  border-bottom: 0.5px solid var(--border-strong);
+}
+.doctabs-list {
+  /* offsetLeft of the tabs is measured from here (scrolling the active tab into view). */
+  position: relative;
+  flex: 0 1 auto;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 3px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+.doctabs-list::-webkit-scrollbar {
+  display: none;
+}
+.doctab {
+  /* A fixed width (not a flex-basis) so the strip asks for it; tabs shrink when space runs out. */
+  flex: 0 1 auto;
+  width: 168px;
+  min-width: 96px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  border-radius: var(--radius-sm);
+}
+.doctab:hover:not(.active) {
+  background: var(--bg-hover);
+}
+.doctab:active:not(.active) {
+  background: var(--bg-active);
+}
+.doctab.active {
+  background: var(--bg-control);
+  box-shadow: var(--shadow-control);
+}
+.doctab-main {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0 2px 0 10px;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.doctab.active .doctab-main {
+  color: var(--text);
+  font-weight: 550;
+}
+.doctab-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* The close button and the unsaved-changes dot share one slot: the dot shows until the pointer
+   is over the tab. */
+.doctab-end {
+  position: relative;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin-right: 3px;
+}
+.doctab-dirty {
+  display: none;
+  position: absolute;
+  inset: 0;
+  text-align: center;
+  font-size: 15px;
+  line-height: 20px;
+  color: var(--text-2);
+  pointer-events: none;
+}
+.doctab.dirty .doctab-dirty {
+  display: block;
+}
+.doctab.dirty:hover .doctab-dirty {
+  visibility: hidden;
+}
+.doctab-close {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  opacity: 0;
+}
+.doctab-close .icon {
+  width: 12px;
+  height: 12px;
+}
+.doctab.active .doctab-close,
+.doctab:hover .doctab-close {
+  opacity: 1;
+}
+.doctab.dirty:not(:hover) .doctab-close {
+  opacity: 0;
+}
+.doctab-close:hover:not(:disabled) {
+  background: var(--bg-active);
+  color: var(--text);
+}
+.doctab-close:disabled {
+  visibility: hidden;
+}
+.doctabs.busy .doctab:not(.active) {
+  opacity: 0.45;
+  background: transparent;
+}
+.doctabs.busy .doctab-main {
+  cursor: default;
+}
+.doctabs-new {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+}
+.doctabs-new:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+.doctabs-new:active:not(:disabled) {
+  background: var(--bg-active);
+}
+.doctabs-new:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ------------------------------------------------------------------ */
 /* Buttons                                                             */
 /* ------------------------------------------------------------------ */
 .btn {
@@ -288,7 +468,9 @@ body.is-busy * {
   color: var(--text);
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.12s, opacity 0.12s;
+  transition:
+    background 0.12s,
+    opacity 0.12s;
 }
 .btn:hover:not(:disabled) {
   filter: brightness(0.97);
@@ -306,7 +488,9 @@ body.is-busy * {
 .btn-primary {
   background: var(--accent);
   color: #fff;
-  box-shadow: 0 0.5px 1px rgba(0, 0, 0, 0.2), inset 0 0.5px 0 rgba(255, 255, 255, 0.25);
+  box-shadow:
+    0 0.5px 1px rgba(0, 0, 0, 0.2),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.25);
   font-weight: 550;
 }
 .btn-primary:hover:not(:disabled) {
@@ -450,10 +634,13 @@ body.is-busy * {
 }
 .checkerboard {
   background-color: var(--checker-a);
-  background-image: linear-gradient(45deg, var(--checker-b) 25%, transparent 25%, transparent 75%, var(--checker-b) 75%),
+  background-image:
+    linear-gradient(45deg, var(--checker-b) 25%, transparent 25%, transparent 75%, var(--checker-b) 75%),
     linear-gradient(45deg, var(--checker-b) 25%, transparent 25%, transparent 75%, var(--checker-b) 75%);
   background-size: 16px 16px;
-  background-position: 0 0, 8px 8px;
+  background-position:
+    0 0,
+    8px 8px;
 }
 .glass {
   background: var(--glass);
@@ -462,10 +649,17 @@ body.is-busy * {
   box-shadow: var(--shadow-pop);
 }
 .viewbar {
+  /* Centred with auto margins, not left: 50% + translate: an absolutely positioned box with
+     left: 50% only gets HALF the viewport as its shrink-to-fit width and wraps far too early
+     (seen on macOS, where the system font is wider). */
   position: absolute;
-  left: 50%;
+  left: 12px;
+  right: 12px;
   bottom: 14px;
-  transform: translateX(-50%);
+  margin: 0 auto;
+  width: -webkit-fit-content;
+  /* biome-ignore lint/suspicious/noDuplicateProperties: the prefixed value is the fallback for older WebKit. */
+  width: fit-content;
   max-width: calc(100% - 24px);
   display: flex;
   flex-wrap: wrap;
@@ -781,7 +975,9 @@ body.is-busy * {
 .hex-input:focus,
 .text-input:focus,
 .select:focus {
-  box-shadow: inset 0 0 0 0.5px var(--accent), 0 0 0 3px var(--focus);
+  box-shadow:
+    inset 0 0 0 0.5px var(--accent),
+    0 0 0 3px var(--focus);
 }
 .num-input:disabled,
 .hex-input:disabled {
@@ -826,7 +1022,13 @@ body.is-busy * {
 .range::-webkit-slider-runnable-track {
   height: 4px;
   border-radius: 2px;
-  background: linear-gradient(to right, var(--accent) 0, var(--accent) var(--fill), var(--track) var(--fill), var(--track) 100%);
+  background: linear-gradient(
+    to right,
+    var(--accent) 0,
+    var(--accent) var(--fill),
+    var(--track) var(--fill),
+    var(--track) 100%
+  );
 }
 .range::-webkit-slider-thumb {
   -webkit-appearance: none;
@@ -835,7 +1037,9 @@ body.is-busy * {
   margin-top: -6px;
   border-radius: 50%;
   background: #fff;
-  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.28), 0 1px 3px rgba(0, 0, 0, 0.28);
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.28),
+    0 1px 3px rgba(0, 0, 0, 0.28);
 }
 .range:active::-webkit-slider-thumb {
   background: #f2f2f2;
@@ -856,7 +1060,9 @@ body.is-busy * {
   border: 0;
   border-radius: 50%;
   background: #fff;
-  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.28), 0 1px 3px rgba(0, 0, 0, 0.28);
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.28),
+    0 1px 3px rgba(0, 0, 0, 0.28);
 }
 .range:disabled {
   cursor: default;
@@ -885,7 +1091,7 @@ body.is-busy * {
   transition: background 0.18s;
 }
 .switch::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 2px;
   left: 2px;
@@ -1037,7 +1243,9 @@ body.is-busy * {
   border-radius: 10px;
   background: var(--bg-card);
   box-shadow: 0 0 0 0.5px var(--border);
-  transition: box-shadow 0.12s, background 0.12s;
+  transition:
+    box-shadow 0.12s,
+    background 0.12s;
 }
 .slot-card.warn {
   box-shadow: 0 0 0 1px var(--warn);
@@ -1214,6 +1422,55 @@ body.is-busy * {
   display: none;
 }
 
+/* Image / Animation switch at the top of the Export panel */
+.export-mode {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 4px 0 6px;
+  background: var(--bg-inspector);
+}
+.export-mode .seg-btn {
+  height: 28px;
+  gap: 6px;
+}
+
+/* Animation export progress */
+.anim-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+}
+.anim-progress-text {
+  font-size: 12px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.anim-progress-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--track);
+  overflow: hidden;
+}
+.anim-progress-bar {
+  width: 0;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent);
+  transition: width 0.15s linear;
+}
+.anim-cancel {
+  align-self: flex-end;
+}
+@media (prefers-reduced-motion: reduce) {
+  .anim-progress-bar {
+    transition: none;
+  }
+}
+
 /* ------------------------------------------------------------------ */
 /* Styles (presets) panel                                              */
 /* ------------------------------------------------------------------ */
@@ -1332,7 +1589,9 @@ body.is-busy * {
   box-shadow: var(--shadow-pop);
   opacity: 0;
   transform: translateY(-8px);
-  transition: opacity 0.2s, transform 0.2s;
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
   -webkit-user-select: text;
   user-select: text;
 }
@@ -1421,7 +1680,9 @@ body.is-busy * {
   background: var(--bg-inspector);
   -webkit-backdrop-filter: saturate(180%) blur(30px);
   backdrop-filter: saturate(180%) blur(30px);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3), 0 0 0 0.5px var(--border-strong);
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.3),
+    0 0 0 0.5px var(--border-strong);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -1477,7 +1738,151 @@ body.is-busy * {
 
 @media (prefers-reduced-motion: reduce) {
   * {
+    /* biome-ignore lint/complexity/noImportantStyles: reduced motion must win over every transition. */
     transition: none !important;
+    /* biome-ignore lint/complexity/noImportantStyles: reduced motion must win over every animation. */
     animation-duration: 0.01ms !important;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Batch export dialog                                                 */
+/* ------------------------------------------------------------------ */
+.batch-btn {
+  width: 100%;
+  justify-content: center;
+}
+.dialog-batch {
+  width: min(520px, calc(100vw - 32px));
+  max-height: calc(100vh - var(--toolbar-h) - 80px);
+  overflow-y: auto;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
+}
+.dialog-batch.is-drop-target {
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.3),
+    0 0 0 2px var(--accent);
+}
+.batch-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.batch-mode .seg-btn {
+  height: 28px;
+}
+.batch-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.batch-model {
+  font-size: 12px;
+  font-weight: 600;
+}
+.batch-pick {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.batch-count {
+  font-size: 11.5px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.batch-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  max-height: 168px;
+  overflow-y: auto;
+  border-radius: var(--radius-sm);
+  background: var(--bg-field);
+  box-shadow: inset 0 0 0 0.5px var(--border-strong);
+}
+.batch-list-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  padding: 0 2px 0 6px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+.batch-list-item:hover {
+  background: var(--bg-hover);
+}
+.batch-list-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.batch-views {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 12px;
+}
+.batch-own {
+  margin-top: 2px;
+}
+.batch-output {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  background: var(--bg-seg);
+}
+.batch-output-text {
+  margin: 0;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.batch-progress-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.batch-status {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+.batch-notes-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.batch-notes {
+  margin: 0;
+  padding: 6px 8px 6px 22px;
+  max-height: 180px;
+  overflow-y: auto;
+  border-radius: var(--radius-sm);
+  font-size: 11.5px;
+  overflow-wrap: anywhere;
+}
+.batch-notes li + li {
+  margin-top: 3px;
+}
+.batch-notes.is-error {
+  background: rgba(229, 55, 43, 0.1);
+}
+.batch-notes.is-error strong {
+  color: var(--danger);
+}
+.batch-notes.is-warning {
+  background: var(--warn-soft);
+}
+@media (max-width: 480px) {
+  .batch-views {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

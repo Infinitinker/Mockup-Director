@@ -3,10 +3,11 @@
  */
 import { h, shortcutLabel } from './dom';
 import { ICONS, LOGO_SVG } from './icons';
-import { t } from './i18n';
+import { LOCALES, t } from '../i18n';
 import type { AppContext } from './context';
 import { segmentedControl } from './controls';
 import type { Lang } from '../core/types';
+import { version } from '../../package.json';
 
 export function createToolbar(ctx: AppContext): { el: HTMLElement; render(): void } {
   // "deep": with current Tauri 2.x the whole header (incl. children such as the logo, separators and
@@ -54,10 +55,7 @@ export function createToolbar(ctx: AppContext): { el: HTMLElement; render(): voi
     const lang = segmentedControl<Lang>({
       compact: true,
       ariaLabel: t('language'),
-      options: [
-        { value: 'pl', label: 'PL', title: 'Polski' },
-        { value: 'en', label: 'EN', title: 'English' },
-      ],
+      options: LOCALES.map((l) => ({ value: l.code, label: l.code.toUpperCase(), title: l.name })),
       get: () => ctx.store.state.lang,
       set: (v) => a.setLang(v),
     });
@@ -68,7 +66,7 @@ export function createToolbar(ctx: AppContext): { el: HTMLElement; render(): voi
       h('div', { class: 'tb-traffic', attrs: { 'data-tauri-drag-region': true } }),
       h(
         'div',
-        { class: 'tb-brand', attrs: { 'data-tauri-drag-region': true } },
+        { class: 'tb-brand', title: t('appVersion', { version }), attrs: { 'data-tauri-drag-region': true } },
         h('span', { class: 'tb-logo', html: LOGO_SVG, attrs: { 'data-tauri-drag-region': true } }),
         h('span', { class: 'tb-name', text: 'Mockup Director', attrs: { 'data-tauri-drag-region': true } }),
       ),
