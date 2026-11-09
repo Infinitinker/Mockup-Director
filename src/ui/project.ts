@@ -1,16 +1,16 @@
 /**
- * Project files (*.mdproj, JSON): serialisation, validation and hydration. The session autosave
+ * Project files (*.mdproj, JSON): serialization, validation and hydration. The session autosave
  * (src/ui/session.ts) stores the open tabs in this format too.
  */
-import type { ExportSettings, ImageAsset, ParamValues, ProjectFile, SceneSettings } from '../core/types';
+import type { ExportSettings, Artwork, ParamValues, ProjectFile, SceneSettings } from '../core/types';
 import { DEFAULT_EXPORT, DEFAULT_SCENE, MAX_EXPORT_SIZE, cloneScene } from '../core/defaults';
 import { loadImageDataUrl } from '../core/images';
 import { MODELS, getModel } from '../models/registry';
-import type { DocumentState, ImageMap } from './state';
+import type { DocumentState, ArtworkMap } from './state';
 import { sanitizeParam } from './modelUtils';
 import { clamp } from './dom';
 import { animationFormatSupport, webpEncodingSupported } from './exportBridge';
-import { normaliseAnimationSettings } from '../export/animation/settings';
+import { normalizeAnimationSettings } from '../export/animation/settings';
 
 /** The extension of project files, the only one the app saves and opens. */
 export const PROJECT_EXT = 'mdproj';
@@ -95,29 +95,29 @@ function sanitizeExport(raw: unknown): ExportSettings {
   // DEFAULT_EXPORT has no animation – validate it separately (formats this engine cannot encode fall
   // back to GIF).
   const anim = isPlain(raw) ? raw.animation : undefined;
-  if (isPlain(anim)) e.animation = normaliseAnimationSettings(anim, animationFormatSupport());
+  if (isPlain(anim)) e.animation = normalizeAnimationSettings(anim, animationFormatSupport());
   else delete e.animation;
   return e;
 }
 
 /* ------------------------------------------------------------------ */
-/* Serialise                                                           */
+/* Serialize                                                           */
 /* ------------------------------------------------------------------ */
 
 export function toProjectFile(s: DocumentState): ProjectFile {
-  const images: ProjectFile['images'] = {};
-  for (const [modelId, slots] of Object.entries(s.images)) {
+  const artwork: ProjectFile['artwork'] = {};
+  for (const [modelId, slots] of Object.entries(s.artwork)) {
     const entries = Object.entries(slots).filter(([, a]) => !!a);
     if (!entries.length) continue;
-    images[modelId] = {};
-    for (const [slotId, a] of entries) images[modelId][slotId] = { name: a.name, dataUrl: a.dataUrl };
+    artwork[modelId] = {};
+    for (const [slotId, a] of entries) artwork[modelId][slotId] = { name: a.name, dataUrl: a.dataUrl };
   }
   return {
     app: 'mockup-director',
     version: 1,
     modelId: s.modelId,
     params: JSON.parse(JSON.stringify(s.params)) as Record<string, ParamValues>,
-    images,
+    artwork,
     scene: cloneScene(s.scene),
     export: { ...s.export, ...(s.export.animation ? { animation: { ...s.export.animation } } : {}) },
   };
@@ -129,12 +129,17 @@ export function toProjectFile(s: DocumentState): ProjectFile {
 
 export class ProjectError extends Error {}
 
+/** The message for a file that is not a project. */
+export const NOT_A_PROJECT = `The file could not be read: it is not a Mockup Director project. Choose a .${PROJECT_EXT} file.`;
+
 /** Validate untrusted JSON and return a clean ProjectFile. Throws ProjectError with a message for the user. */
 export function parseProjectFile(json: unknown): ProjectFile {
-  if (!isPlain(json) || json.app !== 'mockup-director')
-    throw new ProjectError('This is not a Mockup Director project file.');
-  if (typeof json.version !== 'number' || json.version > 1)
-    throw new ProjectError('The project file comes from a newer Mockup Director version.');
+  if (!isPlain(json) || json.app !== 'mockup-director') throw new ProjectError(NOT_A_PROJECT);
+  const { version } = json;
+  if (typeof version !== 'number' || !Number.isInteger(version) || version < 1)
+    throw new ProjectError(`The project file could not be read: it is damaged. Choose another .${PROJECT_EXT} file.`);
+  if (version > 1)
+    throw new ProjectError('The project comes from a newer Mockup Director. Update Mockup Director to open it.');
 
   const modelId =
     typeof json.modelId === 'string' && MODELS.some((m) => m.id === json.modelId) ? json.modelId : MODELS[0].id;
@@ -153,19 +158,19 @@ export function parseProjectFile(json: unknown): ProjectFile {
     }
   }
 
-  const images: ProjectFile['images'] = {};
-  if (isPlain(json.images)) {
-    for (const [mid, slots] of Object.entries(json.images)) {
+  const artwork: ProjectFile['artwork'] = {};
+  if (isPlain(json.artwork)) {
+    for (const [mid, slots] of Object.entries(json.artwork)) {
       const model = MODELS.find((m) => m.id === mid);
       if (!model || !isPlain(slots)) continue;
-      for (const [sid, img] of Object.entries(slots)) {
-        if (!model.slots.some((s) => s.id === sid) || !isPlain(img)) continue;
-        if (typeof img.dataUrl !== 'string' || !/^data:image\//i.test(img.dataUrl)) continue;
-        const forModel = images[mid] ?? {};
-        images[mid] = forModel;
+      for (const [sid, art] of Object.entries(slots)) {
+        if (!model.slots.some((s) => s.id === sid) || !isPlain(art)) continue;
+        if (typeof art.dataUrl !== 'string' || !/^data:image\//i.test(art.dataUrl)) continue;
+        const forModel = artwork[mid] ?? {};
+        artwork[mid] = forModel;
         forModel[sid] = {
-          name: typeof img.name === 'string' ? img.name.slice(0, 255) : sid,
-          dataUrl: img.dataUrl,
+          name: typeof art.name === 'string' ? art.name.slice(0, 255) : sid,
+          dataUrl: art.dataUrl,
         };
       }
     }
@@ -176,29 +181,29 @@ export function parseProjectFile(json: unknown): ProjectFile {
     version: 1,
     modelId,
     params,
-    images,
+    artwork,
     scene: sanitizeScene(json.scene),
     export: sanitizeExport(json.export),
   };
 }
 
-/** Decode all images of a project. Broken images are skipped and counted. */
+/** Decode all artwork of a project. Artwork that cannot be decoded is skipped and counted. */
 export async function hydrateProject(file: ProjectFile): Promise<{ state: DocumentState; failed: number }> {
-  const images: ImageMap = {};
+  const artwork: ArtworkMap = {};
   let failed = 0;
   const jobs: Promise<void>[] = [];
-  for (const [mid, slots] of Object.entries(file.images)) {
-    for (const [sid, img] of Object.entries(slots)) {
+  for (const [mid, slots] of Object.entries(file.artwork)) {
+    for (const [sid, art] of Object.entries(slots)) {
       jobs.push(
-        loadImageDataUrl(img.dataUrl, img.name)
-          .then((asset: ImageAsset) => {
-            const forModel = images[mid] ?? {};
-            images[mid] = forModel;
+        loadImageDataUrl(art.dataUrl, art.name)
+          .then((asset: Artwork) => {
+            const forModel = artwork[mid] ?? {};
+            artwork[mid] = forModel;
             forModel[sid] = asset;
           })
           .catch((e: unknown) => {
             failed += 1;
-            console.warn('[mockup-director] image failed to load', sid, e);
+            console.warn('[mockup-director] artwork failed to load', sid, e);
           }),
       );
     }
@@ -207,7 +212,7 @@ export async function hydrateProject(file: ProjectFile): Promise<{ state: Docume
   // Make sure the selected model exists (getModel falls back to the first one).
   const modelId = getModel(file.modelId).id;
   return {
-    state: { modelId, params: file.params, images, scene: file.scene, export: file.export },
+    state: { modelId, params: file.params, artwork, scene: file.scene, export: file.export },
     failed,
   };
 }

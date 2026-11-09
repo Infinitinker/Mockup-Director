@@ -217,8 +217,8 @@ function maxFacing(root: THREE.Object3D, texture: THREE.Texture, axis: 'y' | 'z'
 }
 
 /** Builds the model and checks the 3D conventions: no NaN, lowest point on the floor, centered. */
-function expectPlaced(model: ModelDefinition, params: ParamValues, withImages: boolean, label: string): void {
-  const { ctx } = fakeModelContext(model, params, withImages);
+function expectPlaced(model: ModelDefinition, params: ParamValues, withArtwork: boolean, label: string): void {
+  const { ctx } = fakeModelContext(model, params, withArtwork);
   const root = model.build(ctx);
   expect(root, label).toBeInstanceOf(THREE.Object3D);
   expect(hasNaNPosition(root), `${label}: NaN position`).toBe(false);
@@ -245,10 +245,10 @@ function expectPlaced(model: ModelDefinition, params: ParamValues, withImages: b
 function expectTexturesUntouched(
   model: ModelDefinition,
   params: ParamValues,
-  withImages: boolean,
+  withArtwork: boolean,
   label: string,
 ): void {
-  const { ctx, textures, images } = fakeModelContext(model, params, withImages);
+  const { ctx, textures, images } = fakeModelContext(model, params, withArtwork);
   const untouched = textureState(artworkTexture(1, 1));
   const disposed: string[] = [];
   for (const slot of model.slots) {
@@ -263,8 +263,8 @@ function expectTexturesUntouched(
 }
 
 /** The ids of the slots whose texture is on any material of the model built at the defaults, sorted. */
-function shownSlots(model: ModelDefinition, withImages: boolean): string[] {
-  const { ctx, textures } = fakeModelContext(model, paramValues(model, 'defaults'), withImages);
+function shownSlots(model: ModelDefinition, withArtwork: boolean): string[] {
+  const { ctx, textures } = fakeModelContext(model, paramValues(model, 'defaults'), withArtwork);
   const root = model.build(ctx);
   const shown = new Set<string>();
   root.traverse((o) => {
@@ -392,13 +392,13 @@ describe.each(MODELS.map((m) => [m.id, m] as const))('%s', (_id, model) => {
     ['all at min', false],
     ['all at max', true],
     ['all at max', false],
-  ])('built with %s (artwork: %s)', (set, withImages) => {
+  ])('built with %s (artwork: %s)', (set, withArtwork) => {
     it('stands on the floor, centered, without NaN', () => {
-      expectPlaced(model, paramValues(model, set), withImages, set);
+      expectPlaced(model, paramValues(model, set), withArtwork, set);
     });
 
     it('leaves the shared textures and their images unchanged and undisposed', () => {
-      expectTexturesUntouched(model, paramValues(model, set), withImages, set);
+      expectTexturesUntouched(model, paramValues(model, set), withArtwork, set);
     });
   });
 
@@ -406,8 +406,8 @@ describe.each(MODELS.map((m) => [m.id, m] as const))('%s', (_id, model) => {
   if (choices.length > 0) {
     it.each([true, false])(
       'leaves the shared textures unchanged with each select option (artwork: %s)',
-      (withImages) => {
-        for (const [label, params] of choices) expectTexturesUntouched(model, params, withImages, label);
+      (withArtwork) => {
+        for (const [label, params] of choices) expectTexturesUntouched(model, params, withArtwork, label);
       },
     );
   }

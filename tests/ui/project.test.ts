@@ -6,7 +6,7 @@ import { ProjectError, isProjectFileName, parseProjectFile, projectNameOf } from
 const PNG = 'data:image/png;base64,iVBORw0KGgo=';
 
 describe('project file names', () => {
-  it('recognises the project extension in any case', () => {
+  it('recognizes the project extension in any case', () => {
     expect(isProjectFileName('Box.mdproj')).toBe(true);
     expect(isProjectFileName('BOX.MDPROJ')).toBe(true);
     expect(isProjectFileName('Box.json')).toBe(false);
@@ -27,16 +27,21 @@ describe('parseProjectFile', () => {
     }
   });
 
-  it('rejects projects from a newer or an unknown version', () => {
-    expect(() => parseProjectFile({ app: 'mockup-director', version: 2 })).toThrow(ProjectError);
-    expect(() => parseProjectFile({ app: 'mockup-director' })).toThrow(ProjectError);
+  it('rejects a project from a newer version and says to update', () => {
+    expect(() => parseProjectFile({ app: 'mockup-director', version: 2 })).toThrow(/newer Mockup Director/);
+  });
+
+  it('rejects a version that is not a whole number from 1 as damaged', () => {
+    for (const version of [0, -1, 1.5, '1', null, undefined]) {
+      expect(() => parseProjectFile({ app: 'mockup-director', version })).toThrow(/damaged/);
+    }
   });
 
   it('fills a minimal project with defaults', () => {
     const file = parseProjectFile({ app: 'mockup-director', version: 1 });
     expect(file.modelId).toBe(MODELS[0].id);
     expect(file.params).toEqual({});
-    expect(file.images).toEqual({});
+    expect(file.artwork).toEqual({});
     expect(file.scene).toEqual(DEFAULT_SCENE);
     expect(file.export).toEqual(DEFAULT_EXPORT);
   });
@@ -47,7 +52,7 @@ describe('parseProjectFile', () => {
       version: 1,
       modelId: 'no-such-model',
       params: { box: { width: 1e9, unknown: 1, finish: 42 }, 'no-such-model': { width: 10 } },
-      images: {
+      artwork: {
         box: {
           front: { name: 'front.png', dataUrl: PNG },
           nowhere: { name: 'x.png', dataUrl: PNG },
@@ -62,7 +67,7 @@ describe('parseProjectFile', () => {
     const width = MODELS.find((m) => m.id === 'box')?.params.find((p) => p.id === 'width');
     if (width?.type !== 'number') throw new Error('the box model has no number parameter "width"');
     expect(file.params.box).toEqual({ width: width.max });
-    expect(file.images).toEqual({ box: { front: { name: 'front.png', dataUrl: PNG } } });
+    expect(file.artwork).toEqual({ box: { front: { name: 'front.png', dataUrl: PNG } } });
   });
 
   it('clamps scene and export values into their ranges', () => {

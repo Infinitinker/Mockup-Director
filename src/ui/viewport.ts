@@ -1,5 +1,5 @@
 /**
- * Centre viewport: the stage host, floating view bar and the file drop overlay.
+ * Center viewport: the stage host, floating view bar and the file drop overlay.
  */
 import { h } from './dom';
 import { ICONS } from './icons';
@@ -93,7 +93,7 @@ export function createViewportShell(): ViewportShell {
       ariaLabel: 'Preview background',
       options: [
         { value: 'transparent', label: '', icon: ICONS.checker, title: 'Transparent (checkerboard)' },
-        { value: 'color', label: '', icon: ICONS.fill, title: 'Colour' },
+        { value: 'color', label: '', icon: ICONS.fill, title: 'Color' },
         { value: 'gradient', label: '', icon: ICONS.gradient, title: 'Gradient' },
       ],
       get: () => c.store.state.scene.background.mode,
@@ -114,13 +114,13 @@ export function createViewportShell(): ViewportShell {
       h('div', { class: 'vb-sep' }),
       bg.el,
     );
-    hint.textContent = 'Drag to orbit · ⇧-drag to pan · scroll or pinch to zoom · double-click resets the view';
+    hint.textContent = 'Drag to orbit, Shift-drag to pan, scroll or pinch to zoom, and double-click to reset the view.';
     overlay.replaceChildren(
       h(
         'div',
         { class: 'drop-card' },
         h('span', { class: 'drop-icon', html: ICONS.image }),
-        h('div', { text: 'Drop artwork – it fills the empty slots of the model' }),
+        h('div', { text: 'Drop artwork: it fills the empty slots of the model.' }),
       ),
     );
   };
@@ -133,7 +133,7 @@ export function createViewportShell(): ViewportShell {
     applyPreviewBackground(host, ctx.store.state.scene.background);
   };
 
-  /* Drag & drop of image / project files ------------------------------ */
+  /* Drag & drop of image and project files ------------------------------ */
   let dragDepth = 0;
   const hasFiles = (e: DragEvent) => !!e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files');
   el.addEventListener('dragenter', (e) => {
@@ -162,8 +162,8 @@ export function createViewportShell(): ViewportShell {
       void ctx.actions.openProject(project);
       return;
     }
-    const images = files.filter(isImageFile);
-    if (images.length) void ctx.actions.assignImages(images);
+    const artwork = files.filter(isImageFile);
+    if (artwork.length) void ctx.actions.assignArtwork(artwork);
   });
 
   return {

@@ -69,13 +69,13 @@ describe('Store.swap', () => {
 
     expect(events).toHaveLength(1);
     expect(events[0].source).toBe('document');
-    expect([...events[0].kinds].sort()).toEqual(['camera', 'export', 'images', 'model', 'params', 'scene']);
+    expect([...events[0].kinds].sort()).toEqual(['artwork', 'camera', 'export', 'model', 'params', 'scene']);
     expect(history).toHaveBeenCalled();
   });
 
-  it('does not dispose the images of the document it swaps out', () => {
+  it('does not dispose the artwork of the document it swaps out', () => {
     const image = fakeImage();
-    const store = new Store({ ...documentState(), images: { box: { front: image.asset } } });
+    const store = new Store({ ...documentState(), artwork: { box: { front: image.asset } } });
 
     const out = store.swap(Store.createDocument(documentState('dvd')));
 
@@ -83,15 +83,15 @@ describe('Store.swap', () => {
     expect(out.tracked.has(image.asset)).toBe(true);
   });
 
-  it('does not dispose the images of the document it swaps in', () => {
+  it('does not dispose the artwork of the document it swaps in', () => {
     const image = fakeImage();
     const store = new Store(documentState());
 
-    store.swap(Store.createDocument({ ...documentState(), images: { box: { front: image.asset } } }));
+    store.swap(Store.createDocument({ ...documentState(), artwork: { box: { front: image.asset } } }));
     edit(store, 1);
 
     expect(image.dispose).not.toHaveBeenCalled();
-    expect(store.state.images.box.front).toBe(image.asset);
+    expect(store.state.artwork.box.front).toBe(image.asset);
   });
 });
 
@@ -99,9 +99,9 @@ describe('Store.disposeDocument', () => {
   it('disposes every image the document owns', () => {
     const front = fakeImage('front.png');
     const back = fakeImage('back.png');
-    const store = new Store({ ...documentState(), images: { box: { front: front.asset } } });
-    store.update(['images'], (s) => {
-      s.images.box = { ...s.images.box, back: back.asset };
+    const store = new Store({ ...documentState(), artwork: { box: { front: front.asset } } });
+    store.update(['artwork'], (s) => {
+      s.artwork.box = { ...s.artwork.box, back: back.asset };
     });
     store.endBurst();
 

@@ -1,17 +1,17 @@
 /** Shared test data: document states and image assets that need no browser. */
 import type * as THREE from 'three';
 import { vi } from 'vitest';
-import type { ImageAsset } from '../src/core/types';
+import type { Artwork } from '../src/core/types';
 import { DEFAULT_EXPORT, DEFAULT_SCENE, cloneScene } from '../src/core/defaults';
 import type { DocumentState } from '../src/ui/state';
 
 /** An empty project with the given model. */
 export function documentState(modelId = 'box'): DocumentState {
-  return { modelId, params: {}, images: {}, scene: cloneScene(DEFAULT_SCENE), export: { ...DEFAULT_EXPORT } };
+  return { modelId, params: {}, artwork: {}, scene: cloneScene(DEFAULT_SCENE), export: { ...DEFAULT_EXPORT } };
 }
 
 export interface FakeImage {
-  asset: ImageAsset;
+  asset: Artwork;
   dispose: ReturnType<typeof vi.fn>;
 }
 

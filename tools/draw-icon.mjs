@@ -170,7 +170,7 @@ function clapperBox(simple) {
 
   const hinge = armAt(armH * 0.55, armH * 0.5);
   // Centring: horizontally on the BOX alone (the lifted arm sticks out to the left and would pull
-  // the box off-centre), vertically on the whole silhouette (box + arm).
+  // the box off-center), vertically on the whole silhouette (box + arm).
   const [bx0, , bx1] = bboxOf(outline);
   const [, y0, , y1] = bboxOf([...outline, ...arm]);
   const dx = 512 - (bx0 + bx1) / 2;

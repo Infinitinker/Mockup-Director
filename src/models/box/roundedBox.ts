@@ -1,5 +1,5 @@
 /**
- * Rounded (bevelled) cuboid with exact per-face artwork mapping.
+ * Rounded (beveled) cuboid with exact per-face artwork mapping.
  *
  * How it works: every face is a grid laid out on the faces of a SHARP box of the requested outer
  * size. Each grid vertex p is then "inflated" around the inner core box (outer size minus the
@@ -7,7 +7,7 @@
  * part of a face stay where they are; vertices within r of an edge bend onto a quarter cylinder
  * (or a sphere octant at the corners). Each face's grid therefore covers its own flat area plus
  * HALF of every adjacent edge rounding – up to the 45° line – which is exactly where the printed
- * sheet would fold. Neighbouring faces meet watertight on that line (identical positions and
+ * sheet would fold. Neighboring faces meet watertight on that line (identical positions and
  * analytic normals).
  *
  * UVs are computed from the un-bent grid position, i.e. a planar projection of the face: viewed
@@ -21,7 +21,7 @@ const FACES: readonly FaceId[] = ['px', 'nx', 'py', 'ny', 'pz', 'nz'];
 export const FACE_INDEX: Readonly<Record<FaceId, number>> = { px: 0, nx: 1, py: 2, ny: 3, pz: 4, nz: 5 };
 
 /**
- * Maps normalised face coordinates to texture UVs.
+ * Maps normalized face coordinates to texture UVs.
  * s: 0 = left edge → 1 = right edge, t: 0 = bottom edge → 1 = top edge, both AS SEEN FROM OUTSIDE
  * the box with the face upright (for the top face "upright" = its bottom edge touches the front;
  * for the bottom face its top edge touches the front – like the flaps of a box net).
@@ -82,7 +82,7 @@ function axisCoords(h: number, r: number, nb: number): number[] {
   return out;
 }
 
-/** Build a rounded box centred on the origin. Groups use FACE_INDEX as materialIndex. */
+/** Build a rounded box centered on the origin. Groups use FACE_INDEX as materialIndex. */
 export function roundedBoxGeometry(spec: RoundedBoxSpec): THREE.BufferGeometry {
   const half = [spec.width / 2, spec.height / 2, spec.depth / 2];
   const r = Math.max(0, Math.min(spec.radius, Math.min(half[0], half[1], half[2]) * 0.98));

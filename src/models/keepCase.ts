@@ -1,8 +1,8 @@
 /**
  * DVD / Blu-ray keep cases (plastic case + printed paper insert under a clear sleeve film).
  *
- * Coordinate frame (see CONVENTIONS in core/types.ts): millimetres, case standing upright on
- * y = 0, centred on x/z, FRONT cover faces +Z, the SPINE is on the left when looking at the
+ * Coordinate frame (see CONVENTIONS in core/types.ts): millimeters, case standing upright on
+ * y = 0, centered on x/z, FRONT cover faces +Z, the SPINE is on the left when looking at the
  * front (-X side), the open edge on the right (+X).
  *
  * Industry dimensions used (trim sizes, 3 mm bleed added in the print templates):
@@ -11,7 +11,7 @@
  *    -> 273 x 183 (14 mm), 268 x 183 (9 mm), 266 x 183 (7 mm).
  *  - Blu-ray keep case (standard): 135 (W) x 171.5 (H) x 12 mm (11 mm eco, 7 mm slim).
  *    Insert 148 mm high, back 129 | spine = case thickness | front 129 -> 270 x 148 (12 mm).
- *    The insert is shorter than on DVD because of the moulded, translucent top band.
+ *    The insert is shorter than on DVD because of the molded, translucent top band.
  *
  * Param ids (stable – composites call buildKeepCase(ctx, variant) with the same ids):
  *   thickness ('14' | '9' | '7' for DVD, '12' | '11' | '7' for Blu-ray – mm as a string),
@@ -42,7 +42,7 @@ interface CaseSpec {
   thicknessOptions: { value: string; label: string }[];
   defaultThickness: string;
   defaultPlastic: string;
-  /** Blu-ray: moulded coloured top band. */
+  /** Blu-ray: molded colored top band. */
   band: boolean;
 }
 
@@ -185,38 +185,33 @@ function makeSlots(variant: KeepCaseVariant): ImageSlotDef[] {
   const wrapW = 2 * pw + t0;
   // The thickness options are whole millimeters ("14 / 9 / 7"), so the list has no decimal point.
   const spines = spec.thicknessOptions.map((o) => String(parseFloat(o.value))).join(' / ');
-  const onlyIfNoCover = 'Used only when no “Cover wrap” image is added.';
+  const onlyIfNoCover = 'Used only when “Cover wrap” has no artwork.';
   return [
     {
       id: 'cover',
       label: 'Cover wrap',
-      hint:
-        `The whole insert under the sleeve, left to right: Back | Spine | Front. ${round1(wrapW)} × ${round1(hi)} mm ` +
-        `+ 3 mm bleed (width = 2 × ${round1(pw)} mm + spine ${spines} mm – download the template). ` +
-        'Takes priority over the separate Front / Spine / Back slots.',
+      hint: `The whole insert under the sleeve, left to right: Back | Spine | Front. ${round1(wrapW)} × ${round1(hi)} mm + 3 mm bleed: two panels of ${round1(pw)} mm and a spine of ${spines} mm, as in the template. It takes priority over the separate Front / Spine / Back slots.`,
       aspect: (wrapW + 2 * BLEED) / (hi + 2 * BLEED),
       template: (params) => keepCaseCoverTemplate(params, variant),
     },
     {
       id: 'front',
       label: 'Front',
-      hint: `${onlyIfNoCover} ${round1(pw)} × ${round1(hi)} mm + 3 mm bleed.`,
+      hint: `${onlyIfNoCover} The front panel is ${round1(pw)} × ${round1(hi)} mm + 3 mm bleed.`,
       aspect: (pw + 2 * BLEED) / (hi + 2 * BLEED),
       template: panelTemplate(pw, hi, 'Front'),
     },
     {
       id: 'spine',
       label: 'Spine',
-      hint:
-        `${onlyIfNoCover} A vertical strip as in the template: width = case thickness (${spines} mm) × ${round1(hi)} mm + 3 mm bleed. ` +
-        'Without an image the spine uses “Spine & back colour”.',
+      hint: `${onlyIfNoCover} A vertical strip as in the template, as wide as the case is thick (${spines} mm) and ${round1(hi)} mm high, + 3 mm bleed. Without artwork the spine uses “Spine & back color (no artwork)”.`,
       aspect: (t0 + 2 * BLEED) / (hi + 2 * BLEED),
       template: (params) => panelTemplate(thicknessOf(params, variant), hi, 'Spine'),
     },
     {
       id: 'back',
       label: 'Back',
-      hint: `${onlyIfNoCover} ${round1(pw)} × ${round1(hi)} mm + 3 mm bleed. Without an image the back uses “Spine & back colour”.`,
+      hint: `${onlyIfNoCover} The back panel is ${round1(pw)} × ${round1(hi)} mm + 3 mm bleed. Without artwork the back uses “Spine & back color (no artwork)”.`,
       aspect: (pw + 2 * BLEED) / (hi + 2 * BLEED),
       template: panelTemplate(pw, hi, 'Back'),
     },
@@ -256,7 +251,7 @@ function makeParams(variant: KeepCaseVariant): ParamDef[] {
     {
       id: 'plastic',
       type: 'select',
-      label: 'Plastic colour',
+      label: 'Plastic color',
       group: G_MAT,
       options: Object.entries(PLASTICS).map(([value, d]) => ({ value, label: d.label })),
       default: spec.defaultPlastic,
@@ -267,7 +262,7 @@ function makeParams(variant: KeepCaseVariant): ParamDef[] {
       {
         id: 'bandColor',
         type: 'color',
-        label: 'Top band colour',
+        label: 'Top band color',
         group: G_MAT,
         default: '#1d62cc',
       },
@@ -307,7 +302,7 @@ function makeParams(variant: KeepCaseVariant): ParamDef[] {
     {
       id: 'sideColor',
       type: 'color',
-      label: 'Spine & back colour (no artwork)',
+      label: 'Spine & back color (no artwork)',
       group: G_ART,
       default: '#1c1c1f',
     },
@@ -451,7 +446,7 @@ const ARC_SEGS = 10;
  * Horizontal cross-section (XZ plane) of the case surface at distance `off` above it, running
  * clockwise from the BACK open-edge side, round the spine (-X), to the FRONT open-edge side.
  * The case section is a W x T rectangle with corner radius `r` (the rounded long edges).
- * `halfLen` is the arc length from the spine centre to each end.
+ * `halfLen` is the arc length from the spine center to each end.
  */
 function crossSection(W: number, T: number, r: number, off: number, halfLen: number): Pt[] {
   const xc = -W / 2 + r;
@@ -475,7 +470,7 @@ function halfLenTo(W: number, T: number, r: number, off: number, xEnd: number): 
 
 /**
  * Front-view (XY) outline at distance `off` outside a rounded-rectangle outline whose corner
- * centres are (±xr, yTop) / (±xr, yBot) with radius rc. Clockwise from the top edge near the
+ * centers are (±xr, yTop) / (±xr, yBot) with radius rc. Clockwise from the top edge near the
  * spine (x = xStart), over the top-right corner and down the open edge to y = yStop.
  */
 function openEdgeOutline(xr: number, yTop: number, rc: number, off: number, xStart: number, yStop: number): Pt[] {
@@ -516,7 +511,7 @@ function roundedRect(x0: number, y0: number, x1: number, y1: number, rTop: numbe
 
 /**
  * Smooth rounded slab: the front-view `base` shape grown by `bevel` on every side and extruded to
- * a total depth `thickness` centred on z = 0. The bevel profile is a quarter circle that is tangent
+ * a total depth `thickness` centered on z = 0. The bevel profile is a quarter circle that is tangent
  * to both faces, so merging vertices + recomputing normals gives a seamless smooth surface.
  */
 function roundedSlab(base: THREE.Shape, thickness: number, bevel: number): THREE.BufferGeometry {
@@ -564,7 +559,7 @@ function plasticMaterial(def: PlasticDef): THREE.MeshPhysicalMaterial {
   });
 }
 
-/** Dark mould parting line between the two halves of the case. */
+/** Dark mold parting line between the two halves of the case. */
 function seamMaterial(def: PlasticDef): THREE.MeshStandardMaterial {
   const c = new THREE.Color(def.color).multiplyScalar(0.25);
   const translucent = def.opacity !== undefined;
@@ -618,7 +613,7 @@ export function buildKeepCase(ctx: ModelContext, variant: KeepCaseVariant): THRE
   const hi = spec.insertHeight;
   const y0 = spec.insertBottom;
   const y1 = y0 + hi;
-  const halfLen = T / 2 + pw; // spine centre -> open-edge end of each panel
+  const halfLen = T / 2 + pw; // spine center -> open-edge end of each panel
   const sheet = crossSection(W, T, r, SHEET_OFFSET, halfLen);
   const sTotal = sheet[sheet.length - 1].s;
   const sSpine0 = sTotal / 2 - T / 2; // fold back | spine
@@ -652,9 +647,9 @@ export function buildKeepCase(ctx: ModelContext, variant: KeepCaseVariant): THRE
     root.add(m);
   };
 
-  // With no images at all we fall through to the separate-panel path so the placeholder label lands
-  // on the FRONT (a centred wrap placeholder would put its label on the spine).
-  const useCover = ctx.hasImage('cover');
+  // With no artwork at all we fall through to the separate-panel path so the placeholder label lands
+  // on the FRONT (a centered wrap placeholder would put its label on the spine).
+  const useCover = ctx.hasArtwork('cover');
   if (useCover) {
     // One wrap image: Back | Spine | Front.
     const wTot = 2 * pw + T + 2 * BLEED;
@@ -666,10 +661,10 @@ export function buildKeepCase(ctx: ModelContext, variant: KeepCaseVariant): THRE
     addSheet(panel(sSpine1, sTotal, pw), paper(ctx.getTexture('front')), 'front');
     addSheet(
       panel(sSpine0, sSpine1, T),
-      ctx.hasImage('spine') ? paper(ctx.getTexture('spine')) : solidPaper(),
+      ctx.hasArtwork('spine') ? paper(ctx.getTexture('spine')) : solidPaper(),
       'spine',
     );
-    addSheet(panel(0, sSpine0, pw), ctx.hasImage('back') ? paper(ctx.getTexture('back')) : solidPaper(), 'back');
+    addSheet(panel(0, sSpine0, pw), ctx.hasArtwork('back') ? paper(ctx.getTexture('back')) : solidPaper(), 'back');
   }
 
   if (translucent) {
@@ -683,7 +678,7 @@ export function buildKeepCase(ctx: ModelContext, variant: KeepCaseVariant): THRE
     root.add(back);
   }
 
-  /* ---- Blu-ray moulded top band ---- */
+  /* ---- Blu-ray molded top band ---- */
   // It overlaps the top of the insert slightly (as on real cases, the sheet tucks under it).
   const yBand = y1 - 2;
   if (spec.band) {
@@ -706,7 +701,7 @@ export function buildKeepCase(ctx: ModelContext, variant: KeepCaseVariant): THRE
     root.add(band);
 
     if (bool(p, 'bandEmboss', true)) {
-      // Subtle raised rounded-rectangle frame (no logo/text) centred on the flat band face.
+      // Subtle raised rounded-rectangle frame (no logo/text) centered on the flat band face.
       const capLo = yBand + r + ob + 0.6;
       const capHi = Hbody - r;
       const cy = (capLo + capHi) / 2;
@@ -783,7 +778,7 @@ export function buildKeepCase(ctx: ModelContext, variant: KeepCaseVariant): THRE
     root.add(m);
   }
 
-  /* ---- mould parting line along the top and the open edge ---- */
+  /* ---- mold parting line along the top and the open edge ---- */
   const seamOff = 0.03;
   const seamHalf = 0.35;
   const seamMat = seamMaterial(plastic);

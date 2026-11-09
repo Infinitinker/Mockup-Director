@@ -1,5 +1,5 @@
 name: Bug report
-description: Something in Mockup Director doesn't work as it should.
+description: Something in Mockup Director doesn’t work as it should.
 labels: [bug]
 body:
   - type: textarea
@@ -44,7 +44,7 @@ body:
     attributes:
       label: Model
       description: The model in use, if the problem is about one.
-      placeholder: "DVD keep case"
+      placeholder: "DVD case"
   - type: textarea
     id: files
     attributes:

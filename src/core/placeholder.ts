@@ -4,7 +4,7 @@ import type { ImageSlotDef } from './types';
 const cache = new Map<string, THREE.Texture>();
 
 /**
- * Neutral placeholder artwork for an empty image slot: soft gradient, thin frame and the slot name.
+ * Neutral placeholder artwork for an empty slot: soft gradient, thin frame and the slot name.
  * Cached per slot; owned by this module (never disposed by models).
  */
 export function getPlaceholderTexture(slot: ImageSlotDef): THREE.Texture {
@@ -21,7 +21,8 @@ export function getPlaceholderTexture(slot: ImageSlotDef): THREE.Texture {
   canvas.width = Math.max(8, w);
   canvas.height = Math.max(8, h);
   const g = canvas.getContext('2d');
-  if (!g) throw new Error('No 2D canvas context for the placeholder artwork (out of memory?).');
+  if (!g)
+    throw new Error('Not enough memory to draw the placeholder of an empty slot. Close other tabs and try again.');
 
   const grad = g.createLinearGradient(0, 0, canvas.width, canvas.height);
   grad.addColorStop(0, '#eef0f4');

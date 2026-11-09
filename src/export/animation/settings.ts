@@ -1,5 +1,5 @@
 /**
- * Animation settings: limits, normalisation (used for persisted projects and defensively by the
+ * Animation settings: limits, normalization (used for persisted projects and defensively by the
  * exporter) and small derived values (frame count, effective size).
  */
 import type { AnimationFormat, AnimationSettings } from '../../core/types';
@@ -61,7 +61,7 @@ const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v
  * Return a complete, clamped copy of (possibly untrusted / partial) animation settings.
  * `available` limits the format (e.g. no WebP in Safari, no MP4 without WebCodecs) – falls back to GIF.
  */
-export function normaliseAnimationSettings(
+export function normalizeAnimationSettings(
   raw: unknown,
   available: Partial<Record<AnimationFormat, boolean>> = {},
 ): AnimationSettings {

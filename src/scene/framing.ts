@@ -1,10 +1,10 @@
 /**
- * Camera orientation + exact "fit the composition" maths.
+ * Camera orientation + exact "fit the composition" math.
  *
- * The camera orbits the model's bounding-box centre (the pivot). Its ORIENTATION comes only from
+ * The camera orbits the model's bounding-box center (the pivot). Its ORIENTATION comes only from
  * yaw / pitch / roll; its POSITION is then solved so that a given point cloud (model vertices,
  * the visible part of the reflection and the visible part of the ground shadow) fits the view
- * exactly, centred, with a configurable slack. Zoom and pan are applied afterwards on the
+ * exactly, centered, with a configurable slack. Zoom and pan are applied afterwards on the
  * projection (lens zoom + view offset), so they never change the perspective.
  */
 import * as THREE from 'three';
@@ -17,13 +17,13 @@ let scratch = new Float64Array(0);
 interface CameraBasis {
   right: THREE.Vector3;
   up: THREE.Vector3;
-  /** Unit vector from the pivot towards the camera. */
+  /** Unit vector from the pivot toward the camera. */
   back: THREE.Vector3;
   quaternion: THREE.Quaternion;
 }
 
 /**
- * yaw: 0 = camera on +Z, + = towards +X (model's right side visible).
+ * yaw: 0 = camera on +Z, + = toward +X (model's right side visible).
  * pitch: + = camera above, looking down.
  * roll: rotation of the camera around its viewing axis; positive roll turns the camera
  *       counter-clockwise, so the model appears rotated CLOCKWISE on screen.
@@ -57,7 +57,7 @@ export interface FitResult {
  * camera sits at (ox, oy, d). A point fits horizontally iff |q.x - ox| <= tx * (d - q.z) with
  * tx = tan(hfov/2). The smallest d for which a common ox exists is separable:
  *     d >= ( max_i(q.z + q.x/tx) + max_j(q.z - q.x/tx) ) / 2
- * (same for y with ty). ox / oy are then the centre of the feasible interval, which gives equal
+ * (same for y with ty). ox / oy are then the center of the feasible interval, which gives equal
  * angular margins on both sides. O(n), exact for the given points.
  *
  * `slack` > 1 leaves free space around the composition (1.0 = touching the frame edges).
@@ -146,7 +146,7 @@ export function fitCamera(
   // The camera must also stay clearly in front of every point.
   let d = Math.max((ax + bx) / 2, (ay + by) / 2, maxZ + extent * 0.05);
 
-  // Feasible lateral offsets at this distance – take the interval centres.
+  // Feasible lateral offsets at this distance – take the interval centers.
   let loX = -Infinity,
     hiX = Infinity,
     loY = -Infinity,
@@ -304,7 +304,7 @@ export class UnionFit {
 
     let d = n ? Math.max((this.ax + this.bx) / 2, (this.ay + this.by) / 2, maxZ + extent * 0.05) : 100;
     if (!Number.isFinite(d)) d = extent * 3;
-    // Centre of the feasible interval [lx - tx*d, hx + tx*d] – the d terms cancel.
+    // Center of the feasible interval [lx - tx*d, hx + tx*d] – the d terms cancel.
     const ox = n ? (this.lx + this.hx) / 2 : 0;
     const oy = n ? (this.ly + this.hy) / 2 : 0;
     const minDepth = n ? d - maxZ : d * 0.5;

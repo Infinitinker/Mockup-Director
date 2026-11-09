@@ -1,6 +1,6 @@
 /**
  * The open projects, one per tab. The store works on the active one; the others wait here as
- * StoreDocuments (state, undo history, images). There is always at least one tab.
+ * StoreDocuments (state, undo history, artwork). There is always at least one tab.
  *
  * A tab is "dirty" (changed since it was opened, created or saved) when its revision differs from
  * the one it was saved at; undoing back to that point makes it clean again.
@@ -158,8 +158,8 @@ export class Documents {
     if (this.entries.length === 1) this.add(this.fresh());
     if (entry === this.active) {
       const i = this.entries.indexOf(entry);
-      const neighbour = this.entries[i + 1] ?? this.entries[i - 1];
-      this.activate(neighbour.id);
+      const neighbor = this.entries[i + 1] ?? this.entries[i - 1];
+      this.activate(neighbor.id);
     }
     this.entries = this.entries.filter((e) => e !== entry);
     if (entry.doc) Store.disposeDocument(entry.doc);

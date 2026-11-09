@@ -2,10 +2,10 @@
  * Batch export: many still mockups at once, packed into ONE ZIP file.
  *
  * Modes:
- *  - images   – many artwork files → one model: every file replaces ONE chosen slot of the current
+ *  - artwork  – many artwork files → one model: every file replaces ONE chosen slot of the current
  *               model; all other slots, params and the scene stay as they are;
  *  - views    – the current project from several camera views (preset views + the current view);
- *  - projects – many *.mdproj files, each with its own model, params, images
+ *  - projects – many *.mdproj files, each with its own model, params, artwork
  *               and scene; exported with the current export settings or each project's own.
  *
  * Correctness rules:
@@ -14,7 +14,7 @@
  *    pushed straight to the stage;
  *  - the host (app.ts) freezes the document on the stage while the batch runs and restores the exact
  *    previous model, scene settings and camera afterwards (BatchHost.end() in a finally block);
- *  - temporary image textures / models are disposed once the stage no longer shows them;
+ *  - temporary artwork textures / models are disposed once the stage no longer shows them;
  *  - one failing item (e.g. an image that cannot be decoded) is reported and skipped – the batch goes on;
  *  - Cancel stops after the current item; what is done can still be saved.
  */
@@ -22,7 +22,7 @@ import type * as THREE from 'three';
 import type {
   ExportFormat,
   ExportSettings,
-  ImageAsset,
+  Artwork,
   ModelContext,
   ParamValues,
   SceneSettings,
@@ -30,7 +30,7 @@ import type {
 } from '../core/types';
 import { cloneScene } from '../core/defaults';
 import { getPlaceholderTexture } from '../core/placeholder';
-import { IMAGE_ACCEPT, disposeImageAsset, loadImageFile } from '../core/images';
+import { IMAGE_ACCEPT, disposeArtwork, loadImageFile } from '../core/images';
 import { getModel } from '../models/registry';
 import { pickFiles, saveBlob } from '../platform/files';
 import { slugify } from '../export/exporter';
@@ -40,9 +40,16 @@ import { append, errorMessage, h, nextFrame, nextId, safeStorage, type Child } f
 import { ICONS } from './icons';
 import { segmentedControl, selectControl } from './controls';
 import { completeParams, slotFor } from './modelUtils';
-import { exportBlob, extensionFor, webpEncodingSupported } from './exportBridge';
-import { PROJECT_EXT, ProjectError, hydrateProject, isProjectFileName, parseProjectFile } from './project';
-import { disposeImageMap } from './state';
+import { exportBlob, extensionFor, IMAGE_FORMAT_LABEL, webpEncodingSupported } from './exportBridge';
+import {
+  NOT_A_PROJECT,
+  PROJECT_EXT,
+  ProjectError,
+  hydrateProject,
+  isProjectFileName,
+  parseProjectFile,
+} from './project';
+import { disposeArtworkMap } from './state';
 import { notify } from './toast';
 
 /** Implemented by app.ts: exclusive access to the stage for the duration of a batch. */
@@ -56,7 +63,7 @@ export interface BatchHost {
   end(): void;
 }
 
-type BatchMode = 'images' | 'views' | 'projects';
+type BatchMode = 'artwork' | 'views' | 'projects';
 
 /** Per-item outcome reported in the final summary. */
 interface ItemNote {
@@ -71,7 +78,7 @@ interface BatchResult {
   errors: ItemNote[];
   warnings: ItemNote[];
   /** Stopped by the user before all items were processed. */
-  cancelled: boolean;
+  canceled: boolean;
   /** The ZIP size limit was reached; the remaining items were skipped. */
   limitHit: boolean;
 }
@@ -79,7 +86,7 @@ interface BatchResult {
 interface RenderedItem {
   blob: Blob;
   format: ExportFormat;
-  /** Non-fatal problem worth reporting (e.g. some project images failed to load). */
+  /** Non-fatal problem worth reporting (e.g. some of a project's artwork failed to load). */
   warning?: string;
 }
 
@@ -87,7 +94,7 @@ interface RenderedItem {
 interface Runner {
   stage: StageAPI;
   /**
-   * Show a temporary model. `dispose` frees the item's own resources (image textures) and runs once
+   * Show a temporary model. `dispose` frees the item's own resources (artwork textures) and runs once
    * the stage no longer shows the model (after the next showModel() or after the batch).
    */
   showModel(object: THREE.Object3D, dispose: () => void): void;
@@ -104,17 +111,17 @@ interface BatchItem {
 /* Rendering                                                           */
 /* ------------------------------------------------------------------ */
 
-/** Build a NEW object tree of a model from explicit params / images (never from the store). */
+/** Build a NEW object tree of a model from explicit params / artwork (never from the store). */
 function buildModel(
   modelId: string,
   params: ParamValues | undefined,
-  images: Record<string, ImageAsset>,
+  artwork: Record<string, Artwork>,
 ): THREE.Object3D {
   const model = getModel(modelId);
   const ctx: ModelContext = {
     params: completeParams(model, params),
-    hasImage: (id) => !!images[id],
-    getTexture: (id) => images[id]?.texture ?? getPlaceholderTexture(slotFor(model, id)),
+    hasArtwork: (id) => !!artwork[id],
+    getTexture: (id) => artwork[id]?.texture ?? getPlaceholderTexture(slotFor(model, id)),
   };
   return model.build(ctx);
 }
@@ -125,7 +132,8 @@ async function renderStill(stage: StageAPI, settings: ExportSettings, scene: Sce
   const s: ExportSettings = { ...settings };
   if (s.format === 'webp' && !webpEncodingSupported()) s.format = 'png';
   const blob = await exportBlob(stage, s, { ...scene.background });
-  if (!blob || blob.size === 0) throw new Error('The rendered image is empty.');
+  if (!blob || blob.size === 0)
+    throw new Error('The rendered image is empty. Export it again, or reduce the export size.');
   return { blob, format: s.format };
 }
 
@@ -151,7 +159,7 @@ async function runBatch(
   host: BatchHost,
   stage: StageAPI,
   onProgress: (index: number, label: string) => void,
-  isCancelled: () => boolean,
+  isCanceled: () => boolean,
 ): Promise<BatchResult> {
   const res: BatchResult = {
     zip: new ZipWriter(),
@@ -159,7 +167,7 @@ async function runBatch(
     done: 0,
     errors: [],
     warnings: [],
-    cancelled: false,
+    canceled: false,
     limitHit: false,
   };
   let trash: (() => void)[] = [];
@@ -183,8 +191,8 @@ async function runBatch(
   const digits = Math.max(2, String(items.length).length);
   try {
     for (let i = 0; i < items.length; i++) {
-      if (isCancelled()) {
-        res.cancelled = true;
+      if (isCanceled()) {
+        res.canceled = true;
         break;
       }
       const item = items[i];
@@ -206,7 +214,8 @@ async function runBatch(
           res.limitHit = true;
           res.errors.push({
             label: item.label,
-            message: 'The archive reached the 4 GB limit – the remaining items were skipped.',
+            message:
+              'The ZIP file reached its limit of 4 GB or 65,534 files: the remaining items were skipped. Choose fewer items or a smaller size.',
           });
           break;
         }
@@ -230,7 +239,7 @@ const IMAGE_RE = /\.(png|jpe?g|webp|gif|svg|avif|heic|heif|bmp|tiff?)$/i;
 
 /** Selections survive closing and reopening the dialog (within the session). */
 const memory = {
-  imageFiles: [] as File[],
+  artworkFiles: [] as File[],
   projectFiles: [] as File[],
   /** index 0 = current view, 1.. = VIEW_PRESETS[i - 1] */
   views: [true, ...VIEW_PRESETS.map(() => true)],
@@ -260,7 +269,7 @@ function addUnique(list: File[], files: File[]): File[] {
 /** "1600 × 1600 px · PNG · transparent background" – mirrors the Export panel summary. */
 function settingsSummary(e: ExportSettings): string {
   const format = e.format === 'webp' && !webpEncodingSupported() ? 'png' : e.format;
-  const fmt = format === 'jpeg' ? 'JPEG' : format === 'webp' ? 'WebP' : 'PNG';
+  const fmt = IMAGE_FORMAT_LABEL[format];
   const transparent = e.background === 'transparent' && format !== 'jpeg';
   const size = e.sizing === 'trim' ? `up to ${e.width} × ${e.height} px (trimmed)` : `${e.width} × ${e.height} px`;
   return `${size} · ${fmt} · ${transparent ? 'transparent background' : 'with background'}`;
@@ -288,7 +297,7 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
   dialogOpen = true;
 
   const stored = safeStorage.get(MODE_KEY);
-  let mode: BatchMode = stored === 'views' || stored === 'projects' ? stored : 'images';
+  let mode: BatchMode = stored === 'views' || stored === 'projects' ? stored : 'artwork';
   let phase: Phase = 'setup';
   let cancelRequested = false;
   let result: BatchResult | null = null;
@@ -336,8 +345,8 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
 
   const itemCount = (): number => {
     switch (mode) {
-      case 'images':
-        return getModel(ctx.store.state.modelId).slots.length ? memory.imageFiles.length : 0;
+      case 'artwork':
+        return getModel(ctx.store.state.modelId).slots.length ? memory.artworkFiles.length : 0;
       case 'views':
         return memory.views.filter(Boolean).length;
       case 'projects':
@@ -368,14 +377,14 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
     return list;
   };
 
-  const pickInto = async (which: 'images' | 'projects') => {
+  const pickInto = async (which: 'artwork' | 'projects') => {
     try {
       const files =
-        which === 'images'
+        which === 'artwork'
           ? (await pickFiles(IMAGE_ACCEPT, true)).filter(isImageFile)
           : (await pickFiles(`.${PROJECT_EXT}`, true)).filter(isProjectFile);
       if (!files.length) return;
-      if (which === 'images') memory.imageFiles = addUnique(memory.imageFiles, files);
+      if (which === 'artwork') memory.artworkFiles = addUnique(memory.artworkFiles, files);
       else memory.projectFiles = addUnique(memory.projectFiles, files);
       render();
     } catch (e) {
@@ -384,7 +393,7 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
   };
 
   /* Setup phase ------------------------------------------------------------ */
-  const renderImagesMode = (): Child[] => {
+  const renderArtworkMode = (): Child[] => {
     const s = ctx.store.state;
     const model = getModel(s.modelId);
     const out: Child[] = [h('p', { class: 'batch-model', text: `Model: ${model.name}` })];
@@ -406,30 +415,30 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
       slotCtl.el,
       h('p', {
         class: 'ctl-note',
-        text: 'If a wrap-around cover image is set it may take precedence over separate faces – choose the cover slot then.',
+        text: 'When the model has a slot for the whole cover or box (Cover wrap, Box net) with artwork, it may take precedence over the separate faces: then choose that slot.',
       }),
       h(
         'div',
         { class: 'batch-pick' },
         h(
           'button',
-          { class: 'btn', attrs: { type: 'button' }, on: { click: () => void pickInto('images') } },
+          { class: 'btn', attrs: { type: 'button' }, on: { click: () => void pickInto('artwork') } },
           h('span', { class: 'btn-icon', html: ICONS.image }),
-          h('span', { class: 'btn-text', text: 'Choose images…' }),
+          h('span', { class: 'btn-text', text: 'Choose artwork…' }),
         ),
-        memory.imageFiles.length
+        memory.artworkFiles.length
           ? button('Clear list', 'btn-ghost', () => {
-              memory.imageFiles = [];
+              memory.artworkFiles = [];
               render();
             })
           : null,
       ),
       h('p', { class: 'ctl-note', text: 'You can also drop files onto this window.' }),
-      memory.imageFiles.length
-        ? h('div', { class: 'batch-count', text: `Files chosen: ${memory.imageFiles.length}` })
+      memory.artworkFiles.length
+        ? h('div', { class: 'batch-count', text: `Files chosen: ${memory.artworkFiles.length}` })
         : null,
-      fileList(memory.imageFiles, (i) => {
-        memory.imageFiles = memory.imageFiles.filter((_, j) => j !== i);
+      fileList(memory.artworkFiles, (i) => {
+        memory.artworkFiles = memory.artworkFiles.filter((_, j) => j !== i);
         render();
       }),
     );
@@ -507,9 +516,9 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
   };
 
   const MODE_HINT: Record<BatchMode, string> = {
-    images:
-      'Many images → one model: every file goes into the chosen slot and becomes a separate mockup. Other slots, parameters and the scene stay unchanged.',
-    views: 'The current project from several camera views – one image per selected view.',
+    artwork:
+      'Every image file goes into the chosen slot of the current model and becomes a mockup of its own. The other slots, the model settings and the scene stay as they are.',
+    views: 'Exports one image of the current project for each view you choose.',
     projects: 'Every project file (.mdproj) is rendered with its own model, artwork and scene.',
   };
 
@@ -519,9 +528,9 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
       compact: true,
       options: [
         {
-          value: 'images',
+          value: 'artwork',
           label: 'Many images',
-          title: MODE_HINT.images,
+          title: MODE_HINT.artwork,
         },
         {
           value: 'views',
@@ -544,7 +553,7 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
       },
     });
     modeCtl.el.classList.add('batch-mode');
-    const body = mode === 'images' ? renderImagesMode() : mode === 'views' ? renderViewsMode() : renderProjectsMode();
+    const body = mode === 'artwork' ? renderArtworkMode() : mode === 'views' ? renderViewsMode() : renderProjectsMode();
     content.replaceChildren(
       modeCtl.el,
       h('p', { class: 'dialog-message', text: MODE_HINT[mode] }),
@@ -576,7 +585,7 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
     if (!notes.length) return null;
     const list = h('ul', { class: `batch-notes ${cls}` });
     for (const n of notes)
-      list.appendChild(h('li', {}, h('strong', { text: n.label }), h('span', { text: ` – ${n.message}` })));
+      list.appendChild(h('li', {}, h('strong', { text: n.label }), h('span', { text: `: ${n.message}` })));
     return h('div', { class: 'batch-notes-wrap' }, h('div', { class: 'ctl-label', text: title }), list);
   };
 
@@ -585,17 +594,17 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
     if (!r) return;
     const status =
       phase === 'saved'
-        ? `Saved the archive “${savedName}”.`
-        : r.cancelled
-          ? `Stopped – done: ${r.done} of ${r.total}.`
+        ? `Saved the ZIP file “${savedName}”.`
+        : r.canceled
+          ? `Stopped. Done: ${r.done} of ${r.total}.`
           : `Done: ${r.done} of ${r.total}.`;
     content.replaceChildren();
     append(
       content,
       h('p', { class: `batch-status${r.errors.length ? ' has-errors' : ''}`, text: status }),
       r.done === 0 ? h('p', { class: 'ctl-note warn-note', text: 'No images were created.' }) : null,
-      noteList(`Errors (${r.errors.length})`, r.errors, 'is-error'),
-      noteList(`Warnings (${r.warnings.length})`, r.warnings, 'is-warning'),
+      noteList(`Errors: ${r.errors.length}`, r.errors, 'is-error'),
+      noteList(`Warnings: ${r.warnings.length}`, r.warnings, 'is-warning'),
     );
     if (phase === 'saved' || r.done === 0) {
       actions.replaceChildren(button('Close', 'btn-primary', close));
@@ -617,26 +626,26 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
     const settings: ExportSettings = { ...s.export };
     const scene = cloneScene(s.scene);
     switch (mode) {
-      case 'images': {
+      case 'artwork': {
         const model = getModel(s.modelId);
         if (!model.slots.some((x) => x.id === slotId)) return [];
         const params = completeParams(model, s.params[model.id]);
         // The document's assets stay owned by the store (alive while the dialog blocks the UI).
-        const baseImages: Record<string, ImageAsset> = { ...(s.images[model.id] ?? {}) };
+        const baseArtwork: Record<string, Artwork> = { ...(s.artwork[model.id] ?? {}) };
         const slot = slotId;
-        return memory.imageFiles.map((file) => ({
+        return memory.artworkFiles.map((file) => ({
           label: file.name,
           slug: slugOf(file.name),
           async render(r: Runner): Promise<RenderedItem> {
             const asset = await loadImageFile(file);
             let object: THREE.Object3D;
             try {
-              object = buildModel(model.id, params, { ...baseImages, [slot]: asset });
+              object = buildModel(model.id, params, { ...baseArtwork, [slot]: asset });
             } catch (e) {
-              disposeImageAsset(asset);
+              disposeArtwork(asset);
               throw e;
             }
-            r.showModel(object, () => disposeImageAsset(asset));
+            r.showModel(object, () => disposeArtwork(asset));
             return renderStill(r.stage, settings, scene);
           },
         }));
@@ -672,22 +681,25 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
             try {
               json = JSON.parse(await file.text());
             } catch {
-              throw new ProjectError('This is not a Mockup Director project file.');
+              throw new ProjectError(NOT_A_PROJECT);
             }
             const parsed = parseProjectFile(json);
-            // Only the shown model's images are needed – don't decode artwork of other models.
-            const own = parsed.images[parsed.modelId];
-            const { state, failed } = await hydrateProject({ ...parsed, images: own ? { [parsed.modelId]: own } : {} });
+            // Only the shown model's artwork is needed: don't decode artwork of other models.
+            const own = parsed.artwork[parsed.modelId];
+            const { state, failed } = await hydrateProject({
+              ...parsed,
+              artwork: own ? { [parsed.modelId]: own } : {},
+            });
             let object: THREE.Object3D;
             try {
-              object = buildModel(state.modelId, state.params[state.modelId], state.images[state.modelId] ?? {});
+              object = buildModel(state.modelId, state.params[state.modelId], state.artwork[state.modelId] ?? {});
             } catch (e) {
-              disposeImageMap(state.images);
+              disposeArtworkMap(state.artwork);
               throw e;
             }
-            r.showModel(object, () => disposeImageMap(state.images));
+            r.showModel(object, () => disposeArtworkMap(state.artwork));
             const out = await renderStill(r.stage, ownExport ? state.export : settings, state.scene);
-            if (failed) out.warning = `Could not load images: ${failed}`;
+            if (failed) out.warning = `Slots whose artwork could not be loaded: ${failed}. Add the artwork again.`;
             return out;
           },
         }));
@@ -701,7 +713,7 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
     const items = buildItems();
     if (!items.length) return;
     if (!host.begin()) {
-      notify.warning('Another export is running – wait for it to finish.');
+      notify.warning('Another export is running. Wait for it to finish.');
       return;
     }
     try {
@@ -739,14 +751,14 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
     try {
       const name = zipFileName();
       const saved = await saveBlob(r.zip.finish(), name, [{ name: 'ZIP', extensions: ['zip'] }]);
-      if (!saved) return; // save panel cancelled – keep the results
+      if (!saved) return; // save panel canceled – keep the results
       savedName = saved;
       phase = 'saved';
-      notify.success('ZIP archive saved', saved);
+      notify.success('ZIP file saved', saved);
       render();
       actions.querySelector<HTMLButtonElement>('.btn-primary')?.focus();
     } catch (e) {
-      notify.error('Batch export failed', errorMessage(e));
+      notify.error('Could not save the ZIP file', errorMessage(e));
     } finally {
       btn.disabled = false;
     }
@@ -767,17 +779,17 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
     if (phase !== 'setup') return;
     const files = Array.from(e.dataTransfer?.files ?? []);
     const projects = files.filter(isProjectFile);
-    const images = files.filter((f) => !isProjectFile(f) && isImageFile(f));
-    if (!projects.length && !images.length) {
-      notify.warning('Unsupported files – drop images or project files (.mdproj).');
+    const artwork = files.filter((f) => !isProjectFile(f) && isImageFile(f));
+    if (!projects.length && !artwork.length) {
+      notify.warning(`These files are not supported. Drop image files or project files (.${PROJECT_EXT}).`);
       return;
     }
     // Switch to the mode the dropped files belong to. When both kinds are dropped, a file mode that is
     // already shown stays; from "many views" the projects win.
     if (projects.length) memory.projectFiles = addUnique(memory.projectFiles, projects);
-    if (images.length) memory.imageFiles = addUnique(memory.imageFiles, images);
-    if (!images.length) mode = 'projects';
-    else if (!projects.length) mode = 'images';
+    if (artwork.length) memory.artworkFiles = addUnique(memory.artworkFiles, artwork);
+    if (!artwork.length) mode = 'projects';
+    else if (!projects.length) mode = 'artwork';
     else if (mode === 'views') mode = 'projects';
     safeStorage.set(MODE_KEY, mode);
     render();

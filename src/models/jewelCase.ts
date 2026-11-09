@@ -2,7 +2,7 @@
  * CD jewel case (standard 10.4 mm with tray + back inlay, or slim 5.2 mm).
  *
  * Orientation: standing upright, front (booklet) faces +Z, hinge on the LEFT (-X),
- * x ∈ [-71, 71], y ∈ [0, 125], z ∈ [-depth/2, depth/2]. Millimetres.
+ * x ∈ [-71, 71], y ∈ [0, 125], z ∈ [-depth/2, depth/2]. Millimeters.
  *
  * Real-world references (standard CD jewel case):
  *   case 142 × 125 × 10.4 mm (slim: 142 × 125 × 5.2 mm)
@@ -33,9 +33,9 @@ const W = 142;
 const H = 125;
 const BLEED = 3;
 
-/** Booklet (120 × 120): horizontal centre – the hinge strip takes the left ~18 mm. */
+/** Booklet (120 × 120): horizontal center – the hinge strip takes the left ~18 mm. */
 const BOOKLET = 120;
-const CX = 7; // booklet + disc centre x (right margin 4 mm, left strip 18 mm)
+const CX = 7; // booklet + disc center x (right margin 4 mm, left strip 18 mm)
 const CY = H / 2;
 
 /** Inlay (tray card) 151 × 118: spine 6.5 | back 138 | spine 6.5. */
@@ -142,7 +142,7 @@ const INLAY_TEMPLATE: PrintTemplate = {
 const bookletSlot: ImageSlotDef = {
   id: 'booklet',
   label: 'Booklet (cover)',
-  hint: 'Booklet front 120 × 120 mm + 3 mm bleed (file 126 × 126 mm). Shown under the clear lid.',
+  hint: 'The booklet front, 120 × 120 mm + 3 mm bleed (a 126 × 126 mm file). It shows under the clear lid.',
   aspect: 1,
   template: BOOKLET_TEMPLATE,
 };
@@ -150,7 +150,7 @@ const bookletSlot: ImageSlotDef = {
 const inlaySlot: ImageSlotDef = {
   id: 'inlay',
   label: 'Back inlay (tray card)',
-  hint: '151 × 118 mm (spine 6.5 | back 138 | spine 6.5) + 3 mm bleed = 157 × 124 mm. The template’s left spine ends up on the case’s right (opening) side, the right one on the hinge side. Slim cases show only the back (with a clear tray).',
+  hint: 'The tray card, 151 × 118 mm (spine 6.5 mm | back 138 mm | spine 6.5 mm) + 3 mm bleed (a 157 × 124 mm file). The template’s left spine ends up on the case’s right (opening) side, the right one on the hinge side. Slim cases show only the back, with a clear tray.',
   aspect: IW / IH,
   template: INLAY_TEMPLATE,
 };
@@ -191,7 +191,7 @@ const jewelCaseParams: ParamDef[] = [
   {
     id: 'inlayColor',
     type: 'color',
-    label: 'Inlay colour (no artwork)',
+    label: 'Inlay color (no artwork)',
     group: G_MAT,
     default: '#ffffff',
   },
@@ -319,7 +319,7 @@ function trayMaterial(color: string): THREE.MeshPhysicalMaterial {
 
 /**
  * CD tray: solid block up to the recess floor, a rim with the Ø 121.2 disc recess, and the
- * centre rosette (hub ring + teeth that grip the 15 mm hole).
+ * center rosette (hub ring + teeth that grip the 15 mm hole).
  */
 function buildTray(
   mat: THREE.Material,
@@ -492,7 +492,7 @@ export function buildJewelCase(ctx: ModelContext): THREE.Object3D {
   /* ---- Inlay (tray card) ------------------------------------------ */
   // Standard: always present (artwork, or a plain card in inlayColor). Slim: only the back,
   // and only when an inlay image is supplied and the base is see-through.
-  const hasInlay = ctx.hasImage('inlay');
+  const hasInlay = ctx.hasArtwork('inlay');
   if (!slim || (hasInlay && trayIsSeeThrough)) {
     const outer = hasInlay
       ? printMaterial(ctx.getTexture('inlay'), { roughness: paper.roughness, gloss: paper.gloss })
@@ -565,7 +565,7 @@ export const cdCaseModel: ModelDefinition = {
     inlaySlot,
     {
       ...discSlot,
-      hint: 'A 120 × 120 mm square. Visible when “Disc inside” is on and “Booklet in the lid” is off.',
+      hint: 'A 120 × 120 mm square. It is visible when “Disc inside” is on and “Booklet in the lid” is off.',
     },
   ],
   params: [...jewelCaseParams, ...discParams],

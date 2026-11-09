@@ -9,7 +9,7 @@ use mockup_director_lib::opened::{
 };
 
 #[test]
-fn recognises_the_project_extension_in_any_case() {
+fn recognizes_the_project_extension_in_any_case() {
     assert!(is_project_path(Path::new("C:/Work/Box.mdproj")));
     assert!(is_project_path(Path::new("/home/ania/Box.MDPROJ")));
     assert!(!is_project_path(Path::new("/home/ania/Box.mockup")));

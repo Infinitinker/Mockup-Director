@@ -5,8 +5,8 @@ A model is one kind of product the app can show: a box, a keep case, a book, a p
 | File | Models |
 |---|---|
 | `box.ts`, `box/` | `box`, `box-dieline`, `box-slim` |
-| `keepcase.ts` | `dvd-case`, `bluray-case` |
-| `jewelcase.ts` | `cd-case` |
+| `keepCase.ts` | `dvd-case`, `bluray-case` |
+| `jewelCase.ts` | `cd-case` |
 | `disc.ts` | `disc` |
 | `composites.ts`, `composites/` | `box-disc`, `dvd-case-disc`, `bluray-case-disc`, `cd-case-disc` |
 | `books.ts` | `book-hardcover`, `book-paperback`, `notebook-spiral` |
@@ -44,7 +44,7 @@ A parameter is one setting in the Model tab. Every kind has these fields:
 | `type` | `'number' \| 'boolean' \| 'select' \| 'color'` | The kind, below. |
 | `label` | `string` | Shown next to the control. |
 | `group` | `string`, optional | The section of the Model tab it appears in. |
-| `default` | depends on the kind | The value of a new document and of Restore defaults. |
+| `default` | depends on the kind | The value in a new project and after Restore defaults. |
 
 | Kind | Own fields | Value | Control |
 |---|---|---|---|
@@ -75,24 +75,24 @@ A slot is one piece of artwork: a face, a wrap-around cover, a disc label, a scr
 
 | Field | Type | Required | Meaning |
 |---|---|---|---|
-| `id` | `string` | yes | Unique within the model, camelCase (`front`, `lidSides`). The key of the image in project files. |
+| `id` | `string` | yes | Unique within the model, camelCase (`front`, `lidSides`). The key of its artwork in project files. |
 | `label` | `string` | yes | The card's title; also drawn on the placeholder and on the print template. |
 | `hint` | `string` | no | Help under the title: the size the artwork should have, which edge meets which. |
 | `aspect` | `number` | yes | Expected width / height of the artwork. Shapes the placeholder and the aspect warning. |
-| `anyAspect` | `boolean` | no | The slot takes any aspect ratio (a screenshot whose panel follows the image). No warning is shown. |
+| `anyAspect` | `boolean` | no | The slot takes any aspect ratio (a screenshot whose panel follows the artwork). No warning is shown. |
 | `template` | `PrintTemplate` or `(params) => PrintTemplate` | no | A downloadable print template; see [Print templates](#print-templates). |
 
-The Artwork tab warns when an image's aspect ratio is more than 3 % away from every expected one: the slot's `aspect`, the template's full size, and the template's size without bleed (`expectedAspects` and `aspectMismatch` in `src/ui/modelUtils.ts`).
+The Artwork tab warns when the artwork's aspect ratio is more than 3 % away from every expected one: the slot's `aspect`, the template's full size, and the template's size without bleed (`expectedAspects` and `aspectMismatch` in `src/ui/modelUtils.ts`).
 
-`ctx.getTexture(slotId)` returns the user's artwork, or a placeholder when there is none: a gradient with the slot's label in the slot's aspect ratio, round if its template is circular (`src/core/placeholder.ts`). It never returns `null`, also not for an ID the model does not list. `ctx.hasImage(slotId)` says whether the user gave artwork, for models that fall back to a plain material or to another slot (a keep case uses `front`, `spine` and `back` when there is no `cover`).
+`ctx.getTexture(slotId)` returns the user's artwork, or a placeholder when there is none: a gradient with the slot's label in the slot's aspect ratio, round if its template is circular (`src/core/placeholder.ts`). It never returns `null`, also not for an ID the model does not list. `ctx.hasArtwork(slotId)` says whether the user gave artwork, for models that fall back to a plain material or to another slot (a keep case uses `front`, `spine` and `back` when there is no `cover`).
 
-The textures are shared: the image store and the placeholder cache own them, and the same texture is used by every build and every model that shows it. **A model never changes them**: no `repeat`, `offset`, `rotation`, `center` or `flipY`, and it never disposes them. Map a part of the image with UVs instead. A model that really needs a changed copy clones the texture and sets `texture.userData.disposeWithModel = true`, so it is freed with the model; textures a model draws itself are flagged the same way (`modelTexture` in `printFlat.ts`).
+The textures are shared: the store's artwork and the placeholder cache own them, and the same texture is used by every build and every model that shows it. **A model never changes them**: no `repeat`, `offset`, `rotation`, `center` or `flipY`, and it never disposes them. Map a part of the image with UVs instead. A model that really needs a changed copy clones the texture and sets `texture.userData.disposeWithModel = true`, so it is freed with the model; textures a model draws itself are flagged the same way (`modelTexture` in `printFlat.ts`).
 
 Artwork textures are `CanvasTexture`s with `flipY = true` and the sRGB color space (`src/core/images.ts`), so UV `(0, 0)` is the image's bottom-left corner and `v = 0` its bottom edge. A three.js `BoxGeometry` or `PlaneGeometry` face shows the whole image upright. To show part of an image, `remapUVs` maps a geometry's 0–1 UVs into a rectangle of the image, and `planarUVs` projects UVs along two axes, for example onto the caps of an `ExtrudeGeometry` (both in `src/models/shared.ts`). Artwork must never come out mirrored or upside down: a back face is seen from behind, so it is mapped as a page turned around the vertical axis (see the comment at the top of `printFlat.ts`).
 
 ## Print templates
 
-A print template is a PNG the user downloads with the Template button on a slot's card, to design the artwork on: the exact physical size at 300 dpi, with bleed, trim line, safe area, labeled regions and fold lines. The PNG records its resolution, so an image editor opens it at print size. It is drawn by `src/export/templates.ts`, and saved as `mockup-director-<model id>-template-<slot label, slugified>-<width>x<height>mm-<dpi>dpi.png`, with the resolution actually used. Very large templates are drawn at a lower resolution, which the legend states.
+A print template is a PNG the user downloads with the Template… button on a slot's card, to design the artwork on: the exact physical size at 300 dpi, with bleed, trim line, safe area, labeled regions and fold lines. The PNG records its resolution, so an image editor opens it at print size. It is drawn by `src/export/templates.ts`, and saved as `mockup-director-<model id>-template-<slot label, slugified>-<width>x<height>mm-<dpi>dpi.png`, with the resolution actually used. Very large templates are drawn at a lower resolution, which the legend states.
 
 `template` is a `PrintTemplate`, or a function of the parameters when the size depends on them (a box's net follows its width, height and depth). The function gets the model's complete parameters when the user downloads it, and an empty object when the placeholder checks whether the template is round, so read values with `num()` and its fallbacks.
 
@@ -111,19 +111,19 @@ The safe area is 3 mm inside the trim line (`SAFE_MARGIN_MM`). Models with artwo
 ```ts
 interface ModelContext {
   getTexture(slotId: string): THREE.Texture; // the user's artwork or a placeholder, never null
-  hasImage(slotId: string): boolean;          // true if the user gave an image for the slot
+  hasArtwork(slotId: string): boolean;        // true if the user gave artwork for the slot
   params: ParamValues;                        // every parameter, checked, defaults filled in
 }
 
 build(ctx: ModelContext): THREE.Object3D;
 ```
 
-- `build` returns a new object tree on every call. The app calls it whenever a parameter or an image changes (at most once per frame) and for every item of a batch export (`src/ui/app.ts`, `src/ui/batch.ts`).
+- `build` returns a new object tree on every call. The app calls it whenever a parameter or the artwork changes (at most once per frame) and for every item of a batch export (`src/ui/app.ts`, `src/ui/batch.ts`).
 - The returned object follows the [3D conventions](architecture.md#3d-conventions): millimeters, lowest point at `y = 0`, centered on `x = 0` and `z = 0`, front facing `+Z`, top facing `+Y`. Build in whatever frame is convenient, then call `placeOnGround`.
 - Materials are `MeshStandardMaterial` or `MeshPhysicalMaterial`. The stage adds the lights, the environment for reflections, the shadow and the floor reflection; a model adds none of them. Meshes that cast a shadow set `castShadow` (`castShadows` sets it on the whole tree).
 - The stage owns what `build` returns. When it shows the next object, it frees the previous one with `disposeObject`: every geometry and material in the tree, and textures flagged `disposeWithModel`. So create geometries and materials in each build rather than keeping them between builds. A texture a model caches at module level is not flagged and is never freed (the data-side texture in `disc.ts`).
 - `ctx.params` is complete, but read values with `num`, `bool` and `str` and a fallback: they also cover a composite that builds its base with changed parameters.
-- An exception from `build` is shown to the user as "Could not build model …" with its message, and the previous object stays on screen. Throw with a message the user understands.
+- An exception from `build` is shown to the user as "Could not build model “…”" with its message, and the previous object stays on screen. Throw with a message the user understands.
 - Transparent parts (clear plastic, which writes no depth) are drawn in `renderOrder`, then by depth. The stage draws the floor reflection at -3 and -2 and the shadow at -1 (`src/scene/reflection.ts`, `src/scene/shadows.ts`), so a model's transparent parts stay above -1.
 
 Helpers in `src/models/shared.ts`:

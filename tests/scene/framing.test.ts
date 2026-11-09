@@ -62,7 +62,7 @@ describe('cameraBasis', () => {
     expect(basis.back.distanceTo(new THREE.Vector3(0, 0, 1))).toBeLessThan(1e-12);
   });
 
-  it('turns the camera towards +X for positive yaw and above the model for positive pitch', () => {
+  it('turns the camera toward +X for positive yaw and above the model for positive pitch', () => {
     expect(cameraBasis({ yaw: 90, pitch: 0, roll: 0 }).back.distanceTo(new THREE.Vector3(1, 0, 0))).toBeLessThan(1e-12);
     const above = cameraBasis({ yaw: 0, pitch: 30, roll: 0 }).back;
     expect(above.y).toBeCloseTo(Math.sin(Math.PI / 6), 12);

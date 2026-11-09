@@ -120,7 +120,7 @@ The interface's texts are plain English strings, written in the code where they 
 | No "Please". | Choose PNG or JPEG. | Please choose PNG or JPEG. |
 | A count is written as "Label: ${n}". | Files chosen: ${n}, Imported looks: ${n} | ${n} files chosen, Errors (${n}) |
 | A control with a shortcut shows it as "Action (shortcut)", in its tooltip. `shortcutLabel` in `src/ui/dom.ts` writes the keys for the system. | Undo (Ctrl+Z), New tab (⌘T) | Ctrl+Z: Undo |
-| An error message says what happened, then what to do. | Not enough memory for an image this large. Reduce the export size. The file could not be read: it is not a Mockup Director project. Choose a .mdproj file. | This is not a Mockup Director project file. |
+| An error message says what happened, then what to do. | Not enough memory to load an image this large. Choose a smaller image. The file could not be read: it is not a Mockup Director project. Choose a .mdproj file. | This is not a Mockup Director project file. |
 | One name per concept: the terms in [architecture.md](architecture.md#terms). | look, artwork, light preset, view | preset or style for a look, image for artwork |
 | Millimeters as mm after a space, degrees as ° with no space, × between dimensions. | Standard 10.4 mm, 120 × 120 mm, 360° turn, ±${a}° | 10.4mm, 90 deg, 120x120 mm |
 

@@ -1,8 +1,8 @@
 /**
  * Handheld devices: a generic smartphone and a generic tablet showing the user's screen image.
  *
- * Coordinate frame (see CONVENTIONS in core/types.ts): millimetres. The device is built in a
- * PORTRAIT local frame – width along X, height along Y, thickness along Z, centred on the origin,
+ * Coordinate frame (see CONVENTIONS in core/types.ts): millimeters. The device is built in a
+ * PORTRAIT local frame – width along X, height along Y, thickness along Z, centered on the origin,
  * the SCREEN facing +Z. For landscape the whole device group is rotated +90° about Z
  * (counter-clockwise seen from the front: the portrait top goes to the LEFT). The screen UVs are
  * computed in that rotated (world-aligned) frame, so the image always reads upright for the chosen
@@ -13,7 +13,7 @@
  *    sweep, see slabGeometry),
  *  - FRONT GLASS: very dark slab with a "2.5D" rounded top edge, sitting on the frame,
  *  - SCREEN: flat rounded rectangle just above the glass. Lit look: map + emissiveMap = the same
- *    texture, emissive white, dark base colour, clearcoat for glass reflections,
+ *    texture, emissive white, dark base color, clearcoat for glass reflections,
  *  - phone: frosted BACK GLASS; tablet: the frame forms a metal unibody back,
  *  - generic side buttons, optional punch-hole / bezel front camera, generic rear camera module
  *    (rounded rectangle with 1–2 lenses + flash), tablet: optional generic stylus lying in front.
@@ -46,10 +46,10 @@ interface RearModuleSpec {
   margin: number;
   /** How far the module stands proud of the back (mm). */
   bump: number;
-  /** Lens ring radius (mm) and lens centres relative to the module centre (portrait, back view irrelevant – symmetric in x). */
+  /** Lens ring radius (mm) and lens centers relative to the module center (portrait, back view irrelevant – symmetric in x). */
   lensR: number;
   lenses: [number, number][];
-  /** Flash position relative to the module centre (x towards the body centre = negative local X). */
+  /** Flash position relative to the module center (x toward the body center = negative local X). */
   flash: [number, number];
   flashR: number;
 }
@@ -102,7 +102,7 @@ const SPECS: Record<DeviceKind, DeviceSpec> = {
         [0, 7.8],
         [0, -7.8],
       ],
-      // Outside the module, beside the upper lens (towards the body centre).
+      // Outside the module, beside the upper lens (toward the body center).
       flash: [-15, 7.8],
       flashR: 1.5,
     },
@@ -147,7 +147,7 @@ interface FinishDef {
   frame: string;
   metalness: number;
   roughness: number;
-  /** Back colour (frosted back glass on phones, anodised back on tablets). */
+  /** Back color (frosted back glass on phones, anodized back on tablets). */
   back: string;
 }
 
@@ -158,7 +158,7 @@ const FINISHES: Record<string, FinishDef> = {
   white: { label: 'White (ceramic)', frame: '#e9e8e4', metalness: 0, roughness: 0.3, back: '#f3f2ee' },
   gold: { label: 'Gold (champagne)', frame: '#d8c29b', metalness: 1, roughness: 0.28, back: '#ece1cc' },
   blue: { label: 'Navy blue', frame: '#3c5374', metalness: 0.8, roughness: 0.32, back: '#46607f' },
-  custom: { label: 'Custom colour', frame: '#7a7f88', metalness: 0.6, roughness: 0.34, back: '#7a7f88' },
+  custom: { label: 'Custom color', frame: '#7a7f88', metalness: 0.6, roughness: 0.34, back: '#7a7f88' },
 };
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -246,18 +246,14 @@ function makeSlot(spec: DeviceSpec): ImageSlotDef {
   const d = resolveDims(spec, p);
   const [ow, oh] = orientedScreen(d);
   const px = (mm: number) => Math.round((mm / 25.4) * spec.ppi);
-  const portrait = !d.landscape;
+  const orientation = d.landscape ? 'landscape' : 'portrait';
+  const otherOrientation = d.landscape ? 'portrait' : 'landscape';
   // A typical screenshot size of such a device, quoted in the hint.
   const [exampleW, exampleH] = spec.kind === 'phone' ? [1179, 2556] : [2388, 1668];
   return {
     id: 'screen',
     label: 'Screen',
-    hint:
-      `The image shown on the screen (app or web screenshot, artwork). Recommended ${px(ow)} × ${px(oh)} px ${
-        portrait ? 'portrait' : 'landscape'
-      } ` +
-      `(screen ${round1(ow)} × ${round1(oh)} mm); for ${portrait ? 'landscape' : 'portrait'} swap the sizes. A typical screenshot (e.g. ${exampleW} × ${exampleH} px) fits too – it is cropped slightly. ` +
-      'Other aspect ratios fill the screen with cropping; the rounded corners clip it.',
+    hint: `The artwork shown on the screen, such as a screenshot of an app or a website. Recommended size: ${px(ow)} × ${px(oh)} px ${orientation} (screen ${round1(ow)} × ${round1(oh)} mm); for ${otherOrientation}, swap the sizes. A typical screenshot (e.g. ${exampleW} × ${exampleH} px) fits too: it is cropped slightly. Other aspect ratios fill the screen with cropping, and the rounded corners clip it.`,
     aspect: ow / oh,
     template: (params) => screenTemplate(spec, params),
   };
@@ -317,7 +313,7 @@ function makeParams(spec: DeviceSpec): ParamDef[] {
     {
       id: 'frameColor',
       type: 'color',
-      label: 'Custom body colour',
+      label: 'Custom body color',
       group: G_MAT,
       default: '#7a7f88',
     },
@@ -401,7 +397,7 @@ interface ProfilePt {
 const CORNER_SEGS = 16;
 
 /**
- * Rounded rectangle (circular corners) centred on the origin, inset by `d`, sampled CCW (seen from
+ * Rounded rectangle (circular corners) centered on the origin, inset by `d`, sampled CCW (seen from
  * +Z). Returns points and their outward 2D normals; the normals are the same for every inset, so
  * rings at different insets line up vertex by vertex.
  */
@@ -563,7 +559,7 @@ function buttonGeometry(len: number, bw: number, prot: number): THREE.BufferGeom
 }
 
 /**
- * UV sub-rectangle that makes the image COVER a target of the given aspect (centre crop), so
+ * UV sub-rectangle that makes the image COVER a target of the given aspect (center crop), so
  * images of a different aspect are never distorted.
  */
 function coverRect(tex: THREE.Texture, targetAspect: number): [number, number, number, number] {
@@ -734,7 +730,7 @@ function buildDevice(ctx: ModelContext, spec: DeviceSpec): THREE.Object3D {
   /* ---- side buttons ---- */
   if (bool(p, 'buttons', true)) {
     const prot = 0.55;
-    // Centred on the VERTICAL part of the side wall (between the back and front edge roundings),
+    // Centered on the VERTICAL part of the side wall (between the back and front edge roundings),
     // so the buttons never sit over the strongly rounded metal back edge of the tablet.
     const wall0 = zf0 + eBack;
     const wall1 = zf1 - eFront;
@@ -914,7 +910,7 @@ function buildStylus(dark: boolean): THREE.Object3D {
   });
   const nibMat = new THREE.MeshStandardMaterial({ color: '#e2e2de', roughness: 0.6, metalness: 0 });
   // LatheGeometry revolves around +Y; rotateZ(-90°) maps +Y -> +X, so the tip (axis position 0)
-  // ends up at the left end after centring, the cap on the right; the axis is lifted to y = R.
+  // ends up at the left end after centering, the cap on the right; the axis is lifted to y = R.
   const toX = (geo: THREE.BufferGeometry) => geo.rotateZ(-Math.PI / 2).translate(-len / 2, R, 0);
   const bodyMesh = new THREE.Mesh(toX(new THREE.LatheGeometry(body, 40)), bodyMat);
   const nibMesh = new THREE.Mesh(toX(new THREE.LatheGeometry(nib, 32)), nibMat);

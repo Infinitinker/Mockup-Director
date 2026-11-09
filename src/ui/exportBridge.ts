@@ -44,6 +44,9 @@ export async function templateBlob(
   return { blob: res.blob, name };
 }
 
+/** How the interface names each image format. */
+export const IMAGE_FORMAT_LABEL: Record<ExportFormat, string> = { png: 'PNG', jpeg: 'JPEG', webp: 'WebP' };
+
 /** Suggested export file name, e.g. mockup-director-dvd-case-2026-11-04-1530.png. */
 export function fileNameFor(modelId: string, format: ExportFormat): string {
   return suggestFileName(modelId, format);
@@ -77,7 +80,7 @@ export function animationFormatSupport(): Record<AnimationFormat, boolean> {
   return { gif: true, webp: webpEncodingSupported(), mp4 };
 }
 
-/** Render + encode the turntable animation. Rejects with AnimationCancelled when `signal` aborts. */
+/** Render + encode the turntable animation. Rejects with AnimationCanceled when `signal` aborts. */
 export function exportAnimationBlob(
   stage: StageAPI,
   settings: AnimationSettings,
@@ -96,5 +99,5 @@ export function animationFileName(modelId: string, format: AnimationFormat, date
 }
 
 export { animationFileFilter };
-export { isAnimationCancelled, type AnimationProgress } from '../export/animation';
+export { isAnimationCanceled, type AnimationProgress } from '../export/animation';
 export { extensionFor } from '../export/exporter';

@@ -1,5 +1,5 @@
 /**
- * Inspector controls (slider + numeric field, switch, segmented control, select, colour) and
+ * Inspector controls (slider + numeric field, switch, segmented control, select, color) and
  * collapsible sections. Each control reads its value through `get()` and writes through `set()`;
  * `sync()` refreshes the DOM from the state without rebuilding it (keeps focus & drag state).
  */
@@ -290,7 +290,7 @@ export function selectControl(o: SelectOpts): Control {
 }
 
 /* ------------------------------------------------------------------ */
-/* Colour: native picker + hex field                                   */
+/* Color: native picker + hex field                                    */
 /* ------------------------------------------------------------------ */
 
 interface ColorOpts {

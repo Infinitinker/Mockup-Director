@@ -5,7 +5,7 @@
  *  - 'box-dieline'               – the same carton printed from ONE cross-shaped net image.
  *  - 'box-slim'                  – two-piece telescoping box (lid over a base), lying or standing.
  *
- * Geometry: src/models/box/roundedBox.ts (bevelled cuboid with exact planar UVs per face).
+ * Geometry: src/models/box/roundedBox.ts (beveled cuboid with exact planar UVs per face).
  * Templates / params / materials: src/models/box/common.ts.
  */
 import * as THREE from 'three';
@@ -115,7 +115,7 @@ const BOX_SLOTS: ImageSlotDef[] = FACE_SPECS.map((spec) => {
 /**
  * Build the product box from ctx.params (ids: width, height, depth, bevel, finish, sideColor,
  * bleed) and slots front/back/left/right/top/bottom. Exported for composite models.
- * Root sits on y = 0, centred on x/z, front facing +Z.
+ * Root sits on y = 0, centered on x/z, front facing +Z.
  */
 export function buildBox(ctx: ModelContext): THREE.Object3D {
   const p = ctx.params;
@@ -128,7 +128,7 @@ export function buildBox(ctx: ModelContext): THREE.Object3D {
 
   for (const spec of FACE_SPECS) {
     const primary = spec.slot === 'front';
-    if (primary || ctx.hasImage(spec.slot)) {
+    if (primary || ctx.hasArtwork(spec.slot)) {
       const tpl = boxFaceTemplate(spec, p);
       uv[spec.face] = regionMapper(tpl, 0);
       materials[FACE_INDEX[spec.face]] = surfaceMaterial(finish, { map: ctx.getTexture(spec.slot) });

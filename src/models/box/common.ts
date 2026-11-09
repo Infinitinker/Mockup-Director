@@ -76,7 +76,7 @@ export function colorParam(id: string, label: string, def: string, group: string
   return { id, label, type: 'color', default: def, group };
 }
 
-export const sideColorParam = colorParam('sideColor', 'Colour of faces without artwork', '#f2f1ee');
+export const sideColorParam = colorParam('sideColor', 'Color of faces without artwork', '#f2f1ee');
 
 export const bleedParam: BooleanParamDef = {
   id: 'bleed',
@@ -155,7 +155,7 @@ export function faceTemplate(w: number, h: number, b: number, label: string): Pr
 
 /**
  * Horizontal band of panels side by side (e.g. the four walls of a lid), all of height h, with
- * fold guides between neighbours and bleed around the whole band.
+ * fold guides between neighbors and bleed around the whole band.
  */
 export function bandTemplate(panels: { w: number; label: string }[], h: number, b: number): PrintTemplate {
   const regions: TemplateRegion[] = [];

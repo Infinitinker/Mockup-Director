@@ -14,14 +14,20 @@
 import type { AnimationFormat, AnimationSettings, BackgroundSettings, StageAPI } from '../../core/types';
 import { paintBackground } from '../exporter';
 import { StageError } from '../../scene/errors';
-import { AnimationCancelled, AnimationError } from './errors';
+import {
+  AnimationCanceled,
+  AnimationError,
+  MP4_SIZE_UNSUPPORTED,
+  MP4_UNSUPPORTED,
+  WEBP_ANIMATION_UNSUPPORTED,
+} from './errors';
 import { GifAnimationEncoder } from './gif';
 import { AnimatedWebpWriter } from './webp';
 import { Mp4Writer, mp4EncodingAvailable } from './mp4';
-import { normaliseAnimationSettings, outputSizeOf } from './settings';
+import { normalizeAnimationSettings, outputSizeOf } from './settings';
 import { frameDelays, turntableAngles } from './turntable';
 
-export { isAnimationCancelled } from './errors';
+export { MP4_UNSUPPORTED, WEBP_ANIMATION_UNSUPPORTED, isAnimationCanceled } from './errors';
 export { mp4EncodingAvailable } from './mp4';
 
 type AnimationPhase = 'prepare' | 'palette' | 'frames' | 'finalize';
@@ -70,16 +76,21 @@ export async function exportAnimation(
   raw: AnimationSettings,
   opts: AnimationExportOptions,
 ): Promise<AnimationResult> {
-  const s = normaliseAnimationSettings(raw, { webp: opts.webpSupported, mp4: mp4EncodingAvailable() });
+  const s = normalizeAnimationSettings(raw, { webp: opts.webpSupported, mp4: mp4EncodingAvailable() });
   if (s.format !== raw.format) {
-    throw raw.format === 'webp' ? webpUnsupported() : mp4Unsupported();
+    throw raw.format === 'webp'
+      ? new AnimationError('webp-unsupported', WEBP_ANIMATION_UNSUPPORTED)
+      : new AnimationError('mp4-unsupported', MP4_UNSUPPORTED);
   }
   if (!stage.beginAnimation) {
-    throw new AnimationError('unsupported', 'Animation export needs the 3D view (WebGL).');
+    throw new AnimationError(
+      'unsupported',
+      'Animation export needs the 3D preview, but WebGL does not work on this computer. Update the graphics drivers, then restart Mockup Director.',
+    );
   }
   const signal = opts.signal;
   const checkAbort = () => {
-    if (signal?.aborted) throw new AnimationCancelled();
+    if (signal?.aborted) throw new AnimationCanceled();
   };
   const progress = (phase: AnimationPhase, done: number, total: number) => opts.onProgress?.({ phase, done, total });
 
@@ -143,9 +154,9 @@ export async function exportAnimation(
       try {
         mp4 = await Mp4Writer.create(W, H, fps, s.quality);
       } catch (e) {
-        throw mp4Unsupported(e);
+        throw new AnimationError('mp4-unsupported', MP4_SIZE_UNSUPPORTED, e);
       }
-      if (!mp4) throw mp4Unsupported();
+      if (!mp4) throw new AnimationError('mp4-unsupported', MP4_SIZE_UNSUPPORTED);
     }
 
     const renderCanvas = createCanvas(rw, rh);
@@ -165,7 +176,7 @@ export async function exportAnimation(
       og.drawImage(renderCanvas, 0, 0, rw, rh, margin, margin, cw, ch);
     };
 
-    // GIF with a global palette: analyse a few evenly spaced frames first.
+    // GIF with a global palette: analyze a few evenly spaced frames first.
     if (gif?.needsPaletteSamples) {
       const count = Math.min(n, PALETTE_SAMPLES);
       for (let k = 0; k < count; k++) {
@@ -184,7 +195,8 @@ export async function exportAnimation(
         gif.addFrame(og.getImageData(0, 0, W, H).data, delaysCs[i]);
       } else if (webp) {
         const blob = await canvasToBlob(outCanvas, 'image/webp', QUALITY_WEBP[s.quality]);
-        if (blob.type && blob.type !== 'image/webp') throw webpUnsupported();
+        if (blob.type && blob.type !== 'image/webp')
+          throw new AnimationError('webp-unsupported', WEBP_ANIMATION_UNSUPPORTED);
         webp.addFrame(new Uint8Array(await blob.arrayBuffer()), delaysMs[i]);
       } else if (mp4) {
         await mp4.addFrame(outCanvas);
@@ -211,10 +223,14 @@ export async function exportAnimation(
     if (!blob.size) throw encodeFailed();
     return { blob, format: s.format, width: W, height: H, frames: n };
   } catch (e) {
-    if (e instanceof AnimationError || e instanceof AnimationCancelled) throw e;
+    if (e instanceof AnimationError || e instanceof AnimationCanceled) throw e;
     if (e instanceof StageError) throw e; // its message is meant for the user
     console.error('[mockup-director] animation export failed', e);
-    throw new AnimationError('encode-failed', `Could not create the animation (${errorText(e)}).`, e);
+    throw new AnimationError(
+      'encode-failed',
+      `The animation could not be created (${errorText(e)}). Try a smaller size or another format.`,
+      e,
+    );
   } finally {
     session?.end();
     if (mp4 && !finished) void mp4.cancel();
@@ -229,7 +245,7 @@ export async function exportAnimation(
 /* ------------------------------------------------------------------ */
 
 /**
- * Let the browser paint and handle input (rAF while visible). When the window is hidden / minimised,
+ * Let the browser paint and handle input (rAF while visible). When the window is hidden / minimized,
  * rAF does not fire and timers are throttled to about one per second, so a MessageChannel task is
  * used instead – the export keeps its speed in the background.
  */
@@ -255,7 +271,7 @@ function yieldToUi(): Promise<void> {
   });
 }
 
-/** Matte for GIF anti-aliased / semi-transparent pixels: the scene's main colour, else white. */
+/** Matte for GIF anti-aliased / semi-transparent pixels: the scene's main color, else white. */
 function matteFor(bg: BackgroundSettings): [number, number, number] {
   const m = bg.mode !== 'transparent' ? /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(bg.color) : null;
   return m ? [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)] : [255, 255, 255];
@@ -293,20 +309,8 @@ function errorText(e: unknown): string {
 }
 
 function encodeFailed(): AnimationError {
-  return new AnimationError('encode-failed', 'Could not encode the animation (out of memory?).');
-}
-
-function webpUnsupported(): AnimationError {
   return new AnimationError(
-    'webp-unsupported',
-    'WebP encoding is not supported on this system. Please choose GIF or MP4.',
-  );
-}
-
-function mp4Unsupported(cause?: unknown): AnimationError {
-  return new AnimationError(
-    'mp4-unsupported',
-    'This system cannot encode H.264 video (MP4) at this size. WebView2 / Chromium, Safari 16.4+ (macOS 13.3+) or a recent WebKitGTK is required. Choose GIF or a smaller size.',
-    cause,
+    'encode-failed',
+    'The animation could not be encoded: there may not be enough memory. Reduce the size.',
   );
 }

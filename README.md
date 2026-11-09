@@ -25,7 +25,7 @@ Mockup Director turns flat artwork into a picture of the finished product: drop 
 
 ## What it does
 
-- 📦 **Shows your artwork on 28 models**: boxes, disc cases and discs, books and notebooks, print and devices, each sized in real millimetres. See [Models](#models).
+- 📦 **Shows your artwork on 28 models**: boxes, disc cases and discs, books and notebooks, print and devices, each sized in real millimeters. See [Models](#models).
 - 📐 **Gives you print templates**: a 300 dpi PNG for each side of a printed model, with the exact size, bleed and guide lines, to design your artwork on.
 - 💡 **Lights the scene like a studio**: light presets, a soft shadow, a reflection on the floor, and a transparent, solid or gradient background.
 - 🖼️ **Exports images up to 4000 × 4000 px**: PNG with transparency, JPEG or WebP, ready for a shop, a website or a print proof.
@@ -53,7 +53,7 @@ Drag in the preview to turn the camera, Shift-drag to pan, scroll or pinch to zo
     <td align="center">Camera and light for a book</td>
   </tr>
   <tr>
-    <td><img src="docs/images/model.png" alt="The Model tab: a laptop showing a weather app, with its size, lid angle, colour and screen settings"></td>
+    <td><img src="docs/images/model.png" alt="The Model tab: a laptop showing a weather app, with its size, lid angle, color and screen settings"></td>
     <td><img src="docs/images/export.png" alt="The Export tab: the front and back of a business card, with the image size, format and background"></td>
   </tr>
   <tr>
@@ -114,21 +114,21 @@ The notes of every release list the SHA-256 checksum of each file. To check that
 
 ## Models
 
-- **Boxes:** a product box of any size in millimetres, a slim box with a lid, a box built from one die-cut net image, and a box with a disc.
+- **Boxes:** a product box of any size in millimeters, a slim box with a lid, a box built from one die-cut net with all its artwork in one file, and a box with a disc.
 - **Discs and disc cases:** DVD and Blu-ray keep cases, CD jewel cases, CD / DVD / BD discs, and each case shown with its disc.
-- **Books and notebooks:** hardcover (flat or rounded spine), paperback, and spiral-bound notebooks (Wire-O or coil, bound on the side or at the top).
-- **Print:** business cards (90 × 50, 85 × 55, 89 × 51 mm or your own size, also as a stack or front and back), flyers (A6–A4, DL), postcards, plastic cards, stapled brochures, tri-fold leaflets (roll or Z fold), greeting cards and folders.
+- **Books and notebooks:** hardcover (flat or rounded spine), paperback, and spiral-bound notebooks (double loop wire or coil, bound on the side or at the top).
+- **Print:** business cards (90 × 50, 85 × 55, 89 × 51 mm or your own size, also as a stack or front and back), flyers (A6–A4, DL), postcards, plastic cards, stapled brochures, tri-fold leaflets (roll or Z-fold), greeting cards and folders.
 - **Devices and screens:** phone, tablet, laptop (with an adjustable lid angle), 24–34″ monitors (also curved ultrawide), a flat or curved screenshot, and a browser window. The devices are generic, with no brand logos or shapes.
 
 ## Artwork
 
-Each side of a model has its own card in the **Artwork** tab: drop an image file on it or on the preview, or choose one from disk. PNG, JPEG, WebP, GIF, SVG and AVIF are supported. A card warns you when an image's proportions don't match its side.
+Each side of a model has its own card in the **Artwork** tab: drop an image file on it or on the preview, or choose one from disk. PNG, JPEG, WebP, GIF, SVG and AVIF are supported. A card warns you when the artwork's proportions don't match its side.
 
-Print models (boxes, cases, discs, books and print) offer a **Template** for each side: a 300 dpi PNG with the exact size, bleed and guide lines. Design your artwork on it and it fits the model exactly. Phones and tablets get a template of the screen without bleed; laptops, monitors, screenshots and browser windows have none.
+Print models (boxes, cases, discs, books and print) have a **Template…** button on the card of each side. It saves a 300 dpi PNG with the exact size, bleed and guide lines. Design your artwork on it and it fits the model exactly. Phones and tablets get a template of the screen without bleed; laptops, monitors, screenshots and browser windows have none.
 
 ## The scene and looks
 
-The **Scene** tab sets the camera (perspective or orthographic), a light preset with its direction and colour, a soft shadow, a reflection on the floor, and the background: transparent, a solid colour or a gradient. The buttons at the bottom of the preview, or the keys 1–6, show the model from the front, 3/4 left, 3/4 right, the side, the top and the back.
+The **Scene** tab sets the camera (perspective or orthographic), a light preset with its direction and color, a soft shadow, a reflection on the floor, and the background: transparent, a solid color or a gradient. The buttons at the bottom of the preview, or the keys 1–6, show the model from the front, 3/4 left, 3/4 right, the side, the top and the back.
 
 The **Looks** tab has a few built-in looks (named scene settings: light, shadow, reflection, background, optionally the camera) and saves your own, to use them again in other projects. Your looks can be exported to a file and imported on another computer.
 
@@ -140,12 +140,12 @@ The **Export** tab makes:
 - **an animation:** the product turning a full 360° or swinging back and forth, as a GIF, animated WebP or MP4 (H.264), 1–20 seconds long. It starts from the current view and keeps the light, shadow and reflection, with one fixed framing so nothing is cropped. You can follow the progress and cancel.
 - **a batch:** many mockups in one ZIP file: many images in one side of a model, several views of the current project, or many project files at once.
 
-Some formats depend on your system's web engine: WebP export is available where the engine can encode WebP (Windows), and MP4 needs WebCodecs (Windows, or macOS 13.3 and later; on Linux it depends on the WebKitGTK version). Formats your system cannot make are shown greyed out, with a note explaining why.
+Some formats depend on your system's web engine: WebP export is available where the engine can encode WebP (Windows), and MP4 needs WebCodecs (Windows, or macOS 13.3 and later; on Linux it depends on the WebKitGTK version). Formats your system cannot make are shown grayed out, with a note explaining why.
 
 ## Projects and tabs
 
-- **Projects** are saved as `.mdproj` files, which hold the model, your artwork, the scene and the export settings. Double-click one to open it in Mockup Director (the installer and the Linux packages register the file type; with the AppImage, use the app's **Open** button).
-- **Tabs:** every open project is a tab above the 3D view, with its own undo history. **New** opens a new tab; **Open** opens each project in its own tab, taking the place of an untouched new tab. A project you double-click while the app is open arrives as a new tab in the same window (during an export, it opens when the export ends). A • marks a tab with unsaved changes; closing it asks whether to save them.
+- **Projects** are saved as `.mdproj` files, which hold the model, your artwork, the scene and the export settings. Double-click one to open it in Mockup Director (the installer and the Linux packages register the file type; with the AppImage, use the app's **Open…** button).
+- **Tabs:** every open project is a tab above the 3D preview, with its own undo history. **New** opens a new tab; **Open…** opens each project in its own tab, taking the place of an untouched new tab. A project you double-click while the app is open arrives as a new tab in the same window (during an export, it opens when the export ends). A • marks a tab with unsaved changes; closing it asks whether to save them.
 - **Your open tabs are saved automatically** a moment after each change and when you close the window, unsaved changes included, and come back the next time you start the app. So closing the window does not ask. On macOS, quitting the app (⌘Q, **Quit** in the Dock, logging out) skips that last save, so changes from the last second or two may be missing: close the window first, or save the project.
 
 ## Keyboard shortcuts
@@ -162,7 +162,7 @@ On macOS use ⌘ instead of Ctrl, except for switching tabs (Ctrl+Tab / Ctrl+Shi
 | Ctrl+E | Export an image |
 | Ctrl+Z | Undo |
 | Ctrl+Shift+Z (or Ctrl+Y on Windows and Linux) | Redo |
-| 1–6 | Preset camera views (front, 3/4 left, 3/4 right, side, top, back) |
+| 1–6 | Camera views (front, 3/4 left, 3/4 right, side, top, back) |
 
 ## Questions
 
@@ -188,10 +188,10 @@ WEBKIT_DISABLE_DMABUF_RENDERER=1 mockup-director
 
 For the AppImage, put the same `WEBKIT_DISABLE_DMABUF_RENDERER=1` before `./MockupDirector-*-linux-x86_64.AppImage`.
 
-**It says "3D preview unavailable – WebGL does not work on this computer".**
-Update your graphics driver; on a virtual machine, enable 3D acceleration.
+**It says "The 3D preview is not available: WebGL does not work on this computer".**
+Update your graphics drivers, then restart Mockup Director; on a virtual machine, enable 3D acceleration.
 
-**WebP or MP4 is greyed out.**
+**WebP or MP4 is grayed out.**
 Your system's web engine cannot encode that format; see the note under the format choice and pick another one.
 
 **Does Mockup Director go online?**

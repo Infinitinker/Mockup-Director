@@ -39,11 +39,11 @@ export interface FakeModelContext {
 }
 
 /**
- * A context with the given parameters. With `withImages`, every slot of the model has artwork;
- * without it, `hasImage` is false and `getTexture` gives a stand-in for the placeholder. Either way
+ * A context with the given parameters. With `withArtwork`, every slot of the model has artwork;
+ * without it, `hasArtwork` is false and `getTexture` gives a stand-in for the placeholder. Either way
  * every slot id, also one the model does not list, gets a texture shaped like the slot's aspect.
  */
-export function fakeModelContext(model: ModelDefinition, params: ParamValues, withImages: boolean): FakeModelContext {
+export function fakeModelContext(model: ModelDefinition, params: ParamValues, withArtwork: boolean): FakeModelContext {
   const textures = new Map<string, THREE.Texture>();
   const images = new Map<string, unknown>();
   const getTexture = (slotId: string): THREE.Texture => {
@@ -55,8 +55,8 @@ export function fakeModelContext(model: ModelDefinition, params: ParamValues, wi
     images.set(slotId, texture.image);
     return texture;
   };
-  const hasImage = (slotId: string): boolean => withImages && model.slots.some((s) => s.id === slotId);
-  return { ctx: { getTexture, hasImage, params }, textures, images };
+  const hasArtwork = (slotId: string): boolean => withArtwork && model.slots.some((s) => s.id === slotId);
+  return { ctx: { getTexture, hasArtwork, params }, textures, images };
 }
 
 /** The state of a texture that a build must not change. */

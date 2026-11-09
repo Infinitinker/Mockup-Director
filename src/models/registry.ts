@@ -1,7 +1,7 @@
 import type { ModelDefinition } from '../core/types';
 import { boxModel, extraBoxModels } from './box';
-import { dvdModel, blurayModel } from './keepcase';
-import { cdCaseModel } from './jewelcase';
+import { dvdModel, blurayModel } from './keepCase';
+import { cdCaseModel } from './jewelCase';
 import { discModel } from './disc';
 import { boxDiscModel, dvdDiscModel, blurayDiscModel, cdDiscModel, compositeModels } from './composites';
 import { bookModels } from './books';

@@ -1,16 +1,16 @@
 /**
  * Folded printed matter: tri-fold leaflet (roll / Z fold), greeting card and bi-fold brochure.
  *
- * Coordinate frame (see CONVENTIONS in core/types.ts): millimetres, model on y = 0, centred on
- * x/z, FRONT cover facing +Z (turned slightly towards the camera for open poses).
+ * Coordinate frame (see CONVENTIONS in core/types.ts): millimeters, model on y = 0, centered on
+ * x/z, FRONT cover facing +Z (turned slightly toward the camera for open poses).
  *
  * How the sheet is built ("sheet frame"):
- *  - The FLAT sheet lies in the XY plane, OUTSIDE face towards +Z, INSIDE face towards -Z, paper
+ *  - The FLAT sheet lies in the XY plane, OUTSIDE face toward +Z, INSIDE face toward -Z, paper
  *    thickness from z = -t (inside) to z = 0 (outside). Panels are laid out along X, left to right
  *    as seen from the outside; fold lines are parallel to Y. X = 0 is the left trim edge of the
  *    outside artwork, Y = 0 the bottom trim edge.
  *  - Every panel is a separate hinged segment (its own Group). Folds rotate the child panel about
- *    an axis parallel to Y that sits just beyond the paper surface the panel folds towards, so a
+ *    an axis parallel to Y that sits just beyond the paper surface the panel folds toward, so a
  *    closed fold stacks the panels exactly (plus a tiny gap) and a bent strip ("bend") of the
  *    right radius fills the crease.
  *  - UVs are taken from ONE mapping of the flat sheet (X, Y) -> (u, v) per side, so every panel's
@@ -21,7 +21,7 @@
  *  - The finished sheet is then oriented as a whole (standing or lying, see orientSheet()), which
  *    is a proper rotation – faces are never mirrored by it.
  *
- * Artwork convention (same as keepcase.ts / printFlat.ts): every slot expects the FULL template
+ * Artwork convention (same as keepCase.ts / printFlat.ts): every slot expects the FULL template
  * including the 3 mm bleed; the trim area maps to the inner rectangle of the image.
  *
  * Model ids: 'print-trifold', 'print-greeting-card', 'print-bifold'.
@@ -93,7 +93,7 @@ function printedMat(map: THREE.Texture, f: FinishDef): THREE.MeshPhysicalMateria
   return m;
 }
 
-/** Unprinted face (empty secondary slot) in the paper colour with the same finish. */
+/** Unprinted face (empty secondary slot) in the paper color with the same finish. */
 function solidMat(color: string, f: FinishDef): THREE.MeshPhysicalMaterial {
   return new THREE.MeshPhysicalMaterial({
     color,
@@ -184,7 +184,7 @@ interface FaceSpec {
   uv: UVFn;
 }
 
-/** 'in' = the panel folds towards the INSIDE face (valley seen from inside), 'out' = towards the outside. */
+/** 'in' = the panel folds toward the INSIDE face (valley seen from inside), 'out' = toward the outside. */
 type FoldDir = 'in' | 'out';
 
 interface FoldSpec {
@@ -251,10 +251,10 @@ function buildSheet(spec: SheetSpec): Sheet {
     const theta = deg(180 - clamp(fold.open, 0, 180));
     // Axis just outside the surface the panel folds onto (inside face at z = -t, outside at z = 0).
     const zc = fold.dir === 'in' ? -t - fold.gap : fold.gap;
-    // Rotation about +Y: x -> (cos, 0, -sin). Right chain: +theta folds towards -Z (inside).
+    // Rotation about +Y: x -> (cos, 0, -sin). Right chain: +theta folds toward -Z (inside).
     // Left chain (panel extends to -x): the sign is reversed.
-    const towardsInside = fold.dir === 'in';
-    const rot = right === towardsInside ? theta : -theta;
+    const towardInside = fold.dir === 'in';
+    const rot = right === towardInside ? theta : -theta;
 
     const pivot = new THREE.Group();
     pivot.position.set(hx, 0, zc);
@@ -268,7 +268,7 @@ function buildSheet(spec: SheetSpec): Sheet {
 
     if (Math.abs(rot) < 1e-5) return;
     // Crease bend: both paper surfaces swept around the axis (radius = distance to the axis).
-    // Its UVs repeat the artwork at the fold line (u const), so the crease shows that colour.
+    // Its UVs repeat the artwork at the fold line (u const), so the crease shows that color.
     const dzOut = 0 - zc;
     const dzIn = -t - zc;
     const at = (dz: number, phi: number, y: number) =>
@@ -382,7 +382,7 @@ interface PoseSpec {
   groundFace: 'outside' | 'inside';
   /**
    * Standing, vertical folds: the front cover's normal is turned by this many degrees to the
-   * camera's right (+X), i.e. the whole sheet is turned towards the front's hinge side.
+   * camera's right (+X), i.e. the whole sheet is turned toward the front's hinge side.
    */
   frontYaw: number;
 }
@@ -390,7 +390,7 @@ interface PoseSpec {
 /**
  * Rotates the sheet root (sheet frame -> model frame).
  *  - Lying: the base panel flat on the ground (ground face down); the front cover's image top
- *    (sheet +Y for vertical folds, towards the hinge = sheet +X for top folds) points away (-Z).
+ *    (sheet +Y for vertical folds, toward the hinge = sheet +X for top folds) points away (-Z).
  *  - Standing, vertical folds: sheet +Y is up (bottom edges on the ground); the front's normal
  *    is horizontal and turned `frontYaw` degrees away from +Z.
  *  - Standing tent: up = bisector of both outside normals (apex / fold on top), front faces +Z.
@@ -420,7 +420,7 @@ function orientSheet(sheet: Sheet, pose: PoseSpec): void {
     if (Y.lengthSq() < 1e-8) Y.set(0, 0, 1);
     Y.normalize();
     Z = nf.clone().addScaledVector(Y, -nf.dot(Y));
-    // Fully flat (180°): lies outside up, the front's free edge towards the camera.
+    // Fully flat (180°): lies outside up, the front's free edge toward the camera.
     if (Z.lengthSq() < 1e-6) Z.set(1, 0, 0);
     Z.normalize();
   }
@@ -453,9 +453,9 @@ interface FoldedConfig {
 
 /**
  * Placeholder mapping for the front panel only (used while the 'outside' slot is empty): the
- * front's slice of the sheet mapping is renormalised to 0..1 (keeping its orientation, so the
+ * front's slice of the sheet mapping is renormalized to 0..1 (keeping its orientation, so the
  * placeholder is upright on the front) and the whole placeholder is fitted inside ("contain");
- * the rest of the panel shows the clamped edge colour of the placeholder gradient.
+ * the rest of the panel shows the clamped edge color of the placeholder gradient.
  */
 function placeholderUV(sheetUV: UVFn, X0: number, X1: number, H: number, imgAspect: number): UVFn {
   const c = [sheetUV(X0, 0), sheetUV(X1, 0), sheetUV(X0, H), sheetUV(X1, H)];
@@ -498,7 +498,7 @@ function buildFolded(ctx: ModelContext, cfg: FoldedConfig, name: string): THREE.
   }
 
   const outside: FaceSpec[] = [];
-  if (ctx.hasImage('outside')) {
+  if (ctx.hasArtwork('outside')) {
     const mat = printedMat(ctx.getTexture('outside'), f);
     for (let i = 0; i < n; i++) outside.push({ mat, uv: cfg.outUV });
   } else {
@@ -508,7 +508,7 @@ function buildFolded(ctx: ModelContext, cfg: FoldedConfig, name: string): THREE.
     for (let i = 0; i < n; i++) outside.push(i === fr ? { mat: ph, uv: phUV } : { mat: solid, uv: cfg.outUV });
   }
   const inside: FaceSpec[] = [];
-  const inMat = ctx.hasImage('inside') ? printedMat(ctx.getTexture('inside'), f) : solid;
+  const inMat = ctx.hasArtwork('inside') ? printedMat(ctx.getTexture('inside'), f) : solid;
   for (let i = 0; i < n; i++) inside.push({ mat: inMat, uv: cfg.inUV });
 
   const sheet = buildSheet({
@@ -620,7 +620,7 @@ function finishParam(def: Finish): SelectParamDef {
 const paperColorParam: ParamDef = {
   id: 'paperColor',
   type: 'color',
-  label: 'Paper colour (no artwork, edges)',
+  label: 'Paper color (no artwork, edges)',
   group: G_MAT,
   default: '#f6f5f1',
 };
@@ -643,7 +643,7 @@ function openAngleParam(def: number): NumberParamDef {
   return {
     id: 'openAngle',
     type: 'number',
-    label: 'Open angle (0 = closed, lying)',
+    label: 'Open angle (0° is closed, lying)',
     group: G_POSE,
     min: 0,
     max: 180,
@@ -740,8 +740,8 @@ const trifoldSlots: ImageSlotDef[] = [
     id: 'outside',
     label: 'Outside',
     hint:
-      'The whole outside of the sheet (3 panels), left to right: roll fold – Inner flap | Back | Front cover; ' +
-      'Z-fold – Panel 1 | Panel 2 | Front cover. A4: 297 × 210 mm + 3 mm bleed = 303 × 216 mm (download the template).',
+      'The whole outside of the sheet, its 3 panels from left to right. Roll fold: Inner flap | Back | Front cover. ' +
+      'Z-fold: Panel 1 | Panel 2 | Front cover. For A4: 297 × 210 mm + 3 mm bleed, 303 × 216 mm in all (download the template).',
     aspect: TRI_ASPECT,
     template: (p) => trifoldTemplate(p, 'outside'),
   },
@@ -750,7 +750,7 @@ const trifoldSlots: ImageSlotDef[] = [
     label: 'Inside',
     hint:
       'The inside of the leaflet (3 panels) as seen when opened. The left panel backs the front cover, the right one ' +
-      'the flap (Z-fold: backs panel 1 = back cover). Without an image: plain paper.',
+      'backs the flap (in a Z-fold, panel 1, which is the back cover). Without artwork the inside is plain paper.',
     aspect: TRI_ASPECT,
     template: (p) => trifoldTemplate(p, 'inside'),
   },
@@ -768,7 +768,7 @@ const trifoldParams: ParamDef[] = [
     ],
     default: 'z',
   },
-  mmParam('panelWidth', 'Panel width (sheet = 3 ×)', 99, 50, 200, 0.5, G_DIM),
+  mmParam('panelWidth', 'Panel width (a third of the sheet)', 99, 50, 200, 0.5, G_DIM),
   mmParam('height', 'Height', 210, 50, 400, 0.5, G_DIM),
   mmParam('flapInset', 'Narrower flap (roll fold)', 3, 0, 6, 0.5, G_DIM),
   poseParam('standing'),
@@ -835,7 +835,7 @@ const trifoldModel: ModelDefinition = {
   category: 'print',
   name: 'Tri-fold leaflet',
   description:
-    'DL leaflet from an A4 sheet (297 × 210 mm → 99 × 210 mm), roll or Z fold; standing partially opened or lying.',
+    'DL leaflet from an A4 sheet (297 × 210 mm → 99 × 210 mm), roll or Z-fold; standing partially opened or lying.',
   icon: ICON_TRIFOLD,
   slots: trifoldSlots,
   params: trifoldParams,
@@ -847,7 +847,7 @@ const trifoldModel: ModelDefinition = {
 /* 2) + 3) Single-fold card / brochure                                 */
 /* ------------------------------------------------------------------ */
 
-interface SizePreset {
+interface PaperSize {
   value: string;
   label: string;
   /** Folded size, portrait (w <= h for the named paper formats). */
@@ -856,7 +856,7 @@ interface SizePreset {
 }
 
 interface CardVariant {
-  sizes: SizePreset[];
+  sizes: PaperSize[];
   defaultSize: string;
   /** Default custom folded size. */
   customW: number;
@@ -877,7 +877,7 @@ interface CardLayout {
 }
 
 /**
- * Folded size from the size preset + orientation. Named formats are turned landscape for the
+ * Folded size from the Size parameter + orientation. Named formats are turned landscape for the
  * top fold (A6 tent card = 148 × 105); custom sizes are used exactly as entered.
  */
 function cardLayout(p: ParamValues, v: CardVariant): CardLayout {
@@ -890,9 +890,9 @@ function cardLayout(p: ParamValues, v: CardVariant): CardLayout {
       tent,
     };
   }
-  const preset = v.sizes.find((s) => s.value === id) ?? v.sizes.find((s) => s.value === v.defaultSize) ?? v.sizes[0];
-  const short = Math.min(preset.w, preset.h);
-  const long = Math.max(preset.w, preset.h);
+  const paper = v.sizes.find((s) => s.value === id) ?? v.sizes.find((s) => s.value === v.defaultSize) ?? v.sizes[0];
+  const short = Math.min(paper.w, paper.h);
+  const long = Math.max(paper.w, paper.h);
   return tent ? { pw: long, ph: short, tent } : { pw: short, ph: long, tent };
 }
 
@@ -931,14 +931,14 @@ function cardSlots(v: CardVariant): ImageSlotDef[] {
       label: 'Outside',
       hint:
         `Outside spread: Back | Front (${round1(2 * w)} × ${round1(h)} mm + 3 mm bleed for the default size). ` +
-        'With the fold at the top the layout is vertical: back (upside down) above the front – download the template.',
+        'With the fold at the top the layout is vertical: the back (upside down) above the front. The template shows the layout.',
       aspect,
       template: (p) => cardTemplate(p, v, 'outside'),
     },
     {
       id: 'inside',
       label: 'Inside',
-      hint: 'Inside spread as seen when opened (left | right, or top / bottom with the fold at the top). Without an image: plain paper.',
+      hint: 'Inside spread as seen when opened (left | right, or top / bottom with the fold at the top). Without artwork the inside is plain paper.',
       aspect,
       template: (p) => cardTemplate(p, v, 'inside'),
     },
@@ -1074,7 +1074,7 @@ const greetingCardModel: ModelDefinition = cardModel(GREETING, {
   id: 'print-greeting-card',
   name: 'Greeting card',
   description:
-    'Folded greeting card (A6, square, DL, A5 or custom) standing opened – fold on the left or at the top (tent).',
+    'Folded greeting card (A6, square, DL, A5 or custom) standing opened: fold on the left or at the top (tent).',
   icon: ICON_CARD,
   defaultCamera: { yaw: 20, pitch: 12 },
 });

@@ -3,18 +3,19 @@
  * models, export and project handling together. Every open project is a tab (./documents); the
  * store works on the active one, and the whole set of tabs is autosaved as a session (./session).
  */
-import type { CameraSettings, ImageAsset, ModelContext, ParamValues, StageAPI } from '../core/types';
+import type { CameraSettings, Artwork, ModelContext, ParamValues, StageAPI } from '../core/types';
 import { DEFAULT_ANIMATION, DEFAULT_EXPORT, DEFAULT_SCENE, cloneScene } from '../core/defaults';
 import { getPlaceholderTexture } from '../core/placeholder';
-import { disposeImageAsset, loadImageFile } from '../core/images';
+import { disposeArtwork, loadImageFile } from '../core/images';
 import { MODELS, getModel } from '../models/registry';
+import { StageError } from '../scene/errors';
 import { createStage } from '../scene/stage';
 import { inDesktopApp, pickFiles, saveBlob } from '../platform/files';
 import { handleOpenedFiles } from '../platform/launch';
 import { onWindowClose, setWindowTitle } from '../platform/window';
 import { Signal, errorMessage, frameCoalescer, h, isMac, nextFrame } from './dom';
 
-import { Store, hasAny, type DocumentState, type ImageMap } from './state';
+import { Store, hasAny, type DocumentState, type ArtworkMap } from './state';
 import { Documents } from './documents';
 import { loadSession, SessionSaver } from './session';
 import { createTabBar, tabLabel } from './tabbar';
@@ -27,12 +28,21 @@ import {
   exportBlob,
   extensionFor,
   fileNameFor,
-  isAnimationCancelled,
+  IMAGE_FORMAT_LABEL,
+  isAnimationCanceled,
   templateBlob,
   webpEncodingSupported,
   type AnimationProgress,
 } from './exportBridge';
-import { PROJECT_EXT, ProjectError, hydrateProject, parseProjectFile, projectNameOf, toProjectFile } from './project';
+import {
+  NOT_A_PROJECT,
+  PROJECT_EXT,
+  ProjectError,
+  hydrateProject,
+  parseProjectFile,
+  projectNameOf,
+  toProjectFile,
+} from './project';
 import { mountToasts, notify } from './toast';
 import { choiceDialog } from './dialog';
 import { openBatchDialog, type BatchHost } from './batch';
@@ -51,10 +61,10 @@ function freshDocument(modelId: string): DocumentState {
   scene.camera = { ...scene.camera, ...(model.defaultCamera ?? {}) };
   const exp = { ...DEFAULT_EXPORT };
   if (exp.format === 'webp' && !webpEncodingSupported()) exp.format = 'png';
-  return { modelId: model.id, params: {}, images: {}, scene, export: exp };
+  return { modelId: model.id, params: {}, artwork: {}, scene, export: exp };
 }
 
-/** Normalise yaw into (-180, 180] so sliders stay meaningful after orbiting around. */
+/** Normalize yaw into (-180, 180] so sliders stay meaningful after orbiting around. */
 function normalizeCamera(c: CameraSettings): CameraSettings {
   let yaw = ((((c.yaw + 180) % 360) + 360) % 360) - 180;
   if (yaw === -180) yaw = 180;
@@ -83,11 +93,10 @@ function createNullStage(): StageAPI {
     onCameraChange() {
       return () => undefined;
     },
-    renderToCanvas(o) {
-      const c = document.createElement('canvas');
-      c.width = o.width;
-      c.height = o.height;
-      return c;
+    renderToCanvas() {
+      throw new StageError(
+        'Export needs the 3D preview, but WebGL does not work on this computer. Update the graphics drivers, then restart Mockup Director.',
+      );
     },
     resize() {},
     dispose() {},
@@ -134,7 +143,9 @@ export function startApp(root: HTMLElement): void {
   } catch (e) {
     console.error('[mockup-director] stage init failed', e);
     stage = createNullStage();
-    viewport.showError(`3D preview unavailable – WebGL does not work on this computer (${errorMessage(e)})`);
+    viewport.showError(
+      `The 3D preview is not available: WebGL does not work on this computer (${errorMessage(e)}). Update the graphics drivers, then restart Mockup Director.`,
+    );
   }
 
   /* Model rebuild (coalesced to one per frame) ------------------------ */
@@ -145,10 +156,10 @@ export function startApp(root: HTMLElement): void {
     }
     const s = store.state;
     const model = getModel(s.modelId);
-    const imgs = s.images[model.id] ?? {};
+    const imgs = s.artwork[model.id] ?? {};
     const ctx: ModelContext = {
       params: completeParams(model, s.params[model.id]),
-      hasImage: (id) => !!imgs[id],
+      hasArtwork: (id) => !!imgs[id],
       getTexture: (id) => imgs[id]?.texture ?? getPlaceholderTexture(slotFor(model, id)),
     };
     try {
@@ -164,7 +175,7 @@ export function startApp(root: HTMLElement): void {
       stage.applySettings(store.state.scene);
     } catch (e) {
       console.error('[mockup-director] applySettings failed', e);
-      notify.error('Scene settings error', errorMessage(e));
+      notify.error('Could not apply the scene settings', errorMessage(e));
     }
   });
 
@@ -211,14 +222,14 @@ export function startApp(root: HTMLElement): void {
   onWindowClose(autosaveNow);
 
   store.subscribe((e) => {
-    // A new / opened / restored document disposes the old document's image textures, which the
+    // A new / opened / restored document disposes the old document's artwork textures, which the
     // (locked) model of a running animation export still renders – stop the export before its next
     // frame instead of encoding frames with blank artwork.
     if (modelLocked && (e.source === 'project' || e.source === 'document')) animationAbort?.abort();
-    if (hasAny(e, 'model', 'params', 'images')) rebuild.schedule();
+    if (hasAny(e, 'model', 'params', 'artwork')) rebuild.schedule();
     // Camera changes made in the viewport are already applied there – never push them back.
     if (e.kinds.has('scene') || (e.kinds.has('camera') && e.source !== 'stage')) applyScene.schedule();
-    if (hasAny(e, 'model', 'params', 'images', 'scene', 'camera', 'export')) scheduleAutosave();
+    if (hasAny(e, 'model', 'params', 'artwork', 'scene', 'camera', 'export')) scheduleAutosave();
   });
 
   stage.onCameraChange((cam) => {
@@ -273,7 +284,7 @@ export function startApp(root: HTMLElement): void {
           try {
             json = JSON.parse(await f.text());
           } catch {
-            throw new ProjectError('This is not a Mockup Director project file.');
+            throw new ProjectError(NOT_A_PROJECT);
           }
           const { state, failed } = await hydrateProject(parseProjectFile(json));
           const name = projectNameOf(f.name);
@@ -287,7 +298,7 @@ export function startApp(root: HTMLElement): void {
             docs.add(state, { name });
           }
           notify.success('Project opened', f.name);
-          if (failed) notify.warning(`Could not load images: ${failed}`);
+          if (failed) notify.warning(`Slots whose artwork could not be loaded: ${failed}. Add the artwork again.`);
         } catch (e) {
           notify.error('Could not open the project', `${f.name}: ${errorMessage(e)}`);
         }
@@ -303,14 +314,14 @@ export function startApp(root: HTMLElement): void {
       const model = getModel(id);
       const prevId = store.state.modelId;
       // Carry artwork and matching params over to a related model the user has not touched yet
-      // (e.g. "DVD case" -> "DVD with disc"): same slot/param ids mean the same thing.
+      // (e.g. "DVD case" -> "DVD case with disc"): same slot/param ids mean the same thing.
       // Assets are shared by reference; the store's GC keeps them alive while any model uses them.
-      const prevImages = store.state.images[prevId] ?? {};
-      const inheritImages: Record<string, ImageAsset> = {};
-      if (Object.keys(store.state.images[model.id] ?? {}).length === 0) {
+      const prevArtwork = store.state.artwork[prevId] ?? {};
+      const inheritedArtwork: Record<string, Artwork> = {};
+      if (Object.keys(store.state.artwork[model.id] ?? {}).length === 0) {
         for (const slot of model.slots) {
-          const a = prevImages[slot.id];
-          if (a) inheritImages[slot.id] = a;
+          const a = prevArtwork[slot.id];
+          if (a) inheritedArtwork[slot.id] = a;
         }
       }
       const prevParams = store.state.params[prevId] ?? {};
@@ -318,13 +329,13 @@ export function startApp(root: HTMLElement): void {
       if (Object.keys(store.state.params[model.id] ?? {}).length === 0) {
         for (const p of model.params) if (p.id in prevParams) inheritParams[p.id] = prevParams[p.id];
       }
-      const kinds: ('model' | 'camera' | 'images' | 'params')[] = ['model'];
+      const kinds: ('model' | 'camera' | 'artwork' | 'params')[] = ['model'];
       if (model.defaultCamera) kinds.push('camera');
-      if (Object.keys(inheritImages).length) kinds.push('images');
+      if (Object.keys(inheritedArtwork).length) kinds.push('artwork');
       if (Object.keys(inheritParams).length) kinds.push('params');
       store.update(kinds, (s) => {
         s.modelId = model.id;
-        if (Object.keys(inheritImages).length) s.images[model.id] = { ...inheritImages };
+        if (Object.keys(inheritedArtwork).length) s.artwork[model.id] = { ...inheritedArtwork };
         if (Object.keys(inheritParams).length) s.params[model.id] = { ...inheritParams };
         if (model.defaultCamera) s.scene.camera = { ...s.scene.camera, ...model.defaultCamera };
       });
@@ -376,7 +387,7 @@ export function startApp(root: HTMLElement): void {
           title: `Save changes to “${tabLabel(tab)}”?`,
           message: 'Your changes will be lost if you don’t save them.',
           choices: [
-            { id: 'save', label: 'Save', primary: true },
+            { id: 'save', label: 'Save…', primary: true },
             { id: 'discard', label: 'Don’t save', danger: true },
             { id: 'cancel', label: 'Cancel' },
           ],
@@ -410,12 +421,11 @@ export function startApp(root: HTMLElement): void {
         const settings = { ...s.export };
         if (settings.format === 'webp' && !webpEncodingSupported()) settings.format = 'png';
         const blob = await exportBlob(stage, settings, { ...s.scene.background });
-        if (!blob || blob.size === 0) throw new Error('The rendered image is empty.');
+        if (!blob || blob.size === 0)
+          throw new Error('The rendered image is empty. Export it again, or reduce the export size.');
         const name = fileNameFor(s.modelId, settings.format);
         const ext = extensionFor(settings.format);
-        const saved = await saveBlob(blob, name, [
-          { name: settings.format === 'jpeg' ? 'JPEG' : settings.format.toUpperCase(), extensions: [ext] },
-        ]);
+        const saved = await saveBlob(blob, name, [{ name: IMAGE_FORMAT_LABEL[settings.format], extensions: [ext] }]);
         if (saved) notify.success('Saved', saved);
       } catch (e) {
         console.error('[mockup-director] export failed', e);
@@ -461,8 +471,8 @@ export function startApp(root: HTMLElement): void {
         const saved = await saveBlob(result.blob, name, [animationFileFilter(result.format)]);
         if (saved) notify.success('Saved', saved);
       } catch (e) {
-        if (isAnimationCancelled(e)) {
-          notify.info('Animation export cancelled');
+        if (isAnimationCanceled(e)) {
+          notify.info('Animation export canceled');
         } else {
           console.error('[mockup-director] animation export failed', e);
           notify.error('Animation export failed', errorMessage(e));
@@ -480,7 +490,7 @@ export function startApp(root: HTMLElement): void {
 
     openBatchExport() {
       if (exportBusy.value) {
-        notify.warning('Another export is running – wait for it to finish.');
+        notify.warning('Another export is running. Wait for it to finish.');
         return;
       }
       openBatchDialog(ctx, batchHost);
@@ -512,14 +522,14 @@ export function startApp(root: HTMLElement): void {
       store.endBurst();
     },
 
-    async assignImages(files, slotIds) {
+    async assignArtwork(files, slotIds) {
       const model = getModel(store.state.modelId);
       if (!files.length) {
-        notify.warning('Unsupported file – choose an image (PNG, JPEG, WebP…).');
+        notify.warning('This file type is not supported. Choose an image file, such as PNG, JPEG or WebP.');
         return;
       }
       if (!model.slots.length) {
-        notify.warning('This model has no artwork slots.');
+        notify.warning('This model has no artwork slots. Choose a model that takes artwork.');
         return;
       }
       let targets: string[];
@@ -527,58 +537,58 @@ export function startApp(root: HTMLElement): void {
         targets = slotIds.filter((id) => model.slots.some((s) => s.id === id)).slice(0, files.length);
       } else {
         // Empty slots first (in slot order), then overwrite filled ones from the primary slot on.
-        const imgs = store.state.images[model.id] ?? {};
+        const imgs = store.state.artwork[model.id] ?? {};
         const empty = model.slots.filter((s) => !imgs[s.id]).map((s) => s.id);
         const filled = model.slots.filter((s) => !!imgs[s.id]).map((s) => s.id);
         targets = [...empty, ...filled].slice(0, files.length);
       }
       if (files.length > targets.length)
-        notify.info(`Skipped files: ${files.length - targets.length} (no free slots).`);
+        notify.info(`Skipped files: ${files.length - targets.length}. The model has no more slots for them.`);
       const pairs = targets.map((slotId, i) => ({ slotId, file: files[i] }));
-      // Decoding takes a while: the images belong to this tab, even if another one is shown by then.
+      // Decoding takes a while: the artwork belongs to this tab, even if another one is shown by then.
       const tabId = docs.activeId;
       const keys = pairs.map((p) => `${model.id}/${p.slotId}`);
       setLoading(keys, true);
       try {
         const results = await Promise.allSettled(pairs.map((p) => loadImageFile(p.file)));
-        const loaded: Record<string, ImageMap[string][string]> = {};
+        const loaded: Record<string, ArtworkMap[string][string]> = {};
         results.forEach((r, i) => {
           if (r.status === 'fulfilled') loaded[pairs[i].slotId] = r.value;
           else notify.error(`Could not load “${pairs[i].file.name}”`, errorMessage(r.reason));
         });
         if (Object.keys(loaded).length && !docs.tab(tabId)) {
           // The tab was closed meanwhile.
-          Object.values(loaded).forEach(disposeImageAsset);
+          Object.values(loaded).forEach(disposeArtwork);
         } else if (Object.keys(loaded).length) {
           docs.activate(tabId);
           store.endBurst();
-          store.update(['images'], (s) => {
-            s.images[model.id] = { ...(s.images[model.id] ?? {}), ...loaded };
+          store.update(['artwork'], (s) => {
+            s.artwork[model.id] = { ...(s.artwork[model.id] ?? {}), ...loaded };
           });
           store.endBurst();
-          if (model.id !== store.state.modelId) notify.info(`Artwork assigned to “${model.name}”.`);
+          if (model.id !== store.state.modelId) notify.info(`Artwork assigned to “${model.name}”`);
         }
       } finally {
         setLoading(keys, false);
       }
     },
 
-    async pickImageFor(slotId) {
+    async pickArtworkFor(slotId) {
       try {
         const files = await pickFiles('image/*', false);
-        if (files.length) await actions.assignImages(files.slice(0, 1), [slotId]);
+        if (files.length) await actions.assignArtwork(files.slice(0, 1), [slotId]);
       } catch (e) {
         notify.error('Could not pick the file', errorMessage(e));
       }
     },
 
-    removeImage(slotId) {
+    removeArtwork(slotId) {
       const id = store.state.modelId;
       store.endBurst();
-      store.update(['images'], (s) => {
-        const m = { ...(s.images[id] ?? {}) };
+      store.update(['artwork'], (s) => {
+        const m = { ...(s.artwork[id] ?? {}) };
         delete m[slotId];
-        s.images[id] = m;
+        s.artwork[id] = m;
       });
       store.endBurst();
     },
@@ -591,14 +601,14 @@ export function startApp(root: HTMLElement): void {
         if (!slot) return;
         const res = await templateBlob(model.id, slot, 300, completeParams(model, s.params[model.id]));
         if (!res) {
-          notify.warning('This item has no template.');
+          notify.warning('This slot has no print template.');
           return;
         }
         const { blob, name } = res;
         const saved = await saveBlob(blob, name, [{ name: 'PNG', extensions: ['png'] }]);
         if (saved) notify.success('Saved', saved);
       } catch (e) {
-        notify.error('Could not create the template', errorMessage(e));
+        notify.error('Could not create the print template', errorMessage(e));
       }
     },
 
@@ -706,7 +716,7 @@ export function startApp(root: HTMLElement): void {
     .catch((e) => {
       console.error('[mockup-director] session restore failed', e);
       notify.error(
-        'The projects that were open last time could not be reopened. They are kept for the next start; until then, open projects are not saved automatically, so save them to files.',
+        'The projects that were open last time could not be reopened. Open projects are not saved automatically for now: save them to files.',
         errorMessage(e),
       );
     })
@@ -729,10 +739,10 @@ export function startApp(root: HTMLElement): void {
     if (!loaded) return;
     const { session: stored, skipped } = loaded;
     const restored: { id: string; name: string; dirty: boolean; state: DocumentState }[] = [];
-    let failedImages = 0;
+    let failedArtwork = 0;
     for (const tab of stored.tabs) {
       const { state, failed } = await hydrateProject(tab.file);
-      failedImages += failed;
+      failedArtwork += failed;
       restored.push({ id: tab.id, name: tab.name, dirty: tab.dirty, state });
     }
     // The user may already have started working in the first tab while we were loading: keep it.
@@ -748,6 +758,7 @@ export function startApp(root: HTMLElement): void {
     }
     if (restored.length) notify.info(`Restored the projects that were open: ${restored.length}`);
     if (skipped) notify.warning(`Projects that could not be reopened: ${skipped}. Open them again from their files.`);
-    if (failedImages) notify.warning(`Could not load images: ${failedImages}`);
+    if (failedArtwork)
+      notify.warning(`Slots whose artwork could not be loaded: ${failedArtwork}. Add the artwork again.`);
   }
 }

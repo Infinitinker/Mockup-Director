@@ -202,7 +202,7 @@ body.is-busy * {
 /* macOS traffic lights (Tauri titleBarStyle "Overlay"). Their vertical position comes from
    trafficLightPosition.y in src-tauri/tauri.conf.json: Tauri grows the system title bar to
    (button height + y). y = 28 was tuned on a real Mac so the buttons line up with the toolbar
-   items (52 px toolbar, --toolbar-h); the plain maths says 26 but the buttons then sit ~2 pt high. */
+   items (52 px toolbar, --toolbar-h); the plain math says 26 but the buttons then sit ~2 pt high. */
 .has-traffic-lights .toolbar {
   padding-left: 0;
 }
@@ -646,7 +646,7 @@ body.is-busy * {
   box-shadow: var(--shadow-pop);
 }
 .viewbar {
-  /* Centred with auto margins, not left: 50% + translate: an absolutely positioned box with
+  /* Centered with auto margins, not left: 50% + translate: an absolutely positioned box with
      left: 50% only gets HALF the viewport as its shrink-to-fit width and wraps far too early
      (seen on macOS, where the system font is wider). */
   position: absolute;
@@ -1174,7 +1174,7 @@ body.is-busy * {
   height: 24px;
 }
 
-/* Colour */
+/* Color */
 .ctl-color {
   flex-direction: row;
   align-items: center;
@@ -1230,7 +1230,7 @@ body.is-busy * {
 }
 
 /* ------------------------------------------------------------------ */
-/* Images panel                                                        */
+/* Artwork panel                                                       */
 /* ------------------------------------------------------------------ */
 .slot-card {
   display: grid;
@@ -1469,9 +1469,9 @@ body.is-busy * {
 }
 
 /* ------------------------------------------------------------------ */
-/* Styles (presets) panel                                              */
+/* Looks panel                                                         */
 /* ------------------------------------------------------------------ */
-.preset-list {
+.look-list {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -1479,16 +1479,16 @@ body.is-busy * {
   flex-direction: column;
   gap: 2px;
 }
-.preset-row {
+.look-row {
   display: flex;
   align-items: center;
   gap: 2px;
   border-radius: var(--radius);
 }
-.preset-row:hover {
+.look-row:hover {
   background: var(--bg-hover);
 }
-.preset-apply {
+.look-apply {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -1502,7 +1502,7 @@ body.is-busy * {
   cursor: pointer;
   color: var(--text);
 }
-.preset-swatch {
+.look-swatch {
   width: 26px;
   height: 26px;
   flex: none;
@@ -1510,14 +1510,14 @@ body.is-busy * {
   box-shadow: inset 0 0 0 0.5px var(--border-strong);
   background-size: 8px 8px;
 }
-.preset-name {
+.look-name {
   flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.preset-tag {
+.look-tag {
   font-size: 10px;
   color: var(--accent-text);
   background: var(--accent-soft);
@@ -1525,7 +1525,7 @@ body.is-busy * {
   padding: 1px 5px;
   flex: none;
 }
-.preset-actions {
+.look-actions {
   display: flex;
   gap: 1px;
   padding-right: 4px;

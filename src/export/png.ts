@@ -33,8 +33,8 @@ export function crc32(bytes: Uint8Array, start = 0, end = bytes.length): number 
   return (c ^ 0xffffffff) >>> 0;
 }
 
-/** DPI -> pixels per metre (PNG pHYs unit 1). 300 dpi -> 11811. */
-export function dpiToPixelsPerMetre(dpi: number): number {
+/** DPI -> pixels per meter (PNG pHYs unit 1). 300 dpi -> 11811. */
+export function dpiToPixelsPerMeter(dpi: number): number {
   return Math.max(1, Math.round(dpi / 0.0254));
 }
 
@@ -65,7 +65,7 @@ function chunkType(b: Uint8Array, o: number): string {
 
 /** Build a complete pHYs chunk (length + type + data + CRC = 21 bytes). */
 export function buildPhysChunk(dpi: number): Uint8Array<ArrayBuffer> {
-  const ppm = dpiToPixelsPerMetre(dpi);
+  const ppm = dpiToPixelsPerMeter(dpi);
   const c = new Uint8Array(21);
   writeU32(c, 0, 9);
   c[4] = 0x70; // p
@@ -74,7 +74,7 @@ export function buildPhysChunk(dpi: number): Uint8Array<ArrayBuffer> {
   c[7] = 0x73; // s
   writeU32(c, 8, ppm);
   writeU32(c, 12, ppm);
-  c[16] = 1; // unit: metre
+  c[16] = 1; // unit: meter
   writeU32(c, 17, crc32(c, 4, 17));
   return c;
 }

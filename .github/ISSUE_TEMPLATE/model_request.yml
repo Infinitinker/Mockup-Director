@@ -6,7 +6,7 @@ body:
     id: model
     attributes:
       label: Model
-      description: What it is, and its usual sizes in millimetres.
+      description: What it is, and its usual sizes in millimeters.
       placeholder: "Vinyl record sleeve, 314 × 314 mm"
     validations:
       required: true

@@ -36,7 +36,7 @@ export function createGallery(ctx: AppContext): { el: HTMLElement; render(): voi
       const list = h('ul', { class: 'gallery-list', attrs: { role: 'list' } });
       for (const m of models) {
         const active = m.id === current;
-        const filled = Object.values(ctx.store.state.images[m.id] ?? {}).filter(Boolean).length;
+        const filled = Object.values(ctx.store.state.artwork[m.id] ?? {}).filter(Boolean).length;
         const btn = h(
           'button',
           {
@@ -49,7 +49,7 @@ export function createGallery(ctx: AppContext): { el: HTMLElement; render(): voi
           h('span', { class: 'gallery-icon', html: m.icon }),
           h('span', { class: 'gallery-name', text: m.name }),
           filled
-            ? h('span', { class: 'gallery-badge', text: String(filled), title: `Images assigned: ${filled}` })
+            ? h('span', { class: 'gallery-badge', text: String(filled), title: `Slots with artwork: ${filled}` })
             : null,
         );
         list.appendChild(h('li', {}, btn));
@@ -60,7 +60,7 @@ export function createGallery(ctx: AppContext): { el: HTMLElement; render(): voi
   };
 
   ctx.store.subscribe((e) => {
-    if (hasAny(e, 'model', 'images')) render();
+    if (hasAny(e, 'model', 'artwork')) render();
   });
   render();
   return { el, render };

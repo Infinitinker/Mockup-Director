@@ -91,7 +91,7 @@ function buildDielineBox(ctx: ModelContext): THREE.Object3D {
 export const dielineBoxModel: ModelDefinition = {
   id: 'box-dieline',
   category: 'box',
-  name: 'Box – dieline (single image)',
+  name: 'Box – dieline (one artwork file)',
   description: 'The same box, with all artwork in one file: a cross-shaped net.',
   icon: icon(
     '<path d="M8 24 H16 V16 H32 V24 H56 V40 H32 V48 H16 V40 H8 Z"/>' +
@@ -101,7 +101,7 @@ export const dielineBoxModel: ModelDefinition = {
     {
       id: 'net',
       label: 'Box net',
-      hint: 'Row: left | front | right | back; top above the front, bottom below it. Download the template.',
+      hint: 'A cross-shaped net: left | front | right | back in one row, with the top above the front and the bottom below it. Download the template for the exact sizes.',
       aspect: aspectOf(netTemplate(DEFAULTS.w, DEFAULTS.h, DEFAULTS.d, BLEED_MM)),
       template: templateFor,
     },

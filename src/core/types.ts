@@ -2,9 +2,9 @@
  * Mockup Director – shared contract between modules.
  *
  * CONVENTIONS (all modules must follow):
- *  - World units are MILLIMETRES.
+ *  - World units are MILLIMETERS.
  *  - A model's root Object3D sits ON the ground plane: its lowest point is at y = 0,
- *    it is centred on x = 0 / z = 0, and its FRONT faces +Z, its top faces +Y.
+ *    it is centered on x = 0 / z = 0, and its FRONT faces +Z, its top faces +Y.
  *  - Models never mutate shared textures returned by ModelContext.getTexture()
  *    (no changing repeat/offset/rotation/flipY on them). Map image regions via UVs.
  *    If a model really needs a modified copy, it clones the texture and sets
@@ -13,7 +13,7 @@
  *    scene.environment for realistic reflections; lights are added by the stage).
  *  - Meshes that should cast shadows set `castShadow = true`.
  *  - Camera yaw: 0 = camera on +Z looking at the front; positive yaw moves the camera
- *    towards +X (front + RIGHT side visible). Pitch: positive = camera above, looking down.
+ *    toward +X (front + RIGHT side visible). Pitch: positive = camera above, looking down.
  */
 import type * as THREE from 'three';
 
@@ -60,7 +60,7 @@ export interface TemplateGuide {
   posMm: number;
   label?: string;
 }
-/** A labelled region on a print template (e.g. "Front", "Spine", "Back"). */
+/** A labeled region on a print template (e.g. "Front", "Spine", "Back"). */
 export interface TemplateRegion {
   xMm: number;
   yMm: number;
@@ -84,7 +84,7 @@ export interface PrintTemplate {
   circle?: { outerMm: number; innerMm: number; printOuterMm?: number; printInnerMm?: number };
 }
 
-/** One image input of a model (a face, a wrap-around cover, a disc label ...). */
+/** One slot of a model: a place that takes artwork (a face, a wrap-around cover, a disc label ...). */
 export interface ImageSlotDef {
   id: string;
   label: string;
@@ -93,7 +93,7 @@ export interface ImageSlotDef {
   /** Expected artwork aspect ratio (width / height) – used by the UI to warn about mismatches. */
   aspect: number;
   /**
-   * The slot accepts artwork of ANY aspect ratio (e.g. a screenshot panel whose size follows the image).
+   * The slot accepts artwork of ANY aspect ratio (e.g. a screenshot panel whose size follows the artwork).
    * `aspect` then only shapes the placeholder and the UI shows no aspect-mismatch warning.
    */
   anyAspect?: boolean;
@@ -105,10 +105,10 @@ export interface ImageSlotDef {
 }
 
 export interface ModelContext {
-  /** The user's image for this slot, or a generated placeholder texture (never null). */
+  /** The user's artwork for this slot, or a generated placeholder texture (never null). */
   getTexture(slotId: string): THREE.Texture;
-  /** True if the user has provided an image for the slot. */
-  hasImage(slotId: string): boolean;
+  /** True if the user has provided artwork for the slot. */
+  hasArtwork(slotId: string): boolean;
   /** Parameter values (always complete – defaults are filled in). */
   params: ParamValues;
 }
@@ -126,7 +126,7 @@ export interface ModelDefinition {
   params: ParamDef[];
   /** Suggested initial camera when the model is picked. */
   defaultCamera?: Partial<CameraSettings>;
-  /** Build a NEW object tree. Called again whenever params or images change. */
+  /** Build a NEW object tree. Called again whenever params or artwork change. */
   build(ctx: ModelContext): THREE.Object3D;
 }
 
@@ -135,7 +135,7 @@ export interface ModelDefinition {
 /* ------------------------------------------------------------------ */
 
 export interface CameraSettings {
-  /** degrees, 0 = front, + = towards the model's right side */
+  /** degrees, 0 = front, + = toward the model's right side */
   yaw: number;
   /** degrees, + = from above */
   pitch: number;
@@ -162,7 +162,7 @@ export interface LightSettings {
   ambient: number;
   /** environment (reflections) intensity (0..2) */
   environment: number;
-  /** key light colour '#rrggbb' */
+  /** key light color '#rrggbb' */
   color: string;
 }
 
@@ -216,13 +216,14 @@ export interface StageAPI {
   /**
    * Render the current model + effects off-screen at an exact pixel size, framed to fit
    * the whole composition (model, reflection, shadow), and return a 2D canvas with the pixels.
-   * Must restore the on-screen viewport afterwards.
+   * Must restore the on-screen viewport afterwards. Throws an error whose message is meant for the
+   * user when it cannot render (no WebGL, lost GPU context, no 2D canvas).
    */
   renderToCanvas(options: RenderOptions): HTMLCanvasElement;
   /**
    * OPTIONAL (animation export): start a turntable render session with ONE fixed framing that fits
    * the union of all frames (the composition never jumps, breathes or gets cropped). The on-screen
-   * viewport is frozen until `end()` is called; renderToCanvas() keeps its still-export behaviour.
+   * viewport is frozen until `end()` is called; renderToCanvas() keeps its still-export behavior.
    */
   beginAnimation?(options: AnimationFramingOptions): AnimationRenderSession;
   /** Call when the viewport container is resized (the stage may also observe it itself). */
@@ -233,7 +234,7 @@ export interface StageAPI {
 /** Options of StageAPI.beginAnimation(). */
 export interface AnimationFramingOptions {
   /**
-   * Product rotation of every frame in degrees around the vertical axis through the model's centre,
+   * Product rotation of every frame in degrees around the vertical axis through the model's center,
    * relative to the current view (+ = counter-clockwise seen from above). Frame i shows angles[i].
    */
   angles: number[];
@@ -286,7 +287,7 @@ export interface AnimationSettings {
   background: 'transparent' | 'scene';
   /** GIF dithering. */
   dither: 'floyd' | 'ordered' | 'none';
-  /** GIF palette: one global palette (stable colours, smaller files) or one per frame. */
+  /** GIF palette: one global palette (stable colors, smaller files) or one per frame. */
   palette: 'global' | 'frame';
   /** WebP quality / MP4 bitrate preset. */
   quality: 'low' | 'medium' | 'high';
@@ -306,7 +307,7 @@ export interface ExportSettings {
   /** 0..1 for jpeg / webp */
   quality: number;
   /**
-   * 'canvas' – output is exactly width x height, composition centred and scaled to fit inside margins.
+   * 'canvas' – output is exactly width x height, composition centered and scaled to fit inside margins.
    * 'trim'   – composition scaled to fit width x height (minus margins), output cropped to the
    *            composition + margins (so one dimension is usually smaller).
    */
@@ -321,10 +322,10 @@ export interface ExportSettings {
 }
 
 /* ------------------------------------------------------------------ */
-/* Images / project                                                    */
+/* Artwork / project                                                   */
 /* ------------------------------------------------------------------ */
 
-export interface ImageAsset {
+export interface Artwork {
   name: string;
   /** data: URL of the original file (kept for project saving). */
   dataUrl: string;
@@ -333,20 +334,28 @@ export interface ImageAsset {
   texture: THREE.Texture;
 }
 
-/** Serialisable project file (*.mdproj, JSON). */
+/** Serializable project file (*.mdproj, JSON). */
 export interface ProjectFile {
   app: 'mockup-director';
   version: 1;
   modelId: string;
   params: Record<string, ParamValues>;
-  /** modelId -> slotId -> image */
-  images: Record<string, Record<string, { name: string; dataUrl: string }>>;
+  /** modelId -> slotId -> artwork */
+  artwork: Record<string, Record<string, { name: string; dataUrl: string }>>;
   scene: SceneSettings;
   export: ExportSettings;
 }
 
 /** Named, reusable look (stored in localStorage). */
-export interface ScenePreset {
+export interface Look {
   name: string;
   scene: Omit<SceneSettings, 'camera'> & { camera?: CameraSettings };
+}
+
+/** The looks file (exported and imported as JSON) and the stored looks: both have this shape. */
+export interface LooksFile {
+  app: 'mockup-director';
+  kind: 'looks';
+  version: number;
+  looks: Look[];
 }

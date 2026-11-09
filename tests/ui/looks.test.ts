@@ -1,0 +1,346 @@
+/**
+ * Tests the looks in src/ui/looks.ts: validating untrusted looks and looks files, the built-in
+ * looks, making a look from the scene and applying one to it, unique names, and storing the
+ * user's looks (with a fake localStorage).
+ */
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { DEFAULT_SCENE, cloneScene } from '../../src/core/defaults';
+import type { CameraSettings, Look, SceneSettings } from '../../src/core/types';
+import {
+  BUILTIN_LOOKS,
+  LOOKS_KEY,
+  LOOKS_VERSION,
+  LooksError,
+  MAX_LOOK_NAME,
+  STORED_LOOKS_DAMAGED,
+  applyLook,
+  loadLooks,
+  lookFromScene,
+  parseLooksFile,
+  sanitizeLook,
+  saveLooks,
+  toLooksFile,
+  uniqueName,
+} from '../../src/ui/looks';
+
+const sceneWithoutCamera = (): Look['scene'] => {
+  const { camera: _camera, ...rest } = cloneScene(DEFAULT_SCENE);
+  return rest;
+};
+
+const CAMERA: CameraSettings = {
+  yaw: 15,
+  pitch: 20,
+  roll: 3,
+  fov: 50,
+  projection: 'orthographic',
+  zoom: 1.5,
+  panX: 0.2,
+  panY: -0.1,
+};
+
+/** A localStorage that keeps the items in a map. */
+function fakeLocalStorage(): Map<string, string> {
+  const items = new Map<string, string>();
+  vi.stubGlobal('window', {
+    localStorage: {
+      getItem: (key: string) => items.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        items.set(key, value);
+      },
+    },
+  });
+  return items;
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
+describe('sanitizeLook', () => {
+  it('rejects anything without a name or a scene', () => {
+    for (const raw of [
+      null,
+      undefined,
+      'look',
+      42,
+      [],
+      {},
+      { name: 'Look' },
+      { name: 'Look', scene: [] },
+      { name: 'Look', scene: 'dark' },
+      { name: '   ', scene: {} },
+      { name: 7, scene: {} },
+      { scene: {} },
+    ]) {
+      expect(sanitizeLook(raw)).toBeNull();
+    }
+  });
+
+  it('keeps a valid look as it is, with or without a camera', () => {
+    const scene = sceneWithoutCamera();
+    expect(sanitizeLook({ name: 'Plain', scene })).toEqual({ name: 'Plain', scene });
+    const withCamera = { ...scene, camera: CAMERA };
+    expect(sanitizeLook({ name: 'Framed', scene: withCamera })).toEqual({ name: 'Framed', scene: withCamera });
+  });
+
+  it('fills a partial scene with the defaults and leaves the camera out unless one is given', () => {
+    const look = sanitizeLook({ name: 'Partial', scene: { shadow: { opacity: 0.9 } } });
+    expect(look).toEqual({
+      name: 'Partial',
+      scene: { ...sceneWithoutCamera(), shadow: { ...DEFAULT_SCENE.shadow, opacity: 0.9 } },
+    });
+    expect(look?.scene).not.toHaveProperty('camera');
+  });
+
+  it('completes a partial camera with the default camera', () => {
+    const look = sanitizeLook({ name: 'Turned', scene: { camera: { yaw: 45 } } });
+    expect(look?.scene.camera).toEqual({ ...DEFAULT_SCENE.camera, yaw: 45 });
+  });
+
+  it('ignores a camera that is not an object', () => {
+    for (const camera of [null, 'front', 3, []]) {
+      expect(sanitizeLook({ name: 'Look', scene: { camera } })?.scene).not.toHaveProperty('camera');
+    }
+  });
+
+  it('trims the name and cuts it to 80 characters', () => {
+    expect(sanitizeLook({ name: '  Dark  ', scene: {} })?.name).toBe('Dark');
+    expect(sanitizeLook({ name: ` ${'x'.repeat(100)}`, scene: {} })?.name).toBe('x'.repeat(80));
+  });
+
+  it('clamps out-of-range values, replaces wrong types and drops unknown keys', () => {
+    const look = sanitizeLook({
+      name: 'Broken',
+      unknown: true,
+      scene: {
+        camera: { yaw: 1000, pitch: -100, roll: 'up', fov: 0, projection: 'fisheye', zoom: 100, panX: 5, panY: -5 },
+        light: { intensity: 9, ambient: -1, environment: Number.NaN, elevation: 120, color: 'white', azimuth: 10 },
+        shadow: { enabled: 'yes', opacity: 2, softness: -1 },
+        reflection: { enabled: false, opacity: 5, falloff: -3, gap: 500 },
+        background: { mode: 'image', color: '#12345', color2: '#ABCDEF' },
+        extra: { anything: 1 },
+      },
+    });
+    expect(look).toEqual({
+      name: 'Broken',
+      scene: {
+        camera: { yaw: 360, pitch: -89, roll: 0, fov: 1, projection: 'perspective', zoom: 20, panX: 2, panY: -2 },
+        light: { ...DEFAULT_SCENE.light, intensity: 3, ambient: 0, elevation: 90, azimuth: 10 },
+        shadow: { enabled: true, opacity: 1, softness: 0 },
+        reflection: { enabled: false, opacity: 1, falloff: 0, gap: 100 },
+        background: { mode: DEFAULT_SCENE.background.mode, color: DEFAULT_SCENE.background.color, color2: '#ABCDEF' },
+      },
+    });
+  });
+});
+
+describe('parseLooksFile', () => {
+  const look = { name: 'One', scene: {} };
+  const other = { name: 'Two', scene: { shadow: { enabled: false } } };
+  const file = (looks: unknown, fields: Record<string, unknown> = {}) => ({
+    app: 'mockup-director',
+    kind: 'looks',
+    version: LOOKS_VERSION,
+    looks,
+    ...fields,
+  });
+
+  it('reads the looks of a looks file in their order', () => {
+    expect(parseLooksFile(file([look, other])).map((l) => l.name)).toEqual(['One', 'Two']);
+    expect(parseLooksFile(file([]))).toEqual([]);
+  });
+
+  it('leaves out the entries that are not looks', () => {
+    expect(parseLooksFile(file([look, null, { name: '' }, 'x', other])).map((l) => l.name)).toEqual(['One', 'Two']);
+  });
+
+  it('refuses a value that is not a looks file', () => {
+    for (const json of [
+      null,
+      'looks',
+      [look],
+      look,
+      file([look], { app: 'other-app' }),
+      file([look], { app: undefined }),
+      file([look], { kind: 'presets' }),
+      file([look], { kind: undefined }),
+      file('none'),
+      file(undefined),
+    ]) {
+      expect(() => parseLooksFile(json)).toThrow(LooksError);
+    }
+  });
+
+  it('refuses a version that is not a whole number from 1', () => {
+    for (const version of [0, -1, 1.5, '1', null, undefined]) {
+      expect(() => parseLooksFile(file([look], { version }))).toThrow(LooksError);
+    }
+  });
+
+  it('refuses looks from a newer version and says to update', () => {
+    expect(() => parseLooksFile(file([look], { version: LOOKS_VERSION + 1 }))).toThrow(/newer Mockup Director/);
+    try {
+      parseLooksFile(file([look], { version: LOOKS_VERSION + 1 }));
+    } catch (e) {
+      expect(e instanceof LooksError && e.newer).toBe(true);
+    }
+    try {
+      parseLooksFile(file([look], { version: 0 }));
+    } catch (e) {
+      expect(e instanceof LooksError && e.newer).toBe(false);
+    }
+  });
+
+  it('writes the shape it reads', () => {
+    const looks = [{ name: 'One', scene: sceneWithoutCamera() }];
+    expect(toLooksFile(looks)).toEqual({ app: 'mockup-director', kind: 'looks', version: LOOKS_VERSION, looks });
+    expect(parseLooksFile(JSON.parse(JSON.stringify(toLooksFile(looks))))).toEqual(looks);
+  });
+});
+
+describe('BUILTIN_LOOKS', () => {
+  it('has stable, unique ids', () => {
+    expect(BUILTIN_LOOKS.map((l) => l.id)).toEqual(['studio-light', 'dark-stage', 'clean-catalog', 'glossy-hero']);
+  });
+
+  it('holds complete scenes within every range', () => {
+    for (const look of BUILTIN_LOOKS) {
+      expect(sanitizeLook({ name: look.id, scene: look.scene })?.scene, look.id).toEqual(look.scene);
+    }
+  });
+
+  it('includes a camera only in the glossy hero shot', () => {
+    expect(BUILTIN_LOOKS.filter((l) => l.scene.camera).map((l) => l.id)).toEqual(['glossy-hero']);
+  });
+});
+
+describe('lookFromScene', () => {
+  const scene: SceneSettings = { ...cloneScene(DEFAULT_SCENE), camera: CAMERA };
+
+  it('takes the scene and the camera only when asked', () => {
+    expect(lookFromScene('With', scene, true)).toEqual({ name: 'With', scene });
+    const without = lookFromScene('Without', scene, false);
+    expect(without.scene).toEqual(sceneWithoutCamera());
+    expect(without.scene).not.toHaveProperty('camera');
+  });
+
+  it('copies the scene so later changes do not reach the look', () => {
+    const source = cloneScene(scene);
+    const look = lookFromScene('Copy', source, true);
+    source.light.intensity = 2.5;
+    source.camera.yaw = -90;
+    expect(look.scene.light.intensity).toBe(DEFAULT_SCENE.light.intensity);
+    expect(look.scene.camera?.yaw).toBe(CAMERA.yaw);
+  });
+});
+
+describe('applyLook', () => {
+  it('keeps the current camera when the look has none', () => {
+    const current: SceneSettings = { ...cloneScene(DEFAULT_SCENE), camera: CAMERA };
+    const look = BUILTIN_LOOKS[1].scene;
+    expect(applyLook(current, look)).toEqual({ ...look, camera: CAMERA });
+  });
+
+  it('takes the camera of the look when it has one', () => {
+    const look = { ...sceneWithoutCamera(), camera: CAMERA };
+    expect(applyLook(cloneScene(DEFAULT_SCENE), look).camera).toEqual(CAMERA);
+  });
+
+  it('leaves the scene and the look unchanged', () => {
+    const current = cloneScene(DEFAULT_SCENE);
+    const look = { ...sceneWithoutCamera(), camera: { ...CAMERA } };
+    const before = JSON.stringify([current, look]);
+    const next = applyLook(current, look);
+    next.camera.yaw = 99;
+    next.light.intensity = 0;
+    expect(JSON.stringify([current, look])).toBe(before);
+  });
+
+  it('clamps the values of a damaged look', () => {
+    const look = { ...sceneWithoutCamera(), shadow: { enabled: true, opacity: 3, softness: 0.5 } };
+    expect(applyLook(cloneScene(DEFAULT_SCENE), look).shadow.opacity).toBe(1);
+  });
+});
+
+describe('uniqueName', () => {
+  const list = (...names: string[]): Look[] => names.map((name) => ({ name, scene: sceneWithoutCamera() }));
+
+  it('keeps a free name', () => {
+    expect(uniqueName('Dark', list('Light'))).toBe('Dark');
+  });
+
+  it('adds the first free number, ignoring case', () => {
+    expect(uniqueName('Dark', list('dark'))).toBe('Dark 2');
+    expect(uniqueName('Dark', list('Dark', 'DARK 2', 'Dark 4'))).toBe('Dark 3');
+  });
+
+  it('ignores the look being renamed', () => {
+    expect(uniqueName('Dark', list('Light', 'Dark'), 1)).toBe('Dark');
+    expect(uniqueName('Dark', list('Dark', 'Dark'), 1)).toBe('Dark 2');
+  });
+
+  it('keeps names within the length limit, so storing them does not make them equal', () => {
+    const long = 'x'.repeat(MAX_LOOK_NAME);
+    expect(uniqueName(`${long}yz`, list())).toBe(long);
+    const second = uniqueName(long, list(long));
+    expect(second).toBe(`${'x'.repeat(MAX_LOOK_NAME - 2)} 2`);
+    expect(sanitizeLook({ name: second, scene: {} })?.name).toBe(second);
+    expect(uniqueName(long, list(long, second))).toBe(`${'x'.repeat(MAX_LOOK_NAME - 2)} 3`);
+    const spaced = `${'x'.repeat(MAX_LOOK_NAME - 3)} ab`;
+    expect(uniqueName(spaced, list(spaced))).toBe(`${'x'.repeat(MAX_LOOK_NAME - 3)} 2`);
+  });
+});
+
+describe('stored looks', () => {
+  it('uses the storage key of the app', () => {
+    expect(LOOKS_KEY).toBe('mockup-director.looks');
+  });
+
+  it('saves the looks as a looks file and reads them back', () => {
+    const items = fakeLocalStorage();
+    const looks = [lookFromScene('One', cloneScene(DEFAULT_SCENE), true), { name: 'Two', scene: sceneWithoutCamera() }];
+    saveLooks(looks);
+    expect(JSON.parse(items.get(LOOKS_KEY) ?? 'null')).toEqual(toLooksFile(looks));
+    expect(loadLooks()).toEqual({ looks, error: null, locked: false });
+  });
+
+  it('reads nothing, without an error, when no looks are stored', () => {
+    fakeLocalStorage();
+    expect(loadLooks()).toEqual({ looks: [], error: null, locked: false });
+  });
+
+  it('says so when the stored looks are damaged, and lets them be replaced', () => {
+    const items = fakeLocalStorage();
+    for (const raw of [
+      '{ not json',
+      JSON.stringify([{ name: 'Valid', scene: {} }]),
+      JSON.stringify({ ...toLooksFile([]), version: 0 }),
+    ]) {
+      items.set(LOOKS_KEY, raw);
+      expect(loadLooks()).toEqual({ looks: [], error: STORED_LOOKS_DAMAGED, locked: false });
+    }
+  });
+
+  it('refuses looks from a newer version and keeps them from being overwritten', () => {
+    const items = fakeLocalStorage();
+    items.set(LOOKS_KEY, JSON.stringify({ ...toLooksFile([]), version: LOOKS_VERSION + 1 }));
+    const stored = loadLooks();
+    expect(stored.looks).toEqual([]);
+    expect(stored.locked).toBe(true);
+    expect(stored.error).toMatch(/newer Mockup Director/);
+  });
+
+  it('skips the stored entries that are not looks', () => {
+    const items = fakeLocalStorage();
+    items.set(
+      LOOKS_KEY,
+      JSON.stringify({ ...toLooksFile([]), looks: [{ name: 'Valid', scene: {} }, { name: 'No scene' }] }),
+    );
+    expect(loadLooks().looks.map((l) => l.name)).toEqual(['Valid']);
+  });
+
+  it('reads nothing when there is no storage', () => {
+    expect(loadLooks()).toEqual({ looks: [], error: null, locked: false });
+  });
+});

@@ -2,13 +2,13 @@
  * Flat printed matter: business card, flyer, postcard, plastic (ID-1) card and a closed
  * saddle-stitched brochure.
  *
- * Coordinate frame (see CONVENTIONS in core/types.ts): millimetres. Every item is first built
+ * Coordinate frame (see CONVENTIONS in core/types.ts): millimeters. Every item is first built
  * "standing" in its own frame – artwork in the XY plane, FRONT facing +Z, thickness along Z,
- * centred on the origin – and then arranged by `arrange()` (lying flat = rotated -90° about X so
+ * centered on the origin – and then arranged by `arrange()` (lying flat = rotated -90° about X so
  * the front faces up and the artwork's top points away from the camera, leaning, stack, pair).
  * The result is put on the ground with placeOnGround().
  *
- * Artwork convention (same as keepcase.ts): every image slot expects the FULL template
+ * Artwork convention (same as keepCase.ts): every image slot expects the FULL template
  * including the 3 mm bleed, so the trim area of a face maps to the inner rectangle of the image
  * (`trimRect`). The BACK of a sheet is "turned over like a book page" (around the vertical
  * axis): seen from behind, it reads normally, top still at the top.
@@ -183,7 +183,7 @@ function printedMat(map: THREE.Texture, f: FinishDef): THREE.MeshPhysicalMateria
   return m;
 }
 
-/** Unprinted face (empty secondary slot) in the stock colour with the same finish. */
+/** Unprinted face (empty secondary slot) in the stock color with the same finish. */
 function solidMat(color: string, f: FinishDef): THREE.MeshPhysicalMaterial {
   return new THREE.MeshPhysicalMaterial({
     color,
@@ -304,7 +304,7 @@ function edgeFromOutline(outline: THREE.Vector2[], t: number): THREE.BufferGeome
 }
 
 /**
- * Flat card / sheet w x h x t with rounded corners r, centred on the origin, front facing +Z.
+ * Flat card / sheet w x h x t with rounded corners r, centered on the origin, front facing +Z.
  * `frontRect` / `backRect` give the image area mapped onto the trim of each face.
  */
 function flatSheetGeometries(
@@ -508,7 +508,7 @@ function layoutOf(params: ParamValues, kinds: Layout[], def: Layout): Layout {
 const LEAN = deg(12);
 
 /**
- * Arrange items built by `make()` (standing frame: front +Z, centred, w x h x t).
+ * Arrange items built by `make()` (standing frame: front +Z, centered, w x h x t).
  *  flat    – one item, front up, artwork top pointing away (-Z).
  *  leaning – one item standing on its bottom edge, leaning back by LEAN.
  *  stack   – `count` items lying on top of each other with tiny deterministic offsets / turns
@@ -545,7 +545,7 @@ function arrange(
     case 'leaning': {
       const g = new THREE.Group();
       g.add(make());
-      g.rotation.x = -LEAN; // top moves towards -Z
+      g.rotation.x = -LEAN; // top moves toward -Z
       root.add(g);
       break;
     }
@@ -569,8 +569,8 @@ function arrange(
       break;
     }
     case 'pair': {
-      // Centre distance large enough that the two turned items can never overlap: each reaches
-      // (w/2)·cos θ + (h/2)·sin θ towards the other one, plus a visible gap.
+      // Center distance large enough that the two turned items can never overlap: each reaches
+      // (w/2)·cos θ + (h/2)·sin θ toward the other one, plus a visible gap.
       const ra = deg(4);
       const rb = deg(6);
       const d =
@@ -628,25 +628,25 @@ const CUSTOM_WIDTH = 'Width (custom size)';
 const CUSTOM_HEIGHT = 'Height (custom size)';
 
 /**
- * Trim size from a preset table (values given in the table's base orientation) + orientation
+ * Trim size from a table of sizes (values given in the table's base orientation) + orientation
  * select; 'custom' uses the width / height params literally (orientation is ignored).
  */
-function presetDims(
+function trimSizeOf(
   params: ParamValues,
-  presets: Record<string, [number, number]>,
+  sizes: Record<string, [number, number]>,
   def: string,
   baseOrientation: 'landscape' | 'portrait',
   customLimits: [number, number],
 ): [number, number] {
   const size = str(params, 'size', def);
   if (size === 'custom') {
-    const [d0, d1] = presets[def];
+    const [d0, d1] = sizes[def];
     return [
       clamp(num(params, 'width', d0), customLimits[0], customLimits[1]),
       clamp(num(params, 'height', d1), customLimits[0], customLimits[1]),
     ];
   }
-  const [a, b] = presets[size] ?? presets[def];
+  const [a, b] = sizes[size] ?? sizes[def];
   const o = str(params, 'orientation', baseOrientation);
   return o === baseOrientation ? [a, b] : [b, a];
 }
@@ -664,7 +664,7 @@ function twoSidedSlots(
     {
       id: 'front',
       label: 'Front',
-      hint: `${noun} – front side. Default ${round2(defW)} × ${round2(defH)} mm + 3 mm bleed on every side (the template follows the chosen size).`,
+      hint: `The front of the ${noun}: by default ${round2(defW)} × ${round2(defH)} mm + 3 mm bleed on every side (the template follows the chosen size).`,
       aspect,
       template: (p) => {
         const [w, h] = dims(p);
@@ -674,7 +674,7 @@ function twoSidedSlots(
     {
       id: 'back',
       label: 'Back',
-      hint: `Back in the same format, laid out as when turning the sheet over like a page (top stays at the top). ${backFallback}`,
+      hint: `The back in the same format, laid out as when the sheet is turned over like a page (the top stays at the top). ${backFallback}`,
       aspect,
       template: (p) => {
         const [w, h] = dims(p);
@@ -694,7 +694,7 @@ const BC_SIZES: Record<string, [number, number]> = {
   '85x55': [85, 55],
   '89x51': [89, 51],
 };
-const businessCardDims = (p: ParamValues) => presetDims(p, BC_SIZES, '90x50', 'landscape', [30, 150]);
+const businessCardDims = (p: ParamValues) => trimSizeOf(p, BC_SIZES, '90x50', 'landscape', [30, 150]);
 const CARD_LAYOUTS: Layout[] = ['flat', 'leaning', 'stack', 'pair'];
 
 const ICON_BUSINESS_CARD =
@@ -707,9 +707,9 @@ const businessCardModel: ModelDefinition = {
   category: 'print',
   name: 'Business card',
   description:
-    'Business card 90 × 50 / 85 × 55 / 89 × 51 mm or a custom size – single, standing, in a stack or front and back side by side.',
+    'Business card 90 × 50 / 85 × 55 / 89 × 51 mm or a custom size: single, standing, in a stack or front and back side by side.',
   icon: ICON_BUSINESS_CARD,
-  slots: twoSidedSlots(businessCardDims, 90, 50, 'Business card', 'Without an image the back shows the paper colour.'),
+  slots: twoSidedSlots(businessCardDims, 90, 50, 'business card', 'Without artwork the back shows the paper color.'),
   params: [
     {
       id: 'size',
@@ -730,7 +730,7 @@ const businessCardModel: ModelDefinition = {
     mmParam('cornerRadius', 'Corner radius', 0, 0, 6, 0.5, G_DIM),
     thicknessParam(0.4, 0.3, 0.8, 0.05),
     finishParam('matte', 'Finish'),
-    colorParam('paperColor', 'Paper colour (edges, empty back)', '#f7f6f2'),
+    colorParam('paperColor', 'Paper color (edges, empty back)', '#f7f6f2'),
     layoutParam(CARD_LAYOUTS, 'flat'),
     stackCountParam,
   ],
@@ -746,7 +746,7 @@ const businessCardModel: ModelDefinition = {
     const geos = flatSheetGeometries(w, h, t, r, rect, rect);
     const mats: SheetMaterials = {
       front: printedMat(ctx.getTexture('front'), f),
-      back: ctx.hasImage('back') ? printedMat(ctx.getTexture('back'), f) : solidMat(paper, f),
+      back: ctx.hasArtwork('back') ? printedMat(ctx.getTexture('back'), f) : solidMat(paper, f),
       edge: edgeMat(paper),
     };
     const root = arrange(
@@ -772,7 +772,7 @@ const FLYER_SIZES: Record<string, [number, number]> = {
   a4: [210, 297],
   dl: [99, 210],
 };
-const flyerDims = (p: ParamValues) => presetDims(p, FLYER_SIZES, 'a5', 'portrait', [50, 500]);
+const flyerDims = (p: ParamValues) => trimSizeOf(p, FLYER_SIZES, 'a5', 'portrait', [50, 500]);
 const FLYER_LAYOUTS: Layout[] = ['flat', 'leaning', 'pair'];
 
 const ICON_FLYER =
@@ -786,7 +786,7 @@ const flyerModel: ModelDefinition = {
   name: 'Flyer',
   description: 'Single-sheet flyer / leaflet A6 / A5 / A4 / DL or a custom size, with an optional gentle sheet bend.',
   icon: ICON_FLYER,
-  slots: twoSidedSlots(flyerDims, 148, 210, 'Flyer', 'Without an image the back shows the paper colour.'),
+  slots: twoSidedSlots(flyerDims, 148, 210, 'flyer', 'Without artwork the back shows the paper color.'),
   params: [
     {
       id: 'size',
@@ -818,7 +818,7 @@ const flyerModel: ModelDefinition = {
     },
     thicknessParam(0.12, 0.06, 0.4, 0.01),
     finishParam('satin'),
-    colorParam('paperColor', 'Paper colour (edges, empty back)', '#f7f6f2'),
+    colorParam('paperColor', 'Paper color (edges, empty back)', '#f7f6f2'),
     layoutParam(FLYER_LAYOUTS, 'flat'),
   ],
   defaultCamera: { yaw: 15, pitch: 40, fov: 24 },
@@ -832,7 +832,7 @@ const flyerModel: ModelDefinition = {
     const geos = bentSheetGeometries(w, h, t, clamp(num(p, 'bend', 0), 0, 100) / 100, rect, rect);
     const mats: SheetMaterials = {
       front: printedMat(ctx.getTexture('front'), f),
-      back: ctx.hasImage('back') ? printedMat(ctx.getTexture('back'), f) : solidMat(paper, f),
+      back: ctx.hasArtwork('back') ? printedMat(ctx.getTexture('back'), f) : solidMat(paper, f),
       edge: edgeMat(paper),
     };
     const root = arrange(() => sheetMeshes(geos, mats), layoutOf(p, FLYER_LAYOUTS, 'flat'), w, h, t, 1);
@@ -849,11 +849,11 @@ const POSTCARD_SIZES: Record<string, [number, number]> = {
   a6: [148, 105],
   us: [152.4, 101.6],
 };
-const postcardDims = (p: ParamValues) => presetDims(p, POSTCARD_SIZES, 'a6', 'landscape', [60, 300]);
+const postcardDims = (p: ParamValues) => trimSizeOf(p, POSTCARD_SIZES, 'a6', 'landscape', [60, 300]);
 const POSTCARD_LAYOUTS: Layout[] = ['flat', 'leaning', 'pair'];
 
 /**
- * Neutral generic postcard back (trim size, no bleed): stock colour, a vertical divider, address
+ * Neutral generic postcard back (trim size, no bleed): stock color, a vertical divider, address
  * lines and a dashed stamp box. Portrait cards get the landscape layout turned 90°, as real ones do.
  */
 function genericPostcardBack(w: number, h: number, color: string): THREE.CanvasTexture {
@@ -905,8 +905,8 @@ const postcardModel: ModelDefinition = {
     postcardDims,
     148,
     105,
-    'Postcard',
-    'Without an image a neutral postcard back is shown (address lines, stamp box).',
+    'postcard',
+    'Without artwork the back shows a neutral postcard pattern (address lines, stamp box), or the card stock color when “Postcard back pattern” is off.',
   ),
   params: [
     {
@@ -927,7 +927,7 @@ const postcardModel: ModelDefinition = {
     mmParam('cornerRadius', 'Corner radius', 0, 0, 8, 0.5, G_DIM),
     thicknessParam(0.5, 0.25, 0.9, 0.05, 'Card thickness'),
     finishParam('satin'),
-    colorParam('paperColor', 'Card stock colour (edges, empty back)', '#f6f3ec'),
+    colorParam('paperColor', 'Card stock color (edges, empty back)', '#f6f3ec'),
     {
       id: 'backPattern',
       type: 'boolean',
@@ -948,7 +948,7 @@ const postcardModel: ModelDefinition = {
     const rect = trimRect(w, h);
     let back: THREE.Material;
     let backRect = rect;
-    if (ctx.hasImage('back')) back = printedMat(ctx.getTexture('back'), f);
+    if (ctx.hasArtwork('back')) back = printedMat(ctx.getTexture('back'), f);
     else if (bool(p, 'backPattern', true)) {
       // The generated back covers exactly the trim area (no bleed), so it maps onto the full 0..1.
       back = printedMat(genericPostcardBack(w, h, paper), f);
@@ -967,7 +967,7 @@ const postcardModel: ModelDefinition = {
 
 const ID1 = { w: 85.6, h: 53.98, t: 0.76, r: 3.18 } as const;
 
-/** Pulls thin surface details (chip, stripe) towards the camera so they never z-fight with the card face. */
+/** Pulls thin surface details (chip, stripe) toward the camera so they never z-fight with the card face. */
 const DECAL_OFFSET = { polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 } as const;
 
 interface ChipColors {
@@ -1056,7 +1056,7 @@ const plasticCardModel: ModelDefinition = {
     {
       id: 'back',
       label: 'Back',
-      hint: 'Card back in the same format (turned over like a page – top stays at the top). Without an image the back shows the core colour.',
+      hint: 'Card back in the same format, turned over like a page (the top stays at the top). Without artwork the back shows the core color.',
       aspect: (PLASTIC_TEMPLATE_W + 2 * BLEED) / (PLASTIC_TEMPLATE_H + 2 * BLEED),
       template: panelTemplate(PLASTIC_TEMPLATE_W, PLASTIC_TEMPLATE_H, 'Back'),
     },
@@ -1082,7 +1082,7 @@ const plasticCardModel: ModelDefinition = {
       default: false,
     },
     finishParam('gloss', 'Print finish'),
-    colorParam('coreColor', 'Core colour (edges, empty back)', '#f3f3f0'),
+    colorParam('coreColor', 'Core color (edges, empty back)', '#f3f3f0'),
     layoutParam(CARD_LAYOUTS, 'flat'),
     { ...stackCountParam, default: 5 },
   ],
@@ -1096,7 +1096,7 @@ const plasticCardModel: ModelDefinition = {
     const geos = flatSheetGeometries(w, h, t, r, rect, rect);
     const mats: SheetMaterials = {
       front: printedMat(ctx.getTexture('front'), f),
-      back: ctx.hasImage('back') ? printedMat(ctx.getTexture('back'), f) : solidMat(core, f),
+      back: ctx.hasArtwork('back') ? printedMat(ctx.getTexture('back'), f) : solidMat(core, f),
       edge: edgeMat(core, 0.45),
     };
     const chipColors = CHIP_COLORS[str(p, 'chip', 'none')];
@@ -1193,7 +1193,7 @@ function brochureCoverTemplate(p: ParamValues): PrintTemplate {
 
 /**
  * Page-edge texture: `sheets` nested folded sheets from v = 0 (the cover, outermost) to v = 1
- * (the innermost fold), each a paper-coloured band with a faint darker line at its boundary.
+ * (the innermost fold), each a paper-colored band with a faint darker line at its boundary.
  */
 function pageEdgeTexture(sheets: number, paper: string): THREE.CanvasTexture {
   const px = clamp(sheets * 8, 32, 1024);
@@ -1228,7 +1228,7 @@ interface SectionPt {
 const brochureModel: ModelDefinition = {
   id: 'print-brochure',
   category: 'print',
-  name: 'Brochure / catalogue',
+  name: 'Brochure / catalog',
   description:
     'Closed saddle-stitched brochure (A5 / A4 / Letter or custom); its thickness follows the page count and paper weight.',
   icon: ICON_BROCHURE,
@@ -1238,14 +1238,14 @@ const brochureModel: ModelDefinition = {
       label: 'Cover wrap',
       hint:
         'The whole cover, left to right: Back | Front, no spine (stapled on the fold line). For A4: 420 × 297 mm + 3 mm bleed. ' +
-        'Takes priority over the separate Front / Back slots.',
+        'It takes priority over the separate Front / Back slots.',
       aspect: (2 * 210 + 2 * BLEED) / (297 + 2 * BLEED),
       template: brochureCoverTemplate,
     },
     {
       id: 'front',
       label: 'Front',
-      hint: 'Used only when no “Cover wrap” image is added. For A4: 210 × 297 mm + 3 mm bleed.',
+      hint: 'Used only when “Cover wrap” has no artwork. For A4: 210 × 297 mm + 3 mm bleed.',
       aspect: (210 + 2 * BLEED) / (297 + 2 * BLEED),
       template: (p) => {
         const [W, H] = brochureDims(p);
@@ -1255,7 +1255,7 @@ const brochureModel: ModelDefinition = {
     {
       id: 'back',
       label: 'Back',
-      hint: 'Used only when no “Cover wrap” image is added. The back as seen from behind (top stays at the top). Without an image – paper colour.',
+      hint: 'Used only when “Cover wrap” has no artwork. The back as seen from behind (the top stays at the top). Without artwork the back shows the paper color.',
       aspect: (210 + 2 * BLEED) / (297 + 2 * BLEED),
       template: (p) => {
         const [W, H] = brochureDims(p);
@@ -1299,7 +1299,7 @@ const brochureModel: ModelDefinition = {
       default: '115',
     },
     finishParam('satin', 'Cover finish'),
-    colorParam('paperColor', 'Paper colour (edges, empty back)', '#f5f4ef'),
+    colorParam('paperColor', 'Paper color (edges, empty back)', '#f5f4ef'),
     {
       id: 'staples',
       type: 'boolean',
@@ -1377,7 +1377,7 @@ const brochureModel: ModelDefinition = {
 
     // Arc length is scaled so each half of the section (fore-edge -> spine apex) maps onto exactly
     // one panel width W of the artwork (the fold wrap makes the path ~0.3·T longer – <1 % stretch).
-    if (ctx.hasImage('cover')) {
+    if (ctx.hasArtwork('cover')) {
       // WRAP (Back | Front): u runs with s. Seen from behind, s = 0 (back fore-edge, +X) is on the
       // viewer's left, so the back panel reads normally; the front panel starts at the spine (-X),
       // i.e. on the left when seen from the front. v grows with +y (image bottom at the bottom).
@@ -1393,7 +1393,7 @@ const brochureModel: ModelDefinition = {
       // BACK: s from the back fore-edge (+X, viewer's left from behind) to the spine apex -> reads normally.
       addMesh(
         coverRibbon(0, mid, panelU(0)),
-        ctx.hasImage('back') ? printedMat(ctx.getTexture('back'), f) : solidMat(paper, f),
+        ctx.hasArtwork('back') ? printedMat(ctx.getTexture('back'), f) : solidMat(paper, f),
         'back',
       );
     }

@@ -161,7 +161,7 @@ export class Mp4Writer {
     try {
       await this.output.cancel();
     } catch {
-      /* already finished or cancelled */
+      /* already finished or canceled */
     }
   }
 

@@ -1,12 +1,12 @@
 /**
- * Colour quantisation for the GIF encoder.
+ * Color quantization for the GIF encoder.
  *
- *  - ColorHistogram: 5-bit-per-channel histogram (32 768 bins) that also keeps the exact colour
- *    sums per bin, so palette colours are true averages (no 5-bit banding).
+ *  - ColorHistogram: 5-bit-per-channel histogram (32 768 bins) that also keeps the exact color
+ *    sums per bin, so palette colors are true averages (no 5-bit banding).
  *  - buildPalette(): variance-based median cut (each split cuts the box with the largest weighted
- *    squared error at the position that minimises the error of both halves – Wu-style), followed
+ *    squared error at the position that minimizes the error of both halves – Wu-style), followed
  *    by a few weighted k-means (Lloyd) refinement passes.
- *  - PaletteMapper: nearest palette colour with a lazily filled 6-bit lookup cache.
+ *  - PaletteMapper: nearest palette color with a lazily filled 6-bit lookup cache.
  *  - mapFrame(): RGB -> palette indices with Floyd–Steinberg (serpentine), ordered (Bayer 8x8)
  *    or no dithering; supports transparent and "unchanged" (kept from the previous frame) pixels.
  */
@@ -55,8 +55,8 @@ interface Box {
 }
 
 /**
- * Build a palette of at most `maxColors` colours (interleaved RGB bytes; length = colours * 3).
- * Always returns at least one colour.
+ * Build a palette of at most `maxColors` colors (interleaved RGB bytes; length = colors * 3).
+ * Always returns at least one color.
  */
 export function buildPalette(hist: ColorHistogram, maxColors: number): Uint8Array {
   const max = Math.max(1, Math.min(256, Math.floor(maxColors)));
@@ -155,7 +155,7 @@ export function buildPalette(hist: ColorHistogram, maxColors: number): Uint8Arra
     const axis = vr >= vg && vr >= vb ? pr : vg >= vb ? pg : pb;
     order.subarray(box.start, box.end).sort((a, c) => axis[a] - axis[c]);
 
-    // Split position minimising SSE(left) + SSE(right) (prefix sums over the sorted points).
+    // Split position minimizing SSE(left) + SSE(right) (prefix sums over the sorted points).
     if (prefW.length < len + 1) {
       prefW = new Float64Array(len + 1);
       prefR = new Float64Array(len + 1);
@@ -275,7 +275,7 @@ export function buildPalette(hist: ColorHistogram, maxColors: number): Uint8Arra
   return out;
 }
 
-/** Nearest palette colour with a 6-bit-per-channel lookup cache (filled lazily). */
+/** Nearest palette color with a 6-bit-per-channel lookup cache (filled lazily). */
 export class PaletteMapper {
   readonly palette: Uint8Array;
   readonly size: number;
@@ -290,8 +290,8 @@ export class PaletteMapper {
     const key = ((r >> 2) << 12) | ((g >> 2) << 6) | (b >> 2);
     const hit = this.cache[key];
     if (hit >= 0) return hit;
-    // Search for the centre of the 6-bit cell, so the cached answer does not depend on which
-    // colour of the cell happened to be looked up first.
+    // Search for the center of the 6-bit cell, so the cached answer does not depend on which
+    // color of the cell happened to be looked up first.
     const qr = (r & ~3) + 1.5,
       qg = (g & ~3) + 1.5,
       qb = (b & ~3) + 1.5;
@@ -375,8 +375,8 @@ export function mapFrame(o: MapFrameOptions): void {
         const er = (r - pal[idx * 3]) * FS_STRENGTH;
         const eg = (g - pal[idx * 3 + 1]) * FS_STRENGTH;
         const eb = (b - pal[idx * 3 + 2]) * FS_STRENGTH;
-        const f = e + dir * 3; // forward neighbour
-        const bk = e - dir * 3; // backward neighbour (next row)
+        const f = e + dir * 3; // forward neighbor
+        const bk = e - dir * 3; // backward neighbor (next row)
         cur[f] += er * 0.4375;
         cur[f + 1] += eg * 0.4375;
         cur[f + 2] += eb * 0.4375;

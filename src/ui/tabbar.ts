@@ -95,7 +95,8 @@ export function createTabBar(docs: Documents, opts: TabBarOptions): { el: HTMLEl
       class: 'doctab-close',
       html: ICONS.close,
       label: 'Close tab',
-      title: 'Close tab',
+      // Only the active tab closes with the shortcut.
+      title: tab.active ? `Close tab (${shortcutLabel('W')})` : 'Close tab',
       attrs: { type: 'button', tabindex: -1, disabled: busy },
       on: { click: () => opts.onClose(tab.id) },
     });

@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildPhysChunk,
   crc32,
-  dpiToPixelsPerMetre,
+  dpiToPixelsPerMeter,
   isJpeg,
   isPng,
   setJpegDensity,
@@ -82,17 +82,17 @@ describe('crc32', () => {
   });
 });
 
-describe('dpiToPixelsPerMetre', () => {
+describe('dpiToPixelsPerMeter', () => {
   it('rounds to whole pixels per meter', () => {
-    expect(dpiToPixelsPerMetre(300)).toBe(11811);
-    expect(dpiToPixelsPerMetre(72)).toBe(2835);
-    expect(dpiToPixelsPerMetre(96)).toBe(3780);
+    expect(dpiToPixelsPerMeter(300)).toBe(11811);
+    expect(dpiToPixelsPerMeter(72)).toBe(2835);
+    expect(dpiToPixelsPerMeter(96)).toBe(3780);
   });
 
   it('never goes below 1', () => {
-    expect(dpiToPixelsPerMetre(0)).toBe(1);
-    expect(dpiToPixelsPerMetre(-5)).toBe(1);
-    expect(dpiToPixelsPerMetre(0.01)).toBe(1);
+    expect(dpiToPixelsPerMeter(0)).toBe(1);
+    expect(dpiToPixelsPerMeter(-5)).toBe(1);
+    expect(dpiToPixelsPerMeter(0.01)).toBe(1);
   });
 });
 
@@ -153,12 +153,12 @@ describe('setPngPhys', () => {
     expect(out.length).toBe(png.length);
     const chunks = validChunks(out);
     expect(chunks.map((c) => c.type)).toEqual(['IHDR', 'pHYs', 'tEXt', 'IDAT', 'IEND']);
-    expect(chunks[1].data).toEqual(physData(dpiToPixelsPerMetre(150), 1));
+    expect(chunks[1].data).toEqual(physData(dpiToPixelsPerMeter(150), 1));
 
     const late = setPngPhys(buildPng([IHDR, IDAT, { type: 'pHYs', data: physData(11811, 1) }, IEND], crc32), 150);
     const lateChunks = validChunks(late);
     expect(lateChunks.map((c) => c.type)).toEqual(['IHDR', 'pHYs', 'IDAT', 'IEND']);
-    expect(lateChunks[1].data).toEqual(physData(dpiToPixelsPerMetre(150), 1));
+    expect(lateChunks[1].data).toEqual(physData(dpiToPixelsPerMeter(150), 1));
   });
 
   it('drops every old pHYs chunk', () => {
@@ -178,7 +178,7 @@ describe('setPngPhys', () => {
       const out = setPngPhys(png, dpi);
       const phys = new DataView(out.buffer, 33 + 8, 9);
       const pixelsPerMeter = phys.getUint32(0);
-      expect(pixelsPerMeter).toBe(dpiToPixelsPerMetre(dpi));
+      expect(pixelsPerMeter).toBe(dpiToPixelsPerMeter(dpi));
       expect(phys.getUint32(4)).toBe(pixelsPerMeter);
       expect(phys.getUint8(8)).toBe(1);
       expect(Math.abs(pixelsPerMeter * 0.0254 - dpi)).toBeLessThanOrEqual(0.02);

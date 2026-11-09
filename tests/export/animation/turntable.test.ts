@@ -5,7 +5,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import type { AnimationSettings } from '../../../src/core/types';
-import { frameCountOf, normaliseAnimationSettings } from '../../../src/export/animation/settings';
+import { frameCountOf, normalizeAnimationSettings } from '../../../src/export/animation/settings';
 import { frameDelays, turntableAngles } from '../../../src/export/animation/turntable';
 import { randomInt, seededRandom } from '../../random';
 
@@ -116,7 +116,7 @@ describe('turntableAngles with normalized settings', () => {
   it('gives finite angles for any settings', () => {
     const random = seededRandom(3);
     for (let run = 0; run < 300; run++) {
-      const s = normaliseAnimationSettings({
+      const s = normalizeAnimationSettings({
         fps: randomInt(random, -10, 100),
         duration: random() * 30,
         motion: random() < 0.5 ? 'loop' : 'swing',

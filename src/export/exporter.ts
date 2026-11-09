@@ -57,7 +57,7 @@ export async function exportImage(
   settings: ExportSettings,
   background: BackgroundSettings,
 ): Promise<Blob> {
-  const s = normaliseSettings(settings);
+  const s = normalizeSettings(settings);
   const format = s.format;
   if (format === 'webp' && !supportsWebpEncoding()) throw webpError();
   const opaque = format === 'jpeg';
@@ -70,7 +70,10 @@ export async function exportImage(
   const rw = src.width;
   const rh = src.height;
   if (!rw || !rh) {
-    throw new ExportError('render-failed', 'Rendering failed (not enough GPU memory?).');
+    throw new ExportError(
+      'render-failed',
+      'The image could not be rendered: there may not be enough graphics memory. Reduce the export size.',
+    );
   }
 
   // --- 2. content bounds from alpha --------------------------------------------------------
@@ -104,7 +107,10 @@ export async function exportImage(
   if (blob.type && blob.type !== mime) {
     // Engines fall back to PNG silently for unsupported types (Safari + WebP).
     if (format === 'webp') throw webpError();
-    throw new ExportError('encode-failed', `Could not encode the image as ${format.toUpperCase()}.`);
+    throw new ExportError(
+      'encode-failed',
+      `The image could not be encoded as ${format.toUpperCase()}. Choose another format.`,
+    );
   }
   if (format === 'png') blob = await setPngDpi(blob, EXPORT_DPI);
   else if (format === 'jpeg') blob = await setJpegDpi(blob, EXPORT_DPI);
@@ -120,6 +126,9 @@ function mimeFor(format: ExportFormat): string {
 }
 
 let webpSupport: boolean | null = null;
+/** What the user sees when this engine cannot encode a WebP image. */
+export const WEBP_IMAGE_UNSUPPORTED = 'This system cannot encode WebP images. Choose PNG or JPEG.';
+
 /**
  * Can this engine ENCODE WebP from a canvas? (Chrome/Edge/Firefox: yes; Safari / WKWebView: no –
  * toBlob silently returns PNG.) The UI should hide or disable the WebP option when false.
@@ -178,7 +187,7 @@ export function slugify(s: string): string {
 /**
  * Paint the scene background over the whole canvas.
  *  - 'color'    → solid `color`
- *  - 'gradient' → the SAME radial gradient as the on-screen preview (`color` in the centre,
+ *  - 'gradient' → the SAME radial gradient as the on-screen preview (`color` in the center,
  *                 slightly above the middle → `color2` at the corners); delegated to
  *                 scene/background.ts so preview and export can never drift apart
  *  - 'transparent' → nothing (or white when `opaque`, e.g. for JPEG)
@@ -203,7 +212,7 @@ export function paintBackground(
 /* Internals                                                           */
 /* ------------------------------------------------------------------ */
 
-function normaliseSettings(s: ExportSettings): ExportSettings {
+function normalizeSettings(s: ExportSettings): ExportSettings {
   const width = clampInt(s.width, 1, MAX_EXPORT_SIZE, DEFAULT_EXPORT.width);
   const height = clampInt(s.height, 1, MAX_EXPORT_SIZE, DEFAULT_EXPORT.height);
   // Margin: never more than leaves a 1 px content box.
@@ -223,10 +232,7 @@ function normaliseSettings(s: ExportSettings): ExportSettings {
 }
 
 function webpError(): ExportError {
-  return new ExportError(
-    'webp-unsupported',
-    'WebP encoding is not supported on this system. Please choose PNG or JPEG.',
-  );
+  return new ExportError('webp-unsupported', WEBP_IMAGE_UNSUPPORTED);
 }
 
 function measureContent(src: HTMLCanvasElement): PixelRect | null {
@@ -280,7 +286,12 @@ function canvasToBlob(c: HTMLCanvasElement, mime: string, quality?: number): Pro
       (b) => {
         if (b) resolve(b);
         else {
-          reject(new ExportError('encode-failed', 'Could not encode the image (out of memory?).'));
+          reject(
+            new ExportError(
+              'encode-failed',
+              'The image could not be encoded: there may not be enough memory. Reduce the export size.',
+            ),
+          );
         }
       },
       mime,

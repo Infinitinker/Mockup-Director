@@ -7,7 +7,7 @@ import type { BackgroundSettings } from '../core/types';
 const HEX = /^#[0-9a-f]{6}$/i;
 const safe = (c: string, fallback: string) => (HEX.test(c) ? c : fallback);
 
-/** Radial gradient centre (fractions of width / height) – a soft studio "spot" slightly above centre. */
+/** Radial gradient center (fractions of width / height) – a soft studio "spot" slightly above center. */
 const GRAD_CX = 0.5;
 const GRAD_CY = 0.4;
 
@@ -47,7 +47,7 @@ export function paintBackground(ctx: CanvasRenderingContext2D, w: number, h: num
     ctx.fillStyle = safe(bg.color, '#ffffff');
     ctx.fillRect(0, 0, w, h);
   } else if (bg.mode === 'gradient') {
-    // CSS "circle farthest-corner": radius = distance from the centre to the farthest corner.
+    // CSS "circle farthest-corner": radius = distance from the center to the farthest corner.
     const cx = w * GRAD_CX;
     const cy = h * GRAD_CY;
     const r = Math.hypot(Math.max(cx, w - cx), Math.max(cy, h - cy));

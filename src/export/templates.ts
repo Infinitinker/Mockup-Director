@@ -3,7 +3,7 @@
  *
  * Renders a PNG "bottom layer" for Photoshop / Affinity at the exact physical artwork size:
  * white artboard, bleed zone (light red), dashed trim line, dashed safe area (3 mm inside trim),
- * labelled regions (front / spine / back …) with their sizes, fold guides, disc circles and a
+ * labeled regions (front / spine / back …) with their sizes, fold guides, disc circles and a
  * small legend. The PNG carries a pHYs chunk, so the document opens at the right print size.
  */
 import type { ImageSlotDef, ParamValues, PrintTemplate, TemplateRegion } from '../core/types';
@@ -40,10 +40,9 @@ const T = {
   inclBleed: 'incl. bleed',
   hole: 'Hole',
   hub: 'Hub area (often unprinted)',
-  disc: 'Disc',
   reduced: 'reduced from',
-  hint: 'Guide layer – hide before export',
-  tooLarge: 'Template too large to render',
+  hint: 'Guide layer: hide it before export.',
+  tooLarge: 'Not enough memory for a print template this large. Close other tabs and try again.',
 };
 
 interface TemplateRenderResult {
@@ -190,7 +189,7 @@ function drawRectTemplate(d: Draw, tpl: PrintTemplate, slot: ImageSlotDef): void
   }
 
   // Region labels (or one label for the whole template).
-  // Labels show the TRIMMED (finished) size of each region and are centred on its visible part.
+  // Labels show the TRIMMED (finished) size of each region and are centered on its visible part.
   if (regions.length) {
     regions.forEach((r) => {
       const v = intersect(r, trim);
@@ -232,7 +231,7 @@ function drawGuide(
   }
 }
 
-/** Big centred label + size line; rotated 90° for tall narrow regions (spines). */
+/** Big centered label + size line; rotated 90° for tall narrow regions (spines). */
 function drawRegionLabel(d: Draw, r: TemplateRegion): void {
   const { label } = r;
   const dims = `${fmtMm(r.wMm)} × ${fmtMm(r.hMm)} mm`;
@@ -324,7 +323,7 @@ function drawCircleTemplate(
     d.circle(cx, cy, r);
   }
 
-  // Safe areas: 3 mm inside the outer edge, and the hub limit towards the centre.
+  // Safe areas: 3 mm inside the outer edge, and the hub limit toward the center.
   d.stroke(C.safe, 0.2, [1.6, 1.0]);
   if (R - SAFE_MARGIN_MM > hubR) d.circle(cx, cy, R - SAFE_MARGIN_MM);
   if (hubR > r) d.circle(cx, cy, hubR);
@@ -333,7 +332,7 @@ function drawCircleTemplate(
   d.stroke(C.trim, 0.25, [3, 1.5]);
   d.circle(cx, cy, Math.min(R, Math.min(W, H) / 2 - d.lineMm(0.25) / 2));
 
-  // Centre cross.
+  // Center cross.
   const arm = Math.max(r + 4, 6);
   d.stroke(C.ink, 0.15, []);
   g.beginPath();
@@ -343,7 +342,7 @@ function drawCircleTemplate(
   g.lineTo(d.px(cx), d.px(cy + arm));
   g.stroke();
 
-  // Fold guides (unusual on discs, but honour them).
+  // Fold guides (unusual on discs, but honor them).
   for (const gd of tpl.guides ?? []) {
     drawGuide(d, gd.orientation, gd.posMm, gd.label ?? T.fold, W, H, {
       x: b,
@@ -404,9 +403,8 @@ function drawLegend(
     items.push({ kind: 'hole', text: `${T.hole}: Ø ${fmtMm(tpl.circle.innerMm)} mm` });
   const sizeTxt = `${T.artboard}: ${fmtMm(W)} × ${fmtMm(H)} mm${b > 0 ? ` (${T.inclBleed})` : ''}`;
   items.push({ kind: 'none', text: sizeTxt });
-  const dpiTxt =
-    `${Math.round(dpi)} DPI · ${wPx} × ${hPx} px` +
-    (Math.round(dpi) < Math.round(requestedDpi) ? ` (${T.reduced} ${Math.round(requestedDpi)} DPI)` : '');
+  const reduced = Math.round(dpi) < Math.round(requestedDpi) ? ` (${T.reduced} ${Math.round(requestedDpi)} dpi)` : '';
+  const dpiTxt = `${Math.round(dpi)} dpi · ${wPx} × ${hPx} px${reduced}`;
   items.push({ kind: 'none', text: dpiTxt });
   items.push({ kind: 'none', text: T.hint });
 
@@ -446,7 +444,7 @@ function drawLegend(
             : it.kind === 'safe'
               ? ([C.safe, 0.2, [1.6, 1.0]] as const)
               : ([C.fold, 0.22, [2.2, 0.8, 0.5, 0.8]] as const);
-        // Scale dashes down so the pattern is recognisable inside the small swatch.
+        // Scale dashes down so the pattern is recognizable inside the small swatch.
         d.stroke(
           style[0],
           style[1],
@@ -464,7 +462,7 @@ function drawLegend(
 }
 
 /* ------------------------------------------------------------------ */
-/* Small drawing helper working in millimetres                         */
+/* Small drawing helper working in millimeters                         */
 /* ------------------------------------------------------------------ */
 
 class Draw {

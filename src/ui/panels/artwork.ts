@@ -1,7 +1,7 @@
 /**
  * "Artwork" tab: one card per artwork slot of the current model.
  */
-import type { ImageAsset, ImageSlotDef } from '../../core/types';
+import type { Artwork, ImageSlotDef } from '../../core/types';
 import { getModel } from '../../models/registry';
 import type { AppContext } from '../context';
 import { formatNumber } from '../numbers';
@@ -11,10 +11,10 @@ import { aspectMismatch, completeParams, expectedAspects } from '../modelUtils';
 import { hasAny } from '../state';
 
 /** Small cached thumbnails (data URLs of a downscaled copy) so re-renders don't decode huge images. */
-const thumbCache = new WeakMap<ImageAsset, string>();
+const thumbCache = new WeakMap<Artwork, string>();
 const THUMB = 240;
 
-function thumbnailFor(a: ImageAsset): string {
+function thumbnailFor(a: Artwork): string {
   const hit = thumbCache.get(a);
   if (hit) return hit;
   let url = a.dataUrl;
@@ -45,14 +45,14 @@ function thumbnailFor(a: ImageAsset): string {
   return url;
 }
 
-export function createImagesPanel(ctx: AppContext): { el: HTMLElement } {
-  const el = h('div', { class: 'panel panel-images' });
+export function createArtworkPanel(ctx: AppContext): { el: HTMLElement } {
+  const el = h('div', { class: 'panel panel-artwork' });
   /** Re-checked on params changes (template size may depend on dimensions). */
   let warnUpdaters: (() => void)[] = [];
 
   const card = (slot: ImageSlotDef, modelId: string): HTMLElement => {
     const s = ctx.store.state;
-    const asset = s.images[modelId]?.[slot.id];
+    const asset = s.artwork[modelId]?.[slot.id];
     const loading = ctx.loadingSlots.value.has(`${modelId}/${slot.id}`);
     const thumb = h('div', { class: 'slot-thumb checkerboard' });
     if (asset)
@@ -71,7 +71,7 @@ export function createImagesPanel(ctx: AppContext): { el: HTMLElement } {
           h('span', { class: 'slot-filename', text: asset.name }),
           h('span', { class: 'slot-size', text: `${asset.width} × ${asset.height} px` }),
         )
-      : h('div', { class: 'slot-file empty', text: 'No artwork – drop a file here' });
+      : h('div', { class: 'slot-file empty', text: 'No artwork: drop a file here.' });
 
     const actions = h(
       'div',
@@ -79,9 +79,9 @@ export function createImagesPanel(ctx: AppContext): { el: HTMLElement } {
       h('button', {
         class: 'btn btn-small',
         text: 'Choose…',
-        title: `Choose artwork: ${slot.label}`,
+        title: `Choose artwork for “${slot.label}”…`,
         attrs: { type: 'button' },
-        on: { click: () => void ctx.actions.pickImageFor(slot.id) },
+        on: { click: () => void ctx.actions.pickArtworkFor(slot.id) },
       }),
       asset
         ? h(
@@ -91,7 +91,7 @@ export function createImagesPanel(ctx: AppContext): { el: HTMLElement } {
               title: 'Remove artwork',
               label: 'Remove artwork',
               attrs: { type: 'button' },
-              on: { click: () => ctx.actions.removeImage(slot.id) },
+              on: { click: () => ctx.actions.removeArtwork(slot.id) },
             },
             h('span', { class: 'btn-icon', html: ICONS.trash }),
           )
@@ -101,12 +101,12 @@ export function createImagesPanel(ctx: AppContext): { el: HTMLElement } {
             'button',
             {
               class: 'btn btn-small',
-              title: 'Download print template (PNG, 300 dpi)',
+              title: 'Download print template… (PNG, 300 dpi)',
               attrs: { type: 'button' },
               on: { click: () => void ctx.actions.downloadTemplate(slot.id) },
             },
             h('span', { class: 'btn-icon', html: ICONS.template }),
-            h('span', { class: 'btn-text', text: 'Template' }),
+            h('span', { class: 'btn-text', text: 'Template…' }),
           )
         : null,
     );
@@ -136,7 +136,7 @@ export function createImagesPanel(ctx: AppContext): { el: HTMLElement } {
       el.classList.toggle('warn', bad);
       if (bad) {
         const exp = expected.map((x) => formatNumber(x, 3)).join(' / ');
-        badge.title = `Artwork aspect ratio (${formatNumber(asset.width / asset.height, 3)}) differs from the expected one (${exp}) by more than 3% – the image may look distorted.`;
+        badge.title = `Artwork aspect ratio (${formatNumber(asset.width / asset.height, 3)}) differs from the expected one (${exp}) by more than 3%: the artwork may look distorted.`;
       }
     };
     updateWarn();
@@ -166,11 +166,11 @@ export function createImagesPanel(ctx: AppContext): { el: HTMLElement } {
       const file = Array.from(e.dataTransfer?.files ?? []).find(
         (f) => f.type.startsWith('image/') || /\.(png|jpe?g|webp|gif|bmp|tiff?|avif|heic|svg)$/i.test(f.name),
       );
-      // An empty list makes assignImages show an "unsupported file" hint.
-      void ctx.actions.assignImages(file ? [file] : [], [slot.id]);
+      // An empty list makes assignArtwork show an "unsupported file" hint.
+      void ctx.actions.assignArtwork(file ? [file] : [], [slot.id]);
     });
     // Double-click on the thumbnail opens the file picker – a common shortcut in design tools.
-    thumb.addEventListener('dblclick', () => void ctx.actions.pickImageFor(slot.id));
+    thumb.addEventListener('dblclick', () => void ctx.actions.pickArtworkFor(slot.id));
     return el;
   };
 
@@ -197,7 +197,7 @@ export function createImagesPanel(ctx: AppContext): { el: HTMLElement } {
   };
 
   ctx.store.subscribe((e) => {
-    if (hasAny(e, 'model', 'images')) render();
+    if (hasAny(e, 'model', 'artwork')) render();
     else if (e.kinds.has('params'))
       warnUpdaters.forEach((u) => {
         u();

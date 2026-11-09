@@ -16,10 +16,13 @@ if (root) {
     const h = document.createElement('h1');
     h.style.cssText = 'font-size:17px;margin:0 0 8px';
     h.textContent = 'Mockup Director failed to start';
+    const tip = document.createElement('p');
+    tip.style.cssText = 'margin:0 0 8px';
+    tip.textContent = 'Restart Mockup Director. If it still does not start, report the problem with the details below.';
     const p = document.createElement('pre');
     p.style.cssText = 'white-space:pre-wrap;opacity:.7';
     p.textContent = e instanceof Error ? `${e.message}\n${e.stack ?? ''}` : String(e);
-    box.append(h, p);
+    box.append(h, tip, p);
     root.appendChild(box);
   }
 }

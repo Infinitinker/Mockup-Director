@@ -80,10 +80,15 @@ pub struct OpenedBatch {
 /// Reads one queued file. Anything that is not a regular file (a folder, a device, a pipe) is
 /// reported instead of read, so a pipe named `*.mdproj` cannot block the reader.
 pub fn read_opened(path: &Path) -> Result<OpenedFile, String> {
-    let cannot_read = |e: std::io::Error| format!("Cannot read {}: {e}", path.display());
+    let cannot_read = |e: std::io::Error| {
+        format!(
+            "{} could not be read: {e}. Check that the file still exists, then open it again.",
+            path.display()
+        )
+    };
     if !fs::metadata(path).map_err(cannot_read)?.is_file() {
         return Err(format!(
-            "Cannot open {}: it is a folder or another item, not a file",
+            "{} could not be opened: it is a folder or another item, not a file. Open a .mdproj project file.",
             path.display()
         ));
     }
@@ -108,7 +113,7 @@ pub fn read_all(paths: Vec<PathBuf>) -> OpenedBatch {
 }
 
 /// Hands the queued project files to the web UI (and forgets them). An async command, so the
-/// files (which can be tens of megabytes with embedded images) are read off the main thread.
+/// files (which can be tens of megabytes with embedded artwork) are read off the main thread.
 #[tauri::command]
 pub async fn take_opened_files(app: tauri::AppHandle) -> OpenedBatch {
     read_all(app.state::<OpenedFiles>().take())

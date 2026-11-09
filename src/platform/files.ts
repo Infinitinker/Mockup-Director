@@ -24,7 +24,7 @@ export function inDesktopApp(): boolean {
 
 /**
  * Asks where to save and writes the blob. Resolves with the name of the saved file (without its
- * folder), which the user may have changed in the save dialog, or null if the user cancelled.
+ * folder), which the user may have changed in the save dialog, or null if the user canceled.
  * A classic browser download cannot report either, so it resolves with the suggested name.
  */
 export async function saveBlob(blob: Blob, suggestedName: string, filters: FileFilter[]): Promise<string | null> {
@@ -85,7 +85,7 @@ async function saveInDesktopApp(blob: Blob, suggestedName: string, filters: File
     defaultPath: suggestedName,
     filters: filters.map((f) => ({ name: f.name, extensions: f.extensions.map(stripDot) })),
   });
-  if (!picked) return null; // cancelled
+  if (!picked) return null; // canceled
   const path = ensureExtension(picked, filters, suggestedName);
   const bytes = new Uint8Array(await blob.arrayBuffer());
   await invoke('save_file', bytes, { headers: { 'x-path': encodeURIComponent(path) } });
@@ -94,7 +94,7 @@ async function saveInDesktopApp(blob: Blob, suggestedName: string, filters: File
 
 /**
  * The macOS save panel normally appends the extension, but users can delete it; make sure the file
- * keeps an extension from the filters (otherwise Finder / Photoshop will not recognise it).
+ * keeps an extension from the filters (otherwise Finder or an image editor will not recognize it).
  */
 function ensureExtension(path: string, filters: FileFilter[], suggestedName: string): string {
   const exts = filters.flatMap((f) => f.extensions.map((e) => stripDot(e).toLowerCase()));
@@ -158,7 +158,7 @@ async function saveInBrowser(blob: Blob, suggestedName: string, filters: FileFil
       await writable.close();
       return handle.name;
     } catch (err) {
-      if (err instanceof DOMException && err.name === 'AbortError') return null; // user cancelled
+      if (err instanceof DOMException && err.name === 'AbortError') return null; // user canceled
       // NotAllowedError/SecurityError (e.g. user activation expired after a long render),
       // unsupported types… → fall through to a classic download.
     }

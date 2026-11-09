@@ -1,11 +1,11 @@
 /**
  * Placement of the 120 mm disc next to a case ("... with disc" composites).
  *
- * Everything here is exact, closed-form maths on the disc's bounding CYLINDER (radius 60 mm,
+ * Everything here is exact, closed-form math on the disc's bounding CYLINDER (radius 60 mm,
  * thickness DISC_SLAB) – no sampling, no iteration – so the disc never interpenetrates the case
  * for any param value and build() stays cheap.
  *
- * Disc local frame (as built by buildDisc): lying flat, label facing +Y, the centre of its bottom
+ * Disc local frame (as built by buildDisc): lying flat, label facing +Y, the center of its bottom
  * face at the origin. In that frame the label plane is spanned by U = +X and V = +Z, the
  * thickness runs along N = +Y from h = 0 to h = DISC_SLAB.
  *
@@ -30,7 +30,7 @@ const GAP_BEHIND = 0.6;
 const GAP_FRONT = 0.25;
 
 interface DiscPose {
-  /** World position of the disc's local origin (centre of its bottom/back face). */
+  /** World position of the disc's local origin (center of its bottom/back face). */
   position: THREE.Vector3;
   quaternion: THREE.Quaternion;
 }
@@ -92,12 +92,12 @@ function clipToStrip(poly: [number, number][], x0: number, x1: number): [number,
  *                  'flat'   – lying flat on the floor in front of the case.
  * @param overhang  0..1 – fraction of the disc diameter that sticks out past the case's right
  *                  edge (0 = flush with the edge, 1 = completely beside the case).
- * @param turnDeg   rotation about the vertical axis; + turns the label towards the right (+X).
+ * @param turnDeg   rotation about the vertical axis; + turns the label toward the right (+X).
  *                  For a disc lying flat it spins the label (counter-clockwise from above).
  */
 export function discPose(bounds: THREE.Box3, placement: DiscPlacement, overhang: number, turnDeg: number): DiscPose {
   const o = THREE.MathUtils.clamp(overhang, 0, 1);
-  // Centre x of the disc: its right rim lies o·D past the case's right edge (before turning).
+  // Center x of the disc: its right rim lies o·D past the case's right edge (before turning).
   const cx = bounds.max.x - DISC_R + o * DISC_DIAMETER;
   const position = new THREE.Vector3();
   let q: THREE.Quaternion;
@@ -114,7 +114,7 @@ export function discPose(bounds: THREE.Box3, placement: DiscPlacement, overhang:
     position.set(cx, 0, bounds.max.z + GAP_BEHIND + reach);
   } else if (placement === 'front') {
     // Tilt (90° − lean) about X: label faces +Z, tipped up by the lean; the top leans back
-    // (towards -Z) onto the case front. Artwork stays upright (image top = disc top).
+    // (toward -Z) onto the case front. Artwork stays upright (image top = disc top).
     q = orientation(90 - FRONT_LEAN_DEG, turnDeg);
     const ey = discExtent(q, AX_Y);
     const ez = discExtent(q, new THREE.Vector3(0, 0, 1));

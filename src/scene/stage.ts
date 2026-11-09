@@ -5,15 +5,15 @@
  * Design notes
  *  - Rendering is ON DEMAND: invalidate() schedules a single requestAnimationFrame; nothing runs
  *    while the scene is idle.
- *  - Colour pipeline: physically based lights, sRGB output, NeutralToneMapping (keeps print
- *    artwork colours faithful – only highlights near white are gently compressed).
+ *  - Color pipeline: physically based lights, sRGB output, NeutralToneMapping (keeps print
+ *    artwork colors faithful – only highlights near white are gently compressed).
  *  - The canvas is always transparent (scene.background = null). The preview background is
  *    painted with CSS on the wrapper element; exports paint it in 2D when requested.
  *  - LIGHTING IS CAMERA-RELATIVE ("turntable studio"): LightSettings.azimuth is measured from the
  *    camera's yaw, so "key light from the upper left" stays upper-left while the user orbits –
  *    exactly like rotating a product in front of a fixed studio setup. The environment map and
  *    the key-light shadow rotate with it. Elevation is measured from the floor (horizon).
- *  - The camera orbits the model's bounding-box centre; its distance / lateral offset is solved
+ *  - The camera orbits the model's bounding-box center; its distance / lateral offset is solved
  *    every frame so the whole composition (model + visible reflection + visible shadow) fits
  *    exactly (see framing.ts). zoom = lens zoom, pan = view offset – neither changes perspective.
  */
@@ -703,7 +703,7 @@ export function createStage(container: HTMLElement): StageAPI {
   /* ---------------- Turntable animation ---------------- */
 
   /**
-   * Turntable = the CAMERA orbits the vertical axis through the model's centre. Because the light
+   * Turntable = the CAMERA orbits the vertical axis through the model's center. Because the light
    * rig, the environment rotation and the key-light shadow are all camera-relative, this is exactly
    * what a product turning on a turntable in front of a fixed studio looks like: highlights stay
    * put, the shadow swings around the product consistently and the floor reflection (a mirror
@@ -714,7 +714,8 @@ export function createStage(container: HTMLElement): StageAPI {
    * valid for all frames – the composition is fixed and never cropped.
    */
   function startAnimation(o: AnimationFramingOptions): AnimationRenderSession {
-    if (disposed || contextLost) throw new StageError('The 3D view is not available.');
+    if (disposed || contextLost)
+      throw new StageError('The 3D preview is not available right now. Try again in a moment.');
     anim?.end();
 
     const angles = (Array.isArray(o.angles) ? o.angles : []).map((a) => finite(a, 0));
@@ -827,7 +828,9 @@ export function createStage(container: HTMLElement): StageAPI {
       renderFrame(index: number, target: HTMLCanvasElement) {
         if (ended) throw new Error('The animation session has ended.');
         if (disposed || contextLost || model !== startModel) {
-          throw new StageError('The scene changed while the animation was being rendered. Please try again.');
+          throw new StageError(
+            'The model changed or the 3D preview was reset while the animation was being rendered. Export the animation again.',
+          );
         }
         const i = THREE.MathUtils.clamp(Math.round(finite(index, 0)), 0, angles.length - 1);
         const a = angles[i];
@@ -835,7 +838,7 @@ export function createStage(container: HTMLElement): StageAPI {
         if (target.height !== H) target.height = H;
         const outCtx = target.getContext('2d');
         if (!outCtx) {
-          throw new StageError('Not enough memory for an animation frame.');
+          throw new StageError('Not enough memory for an animation this large. Reduce the size.');
         }
         outCtx.clearRect(0, 0, W, H);
         let ctx = outCtx;
@@ -846,7 +849,7 @@ export function createStage(container: HTMLElement): StageAPI {
             low.height = RH;
           }
           const lowCtx = low.getContext('2d');
-          if (!lowCtx) throw new StageError('Not enough memory for an animation frame.');
+          if (!lowCtx) throw new StageError('Not enough memory for an animation this large. Reduce the size.');
           ctx = lowCtx;
           ctx.clearRect(0, 0, RW, RH);
         }
@@ -903,7 +906,7 @@ export function createStage(container: HTMLElement): StageAPI {
       let camera = sanitizeCamera(next.camera);
       // Ignore a stale echo of the camera we emitted LAST (UI sliders following a drag). Only the
       // most recent emission is matched: an older emitted camera arriving here is a deliberate
-      // change (undo/redo, preset view) and must be applied.
+      // change (undo/redo, a view from the view bar) and must be applied.
       const recentlyActive = pointers.size > 0 || gestureActive || performance.now() - lastEmitTime < 500;
       const lastEmitted = recentEmitted[recentEmitted.length - 1];
       if (recentlyActive && lastEmitted && cameraEquals(lastEmitted, camera)) camera = settings.camera;
@@ -923,13 +926,18 @@ export function createStage(container: HTMLElement): StageAPI {
     renderToCanvas(o: RenderOptions): HTMLCanvasElement {
       const W = Math.max(1, Math.round(finite(o.width, 1)));
       const H = Math.max(1, Math.round(finite(o.height, 1)));
+      if (disposed || contextLost)
+        throw new StageError('The 3D preview is not available right now. Try again in a moment.');
       const out = document.createElement('canvas');
       out.width = W;
       out.height = H;
       const outCtx = out.getContext('2d');
-      if (!outCtx) return out;
+      if (!outCtx) {
+        throw new StageError(
+          'The image could not be rendered: there may not be enough graphics memory. Reduce the export size.',
+        );
+      }
       if (!o.transparent) paintBackground(outCtx, W, H, settings.background);
-      if (disposed || contextLost) return out;
 
       const { limit, tile } = gpuLimits();
       // If the GPU cannot render this big, render smaller and scale up into the exact size.

@@ -1,8 +1,8 @@
 /**
- * Books: case-bound hardcover, perfect-bound paperback and a spiral (wire-o / coil) notebook.
+ * Books: case-bound hardcover, perfect-bound paperback and a spiral (double loop wire / coil) notebook.
  *
- * Coordinate frame (see CONVENTIONS in core/types.ts): millimetres, the book stands upright on
- * y = 0, centred on x/z, FRONT cover faces +Z. Hardcover / paperback: the SPINE is on the left
+ * Coordinate frame (see CONVENTIONS in core/types.ts): millimeters, the book stands upright on
+ * y = 0, centered on x/z, FRONT cover faces +Z. Hardcover / paperback: the SPINE is on the left
  * when looking at the front (-X side), the fore-edge on the right (+X).
  *
  * Hardcover / paperback geometry is generated from a horizontal cross-section (XZ plane) of the
@@ -128,14 +128,14 @@ function panelTemplate(w: number, h: number, label: string, extra: TemplateGuide
 /* Page edges                                                          */
 /* ------------------------------------------------------------------ */
 
-/** Millimetres of page stack covered by one repeat of the page-edge texture (rows run along Z). */
+/** Millimeters of page stack covered by one repeat of the page-edge texture (rows run along Z). */
 const PAGE_TEX_MM = 12.8;
 let pageEdgeTex: THREE.Texture | null = null;
 
 /**
- * Procedural, greyscale page-edge texture: thin horizontal lines (one page ≈ 0.1 mm = 2 rows)
+ * Procedural, grayscale page-edge texture: thin horizontal lines (one page ≈ 0.1 mm = 2 rows)
  * with a little random variation. It is a private, module-level texture (never shared with the
- * app, never flagged for disposal) and it is tinted by the material colour (page colour).
+ * app, never flagged for disposal) and it is tinted by the material color (page color).
  */
 function pageEdgeTexture(): THREE.Texture | null {
   if (pageEdgeTex) return pageEdgeTex;
@@ -236,8 +236,8 @@ class Profile {
 
   /**
    * Circular arc around (cx, cz) from angle a0 to a1 (segs + 1 nodes, the first one is the arc
-   * start). Convex arcs (centre inside the material) have radial normals; concave ones (centre
-   * outside) point towards the centre. A convex arc whose offset radius became negative (offset
+   * start). Convex arcs (center inside the material) have radial normals; concave ones (center
+   * outside) point toward the center. A convex arc whose offset radius became negative (offset
    * deeper than its radius) collapses into the sharp corner where its two offset tangents meet.
    * Returns the index of the arc's first node.
    */
@@ -397,7 +397,7 @@ interface BookGeom {
   rc: number;
   cx: number;
   rounded: boolean;
-  /** Rounded spine: centre x / outer radius of the spine arc, radius of the page block's spine. */
+  /** Rounded spine: center x / outer radius of the spine arc, radius of the page block's spine. */
   xsC: number;
   Rs: number;
   Rpb: number;
@@ -431,7 +431,7 @@ function bookGeom(p: ParamValues, kind: BookKind): BookGeom {
   let Rpb = 0;
   if (rounded) {
     // The corner arc (radius rc, turning ROUND_ALPHA) is tangent to the cover face and to the
-    // spine arc centred on z = 0; the page block's spine is concentric with the cover's spine
+    // spine arc centered on z = 0; the page block's spine is concentric with the cover's spine
     // and passes through the block shoulders (0, ±P/2).
     Rs = rc + (Tz - rc) / Math.cos(ROUND_ALPHA);
     Rpb = Rs - tb - gapS;
@@ -480,7 +480,7 @@ interface ProfileMarks {
   /** Spine folds (middle of the spine corner arcs) on the back / front side. */
   fold0: number;
   fold1: number;
-  /** Groove centres on the back / front (-1 when there is no groove). */
+  /** Groove centers on the back / front (-1 when there is no groove). */
   gB: number;
   gF: number;
 }
@@ -500,7 +500,7 @@ function bookProfile(g: BookGeom, off: number): { prof: Profile; marks: ProfileM
   const x1 = gr ? gr.x2 + 4 * gr.R * sn : 0;
   const xm = gr ? gr.x2 + 2 * gr.R * sn : 0;
 
-  // Back hinge groove (path runs towards -X here).
+  // Back hinge groove (path runs toward -X here).
   if (gr) {
     pr.arc(x1, -T + gr.R, gr.R + off, -PI / 2, -PI / 2 - gr.th, GSEG);
     marks.gB = pr.arc(xm, -T + dep - gr.R, gr.R - off, PI / 2 - gr.th, PI / 2 + gr.th, GSEG, true) + GSEG / 2;
@@ -518,7 +518,7 @@ function bookProfile(g: BookGeom, off: number): { prof: Profile; marks: ProfileM
     marks.fold1 = pr.arc(g.cx, T - g.rc, g.rc + off, PI, PI / 2, CSEG) + CSEG / 2;
   }
 
-  // Front hinge groove (path runs towards +X).
+  // Front hinge groove (path runs toward +X).
   if (gr) {
     pr.arc(gr.x2, T - gr.R, gr.R + off, PI / 2, PI / 2 - gr.th, GSEG);
     marks.gF = pr.arc(xm, T - dep + gr.R, gr.R - off, -PI / 2 - gr.th, -PI / 2 + gr.th, GSEG, true) + GSEG / 2;
@@ -536,7 +536,7 @@ interface WrapLayout {
   /** Back | spine and spine | front fold positions from the back fore-edge. */
   s0: number;
   s1: number;
-  /** Groove centre positions (or -1). */
+  /** Groove center positions (or -1). */
   sgB: number;
   sgF: number;
 }
@@ -605,10 +605,10 @@ function bookSlots(kind: BookKind): ImageSlotDef[] {
   const bw = w.s0;
   const aspect = (x: number) => (x + 2 * BLEED) / (hc + 2 * BLEED);
   const hard = kind === 'hard';
-  const onlyIfNoCover = 'Used only when no “Cover wrap” image is added.';
+  const onlyIfNoCover = 'Used only when “Cover wrap” has no artwork.';
   // Appended to the wrap hint of the hardcover only (it starts with a space).
   const hardNote = hard
-    ? ' The wrap covers the overhanging boards and the hinge grooves (marked on the template). Printers usually need a 15–20 mm turn-in for real case binding – the template matches the mockup with a 3 mm bleed.'
+    ? ' The wrap covers the overhanging boards and the hinge grooves (marked on the template). Printers usually need a 15–20 mm turn-in for real case binding: this template matches the mockup, with a 3 mm bleed.'
     : '';
   const h = round1(hc);
   return [
@@ -617,15 +617,15 @@ function bookSlots(kind: BookKind): ImageSlotDef[] {
       label: 'Cover wrap',
       hint:
         `The whole cover, left to right: Back | Spine | Front. By default ${round1(w.L)} × ${h} mm + 3 mm bleed ` +
-        `(spine ${round1(sp)} mm – it changes with the page block thickness; download the template). ` +
-        `Takes priority over the separate Front / Spine / Back slots.${hardNote}`,
+        `(the ${round1(sp)} mm spine changes with the page block thickness; download the template). ` +
+        `It takes priority over the separate Front / Spine / Back slots.${hardNote}`,
       aspect: aspect(w.L),
       template: (params) => bookWrapTemplate(params, kind),
     },
     {
       id: 'front',
       label: 'Front',
-      hint: `${onlyIfNoCover} By default ${round1(fw)} × ${h} mm + 3 mm bleed (left edge = spine).`,
+      hint: `${onlyIfNoCover} By default ${round1(fw)} × ${h} mm + 3 mm bleed (the left edge is at the spine).`,
       aspect: aspect(fw),
       template: (params) => bookPanelTemplate(params, kind, 'front'),
     },
@@ -633,15 +633,15 @@ function bookSlots(kind: BookKind): ImageSlotDef[] {
       id: 'spine',
       label: 'Spine',
       hint:
-        `${onlyIfNoCover} A vertical strip: by default ${round1(sp)} × ${h} mm + 3 mm bleed (left edge = back cover side). ` +
-        'Without an image the spine uses “Spine & back colour”.',
+        `${onlyIfNoCover} A vertical strip: by default ${round1(sp)} × ${h} mm + 3 mm bleed (the left edge is on the back cover side). ` +
+        'Without artwork the spine uses “Spine & back color (no artwork)”.',
       aspect: aspect(sp),
       template: (params) => bookPanelTemplate(params, kind, 'spine'),
     },
     {
       id: 'back',
       label: 'Back',
-      hint: `${onlyIfNoCover} By default ${round1(bw)} × ${h} mm + 3 mm bleed (right edge = spine). Without an image the back uses “Spine & back colour”.`,
+      hint: `${onlyIfNoCover} By default ${round1(bw)} × ${h} mm + 3 mm bleed (the right edge is at the spine). Without artwork the back uses “Spine & back color (no artwork)”.`,
       aspect: aspect(bw),
       template: (params) => bookPanelTemplate(params, kind, 'back'),
     },
@@ -805,8 +805,8 @@ function buildBook(ctx: ModelContext, kind: BookKind): THREE.Object3D {
         prevI = n;
       }
       // Fans closing the board corner at the fore-edge(s).
-      const fan = (nodes: PNode[], sOf: (j: number) => number, centre: PNode) => {
-        const c = mb.vert(centre.x, y, centre.z, 0, ny, 0, U(centre.s), vAt(1));
+      const fan = (nodes: PNode[], sOf: (j: number) => number, center: PNode) => {
+        const c = mb.vert(center.x, y, center.z, 0, ny, 0, U(center.s), vAt(1));
         let prev = -1;
         nodes.forEach((n, j) => {
           const vtx = mb.vert(n.x, y, n.z, 0, ny, 0, U(sOf(j)), vAt(depthOf(n.z)));
@@ -827,7 +827,7 @@ function buildBook(ctx: ModelContext, kind: BookKind): THREE.Object3D {
     root.add(mesh);
   };
 
-  const useCover = ctx.hasImage('cover');
+  const useCover = ctx.hasArtwork('cover');
   if (useCover) {
     // One wrap image: Back | Spine | Front.
     const wTot = wrapLen + 2 * b;
@@ -842,7 +842,7 @@ function buildBook(ctx: ModelContext, kind: BookKind): THREE.Object3D {
     );
   } else {
     // Separate panels; the front always shows an image (placeholder when empty), empty spine /
-    // back fall back to a solid colour.
+    // back fall back to a solid color.
     const iF0 = outer.marks.fold1;
     const iB1 = outer.marks.fold0;
     const fw = wrapLen - s1 + 2 * b;
@@ -857,11 +857,11 @@ function buildBook(ctx: ModelContext, kind: BookKind): THREE.Object3D {
       true,
       'front',
     );
-    const spineMat = ctx.hasImage('spine')
+    const spineMat = ctx.hasArtwork('spine')
       ? coverMaterial(finish, { map: ctx.getTexture('spine') })
       : coverMaterial(finish, { color: sideColor });
     addPart(iB1, iF0, spineMat, (s) => (b + s - s0) / sw, false, false, 'spine');
-    const backMat = ctx.hasImage('back')
+    const backMat = ctx.hasArtwork('back')
       ? coverMaterial(finish, { map: ctx.getTexture('back') })
       : coverMaterial(finish, { color: sideColor });
     addPart(0, iB1, backMat, (s) => (b + s) / bw, true, false, 'back');
@@ -938,20 +938,20 @@ function bookParams(kind: BookKind): ParamDef[] {
   out.push(finishParam(hard ? 'matte' : 'gloss'), {
     id: 'pageColor',
     type: 'color',
-    label: 'Page colour',
+    label: 'Page color',
     group: G_MAT,
     default: hard ? '#f3ecdc' : '#f1ead8',
   });
   if (hard) {
     out.push(
       { id: 'headband', type: 'boolean', label: 'Headband', group: G_MAT, default: true },
-      { id: 'headbandColor', type: 'color', label: 'Headband colour', group: G_MAT, default: '#8a1c22' },
+      { id: 'headbandColor', type: 'color', label: 'Headband color', group: G_MAT, default: '#8a1c22' },
     );
   }
   out.push({
     id: 'sideColor',
     type: 'color',
-    label: 'Spine & back colour (no artwork)',
+    label: 'Spine & back color (no artwork)',
     group: G_ART,
     default: hard ? '#2c3445' : '#ece9e2',
   });
@@ -975,19 +975,19 @@ interface NoteGeom {
   coil: CoilStyle;
   /** Distance from the outer cover surface to the middle of the book (= P/2 + cover). */
   Tf: number;
-  /** Hole centre distance from the binding edge. */
+  /** Hole center distance from the binding edge. */
   hd: number;
   /** Hole size along the edge / across it. */
   holeAlong: number;
   holeAcross: number;
-  /** Ring radius, wire radius, offset of the ring centre from the hole towards the edge. */
+  /** Ring radius, wire radius, offset of the ring center from the hole toward the edge. */
   R: number;
   rw: number;
   sOff: number;
   pitch: number;
-  /** Wire-o: centre distance of the two wires of a loop. */
+  /** Double loop wire: center distance of the two wires of a loop. */
   pairGap: number;
-  /** Positions of the holes along the binding edge (centred on 0). */
+  /** Positions of the holes along the binding edge (centered on 0). */
   positions: number[];
 }
 
@@ -1013,7 +1013,7 @@ function noteGeom(p: ParamValues): NoteGeom {
   let holeAlong: number;
   let holeAcross: number;
   if (coil === 'wireo') {
-    // Wire-O: 3:1 pitch up to 9/16" loops, 2:1 above.
+    // Double loop wire: 3:1 pitch up to 9/16" loops, 2:1 above.
     const small = 2 * R <= 14.3;
     pitch = small ? INCH / 3 : INCH / 2;
     rw = small ? 0.5 : 0.62;
@@ -1046,7 +1046,7 @@ function noteTemplate(p: ParamValues, face: 'front' | 'back'): PrintTemplate {
   return panelTemplate(g.W, g.H, face === 'front' ? 'Front' : 'Back', [extra]);
 }
 
-/** Wire colours: bare metal or powder-coated. */
+/** Wire colors: bare metal or powder-coated. */
 function coilMaterial(color: string): THREE.MeshPhysicalMaterial {
   if (color === 'black')
     return new THREE.MeshPhysicalMaterial({
@@ -1142,7 +1142,7 @@ function buildNotebook(ctx: ModelContext): THREE.Object3D {
   root.add(front);
 
   const backColor = colorOf(p, 'backColor', '#8e8678');
-  const hasBack = ctx.hasImage('back');
+  const hasBack = ctx.hasArtwork('back');
   const backGeo = coverGeo(true);
   backGeo.translate(0, 0, -P / 2 - tc);
   const backFace = hasBack
@@ -1174,7 +1174,7 @@ function buildNotebook(ctx: ModelContext): THREE.Object3D {
   root.add(pages);
 
   /* ---- punched holes (dark decals on both covers) ---- */
-  // Hole centre for position a along the binding edge.
+  // Hole center for position a along the binding edge.
   const holeAt = (a: number): [number, number] => (left ? [-W / 2 + g.hd, a] : [a, H / 2 - g.hd]);
   const hw = left ? g.holeAcross : g.holeAlong;
   const hh = left ? g.holeAlong : g.holeAcross;
@@ -1211,13 +1211,13 @@ function buildNotebook(ctx: ModelContext): THREE.Object3D {
 
   /* ---- coil ---- */
   // Ring frame: dIn points from the binding edge into the book, Z is the book's thickness axis.
-  // A ring point at angle φ is centre + R·cosφ·dIn + R·sinφ·Z; φ = φf is the front hole, φ = π the
-  // far side round the edge, φ = 2π - φf the back hole. Centre = hole - sOff·dIn.
+  // A ring point at angle φ is center + R·cosφ·dIn + R·sinφ·Z; φ = φf is the front hole, φ = π the
+  // far side round the edge, φ = 2π - φf the back hole. Center = hole - sOff·dIn.
   const dIn = left ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, -1, 0);
   const along = left ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(1, 0, 0);
   const zAxis = new THREE.Vector3(0, 0, 1);
   const phiF = Math.atan2(Tf, g.sOff);
-  const centreAt = (a: number): THREE.Vector3 => {
+  const centerAt = (a: number): THREE.Vector3 => {
     const [hx, hy] = holeAt(a);
     return new THREE.Vector3(hx, hy, 0).addScaledVector(dIn, -g.sOff);
   };
@@ -1236,7 +1236,7 @@ function buildNotebook(ctx: ModelContext): THREE.Object3D {
     const loops: THREE.BufferGeometry[] = [];
     for (const a of g.positions) {
       for (const side of [-1, 1]) {
-        const c = centreAt(a).addScaledVector(along, (side * g.pairGap) / 2);
+        const c = centerAt(a).addScaledVector(along, (side * g.pairGap) / 2);
         loops.push(ring.clone().translate(c.x, c.y, c.z));
       }
     }
@@ -1247,7 +1247,7 @@ function buildNotebook(ctx: ModelContext): THREE.Object3D {
     ring.dispose();
     if (wire) {
       const m = new THREE.Mesh(wire, wireMat);
-      m.name = 'wire-o';
+      m.name = 'double-loop-wire';
       root.add(m);
     }
   } else {
@@ -1258,7 +1258,7 @@ function buildNotebook(ctx: ModelContext): THREE.Object3D {
     // (without them one hole at each end would stay empty).
     const turns = g.positions.length - 1;
     const a0 = g.positions[0];
-    const base = centreAt(0);
+    const base = centerAt(0);
     const phiStart = -PI;
     const phiSpan = turns * 2 * PI + 2 * PI;
     const curve = new FnCurve((t, out) => {
@@ -1302,7 +1302,7 @@ function notebookSlots(): ImageSlotDef[] {
       label: 'Front',
       hint:
         `Front cover: ${round1(g.W)} × ${round1(g.H)} mm + 3 mm bleed (follows the dimensions). ` +
-        'Keep the hole zone along the binding edge free of important content – it is marked on the template.',
+        'Keep the hole zone along the binding edge, marked on the template, free of important content.',
       aspect,
       template: (params) => noteTemplate(params, 'front'),
     },
@@ -1310,8 +1310,8 @@ function notebookSlots(): ImageSlotDef[] {
       id: 'back',
       label: 'Back',
       hint:
-        'Back cover as seen from behind (with left binding the holes are on the RIGHT of the image). ' +
-        'Without an image the back uses “Back colour (no artwork)”.',
+        'Back cover as seen from behind (with left binding the holes are on the right of the artwork). ' +
+        'Without artwork the back uses “Back color (no artwork)”.',
       aspect,
       template: (params) => noteTemplate(params, 'back'),
     },
@@ -1342,7 +1342,7 @@ function notebookParams(): ParamDef[] {
       label: 'Binding type',
       group: G_MAT,
       options: [
-        { value: 'wireo', label: 'Double loop (wire-o)' },
+        { value: 'wireo', label: 'Double loop wire' },
         { value: 'spiral', label: 'Single coil' },
       ],
       default: 'wireo',
@@ -1350,7 +1350,7 @@ function notebookParams(): ParamDef[] {
     {
       id: 'coilColor',
       type: 'select',
-      label: 'Coil colour',
+      label: 'Coil color',
       group: G_MAT,
       options: [
         { value: 'silver', label: 'Silver' },
@@ -1360,8 +1360,8 @@ function notebookParams(): ParamDef[] {
       default: 'silver',
     },
     finishParam('satin'),
-    { id: 'pageColor', type: 'color', label: 'Page colour', group: G_MAT, default: '#f7f5ef' },
-    { id: 'backColor', type: 'color', label: 'Back colour (no artwork)', group: G_ART, default: '#8e8678' },
+    { id: 'pageColor', type: 'color', label: 'Page color', group: G_MAT, default: '#f7f5ef' },
+    { id: 'backColor', type: 'color', label: 'Back color (no artwork)', group: G_ART, default: '#8e8678' },
   ];
 }
 
@@ -1424,7 +1424,7 @@ const spiralNotebookModel: ModelDefinition = {
   category: 'book',
   name: 'Spiral notebook',
   description:
-    'A5 notebook / calendar with a wire-o or single coil binding on the left or top edge, covers and a page block.',
+    'A5 notebook / calendar with a double loop wire or single coil binding on the left or top edge, covers and a page block.',
   icon: ICON_NOTEBOOK,
   slots: notebookSlots(),
   params: notebookParams(),

@@ -3,37 +3,37 @@
  */
 import { h, safeStorage } from './dom';
 import type { AppContext, TabId } from './context';
-import { createImagesPanel } from './panels/imagesPanel';
+import { createArtworkPanel } from './panels/artwork';
 import { createModelPanel } from './panels/modelPanel';
 import { createScenePanel } from './panels/scenePanel';
 import { createExportPanel } from './panels/exportPanel';
-import { createStylesPanel } from './panels/stylesPanel';
+import { createLooksPanel } from './panels/looks';
 import { getModel } from '../models/registry';
 import { hasAny } from './state';
 
 const TAB_KEY = 'mockup-director.ui.tab';
 const TABS: { id: TabId; label: string }[] = [
-  { id: 'images', label: 'Artwork' },
+  { id: 'artwork', label: 'Artwork' },
   { id: 'model', label: 'Model' },
   { id: 'scene', label: 'Scene' },
   { id: 'export', label: 'Export' },
-  { id: 'styles', label: 'Looks' },
+  { id: 'looks', label: 'Looks' },
 ];
 
 export function createInspector(ctx: AppContext): { el: HTMLElement; show(tab: TabId): void } {
   const stored = safeStorage.get(TAB_KEY) as TabId | null;
-  let active: TabId = TABS.some((x) => x.id === stored) ? (stored as TabId) : 'images';
+  let active: TabId = TABS.some((x) => x.id === stored) ? (stored as TabId) : 'artwork';
 
   const tabBar = h('div', { class: 'tabs', attrs: { role: 'tablist' } });
   const body = h('div', { class: 'tab-panels' });
   const el = h('aside', { class: 'sidebar sidebar-right' }, tabBar, body);
 
   const panels: Record<TabId, HTMLElement> = {
-    images: createImagesPanel(ctx).el,
+    artwork: createArtworkPanel(ctx).el,
     model: createModelPanel(ctx).el,
     scene: createScenePanel(ctx).el,
     export: createExportPanel(ctx).el,
-    styles: createStylesPanel(ctx).el,
+    looks: createLooksPanel(ctx).el,
   };
   const buttons = new Map<TabId, HTMLButtonElement>();
 
@@ -45,10 +45,10 @@ export function createInspector(ctx: AppContext): { el: HTMLElement; show(tab: T
     body.appendChild(panel);
   }
 
-  const imagesBadge = () => {
+  const artworkBadge = () => {
     const s = ctx.store.state;
     const model = getModel(s.modelId);
-    const n = model.slots.filter((sl) => !!s.images[model.id]?.[sl.id]).length;
+    const n = model.slots.filter((sl) => !!s.artwork[model.id]?.[sl.id]).length;
     return model.slots.length ? `${n}/${model.slots.length}` : '';
   };
 
@@ -64,7 +64,7 @@ export function createInspector(ctx: AppContext): { el: HTMLElement; show(tab: T
           on: { click: () => show(tab.id) },
         },
         h('span', { text: tab.label }),
-        tab.id === 'images' && imagesBadge() ? h('span', { class: 'tab-badge', text: imagesBadge() }) : null,
+        tab.id === 'artwork' && artworkBadge() ? h('span', { class: 'tab-badge', text: artworkBadge() }) : null,
       );
       buttons.set(tab.id, b);
       tabBar.appendChild(b);
@@ -102,7 +102,7 @@ export function createInspector(ctx: AppContext): { el: HTMLElement; show(tab: T
   };
 
   ctx.store.subscribe((e) => {
-    if (hasAny(e, 'model', 'images')) renderTabs();
+    if (hasAny(e, 'model', 'artwork')) renderTabs();
   });
   renderTabs();
   return { el, show };

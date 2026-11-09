@@ -753,7 +753,7 @@ exports[`saved ids > match the snapshot 1`] = `
         "kind": "select",
         "options": [
           "color",
-          "grey",
+          "gray",
           "none",
         ],
       },
@@ -827,7 +827,7 @@ exports[`saved ids > match the snapshot 1`] = `
         "kind": "select",
         "options": [
           "black",
-          "darkGrey",
+          "darkGray",
           "silver",
           "white",
         ],

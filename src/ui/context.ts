@@ -6,7 +6,7 @@ import type { Signal } from './dom';
 import type { Store } from './state';
 import type { AnimationProgress } from './exportBridge';
 
-export type TabId = 'images' | 'model' | 'scene' | 'export' | 'styles';
+export type TabId = 'artwork' | 'model' | 'scene' | 'export' | 'looks';
 
 export interface Actions {
   selectModel(id: string): void;
@@ -33,9 +33,9 @@ export interface Actions {
   setView(index: number): void;
   resetView(): void;
   /** Load files into slots of the current model. Without slotIds: fill empty slots in slot order. */
-  assignImages(files: File[], slotIds?: string[]): Promise<void>;
-  pickImageFor(slotId: string): Promise<void>;
-  removeImage(slotId: string): void;
+  assignArtwork(files: File[], slotIds?: string[]): Promise<void>;
+  pickArtworkFor(slotId: string): Promise<void>;
+  removeArtwork(slotId: string): void;
   downloadTemplate(slotId: string): Promise<void>;
   showTab(tab: TabId): void;
 }
@@ -48,7 +48,7 @@ export interface AppContext {
   exportBusy: Signal<boolean>;
   /** Progress of a running animation export (null when none is running). */
   animationProgress: Signal<AnimationProgress | null>;
-  /** "modelId/slotId" keys of slots whose image is being decoded */
+  /** "modelId/slotId" keys of slots whose artwork is being decoded */
   loadingSlots: Signal<ReadonlySet<string>>;
 }
 

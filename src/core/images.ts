@@ -9,17 +9,17 @@
  *    directly would render upside-down; drawing it into a canvas avoids that trap.
  *  - EXIF orientation (JPEG): JPEGs are decoded through HTMLImageElement, which applies EXIF
  *    orientation in every supported engine (Safari ≥ 13.1, Chrome ≥ 81, Firefox ≥ 77), and
- *    drawImage() of such an image paints it upright. ImageBitmap's EXIF behaviour differed
+ *    drawImage() of such an image paints it upright. ImageBitmap's EXIF behavior differed
  *    between engines/versions, so it is only used for non-JPEG rasters (off-main-thread decode).
- *  - SVG is rasterised through HTMLImageElement at a generous size (vector = free quality).
+ *  - SVG is rasterized through HTMLImageElement at a generous size (vector = free quality).
  *  - GPU copies are downscaled so the longest side is ≤ 4096 px (high-quality step-down).
  */
 import * as THREE from 'three';
-import type { ImageAsset } from './types';
+import type { Artwork } from './types';
 
 /** Longest side of the GPU texture. Originals stay untouched in the data URL. */
 const MAX_TEXTURE_SIZE = 4096;
-/** SVGs are rasterised so their longest side is this many px (unless that exceeds the texture cap). */
+/** SVGs are rasterized so their longest side is this many px (unless that exceeds the texture cap). */
 const SVG_RASTER_SIZE = 3072;
 
 /** Error with a message that can be shown to the user. */
@@ -38,28 +38,36 @@ export const IMAGE_ACCEPT = 'image/*,.png,.jpg,.jpeg,.webp,.gif,.svg,.avif,.heic
 /* Public API                                                          */
 /* ------------------------------------------------------------------ */
 
-/** Decode an image File into an ImageAsset (sRGB texture, keeps the data URL). */
-export async function loadImageFile(file: File): Promise<ImageAsset> {
-  const bytes = new Uint8Array(await file.arrayBuffer());
+/** Decode an image File into an Artwork (sRGB texture, keeps the data URL). */
+export async function loadImageFile(file: File): Promise<Artwork> {
+  let bytes: Uint8Array<ArrayBuffer>;
+  try {
+    bytes = new Uint8Array(await file.arrayBuffer());
+  } catch (err) {
+    throw new ImageLoadError(
+      `The file “${file.name}” could not be read. Check that it still exists and can be opened, then add it again.`,
+      err,
+    );
+  }
   const mime = sniffMime(bytes, file.type, file.name);
   const blob = new Blob([bytes], { type: mime });
   const dataUrl = await blobToDataUrl(blob);
   return decodeToAsset(blob, mime, dataUrl, file.name);
 }
 
-/** Recreate an ImageAsset from a data URL (project loading). */
-export async function loadImageDataUrl(dataUrl: string, name: string): Promise<ImageAsset> {
+/** Recreate an Artwork from a data URL (project loading). */
+export async function loadImageDataUrl(dataUrl: string, name: string): Promise<Artwork> {
   // Decoded manually instead of fetch(dataUrl): a strict CSP (connect-src) may block fetching data: URLs.
   const parsed = parseDataUrl(dataUrl);
   if (!parsed) {
-    throw new ImageLoadError(`Corrupted image in the project: ${name}`);
+    throw new ImageLoadError(`The artwork “${name}” in the project is damaged. Add the artwork again.`);
   }
   const mime = sniffMime(parsed.bytes, parsed.mime, name);
   const blob = new Blob([parsed.bytes], { type: mime });
   return decodeToAsset(blob, mime, dataUrl, name);
 }
 
-export function disposeImageAsset(asset: ImageAsset): void {
+export function disposeArtwork(asset: Artwork): void {
   const img = asset.texture.image as unknown;
   asset.texture.dispose();
   // WebKit has a global canvas-memory budget; shrinking the canvas frees its backing store now.
@@ -73,15 +81,15 @@ export function disposeImageAsset(asset: ImageAsset): void {
 /* Decoding                                                            */
 /* ------------------------------------------------------------------ */
 
-async function decodeToAsset(blob: Blob, mime: string, dataUrl: string, name: string): Promise<ImageAsset> {
+async function decodeToAsset(blob: Blob, mime: string, dataUrl: string, name: string): Promise<Artwork> {
   let canvas: HTMLCanvasElement;
   try {
-    if (mime === 'image/svg+xml') canvas = await rasteriseSvg(blob);
+    if (mime === 'image/svg+xml') canvas = await rasterizeSvg(blob);
     else canvas = await decodeRaster(blob, mime);
   } catch (err) {
     if (err instanceof ImageLoadError) throw err;
     throw new ImageLoadError(
-      `Could not decode the image "${name}". Supported formats: PNG, JPEG, WebP, GIF, SVG, AVIF.`,
+      `The file “${name}” could not be read as an image. Choose a PNG, JPEG, WebP, GIF or SVG file.`,
       err,
     );
   }
@@ -119,8 +127,8 @@ async function decodeRaster(blob: Blob, mime: string): Promise<HTMLCanvasElement
   return drawToCanvas(img, w, h);
 }
 
-/** SVG: rasterise via <img>. Sizes come from the SVG itself (width/height or viewBox). */
-async function rasteriseSvg(blob: Blob): Promise<HTMLCanvasElement> {
+/** SVG: rasterize via <img>. Sizes come from the SVG itself (width/height or viewBox). */
+async function rasterizeSvg(blob: Blob): Promise<HTMLCanvasElement> {
   const text = await blob.text();
   const intrinsic = svgIntrinsicSize(text);
   const w = intrinsic?.width ?? 1024;
@@ -176,7 +184,7 @@ function drawToCanvas(src: CanvasImageSource, w: number, h: number): HTMLCanvasE
 function makeTexture(canvas: HTMLCanvasElement): THREE.Texture {
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.flipY = true; // canvas source → flipY honoured (v = 0 is the image bottom)
+  tex.flipY = true; // canvas source → flipY honored (v = 0 is the image bottom)
   tex.anisotropy = 16; // three clamps to the GPU maximum
   tex.generateMipmaps = true;
   tex.minFilter = THREE.LinearMipmapLinearFilter;
@@ -223,7 +231,7 @@ function createCanvas(w: number, h: number): HTMLCanvasElement {
 function get2d(c: HTMLCanvasElement): CanvasRenderingContext2D {
   const g = c.getContext('2d');
   if (!g) {
-    throw new ImageLoadError('Not enough memory to process the image.');
+    throw new ImageLoadError('Not enough memory to load an image this large. Choose a smaller image.');
   }
   return g;
 }

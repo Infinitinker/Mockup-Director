@@ -23,7 +23,7 @@ import {
   maxFpsFor,
   maxMarginFor,
   maxSizeFor,
-  normaliseAnimationSettings,
+  normalizeAnimationSettings,
   outputSizeOf,
 } from '../../../src/export/animation/settings';
 import { randomInt, seededRandom } from '../../random';
@@ -97,14 +97,14 @@ describe('format limits', () => {
   });
 });
 
-describe('normaliseAnimationSettings', () => {
+describe('normalizeAnimationSettings', () => {
   it('keeps the defaults as they are', () => {
-    expect(normaliseAnimationSettings(DEFAULT_ANIMATION)).toEqual(DEFAULT_ANIMATION);
+    expect(normalizeAnimationSettings(DEFAULT_ANIMATION)).toEqual(DEFAULT_ANIMATION);
   });
 
   it('gives the defaults for anything that is not an object', () => {
     for (const raw of [undefined, null, 'gif', 42, true, []]) {
-      expect(normaliseAnimationSettings(raw)).toEqual(DEFAULT_ANIMATION);
+      expect(normalizeAnimationSettings(raw)).toEqual(DEFAULT_ANIMATION);
     }
   });
 
@@ -126,11 +126,11 @@ describe('normaliseAnimationSettings', () => {
       quality: 'high',
       useViewZoomPan: true,
     };
-    expect(normaliseAnimationSettings(valid)).toEqual(valid);
+    expect(normalizeAnimationSettings(valid)).toEqual(valid);
   });
 
   it('replaces values of the wrong type and unknown choices with the defaults', () => {
-    const settings = normaliseAnimationSettings({
+    const settings = normalizeAnimationSettings({
       format: 'avi',
       width: '640',
       height: null,
@@ -150,71 +150,71 @@ describe('normaliseAnimationSettings', () => {
   });
 
   it('drops unknown keys', () => {
-    const settings = normaliseAnimationSettings({ ...DEFAULT_ANIMATION, extra: 1 });
+    const settings = normalizeAnimationSettings({ ...DEFAULT_ANIMATION, extra: 1 });
     expect(Object.keys(settings).sort()).toEqual(Object.keys(DEFAULT_ANIMATION).sort());
   });
 
   it('shrinks a too large size to the format limit, keeping the aspect ratio', () => {
-    expect(normaliseAnimationSettings({ format: 'gif', width: 2400, height: 1200 })).toMatchObject({
+    expect(normalizeAnimationSettings({ format: 'gif', width: 2400, height: 1200 })).toMatchObject({
       width: 1200,
       height: 600,
     });
-    expect(normaliseAnimationSettings({ format: 'mp4', width: 3840, height: 2160 })).toMatchObject({
+    expect(normalizeAnimationSettings({ format: 'mp4', width: 3840, height: 2160 })).toMatchObject({
       width: 1920,
       height: 1080,
     });
-    expect(normaliseAnimationSettings({ format: 'webp', width: 600, height: 6000 })).toMatchObject({
+    expect(normalizeAnimationSettings({ format: 'webp', width: 600, height: 6000 })).toMatchObject({
       width: 120,
       height: 1200,
     });
   });
 
   it('raises a too small side to the smallest size on its own', () => {
-    expect(normaliseAnimationSettings({ width: 5, height: 400 })).toMatchObject({
+    expect(normalizeAnimationSettings({ width: 5, height: 400 })).toMatchObject({
       width: MIN_ANIMATION_SIZE,
       height: 400,
     });
-    expect(normaliseAnimationSettings({ width: -50, height: 0 })).toMatchObject({
+    expect(normalizeAnimationSettings({ width: -50, height: 0 })).toMatchObject({
       width: MIN_ANIMATION_SIZE,
       height: MIN_ANIMATION_SIZE,
     });
   });
 
   it('falls back to GIF when the format is not available', () => {
-    expect(normaliseAnimationSettings({ format: 'webp' }, { webp: false }).format).toBe('gif');
-    expect(normaliseAnimationSettings({ format: 'mp4' }, { mp4: false }).format).toBe('gif');
-    expect(normaliseAnimationSettings({ format: 'mp4' }, { webp: false }).format).toBe('mp4');
-    expect(normaliseAnimationSettings({ format: 'webp' }, { webp: true }).format).toBe('webp');
+    expect(normalizeAnimationSettings({ format: 'webp' }, { webp: false }).format).toBe('gif');
+    expect(normalizeAnimationSettings({ format: 'mp4' }, { mp4: false }).format).toBe('gif');
+    expect(normalizeAnimationSettings({ format: 'mp4' }, { webp: false }).format).toBe('mp4');
+    expect(normalizeAnimationSettings({ format: 'webp' }, { webp: true }).format).toBe('webp');
   });
 
   it('applies the limits of the format it falls back to', () => {
-    const settings = normaliseAnimationSettings({ format: 'mp4', width: 1920, height: 960, fps: 60 }, { mp4: false });
+    const settings = normalizeAnimationSettings({ format: 'mp4', width: 1920, height: 960, fps: 60 }, { mp4: false });
     expect(settings).toMatchObject({ format: 'gif', width: 1200, height: 600, fps: MAX_ANIMATION_FPS });
   });
 
   it('suggests the frame rate of the format when there is none', () => {
-    expect(normaliseAnimationSettings({ format: 'mp4' }).fps).toBe(DEFAULT_VIDEO_FPS);
-    expect(normaliseAnimationSettings({ format: 'webp' }).fps).toBe(DEFAULT_GIF_FPS);
+    expect(normalizeAnimationSettings({ format: 'mp4' }).fps).toBe(DEFAULT_VIDEO_FPS);
+    expect(normalizeAnimationSettings({ format: 'webp' }).fps).toBe(DEFAULT_GIF_FPS);
   });
 
   it('rounds the duration to tenths of a second and clamps it', () => {
-    expect(normaliseAnimationSettings({ duration: 2.34 }).duration).toBe(2.3);
-    expect(normaliseAnimationSettings({ duration: 2.35 }).duration).toBe(2.4);
-    expect(normaliseAnimationSettings({ duration: 0.2 }).duration).toBe(MIN_ANIMATION_DURATION);
-    expect(normaliseAnimationSettings({ duration: 600 }).duration).toBe(MAX_ANIMATION_DURATION);
+    expect(normalizeAnimationSettings({ duration: 2.34 }).duration).toBe(2.3);
+    expect(normalizeAnimationSettings({ duration: 2.35 }).duration).toBe(2.4);
+    expect(normalizeAnimationSettings({ duration: 0.2 }).duration).toBe(MIN_ANIMATION_DURATION);
+    expect(normalizeAnimationSettings({ duration: 600 }).duration).toBe(MAX_ANIMATION_DURATION);
   });
 
   it('limits the margin so a content box of the smallest size is left', () => {
-    expect(normaliseAnimationSettings({ width: 200, height: 100, margin: 500 }).margin).toBe(34);
-    expect(normaliseAnimationSettings({ margin: -5 }).margin).toBe(0);
-    expect(normaliseAnimationSettings({ margin: 10.6 }).margin).toBe(11);
+    expect(normalizeAnimationSettings({ width: 200, height: 100, margin: 500 }).margin).toBe(34);
+    expect(normalizeAnimationSettings({ margin: -5 }).margin).toBe(0);
+    expect(normalizeAnimationSettings({ margin: 10.6 }).margin).toBe(11);
   });
 
   it('always gives complete settings within every limit, and is stable when applied again', () => {
     const random = seededRandom(1);
     for (let run = 0; run < 2000; run++) {
       const available = randomAvailability(random);
-      const s = normaliseAnimationSettings(randomRaw(random), available);
+      const s = normalizeAnimationSettings(randomRaw(random), available);
 
       for (const [key, choices] of Object.entries(CHOICES)) {
         expect(choices).toContain(s[key as keyof typeof CHOICES]);
@@ -238,7 +238,7 @@ describe('normaliseAnimationSettings', () => {
       expect(s.swingAngle).toBeGreaterThanOrEqual(1);
       expect(s.swingAngle).toBeLessThanOrEqual(180);
 
-      expect(normaliseAnimationSettings(s, available)).toEqual(s);
+      expect(normalizeAnimationSettings(s, available)).toEqual(s);
     }
   });
 });

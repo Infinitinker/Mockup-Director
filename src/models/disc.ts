@@ -1,8 +1,8 @@
 /**
  * Optical disc (CD / DVD / Blu-ray – all share the 120 mm / 1.2 mm outer format).
  *
- * Anatomy modelled (diameters, after ECMA-130 / ECMA-267 and replicator print specs):
- *   Ø 15     centre hole
+ * Anatomy modeled (diameters, after ECMA-130 / ECMA-267 and replicator print specs):
+ *   Ø 15     center hole
  *   Ø 15–33  clear polycarbonate hub (clamping area 22–33 mm)
  *   Ø 33.5   stacking ring (small raised ring on the label side)
  *   Ø 38–46  mirror band (metal layer, no grooves → plain mirror on the data side)
@@ -49,14 +49,14 @@ const SEG = 160;
 export const discSlot: ImageSlotDef = {
   id: 'disc',
   label: 'Disc label',
-  hint: 'A 120 × 120 mm square, image centre = disc centre. The print covers Ø 118 mm (from Ø 36 mm or as set) – extend the background to the 120 mm edge, it acts as bleed. Transparent PNG areas show the silver disc.',
+  hint: 'A 120 × 120 mm square whose center is the disc’s center. The print covers Ø 118 mm, from the label inner diameter (36 mm by default) outward. Extend the background to the 120 mm edge: it acts as bleed. Transparent PNG areas show the silver disc, or white when “Transparent label areas” is set to White base coat.',
   aspect: 1,
   // A function of the params, so the downloaded template follows 'discInner' / 'discFullFace'
   // exactly like the 3D label does (placeholder.ts resolves it with defaults for the round
   // placeholder).
   template: (params: ParamValues) => {
     const { inner, outer } = discPrintArea(params);
-    const label = `Print Ø ${round1(outer)}`;
+    const label = `Print Ø ${round1(outer)} mm`;
     const lo = (DISC_DIAMETER - outer) / 2;
     const hi = (DISC_DIAMETER + outer) / 2;
     return {
@@ -146,7 +146,7 @@ type RingUV = 'label' | 'polar';
 /**
  * Flat annulus in the XZ plane at height y, facing +Y (up) or -Y (down).
  *  - uv 'label': planar projection of the 120 mm square label image. Viewed from above with the
- *    disc's front (+Z) towards the viewer, the image reads upright: u = right (+X), v = up (-Z).
+ *    disc's front (+Z) toward the viewer, the image reads upright: u = right (+X), v = up (-Z).
  *  - uv 'polar': u = angle (0..1), v = radius (0 at rIn .. 1 at rOut); used for radial data maps.
  *  - withTangent: adds a per-vertex RADIAL tangent (drives the anisotropic highlight direction).
  */
@@ -245,7 +245,7 @@ const DATA_SIDE: Record<string, { color: string; metalness: number; roughness: n
 let thicknessTex: THREE.DataTexture | null = null;
 /**
  * 1 x 256 iridescence-thickness map along the radius (polar uv v): slowly varying film thickness
- * gives the concentric colour bands of a real data side, plus a shift where "written" data ends.
+ * gives the concentric color bands of a real data side, plus a shift where "written" data ends.
  * Module-level cache, not flagged disposeWithModel → survives disposeObject().
  */
 function dataThicknessTexture(): THREE.DataTexture {
@@ -302,7 +302,7 @@ function discPrintArea(params: ParamValues): { inner: number; outer: number } {
 }
 
 /**
- * A 120 mm optical disc LYING FLAT: label side facing +Y, centred on x/z = 0, bottom at y = 0
+ * A 120 mm optical disc LYING FLAT: label side facing +Y, centered on x/z = 0, bottom at y = 0
  * (thickness 1.2 mm; the stacking ring rises ~0.1 mm above the label face).
  * Uses ctx.getTexture(slotId) for the printed label. Composite models rotate/position it as
  * needed (rotateX(+90°) stands it up facing +Z with the label artwork upright).
@@ -390,7 +390,7 @@ export function buildDisc(ctx: ModelContext, slotId: string = 'disc'): THREE.Obj
     group.add(new THREE.Mesh(ringGeometry(rIn, rOut, T + 0.004, true, 'label'), base));
   }
 
-  // 4) Printed label: circular area cut from the square image (image centre = disc centre,
+  // 4) Printed label: circular area cut from the square image (image center = disc center,
   //    image edge = 120 mm). Drawn after the shell so it sits on top of the plastic.
   const label = new THREE.Mesh(
     ringGeometry(rIn, rOut, T + 0.008, true, 'label', false, 3),
@@ -430,8 +430,8 @@ function buildDiscModel(ctx: ModelContext): THREE.Object3D {
   spin.rotation.y = THREE.MathUtils.degToRad(num(p, 'spin', 0));
   spin.add(buildDisc(ctx, 'disc'));
 
-  // rotateX(+θ) tips the label normal from +Y towards +Z (the camera) and keeps the artwork's
-  // top edge pointing up (image top lies towards -Z when flat, which rotates to +Y).
+  // rotateX(+θ) tips the label normal from +Y toward +Z (the camera) and keeps the artwork's
+  // top edge pointing up (image top lies toward -Z when flat, which rotates to +Y).
   const pose = new THREE.Group();
   pose.rotation.x = THREE.MathUtils.degToRad(tilt);
   pose.add(spin);

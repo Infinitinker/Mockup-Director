@@ -27,12 +27,12 @@ export function createToolbar(ctx: AppContext): { el: HTMLElement } {
     'button',
     {
       class: 'btn btn-primary tb-export',
-      title: `Export image (${shortcutLabel('E')})`,
+      title: `Export image… (${shortcutLabel('E')})`,
       attrs: { type: 'button' },
       on: { click: () => void a.exportImage() },
     },
     h('span', { class: 'btn-icon', html: ICONS.exportImg }),
-    h('span', { class: 'btn-text', text: 'Export' }),
+    h('span', { class: 'btn-text', text: 'Export…' }),
   );
   el.append(
     h('div', { class: 'tb-traffic', attrs: { 'data-tauri-drag-region': true } }),
@@ -47,8 +47,8 @@ export function createToolbar(ctx: AppContext): { el: HTMLElement } {
       'div',
       { class: 'tb-group', attrs: { 'data-tauri-drag-region': true } },
       tbButton(ICONS.newDoc, 'New', `New project (${shortcutLabel('N')})`, () => void a.newProject()),
-      tbButton(ICONS.open, 'Open', `Open project… (${shortcutLabel('O')})`, () => void a.openProject()),
-      tbButton(ICONS.save, 'Save', `Save project… (${shortcutLabel('S')})`, () => void a.saveProject()),
+      tbButton(ICONS.open, 'Open…', `Open project… (${shortcutLabel('O')})`, () => void a.openProject()),
+      tbButton(ICONS.save, 'Save…', `Save project… (${shortcutLabel('S')})`, () => void a.saveProject()),
     ),
     h('div', { class: 'tb-sep', attrs: { 'data-tauri-drag-region': true } }),
     h('div', { class: 'tb-group', attrs: { 'data-tauri-drag-region': true } }, undoBtn, redoBtn),

@@ -12,7 +12,7 @@
  *  - 'lid'      (primary) lid top, W x H.
  *  - 'lidSides' the four lid walls as one band: front | right | back | left (height = lid height).
  *  - 'base'     the visible part of the base walls as one band (same order).
- * Bands read upright when the box lies flat; empty bands use the colour params.
+ * Bands read upright when the box lies flat; empty bands use the color params.
  */
 import * as THREE from 'three';
 import type {
@@ -79,7 +79,7 @@ const orientationParam: SelectParamDef = {
   group: G_DIM,
 };
 
-const baseColorParam = colorParam('baseColor', 'Base colour (without artwork)', '#d8d4cc');
+const baseColorParam = colorParam('baseColor', 'Base color (no artwork)', '#d8d4cc');
 
 /* ------------------------------------------------------------------ */
 /* Dimensions & templates                                              */
@@ -164,7 +164,7 @@ function buildSlimBox(ctx: ModelContext): THREE.Object3D {
   lidUV.py = regionMapper(lidTpl, 0);
   lidMats[FACE_INDEX.py] = surfaceMaterial(finish, { map: ctx.getTexture('lid') });
 
-  const lidSidesMat = ctx.hasImage('lidSides') ? surfaceMaterial(finish, { map: ctx.getTexture('lidSides') }) : null;
+  const lidSidesMat = ctx.hasArtwork('lidSides') ? surfaceMaterial(finish, { map: ctx.getTexture('lidSides') }) : null;
   const sidesTpl = lidSidesTemplate(p);
   WALL_FACES.forEach((face, i) => {
     if (lidSidesMat) lidUV[face] = regionMapper(sidesTpl, i);
@@ -188,7 +188,7 @@ function buildSlimBox(ctx: ModelContext): THREE.Object3D {
     const hb = baseVis + overlap;
     const baseUV: Partial<Record<FaceId, FaceUVMapper>> = {};
     const baseMats: THREE.Material[] = new Array<THREE.Material>(6);
-    const baseMat = ctx.hasImage('base') ? surfaceMaterial(finish, { map: ctx.getTexture('base') }) : null;
+    const baseMat = ctx.hasArtwork('base') ? surfaceMaterial(finish, { map: ctx.getTexture('base') }) : null;
     const tpl = baseTemplate(p);
     // Region covers the VISIBLE height only. The hidden overlap above it runs on into the top
     // bleed of the band (rectMapper extrapolates linearly) and is clamped at the bleed's outer
@@ -245,7 +245,7 @@ export const slimBoxModel: ModelDefinition = {
   category: 'box',
   name: 'Slim box',
   description:
-    'Flat two-piece box with a lid over a base (board game, gift, phone, cosmetics). Lying flat or standing.',
+    'Flat two-piece box with a lid over a base (board game, gift, phone, cosmetics), lying flat or standing.',
   icon: icon(
     '<path d="M8 30 L22 20 H56 L42 30 Z"/><path d="M8 30 V44 H42 V30"/><path d="M42 44 L56 34 V20"/>' +
       '<path d="M8 39 H42 L56 29" stroke-width="2"/>',
@@ -261,14 +261,14 @@ export const slimBoxModel: ModelDefinition = {
     {
       id: 'lidSides',
       label: 'Lid – sides',
-      hint: 'Band: front | right | back | left.',
+      hint: 'The four lid walls in one band: front | right | back | left.',
       aspect: aspectOf(bandTemplate(wallPanels(DEF_DIMS.W, DEF_DIMS.H), DEF_DIMS.lidH, BLEED_MM)),
       template: lidSidesTemplate,
     },
     {
       id: 'base',
       label: 'Base – sides',
-      hint: 'Visible part of the base below the lid, same band layout.',
+      hint: 'The visible part of the base below the lid, in the same band layout.',
       aspect: aspectOf(
         bandTemplate(wallPanels(DEF_DIMS.W - 2 * DEF_DIMS.t, DEF_DIMS.H - 2 * DEF_DIMS.t), DEF_DIMS.baseVis, BLEED_MM),
       ),

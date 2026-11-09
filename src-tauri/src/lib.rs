@@ -52,7 +52,12 @@ fn save_file(request: tauri::ipc::Request) -> Result<(), String> {
 
     let path = PathBuf::from(percent_decode(encoded)?);
     validate_target(&path)?;
-    write_atomically(&path, bytes).map_err(|e| format!("Cannot write {}: {e}", path.display()))
+    write_atomically(&path, bytes).map_err(|e| {
+        format!(
+            "{} could not be written: {e}. Choose another folder or free some disk space, then try again.",
+            path.display()
+        )
+    })
 }
 
 /// Queues project files for the web UI and tells it they arrived.

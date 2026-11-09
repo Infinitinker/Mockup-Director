@@ -97,7 +97,7 @@ export function createScenePanel(ctx: AppContext): { el: HTMLElement } {
     add(
       numberControl({
         label: 'Perspective strength (FOV)',
-        title: 'Small = flat telephoto look, large = strong perspective',
+        title: 'A small angle gives a flat telephoto look, a large one a strong perspective.',
         min: 5,
         max: 75,
         step: 1,
@@ -238,7 +238,7 @@ export function createScenePanel(ctx: AppContext): { el: HTMLElement } {
     add(
       numberControl({
         label: 'Environment reflections',
-        title: 'Strength of studio reflections on glossy surfaces',
+        title: 'Sets how strongly glossy surfaces reflect the studio.',
         min: 0,
         max: 2,
         step: 0.01,
@@ -249,7 +249,7 @@ export function createScenePanel(ctx: AppContext): { el: HTMLElement } {
         set: (v) => light('environment', v),
       }),
     ).el,
-    add(colorControl({ label: 'Light colour', get: () => scene().light.color, set: (v) => light('color', v) })).el,
+    add(colorControl({ label: 'Light color', get: () => scene().light.color, set: (v) => light('color', v) })).el,
   );
   const lightSection = section('scene.light', 'Light', lightChildren);
 
@@ -328,7 +328,7 @@ export function createScenePanel(ctx: AppContext): { el: HTMLElement } {
       add(
         numberControl({
           label: 'Falloff',
-          title: 'Part of the model height over which the reflection fades',
+          title: 'The reflection fades out over this part of the model’s height.',
           min: 0.05,
           max: 1,
           step: 0.01,
@@ -366,7 +366,7 @@ export function createScenePanel(ctx: AppContext): { el: HTMLElement } {
         label: 'Mode',
         options: [
           { value: 'transparent', label: 'Transparent', title: 'Transparent (checkerboard)' },
-          { value: 'color', label: 'Colour' },
+          { value: 'color', label: 'Color' },
           { value: 'gradient', label: 'Gradient' },
         ],
         get: () => scene().background.mode,
@@ -375,7 +375,7 @@ export function createScenePanel(ctx: AppContext): { el: HTMLElement } {
     ).el,
     add(
       colorControl({
-        label: 'Colour (centre)',
+        label: 'Color (center)',
         get: () => scene().background.color,
         set: (v) => bg('color', v),
         disabled: () => scene().background.mode === 'transparent',
@@ -383,7 +383,7 @@ export function createScenePanel(ctx: AppContext): { el: HTMLElement } {
     ).el,
     add(
       colorControl({
-        label: 'Colour (edges)',
+        label: 'Color (edges)',
         get: () => scene().background.color2,
         set: (v) => bg('color2', v),
         disabled: () => scene().background.mode !== 'gradient',

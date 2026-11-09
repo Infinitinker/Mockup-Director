@@ -1,5 +1,6 @@
 /**
- * Built-in lighting looks. Key light azimuth is relative to the camera (0 = from the viewer,
+ * Built-in light presets, picked in the Scene tab: each sets the light and may change the shadow
+ * and reflection. Key light azimuth is relative to the camera (0 = from the viewer,
  * negative = from the left, positive = from the right, 180 = from behind); elevation is the
  * angle above the floor. See stage.ts for how the values map to the actual lights.
  */
@@ -37,7 +38,7 @@ export const LIGHT_PRESETS: LightPreset[] = [
   },
   {
     id: 'flat',
-    label: 'Flat (catalogue)',
+    label: 'Flat (catalog)',
     light: { azimuth: 0, elevation: 35, intensity: 0.5, ambient: 1.0, environment: 1.3, color: '#ffffff' },
     shadow: { enabled: true, opacity: 0.3, softness: 0.8 },
     reflection: { enabled: false },

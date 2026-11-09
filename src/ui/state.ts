@@ -6,29 +6,29 @@
  * into it (no feedback loops).
  *
  * History: the first change of a "burst" (changes less than BURST_MS apart, e.g. dragging a slider)
- * records ONE snapshot of the state before the burst. Image assets are shared by reference between
- * snapshots; an asset is disposed only when neither the state nor any snapshot references it.
+ * records ONE snapshot of the state before the burst. Artwork is shared by reference between
+ * snapshots; an artwork is disposed only when neither the state nor any snapshot references it.
  *
  * Documents: every open project (a tab) is a StoreDocument – its state, its undo history and the
- * images it owns. The store works on one at a time; swap() puts another one in its place, and the
+ * artwork it owns. The store works on one at a time; swap() puts another one in its place, and the
  * listeners see that as a change of everything (source 'document'). A document's `revision` changes
  * with every edit and comes back with undo, so "changed since saved" is a revision comparison.
  */
-import type { ExportSettings, ImageAsset, ParamValues, SceneSettings } from '../core/types';
-import { disposeImageAsset } from '../core/images';
+import type { ExportSettings, Artwork, ParamValues, SceneSettings } from '../core/types';
+import { disposeArtwork } from '../core/images';
 
-type ChangeKind = 'model' | 'params' | 'images' | 'scene' | 'camera' | 'export';
+type ChangeKind = 'model' | 'params' | 'artwork' | 'scene' | 'camera' | 'export';
 type ChangeSource = 'ui' | 'stage' | 'history' | 'project' | 'init' | 'document';
 
-/** modelId -> slotId -> image */
-export type ImageMap = Record<string, Record<string, ImageAsset>>;
+/** modelId -> slotId -> artwork */
+export type ArtworkMap = Record<string, Record<string, Artwork>>;
 
 /** The state of one document (an open project). */
 export interface DocumentState {
   modelId: string;
   /** modelId -> param values (may be partial – always complete with defaults before use) */
   params: Record<string, ParamValues>;
-  images: ImageMap;
+  artwork: ArtworkMap;
   scene: SceneSettings;
   export: ExportSettings;
 }
@@ -45,35 +45,35 @@ interface UpdateOptions {
 interface Snapshot {
   modelId: string;
   params: Record<string, ParamValues>;
-  images: ImageMap;
+  artwork: ArtworkMap;
   scene: SceneSettings;
   export: ExportSettings;
   revision: number;
 }
 
-/** One open project, as the store holds it: state, undo history and owned images. */
+/** One open project, as the store holds it: state, undo history and owned artwork. */
 export interface StoreDocument {
   readonly state: DocumentState;
   readonly revision: number;
   readonly undoStack: Snapshot[];
   readonly redoStack: Snapshot[];
-  readonly tracked: Set<ImageAsset>;
+  readonly tracked: Set<Artwork>;
 }
 
 /** Revisions are unique across all documents, so two different states never share one. */
 let lastRevision = 0;
 const nextRevision = () => ++lastRevision;
 
-const ALL_KINDS: ChangeKind[] = ['model', 'params', 'images', 'scene', 'camera', 'export'];
+const ALL_KINDS: ChangeKind[] = ['model', 'params', 'artwork', 'scene', 'camera', 'export'];
 
-function collectImages(m: ImageMap, into: Set<ImageAsset>): void {
+function collectArtwork(m: ArtworkMap, into: Set<Artwork>): void {
   for (const slots of Object.values(m)) for (const a of Object.values(slots)) if (a) into.add(a);
 }
 
-function disposeAll(assets: Iterable<ImageAsset>): void {
+function disposeAll(assets: Iterable<Artwork>): void {
   for (const a of assets) {
     try {
-      disposeImageAsset(a);
+      disposeArtwork(a);
     } catch {
       /* ignore – disposal must never break the UI */
     }
@@ -85,13 +85,13 @@ const BURST_MS = 450;
 
 const jsonClone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 
-function cloneImages(m: ImageMap): ImageMap {
-  const out: ImageMap = {};
+function cloneArtwork(m: ArtworkMap): ArtworkMap {
+  const out: ArtworkMap = {};
   for (const [modelId, slots] of Object.entries(m)) out[modelId] = { ...slots };
   return out;
 }
 
-function sameImages(a: ImageMap, b: ImageMap): boolean {
+function sameArtwork(a: ArtworkMap, b: ArtworkMap): boolean {
   const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
   for (const k of keys) {
     const sa = a[k] ?? {};
@@ -109,8 +109,8 @@ export class Store {
   private undoStack: Snapshot[] = [];
   private redoStack: Snapshot[] = [];
   private burstTimer: ReturnType<typeof setTimeout> | null = null;
-  /** Every image asset that ever entered the state and has not been disposed yet. */
-  private tracked = new Set<ImageAsset>();
+  /** Every artwork that ever entered the state and has not been disposed yet. */
+  private tracked = new Set<Artwork>();
   private rev = nextRevision();
 
   constructor(initial: DocumentState) {
@@ -118,10 +118,10 @@ export class Store {
     this.track();
   }
 
-  /** A new document holding `state` (its images become owned by it), ready for swap(). */
+  /** A new document holding `state` (its artwork becomes owned by it), ready for swap(). */
   static createDocument(state: DocumentState): StoreDocument {
-    const tracked = new Set<ImageAsset>();
-    collectImages(state.images, tracked);
+    const tracked = new Set<Artwork>();
+    collectArtwork(state.artwork, tracked);
     return { state, revision: nextRevision(), undoStack: [], redoStack: [], tracked };
   }
 
@@ -138,7 +138,7 @@ export class Store {
 
   /**
    * Puts `next` in place of the current document and returns the current one (state, history and
-   * images move with it, nothing is disposed). Listeners get a change of everything.
+   * artwork move with it, nothing is disposed). Listeners get a change of everything.
    */
   swap(next: StoreDocument): StoreDocument {
     this.endBurst();
@@ -248,7 +248,7 @@ export class Store {
     return {
       modelId: this.s.modelId,
       params: jsonClone(this.s.params),
-      images: cloneImages(this.s.images),
+      artwork: cloneArtwork(this.s.artwork),
       scene: jsonClone(this.s.scene),
       export: jsonClone(this.s.export),
       revision: this.rev,
@@ -260,7 +260,7 @@ export class Store {
     const kinds = new Set<ChangeKind>();
     if (snap.modelId !== cur.modelId) kinds.add('model');
     if (JSON.stringify(snap.params) !== JSON.stringify(cur.params)) kinds.add('params');
-    if (!sameImages(snap.images, cur.images)) kinds.add('images');
+    if (!sameArtwork(snap.artwork, cur.artwork)) kinds.add('artwork');
     if (JSON.stringify(snap.scene.camera) !== JSON.stringify(cur.scene.camera)) kinds.add('camera');
     const { camera: _a, ...restA } = snap.scene;
     const { camera: _b, ...restB } = cur.scene;
@@ -271,7 +271,7 @@ export class Store {
     this.s = {
       modelId: snap.modelId,
       params: snap.params,
-      images: snap.images,
+      artwork: snap.artwork,
       scene: snap.scene,
       export: snap.export,
     };
@@ -283,20 +283,20 @@ export class Store {
   }
 
   private track(): void {
-    for (const slots of Object.values(this.s.images)) {
+    for (const slots of Object.values(this.s.artwork)) {
       for (const a of Object.values(slots)) if (a) this.tracked.add(a);
     }
   }
 
-  /** Dispose assets no longer referenced by the state or by any history snapshot. */
+  /** Dispose artwork no longer referenced by the state or by any history snapshot. */
   private gc(): void {
-    const live = new Set<ImageAsset>();
-    collectImages(this.s.images, live);
+    const live = new Set<Artwork>();
+    collectArtwork(this.s.artwork, live);
     this.undoStack.forEach((s) => {
-      collectImages(s.images, live);
+      collectArtwork(s.artwork, live);
     });
     this.redoStack.forEach((s) => {
-      collectImages(s.images, live);
+      collectArtwork(s.artwork, live);
     });
     const dead = [...this.tracked].filter((a) => !live.has(a));
     dead.forEach((a) => {
@@ -333,15 +333,15 @@ export function hasAny(e: ChangeEvent, ...kinds: ChangeKind[]): boolean {
 }
 
 /**
- * Dispose every asset of an image map that never entered the store (e.g. a restored autosave that
+ * Dispose every artwork of an artwork map that never entered the store (e.g. a restored autosave that
  * was discarded). Never call this for maps the store or its history still reference.
  */
-export function disposeImageMap(m: ImageMap): void {
+export function disposeArtworkMap(m: ArtworkMap): void {
   for (const slots of Object.values(m)) {
     for (const a of Object.values(slots)) {
       if (!a) continue;
       try {
-        disposeImageAsset(a);
+        disposeArtwork(a);
       } catch {
         /* ignore – disposal must never break the UI */
       }

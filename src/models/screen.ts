@@ -6,12 +6,12 @@
  *  - browserWindowModel ('device-browser')  – the same panel with a generic window chrome bar on
  *    top (window buttons, back/forward chevrons, address pill with an optional short domain text).
  *
- * Coordinate frame (see CONVENTIONS in core/types.ts): millimetres, FRONT faces +Z. The panel is
- * built flat in its own frame (centred on x/y, front surface on z = 0, back on z = -thickness),
+ * Coordinate frame (see CONVENTIONS in core/types.ts): millimeters, FRONT faces +Z. The panel is
+ * built flat in its own frame (centered on x/y, front surface on z = 0, back on z = -thickness),
  * then optionally BENT and finally tilted back and put on the ground.
  *
  * Bending: a flat point (x, y, z) maps onto a cylinder whose axis is parallel to Y at z = rho
- * (signed radius, rho > 0 = concave – the edges come towards the viewer like a curved monitor,
+ * (signed radius, rho > 0 = concave – the edges come toward the viewer like a curved monitor,
  * rho < 0 = convex):  angle a = x / rho,  x' = (rho - z)·sin a,  z' = rho - (rho - z)·cos a.
  * The FRONT surface (z = 0) keeps its arc length (x' along the arc = x), and the image's u is
  * linear in x, so the artwork is not distorted along the arc. Normals are rotated by -a about Y.
@@ -47,7 +47,7 @@ const DEG = Math.PI / 180;
 
 /** Aspect ratio of the user's image in a slot (the placeholder / missing image -> fallback). */
 function imageAspect(ctx: ModelContext, slotId: string, fallback: number): number {
-  if (!ctx.hasImage(slotId)) return fallback;
+  if (!ctx.hasArtwork(slotId)) return fallback;
   const img = ctx.getTexture(slotId).image as
     | { width?: number; height?: number; naturalWidth?: number; naturalHeight?: number }
     | null
@@ -58,7 +58,7 @@ function imageAspect(ctx: ModelContext, slotId: string, fallback: number): numbe
 }
 
 /**
- * X positions of the columns of a rounded rectangle centred on x = 0: the corner arcs are
+ * X positions of the columns of a rounded rectangle centered on x = 0: the corner arcs are
  * sampled by angle (so the outline is exact) and the straight middle part is split into
  * `midSegs` pieces (for smooth bending).
  */
@@ -90,7 +90,7 @@ function cornerDrop(x: number, halfW: number, rc: number): number {
  * A flat face as one strip of columns at depth z. `facing` 1 = normal +Z (front), -1 = -Z (back).
  * UVs: u = 0..1 left -> right and v = 0..1 bottom -> top over `uvRect` [x0, y0, x1, y1] as seen
  * from +Z, so a front face shows the image upright and NOT mirrored. (Back faces only carry a
- * solid colour, their UVs are unused.)
+ * solid color, their UVs are unused.)
  */
 function faceStrip(
   xs: number[],
@@ -330,7 +330,7 @@ function addBody(group: THREE.Group, d: PanelDims, bodyMat: THREE.Material, fron
   wallMesh.name = 'panel-edge';
   group.add(wallMesh);
 
-  // Back: solid colour only (seen from behind; UVs unused).
+  // Back: solid color only (seen from behind; UVs unused).
   const back = faceStrip(xs, top, bot, -d.t, -1, [-hw, -hh, hw, hh]);
   bendGeometry(back, d.rho);
   const backMesh = new THREE.Mesh(back, bodyMat);
@@ -477,7 +477,7 @@ function finishParams(): ParamDef[] {
       options: [
         { value: 'plastic', label: 'Satin plastic' },
         { value: 'gloss', label: 'Glossy plastic' },
-        { value: 'metal', label: 'Metal (aluminium)' },
+        { value: 'metal', label: 'Metal (aluminum)' },
       ],
       default: 'plastic',
     },
@@ -590,11 +590,11 @@ const screenshotModel: ModelDefinition = {
   category: 'device',
   name: 'Screenshot',
   description:
-    'A thin floating panel showing a screenshot – flat or curved, with an optional frame; the height follows the image.',
+    'A thin floating panel showing a screenshot, flat or curved, with an optional frame and a height that follows the artwork.',
   icon: ICON_SCREENSHOT,
   slots: [
     screenSlot(
-      'A screenshot or any artwork – any aspect ratio (the panel height follows the image). Without an image: 16:10.',
+      'A screenshot or any other artwork, in any aspect ratio: the panel height follows it. Without artwork the panel is 16:10.',
     ),
   ],
   params: [
@@ -627,7 +627,7 @@ const screenshotModel: ModelDefinition = {
     {
       id: 'bodyColor',
       type: 'color',
-      label: 'Edge & back colour (no frame)',
+      label: 'Edge & back color (no frame)',
       group: G_MAT,
       default: '#2a2b2f',
     },
@@ -648,7 +648,7 @@ interface ChromePalette {
   text: string;
   icon: string;
   body: string;
-  buttonsGrey: [string, string, string];
+  buttonsGray: [string, string, string];
 }
 
 const PALETTES: Record<'light' | 'dark', ChromePalette> = {
@@ -660,7 +660,7 @@ const PALETTES: Record<'light' | 'dark', ChromePalette> = {
     text: '#3b3e44',
     icon: '#7f828a',
     body: '#dcdde1',
-    buttonsGrey: ['#c3c5ca', '#c3c5ca', '#c3c5ca'],
+    buttonsGray: ['#c3c5ca', '#c3c5ca', '#c3c5ca'],
   },
   dark: {
     bar: '#2c2d31',
@@ -670,7 +670,7 @@ const PALETTES: Record<'light' | 'dark', ChromePalette> = {
     text: '#d9dadd',
     icon: '#8e9097',
     body: '#26272b',
-    buttonsGrey: ['#55575d', '#55575d', '#55575d'],
+    buttonsGray: ['#55575d', '#55575d', '#55575d'],
   },
 };
 
@@ -698,7 +698,7 @@ function roundRectPath(g: CanvasRenderingContext2D, x: number, y: number, w: num
 
 /**
  * Window chrome bar drawn on a per-build canvas (wMm × hMm area): window buttons, back/forward
- * chevrons, centred address pill with a small padlock + domain, a "more" menu and a separator.
+ * chevrons, centered address pill with a small padlock + domain, a "more" menu and a separator.
  * Drawn upright; CanvasTexture keeps flipY = true, so v = 0 is the bottom of the drawing.
  */
 function chromeTexture(
@@ -724,7 +724,7 @@ function chromeTexture(
 
     let x = u * 0.5;
     if (buttons !== 'none') {
-      const cols = buttons === 'color' ? BUTTON_COLORS : pal.buttonsGrey;
+      const cols = buttons === 'color' ? BUTTON_COLORS : pal.buttonsGray;
       for (let i = 0; i < 3; i++) {
         g.beginPath();
         g.arc(x + i * u * 0.4, cy, u * 0.125, 0, Math.PI * 2);
@@ -888,11 +888,11 @@ const browserWindowModel: ModelDefinition = {
   category: 'device',
   name: 'Browser window',
   description:
-    'A browser / app window with a generic title bar (buttons, address bar) – flat or curved; the height follows the image.',
+    'A browser or app window with a generic title bar (buttons, address bar), flat or curved, whose height follows the artwork.',
   icon: ICON_BROWSER,
   slots: [
     screenSlot(
-      'Window content under the bar (e.g. a page screenshot) – any aspect ratio, the window height follows the image. Without an image: 16:10.',
+      'The window content under the bar, such as a screenshot of a page, in any aspect ratio: the window height follows it. Without artwork the content is 16:10.',
     ),
   ],
   params: [
@@ -915,8 +915,8 @@ const browserWindowModel: ModelDefinition = {
       label: 'Window buttons',
       group: G_WIN,
       options: [
-        { value: 'color', label: 'Coloured' },
-        { value: 'grey', label: 'Grey' },
+        { value: 'color', label: 'Colored' },
+        { value: 'gray', label: 'Gray' },
         { value: 'none', label: 'None' },
       ],
       default: 'color',

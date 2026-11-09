@@ -55,7 +55,7 @@ const SESSION_VERSION = 1;
 const STORAGE_UNAVAILABLE =
   'This system does not let Mockup Director keep data between starts, so open projects are not reopened after a restart.';
 const SESSION_NEWER =
-  'The projects that were open were saved by a newer version of Mockup Director. Update the app to get them back.';
+  'The projects that were open were saved by a newer version of Mockup Director. Update Mockup Director to get them back.';
 
 const tabKey = (id: string): string => TAB_PREFIX + id;
 const noop = (): void => undefined;
@@ -113,7 +113,7 @@ function finish(tx: IDBTransaction, what: string): Promise<void> {
 function readIndex(raw: unknown): { index: IndexRecord; malformed: number } {
   if (!isPlain(raw) || typeof raw.version !== 'number' || !Array.isArray(raw.tabs)) {
     throw new SessionError(
-      'The record of the projects that were open is damaged. Open your projects again from their files; changes that were not saved to a file cannot be recovered.',
+      'The record of the projects that were open is damaged: changes that were not saved to a file cannot be recovered. Open your projects again from their files.',
     );
   }
   if (raw.version > SESSION_VERSION) throw new SessionError(SESSION_NEWER);
@@ -228,7 +228,7 @@ export class SessionSaver {
   private queuedDone: Promise<void> | null = null;
 
   save(tabs: readonly TabSnapshot[], activeId: string): Promise<void> {
-    // Projects are serialised now: the store edits the active state in place, so a snapshot read
+    // Projects are serialized now: the store edits the active state in place, so a snapshot read
     // later could hold newer content than its revision says.
     this.queued = {
       index: { version: SESSION_VERSION, activeId, tabs: tabs.map(({ id, name, dirty }) => ({ id, name, dirty })) },

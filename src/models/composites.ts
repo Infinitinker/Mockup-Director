@@ -12,9 +12,9 @@
  * designer's artwork drops into the same slots.
  *
  * Build: the base is built exactly as the stand-alone model, its EXACT bounding box is measured
- * and the disc is posed against that box with closed-form maths (composites/placement.ts), so it
+ * and the disc is posed against that box with closed-form math (composites/placement.ts), so it
  * never interpenetrates the case for any param value. Finally the whole group is put on the floor
- * and centred on x/z.
+ * and centered on x/z.
  */
 import * as THREE from 'three';
 import type {
@@ -28,8 +28,8 @@ import type {
 } from '../core/types';
 import { num, str } from './shared';
 import { buildBox, boxModel } from './box';
-import { blurayModel, buildKeepCase, dvdModel } from './keepcase';
-import { buildJewelCase, cdCaseModel } from './jewelcase';
+import { blurayModel, buildKeepCase, dvdModel } from './keepCase';
+import { buildJewelCase, cdCaseModel } from './jewelCase';
 import { buildDisc, discParams, discSlot } from './disc';
 import { discPose, type DiscPlacement } from './composites/placement';
 
@@ -47,7 +47,7 @@ const placementParam: SelectParamDef = {
   label: 'Disc placement',
   group: G_COMP,
   options: [
-    { value: 'behind', label: 'Behind the case, peeking out on the right' },
+    { value: 'behind', label: 'Behind it, peeking out on the right' },
     { value: 'front', label: 'Leaning against the front' },
     { value: 'flat', label: 'Lying flat in front' },
   ],
@@ -66,7 +66,7 @@ const offsetParam: NumberParamDef = {
   unit: '%',
 };
 
-/** Turn about the vertical axis; + turns the label to the right. Default per model (towards its camera). */
+/** Turn about the vertical axis; + turns the label to the right. Default per model (toward its camera). */
 function angleParam(def: number): NumberParamDef {
   return {
     id: 'discAngle',
@@ -120,11 +120,11 @@ function compositeSlots(base: ImageSlotDef[]): ImageSlotDef[] {
 /* Build                                                               */
 /* ------------------------------------------------------------------ */
 
-/** Context for the base build: same images, params with overrides (e.g. no built-in disc). */
+/** Context for the base build: same artwork, params with overrides (e.g. no built-in disc). */
 function baseContext(ctx: ModelContext, overrides: ParamValues): ModelContext {
   return {
     getTexture: (slot) => ctx.getTexture(slot),
-    hasImage: (slot) => ctx.hasImage(slot),
+    hasArtwork: (slot) => ctx.hasArtwork(slot),
     params: { ...ctx.params, ...overrides },
   };
 }
@@ -156,7 +156,7 @@ function orderDiscTransparents(holder: THREE.Object3D, placement: DiscPlacement)
 
 /**
  * Combine a base object (standing on y = 0, front +Z) with a disc posed by the composition params,
- * then put the result on the floor, centred on x/z.
+ * then put the result on the floor, centered on x/z.
  */
 function compose(ctx: ModelContext, base: THREE.Object3D): THREE.Object3D {
   const p = ctx.params;
@@ -181,7 +181,7 @@ function compose(ctx: ModelContext, base: THREE.Object3D): THREE.Object3D {
   orderDiscTransparents(holder, placement);
   content.add(holder);
 
-  // Floor + centre with exact vertex bounds (the tilted disc's geometry bbox would float the case).
+  // Floor + center with exact vertex bounds (the tilted disc's geometry bbox would float the case).
   const all = preciseBounds(content);
   if (!all.isEmpty()) {
     const c = all.getCenter(new THREE.Vector3());

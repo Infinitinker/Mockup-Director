@@ -163,15 +163,15 @@ describe('Documents', () => {
     expect(docs.activeId).toBe(first);
   });
 
-  it('disposes the images of a closed tab, and only those', () => {
+  it('disposes the artwork of a closed tab, and only that', () => {
     const { store, docs } = setup();
     const closed = fakeImage('closed.png');
     const kept = fakeImage('kept.png');
-    store.update(['images'], (s) => {
-      s.images.box = { front: kept.asset };
+    store.update(['artwork'], (s) => {
+      s.artwork.box = { front: kept.asset };
     });
     store.endBurst();
-    const other = docs.add({ ...documentState(), images: { box: { front: closed.asset } } }, { activate: false });
+    const other = docs.add({ ...documentState(), artwork: { box: { front: closed.asset } } }, { activate: false });
 
     docs.close(other);
 

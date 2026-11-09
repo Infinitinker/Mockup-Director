@@ -1,6 +1,6 @@
 /**
  * Small helpers shared by all models. Model files may ADD private helpers in their own
- * files, but should not change the behaviour of these.
+ * files, but should not change the behavior of these.
  */
 import * as THREE from 'three';
 import type { NumberParamDef, ParamValues } from '../core/types';
@@ -31,7 +31,7 @@ export function disposeObject(root: THREE.Object3D | null | undefined): void {
   });
 }
 
-/** Rounded rectangle centred on the origin (XY plane). r is clamped to fit. */
+/** Rounded rectangle centered on the origin (XY plane). r is clamped to fit. */
 export function roundedRectShape(w: number, h: number, r: number): THREE.Shape {
   const rr = Math.max(0, Math.min(r, w / 2 - 1e-4, h / 2 - 1e-4));
   const x = -w / 2;
@@ -75,7 +75,7 @@ export function remapUVs(
 }
 
 /**
- * Planar UV projection: u from the vertex's `uAxis` coordinate, v from `vAxis`, normalised over
+ * Planar UV projection: u from the vertex's `uAxis` coordinate, v from `vAxis`, normalized over
  * the given ranges, then mapped into [u0,u1] x [v0,v1]. Handy for ExtrudeGeometry caps.
  */
 export function planarUVs(
@@ -187,7 +187,7 @@ export function castShadows(root: THREE.Object3D): THREE.Object3D {
   return root;
 }
 
-/** Put the object's lowest point on y = 0 and centre it on x/z. */
+/** Put the object's lowest point on y = 0 and center it on x/z. */
 export function placeOnGround(root: THREE.Object3D): THREE.Object3D {
   root.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(root);

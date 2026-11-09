@@ -5,7 +5,7 @@
  *
  *   RIFF <size> WEBP
  *     VP8X  flags (animation, alpha), canvas width-1 / height-1 (24 bit each)
- *     ANIM  background colour (BGRA), loop count (16 bit)
+ *     ANIM  background color (BGRA), loop count (16 bit)
  *     ANMF  x/2, y/2, width-1, height-1, duration (ms) – 24 bit each – flags, then the frame's
  *           ALPH + VP8 / VP8L chunks          (one ANMF per frame)
  *
@@ -181,7 +181,7 @@ export class AnimatedWebpWriter {
     head.u24(this.height - 1);
     head.ascii('ANIM');
     head.u32(6);
-    head.u32(0); // background colour (BGRA) – transparent; viewers may ignore it
+    head.u32(0); // background color (BGRA) – transparent; viewers may ignore it
     head.u16(this.loopCount);
     const blob = new Blob([head.bytes(), ...this.frames] as BlobPart[], { type: 'image/webp' });
     this.frames.length = 0;

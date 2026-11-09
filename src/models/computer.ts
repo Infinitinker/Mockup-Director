@@ -1,13 +1,13 @@
 /**
  * Computers: a generic modern laptop and a generic thin-bezel desktop monitor.
  *
- * Coordinate frame (see CONVENTIONS in core/types.ts): millimetres, model standing on y = 0,
- * centred on x/z, the SCREEN faces +Z (front), up = +Y.
+ * Coordinate frame (see CONVENTIONS in core/types.ts): millimeters, model standing on y = 0,
+ * centered on x/z, the SCREEN faces +Z (front), up = +Y.
  *
  * Screens: one image slot 'screen' per model. The screen is a separate mesh whose material uses
- * the image both as `map` and as `emissiveMap` (emissive white, "Brightness" param), on a dark base
- * colour with a clear-coat glass layer, so it glows like a lit panel and still reflects the studio.
- * The image always fills the active screen area; with "Fit: fill" its centre is cropped (via UVs –
+ * the image both as `map` and as `emissiveMap` (emissive white, "Screen brightness" param), on a dark base
+ * color with a clear-coat glass layer, so it glows like a lit panel and still reflects the studio.
+ * The image always fills the active screen area; with "Artwork fit: Fill" its center is cropped (via UVs –
  * the shared texture is never touched) when the image aspect differs from the screen's.
  *
  * Generic designs only – no logos, brand names or a copy of any specific commercial product.
@@ -52,7 +52,7 @@ function screenSize(diagIn: number, aspect: number): [number, number] {
 }
 
 /**
- * Rounded rectangle Shape centred on (cx, cy) in the XY plane (counter-clockwise).
+ * Rounded rectangle Shape centered on (cx, cy) in the XY plane (counter-clockwise).
  * `rBottom` (default = r) sets a different radius for the two bottom corners.
  */
 function rrShape(cx: number, cy: number, w: number, h: number, r: number, rBottom = r): THREE.Shape {
@@ -77,7 +77,7 @@ function rrShape(cx: number, cy: number, w: number, h: number, r: number, rBotto
 }
 
 /**
- * Turns a bevelled ExtrudeGeometry (extruded from zLo to zHi, bevel b) into a smooth indexed mesh.
+ * Turns a beveled ExtrudeGeometry (extruded from zLo to zHi, bevel b) into a smooth indexed mesh.
  * The quarter-circle bevel is tangent to the caps and to the walls, so after merging vertices the
  * normals on the cap rings are set exactly to ±Z and on the wall rings exactly horizontal – this
  * avoids the shading gradient that plain vertex-normal averaging smears over large flat caps.
@@ -182,7 +182,7 @@ function rrOutline(w: number, h: number, r: number, cc: number, nLong: number, a
 
 /**
  * Bends a point of a display (front surface at z = 0, facing +Z) around a vertical axis at
- * (x = 0, z = R) – a concave screen whose edges come towards the viewer. Arc length along the
+ * (x = 0, z = R) – a concave screen whose edges come toward the viewer. Arc length along the
  * front surface is preserved (x = R·φ). R = 0 means flat.
  */
 function bendXZ(x: number, z: number, R: number): [number, number] {
@@ -267,7 +267,7 @@ function imageAspect(tex: THREE.Texture): number | null {
 
 /**
  * Remaps a geometry's 0..1 UVs so the image covers a screen of aspect `screenAspect`:
- * 'fill' crops the image centre (no distortion), 'stretch' maps the whole image.
+ * 'fill' crops the image center (no distortion), 'stretch' maps the whole image.
  */
 function fitScreenUVs(geo: THREE.BufferGeometry, tex: THREE.Texture, screenAspect: number, fit: string): void {
   const ia = imageAspect(tex);
@@ -373,7 +373,7 @@ const SCREEN_PARAMS: ParamDef[] = [
   {
     id: 'fit',
     type: 'select',
-    label: 'Image fit',
+    label: 'Artwork fit',
     group: G_SCREEN,
     options: [
       { value: 'fill', label: 'Fill (crop the excess)' },
@@ -421,8 +421,8 @@ interface LaptopFinish {
 }
 
 const LAPTOP_FINISHES: Record<string, LaptopFinish> = {
-  darkGrey: {
-    label: 'Dark grey',
+  darkGray: {
+    label: 'Dark gray',
     body: '#5f6166',
     metalness: 0.85,
     roughness: 0.38,
@@ -500,7 +500,7 @@ function keyboardGeometry(u: number, x0: number, z0: number, yFloor: number, key
     }
     parts.push(g.clone().translate(cx, yFloor, cz));
   };
-  let zRow = z0; // back edge of the current row (rows run from the hinge towards the user)
+  let zRow = z0; // back edge of the current row (rows run from the hinge toward the user)
   KEY_ROWS.forEach((row, ri) => {
     const hu = ri === 0 ? FN_ROW : 1;
     const cz = zRow + (hu * u) / 2;
@@ -534,7 +534,7 @@ function keyboardGeometry(u: number, x0: number, z0: number, yFloor: number, key
 function buildLaptop(ctx: ModelContext): THREE.Object3D {
   const p = ctx.params;
   const s = laptopSpec(p);
-  const fin = LAPTOP_FINISHES[str(p, 'color', 'darkGrey')] ?? LAPTOP_FINISHES.darkGrey;
+  const fin = LAPTOP_FINISHES[str(p, 'color', 'darkGray')] ?? LAPTOP_FINISHES.darkGray;
   const angle = clamp(num(p, 'openAngle', 110), 0, 180);
   const { W, D, baseT, lidT, corner, keyU: u } = s;
 
@@ -593,7 +593,7 @@ function buildLaptop(ctx: ModelContext): THREE.Object3D {
   keys.name = 'keys';
   root.add(keys);
 
-  // Touchpad: flush glass-like panel centred between the keyboard and the front edge.
+  // Touchpad: flush glass-like panel centered between the keyboard and the front edge.
   const [tpW, tpH] = s.pad;
   const tpCz = (wellBack + kbH + D / 2) / 2;
   const tpGeo = new THREE.ShapeGeometry(rrShape(0, -tpCz, tpW, tpH, 6), 10);
@@ -684,7 +684,7 @@ function buildLaptop(ctx: ModelContext): THREE.Object3D {
   /* ---- lid ---- */
   // Lid content frame (when open at 90°): x across, y up from the bottom edge (0 .. lidH), screen
   // side on +Z, shell from z = -lidT to 0. The lid pivots around the axis of its hinge barrel,
-  // which sits ON the deck just inside the back edge (centre lidT/2 behind the screen side and
+  // which sits ON the deck just inside the back edge (center lidT/2 behind the screen side and
   // lidT/2 above the bottom edge in content coordinates). Pivoting there – instead of at the
   // lid's bottom-front edge behind the base – keeps the lid visibly attached to the base at every
   // angle (no floating gap behind the base). rotation.x = 90° - angle: 0° = closed, 180° = flat.
@@ -729,7 +729,7 @@ function buildLaptop(ctx: ModelContext): THREE.Object3D {
   screen.position.set(0, chin + sh / 2, 0.08);
   lidContent.add(screen);
 
-  // Generic camera dot centred in the top bezel.
+  // Generic camera dot centered in the top bezel.
   const camGeo = new THREE.CircleGeometry(1.0, 20);
   camGeo.translate(0, lidH - LAPTOP_TOP_BEZEL / 2, 0.09);
   const camMat = new THREE.MeshPhysicalMaterial({
@@ -757,13 +757,13 @@ const laptopModel: ModelDefinition = {
   id: 'device-laptop',
   category: 'device',
   name: 'Laptop',
-  description: 'Generic modern 13" / 14" / 16" laptop (16:10 screen) with an adjustable lid angle.',
+  description: 'Generic modern 13″ / 14″ / 16″ laptop (16:10 screen) with an adjustable lid angle.',
   icon: ICON_LAPTOP,
   slots: [
     {
       id: 'screen',
       label: 'Screen',
-      hint: 'A 16:10 screenshot, e.g. 2560 × 1600 px (or 2880 × 1800 / 3456 × 2160 px). Other proportions are cropped or stretched (see “Image fit”).',
+      hint: 'A 16:10 screenshot, e.g. 2560 × 1600 px (or 2880 × 1800 / 3456 × 2160 px). Other proportions are cropped or stretched (see “Artwork fit”).',
       aspect: 16 / 10,
     },
   ],
@@ -774,9 +774,9 @@ const laptopModel: ModelDefinition = {
       label: 'Size',
       group: G_DIM,
       options: [
-        { value: '13', label: '13" (304 × 215 mm)' },
-        { value: '14', label: '14" (314 × 221 mm)' },
-        { value: '16', label: '16" (358 × 248 mm)' },
+        { value: '13', label: '13″ (304 × 215 mm)' },
+        { value: '14', label: '14″ (314 × 221 mm)' },
+        { value: '16', label: '16″ (358 × 248 mm)' },
       ],
       default: '14',
     },
@@ -794,10 +794,10 @@ const laptopModel: ModelDefinition = {
     {
       id: 'color',
       type: 'select',
-      label: 'Body colour',
+      label: 'Body color',
       group: G_MAT,
       options: Object.entries(LAPTOP_FINISHES).map(([value, f]) => ({ value, label: f.label })),
-      default: 'darkGrey',
+      default: 'darkGray',
     },
     ...SCREEN_PARAMS,
   ],
@@ -915,7 +915,7 @@ function buildMonitor(ctx: ModelContext): THREE.Object3D {
     clearcoatRoughness: 0.35,
   });
 
-  /* ---- display (local frame: front surface z = 0, bottom edge y = 0, centred on x) ---- */
+  /* ---- display (local frame: front surface z = 0, bottom edge y = 0, centered on x) ---- */
   const body = new THREE.Group();
   body.name = 'display';
 
@@ -924,7 +924,7 @@ function buildMonitor(ctx: ModelContext): THREE.Object3D {
   shell.name = 'panel';
   body.add(shell);
 
-  // Rounded back housing (electronics), slightly below the panel centre.
+  // Rounded back housing (electronics), slightly below the panel center.
   const Wh = Wo * 0.58;
   const Hh = Ho * 0.6;
   const hy = Ho * 0.47;
@@ -1044,13 +1044,13 @@ const monitorModel: ModelDefinition = {
   category: 'device',
   name: 'Monitor',
   description:
-    'Generic thin-bezel monitor: 24" / 27" / 32" (16:9) or a curved 34" ultrawide (21:9), L-shaped or pedestal stand.',
+    'Generic thin-bezel monitor: 24″ / 27″ / 32″ (16:9) or a curved 34″ ultrawide (21:9), on an L-shaped or pedestal stand.',
   icon: ICON_MONITOR,
   slots: [
     {
       id: 'screen',
       label: 'Screen',
-      hint: 'A 16:9 screenshot, e.g. 2560 × 1440 px (24–32"). For the 34" ultrawide: 21:9, e.g. 3440 × 1440 px. Other proportions are cropped or stretched (see “Image fit”).',
+      hint: 'A 16:9 screenshot, e.g. 2560 × 1440 px (24–32″). For the 34″ ultrawide: 21:9, e.g. 3440 × 1440 px. Other proportions are cropped or stretched (see “Artwork fit”).',
       aspect: 16 / 9,
     },
   ],
@@ -1061,17 +1061,17 @@ const monitorModel: ModelDefinition = {
       label: 'Size',
       group: G_DIM,
       options: [
-        { value: '24', label: '24" (16:9)' },
-        { value: '27', label: '27" (16:9)' },
-        { value: '32', label: '32" (16:9)' },
-        { value: '34', label: '34" ultrawide (21:9)' },
+        { value: '24', label: '24″ (16:9)' },
+        { value: '27', label: '27″ (16:9)' },
+        { value: '32', label: '32″ (16:9)' },
+        { value: '34', label: '34″ ultrawide (21:9)' },
       ],
       default: '27',
     },
     {
       id: 'curve',
       type: 'select',
-      label: 'Curvature (34" only)',
+      label: 'Curvature (34″ only)',
       group: G_DIM,
       options: [
         { value: 'r1800', label: '1800R (strong)' },
@@ -1116,7 +1116,7 @@ const monitorModel: ModelDefinition = {
     {
       id: 'color',
       type: 'select',
-      label: 'Body colour',
+      label: 'Body color',
       group: G_MAT,
       options: Object.entries(MONITOR_FINISHES).map(([value, f]) => ({ value, label: f.label })),
       default: 'black',

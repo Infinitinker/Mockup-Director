@@ -20,7 +20,12 @@ import { clamp, h, nextId, safeStorage, shortcutLabel } from '../dom';
 import { ICONS } from '../icons';
 import { numberControl, section, segmentedControl, selectControl, switchControl, type Control } from '../controls';
 import { hasAny } from '../state';
-import { animationFormatSupport, webpEncodingSupported, type AnimationProgress } from '../exportBridge';
+import {
+  animationFormatSupport,
+  IMAGE_FORMAT_LABEL,
+  webpEncodingSupported,
+  type AnimationProgress,
+} from '../exportBridge';
 import {
   defaultFpsFor,
   frameCountOf,
@@ -29,6 +34,8 @@ import {
   maxSizeFor,
   outputSizeOf,
 } from '../../export/animation/settings';
+import { MP4_UNSUPPORTED, WEBP_ANIMATION_UNSUPPORTED } from '../../export/animation';
+import { WEBP_IMAGE_UNSUPPORTED } from '../../export/exporter';
 
 const SIZE_PRESETS = [800, 1200, 1600, 2000, 3000, 4000];
 const ANIM_SIZE_PRESETS = [480, 640, 800, 1080, 1200, 1920];
@@ -49,15 +56,11 @@ interface DimTarget {
 const FORMAT_LABEL: Record<AnimationFormat, string> = { gif: 'GIF', webp: 'WebP', mp4: 'MP4' };
 
 const SIZING_HINT: Record<ExportSettings['sizing'], string> = {
-  canvas: 'The image has exactly the given size, the object is centred.',
-  trim: 'The image is cropped to the object plus margin – one side is usually smaller.',
+  canvas: 'The image has exactly the given size, with the object centered.',
+  trim: 'The image is cropped to the object plus the margin: one side is usually smaller.',
 };
-const WEBP_UNSUPPORTED = 'WebP encoding is not supported by this browser engine – use PNG.';
 const USE_VIEW_HINT =
-  'Off: the whole composition always fits. On: the preview zoom and pan are applied on top of the fixed framing (may crop).';
-const ANIM_WEBP_UNSUPPORTED = 'Animated WebP is unavailable – this system’s web engine cannot encode WebP.';
-const MP4_UNSUPPORTED =
-  'MP4 needs WebCodecs (Windows with WebView2, Safari 16.4+ / macOS 13.3+, or a recent WebKitGTK on Linux) – not available on this system.';
+  'Off: the whole composition always fits. On: the preview’s zoom and pan are applied on top of the fixed framing, which may crop it.';
 
 export function createExportPanel(ctx: AppContext): { el: HTMLElement } {
   const el = h('div', { class: 'panel panel-export' });
@@ -104,7 +107,7 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement } {
     min: MIN_ANIMATION_SIZE,
   };
 
-  /** Width/height numeric field with lock-aspect behaviour. */
+  /** Width/height numeric field with lock-aspect behavior. */
   const dimField = (which: 'width' | 'height', target: DimTarget): Control => {
     const id = nextId('dim');
     const input = h('input', {
@@ -179,7 +182,7 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement } {
     return lockBtn;
   };
 
-  /** Square size preset chips. `disabled(n)` greys out presets above the format's limit. */
+  /** Square size preset chips. `disabled(n)` grays out presets above the format's limit. */
   const sizeChips = (presets: number[], target: DimTarget, add: <T extends Control>(c: T) => T): HTMLElement => {
     const chips = h('div', { class: 'chips', attrs: { role: 'group', 'aria-label': 'Size presets (square)' } });
     const chipButtons = presets.map((n) => {
@@ -267,7 +270,7 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement } {
     const sizeSection = section('export.size', 'Size', [
       h('div', { class: 'ctl' }, h('div', { class: 'ctl-label', text: 'Size presets (square)' }), chips),
       dims,
-      h('p', { class: 'ctl-note', text: `Maximum ${MAX_EXPORT_SIZE} × ${MAX_EXPORT_SIZE} px.` }),
+      h('p', { class: 'ctl-note', text: `The largest size is ${MAX_EXPORT_SIZE} × ${MAX_EXPORT_SIZE} px.` }),
       margin.el,
       sizing.el,
       sizingNote,
@@ -285,7 +288,7 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement } {
             value: 'webp',
             label: 'WebP',
             disabled: !webp,
-            title: webp ? 'WebP' : WEBP_UNSUPPORTED,
+            title: webp ? 'WebP' : WEBP_IMAGE_UNSUPPORTED,
           },
         ],
         get: () => ex().format,
@@ -320,7 +323,7 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement } {
     );
     const jpegNote = h('p', {
       class: 'ctl-note warn-note',
-      text: 'JPEG has no transparency – the background will be white.',
+      text: 'JPEG has no transparency: the background will be white.',
     });
     add({
       el: jpegNote,
@@ -328,7 +331,7 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement } {
     });
     const formatSection = section('export.format', 'Format & background', [
       format.el,
-      !webp ? h('p', { class: 'ctl-note', text: WEBP_UNSUPPORTED }) : null,
+      !webp ? h('p', { class: 'ctl-note', text: WEBP_IMAGE_UNSUPPORTED }) : null,
       quality.el,
       background.el,
       jpegNote,
@@ -340,7 +343,7 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement } {
       el: summary,
       sync: () => {
         const e = ex();
-        const fmt = e.format === 'jpeg' ? 'JPEG' : e.format.toUpperCase();
+        const fmt = IMAGE_FORMAT_LABEL[e.format];
         const transparent = e.background === 'transparent' && e.format !== 'jpeg';
         const size =
           e.sizing === 'trim' ? `up to ${e.width} × ${e.height} px (trimmed)` : `${e.width} × ${e.height} px`;
@@ -363,7 +366,7 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement } {
       'button',
       {
         class: 'btn batch-btn',
-        title: 'Many mockups at once, packed into one ZIP file (current export settings).',
+        title: 'Exports many mockups at once into one ZIP file, with the current export settings.',
         attrs: { type: 'button' },
         on: { click: () => ctx.actions.openBatchExport() },
       },
@@ -400,8 +403,8 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement } {
       sync: () =>
         (motionNote.textContent =
           an().motion === 'loop'
-            ? 'The product turns a full 360° at constant speed – the animation loops seamlessly.'
-            : `The product turns back and forth by ±${an().swingAngle}° around the current view.`),
+            ? 'The model turns a full 360° at constant speed: the animation loops seamlessly.'
+            : `The model turns back and forth by ±${an().swingAngle}° around the current view.`),
     });
     const swingAngle = add(
       numberControl({
@@ -440,7 +443,7 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement } {
         label: 'Direction (seen from above)',
         options: [
           { value: 'cw', label: 'Clockwise' },
-          { value: 'ccw', label: 'Counter-clockwise' },
+          { value: 'ccw', label: 'Counterclockwise' },
         ],
         get: () => an().direction,
         set: (v) => updA((a) => (a.direction = v)),
@@ -482,7 +485,7 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement } {
     const motionSection = section('export.anim.motion', 'Motion', [
       h('p', {
         class: 'ctl-note',
-        text: 'The animation starts from the current view – camera angle, lighting, shadow and reflection are kept, and the framing is fixed for all frames.',
+        text: 'The animation starts from the current view: the camera angle, light, shadow and reflection are kept, and the framing is fixed for all frames.',
       }),
       motion.el,
       motionNote,
@@ -511,7 +514,7 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement } {
     add({
       el: maxNote,
       sync: () =>
-        (maxNote.textContent = `Maximum ${maxSizeFor(an().format)} px per side (${FORMAT_LABEL[an().format]}).`),
+        (maxNote.textContent = `${FORMAT_LABEL[an().format]} allows at most ${maxSizeFor(an().format)} px per side.`),
     });
     const evenNote = h('p', { class: 'ctl-note warn-note' });
     add({
@@ -520,7 +523,7 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement } {
         const a = an();
         const o = outputSizeOf(a);
         evenNote.hidden = !(a.format === 'mp4' && (o.width !== a.width || o.height !== a.height));
-        evenNote.textContent = `MP4 needs even dimensions – the file will be ${o.width} × ${o.height} px.`;
+        evenNote.textContent = `MP4 needs even dimensions: the file will be ${o.width} × ${o.height} px.`;
       },
     });
     const margin = add(
@@ -553,7 +556,7 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement } {
             value: 'webp',
             label: 'WebP',
             disabled: !support.webp,
-            title: support.webp ? 'WebP' : ANIM_WEBP_UNSUPPORTED,
+            title: support.webp ? 'WebP' : WEBP_ANIMATION_UNSUPPORTED,
           },
           {
             value: 'mp4',
@@ -582,7 +585,7 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement } {
       }),
     );
     const unsupportedNotes: HTMLElement[] = [];
-    if (!support.webp) unsupportedNotes.push(h('p', { class: 'ctl-note', text: ANIM_WEBP_UNSUPPORTED }));
+    if (!support.webp) unsupportedNotes.push(h('p', { class: 'ctl-note', text: WEBP_ANIMATION_UNSUPPORTED }));
     if (!support.mp4) unsupportedNotes.push(h('p', { class: 'ctl-note', text: MP4_UNSUPPORTED }));
 
     const qualityLabels: Record<AnimationSettings['quality'], string> = {
@@ -612,7 +615,7 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement } {
     );
     const palette = add(
       segmentedControl<AnimationSettings['palette']>({
-        label: 'Colour palette',
+        label: 'Color palette',
         options: [
           { value: 'global', label: 'Global' },
           { value: 'frame', label: 'Per frame' },
@@ -623,7 +626,7 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement } {
     );
     const paletteNote = h('p', {
       class: 'ctl-note',
-      text: 'Global palette: stable colours and a smaller file. Per frame: more accurate colours, a larger file.',
+      text: 'Global palette: stable colors and a smaller file. Per frame: more accurate colors and a larger file.',
     });
     const background = add(
       segmentedControl<AnimationSettings['background']>({
@@ -638,11 +641,11 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement } {
     );
     const gifAlphaNote = h('p', {
       class: 'ctl-note warn-note',
-      text: 'GIF only has 1-bit transparency: the soft shadow and reflection disappear and edges may look jagged. Prefer the preview background or WebP.',
+      text: `GIF only has 1-bit transparency: the soft shadow and reflection disappear and edges may look jagged. ${support.webp ? 'Choose the preview background or WebP.' : 'Choose the preview background.'}`,
     });
     const mp4AlphaNote = h('p', {
       class: 'ctl-note warn-note',
-      text: 'MP4 has no transparency – the background will be white.',
+      text: 'MP4 has no transparency: the background will be white.',
     });
     add({
       el: quality.el,
@@ -677,7 +680,7 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement } {
       sync: () => {
         const a = an();
         const o = outputSizeOf(a);
-        summary.textContent = `${o.width} × ${o.height} px · ${FORMAT_LABEL[a.format]} · ${formatNumber(a.duration, a.duration % 1 ? 1 : 0)} s · ${frameCountOf(a)} frames`;
+        summary.textContent = `${o.width} × ${o.height} px · ${FORMAT_LABEL[a.format]} · ${formatNumber(a.duration, a.duration % 1 ? 1 : 0)} s · Frames: ${frameCountOf(a)}`;
       },
     });
     animBtn = h(
@@ -731,7 +734,7 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement } {
     let text: string;
     switch (p.phase) {
       case 'palette':
-        text = `Analysing colours: ${p.done} / ${p.total}`;
+        text = `Analyzing colors: ${p.done} / ${p.total}`;
         frac = p.total ? (0.1 * p.done) / p.total : 0;
         break;
       case 'frames':
