@@ -43,7 +43,7 @@ export function cargoVersion(toml) {
 }
 
 /**
- * Checks the versions (and the tag, if there is one). Returns the version, the tag and whether it is
+ * Checks the versions (and the tag, if there is one; an empty tag is none). Returns the version, the tag and whether it is
  * a pre-release, or the list of what is wrong.
  */
 export function checkVersions({ packageVersion, cargoVersion: cargo, tag }) {
@@ -56,7 +56,7 @@ export function checkVersions({ packageVersion, cargoVersion: cargo, tag }) {
     );
   if (packageVersion && !/^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/.test(packageVersion))
     errors.push(`The version ${packageVersion} is not of the form 1.2.3 or 1.2.3-beta.1.`);
-  if (tag !== undefined && packageVersion && tag !== `v${packageVersion}`)
+  if (tag && packageVersion && tag !== `v${packageVersion}`)
     errors.push(
       `The tag is ${tag}, but the version in package.json is ${packageVersion}: the tag must be v${packageVersion}.`,
     );

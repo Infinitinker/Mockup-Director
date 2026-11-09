@@ -61,6 +61,7 @@ tools/check-i18n.mjs        checks that every text has a translation (npm run ch
 start.bat, start.sh         run the desktop app from source (npm run app:dev), see docs/development.md
 CONTRIBUTING.md, SECURITY.md how to contribute, and how to report a security problem
 docs/                       this documentation
+docs/images/                the README's screenshots: the app at 1440 × 900, with made-up artwork only
 ```
 
 ## 3D conventions

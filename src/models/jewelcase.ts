@@ -4,7 +4,7 @@
  * Orientation: standing upright, front (booklet) faces +Z, hinge on the LEFT (-X),
  * x ∈ [-71, 71], y ∈ [0, 125], z ∈ [-depth/2, depth/2]. Millimetres.
  *
- * Real-world references (standard "jewel case", Philips/Sony design):
+ * Real-world references (standard CD jewel case):
  *   case 142 × 125 × 10.4 mm (slim: 142 × 125 × 5.2 mm)
  *   booklet 120 × 120 mm per page (cover = 120 × 120), print with 3 mm bleed
  *   inlay / tray card 151 × 118 mm = spine 6.5 | back 138 | spine 6.5, print with 3 mm bleed

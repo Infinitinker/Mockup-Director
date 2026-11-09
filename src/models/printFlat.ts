@@ -626,7 +626,7 @@ function colorParam(id: string, label: LocalizedText, def: string): ParamDef {
   return { id, type: 'color', label, group: G_MAT, default: def };
 }
 
-/** Width / height labels of the 'custom' size ("rozmiar własny" in Polish, unlike folded print's "format własny"). */
+/** Width / height labels of the 'custom' size, in their own context: some languages word it differently from folded print's. */
 const CUSTOM_WIDTH = Lctx('flat print', 'Width (custom size)');
 const CUSTOM_HEIGHT = Lctx('flat print', 'Height (custom size)');
 

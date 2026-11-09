@@ -19,7 +19,7 @@ Describe the changes of this version here, for users, then publish the release.
 - **macOS:** if macOS says it could not verify the app, open **System Settings → Privacy & Security** and click **Open Anyway** next to the message about Mockup Director.
 - **Linux AppImage:** make it executable first: `chmod +x MockupDirector-{version}-linux-x86_64.AppImage`.
 
-The [README](https://github.com/{repository}#download-and-install) has the details, also for installing the `.deb` and `.rpm` packages.
+The [README](https://github.com/{repository}#installing) has the details, also for installing the `.deb` and `.rpm` packages, and [answers to common questions](https://github.com/{repository}#questions).
 
 ## Checksums (SHA-256)
 

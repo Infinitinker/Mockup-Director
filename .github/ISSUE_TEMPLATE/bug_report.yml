@@ -14,7 +14,7 @@ body:
     attributes:
       label: Mockup Director version
       description: Hold the pointer over Mockup Director at the left of the toolbar, or give the commit if you run it from source.
-      placeholder: "0.2.0"
+      placeholder: "0.1.0"
     validations:
       required: true
   - type: dropdown

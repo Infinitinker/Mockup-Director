@@ -49,7 +49,9 @@ jobs:
       # The same version in package.json and src-tauri/Cargo.toml, and a tag v<version>.
       - name: Check the version and the tag
         id: version
-        run: node tools/release.mjs check ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+        env:
+          TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+        run: node tools/release.mjs check "$TAG"
 
       # A release is built from main, after dev was merged into it; a pre-release can come from any branch.
       - name: Check the tag is on main

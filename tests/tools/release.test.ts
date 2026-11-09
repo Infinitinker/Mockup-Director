@@ -55,6 +55,13 @@ describe('checkVersions', () => {
     });
   });
 
+  it('takes an empty tag as no tag, as CI passes it for runs that are not for a tag', () => {
+    expect(checkVersions({ packageVersion: '0.2.0', cargoVersion: '0.2.0', tag: '' })).toMatchObject({
+      errors: [],
+      tag: 'v0.2.0',
+    });
+  });
+
   it('refuses different versions in package.json and Cargo.toml', () => {
     const { errors } = checkVersions({ packageVersion: '0.2.0', cargoVersion: '0.1.0', tag: undefined });
     expect(errors).toEqual([

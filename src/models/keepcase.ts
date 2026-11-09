@@ -6,10 +6,10 @@
  * front (-X side), the open edge on the right (+X).
  *
  * Industry dimensions used (trim sizes, 3 mm bleed added in the print templates):
- *  - DVD keep case ("Amaray" style): 135 (W) x 190 (H) x 14 mm; slim variants 9 mm and 7 mm.
+ *  - DVD keep case (standard): 135 (W) x 190 (H) x 14 mm; slim variants 9 mm and 7 mm.
  *    Insert (wrap) 183 mm high, back 129.5 | spine = case thickness | front 129.5
  *    -> 273 x 183 (14 mm), 268 x 183 (9 mm), 266 x 183 (7 mm).
- *  - Blu-ray keep case ("Elite" style): 135 (W) x 171.5 (H) x 12 mm (11 mm eco, 7 mm slim).
+ *  - Blu-ray keep case (standard): 135 (W) x 171.5 (H) x 12 mm (11 mm eco, 7 mm slim).
  *    Insert 148 mm high, back 129 | spine = case thickness | front 129 -> 270 x 148 (12 mm).
  *    The insert is shorter than on DVD because of the moulded, translucent top band.
  *
