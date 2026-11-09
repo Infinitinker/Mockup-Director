@@ -23,7 +23,7 @@ import type {
   PrintTemplate,
   SelectParamDef,
 } from '../../core/types';
-import { L, num, placeOnGround, str } from '../shared';
+import { num, placeOnGround, str } from '../shared';
 import {
   aspectOf,
   bandTemplate,
@@ -57,7 +57,7 @@ const DEFAULTS = { w: 180, h: 240, d: 40, cover: 67 } as const;
 
 const lidCoverParam: NumberParamDef = {
   id: 'lidCover',
-  label: L('Lid height'),
+  label: 'Lid height',
   type: 'number',
   min: 30,
   max: 100,
@@ -69,17 +69,17 @@ const lidCoverParam: NumberParamDef = {
 
 const orientationParam: SelectParamDef = {
   id: 'orientation',
-  label: L('Placement'),
+  label: 'Placement',
   type: 'select',
   options: [
-    { value: 'flat', label: L('Lying flat (lid up)') },
-    { value: 'upright', label: L('Standing (lid facing front)') },
+    { value: 'flat', label: 'Lying flat (lid up)' },
+    { value: 'upright', label: 'Standing (lid facing front)' },
   ],
   default: 'flat',
   group: G_DIM,
 };
 
-const baseColorParam = colorParam('baseColor', L('Base colour (without artwork)'), '#d8d4cc');
+const baseColorParam = colorParam('baseColor', 'Base colour (without artwork)', '#d8d4cc');
 
 /* ------------------------------------------------------------------ */
 /* Dimensions & templates                                              */
@@ -106,7 +106,7 @@ function slimDims(params: ParamValues): SlimDims {
   return { W, H, D, lidH, baseVis: D - lidH, t: Math.min(1.5, Math.min(W, H) * 0.05) };
 }
 
-const LID_LABEL = L('Lid – top');
+const LID_LABEL = 'Lid – top';
 
 function lidTemplate(params: ParamValues): PrintTemplate {
   const { W, H } = slimDims(params);
@@ -116,10 +116,10 @@ function lidTemplate(params: ParamValues): PrintTemplate {
 /** Band panels in wrap order (front | right | back | left) for a w x l footprint. */
 function wallPanels(w: number, l: number) {
   return [
-    { w, label: L('Front') },
-    { w: l, label: L('Right side') },
-    { w, label: L('Back') },
-    { w: l, label: L('Left side') },
+    { w, label: 'Front' },
+    { w: l, label: 'Right side' },
+    { w, label: 'Back' },
+    { w: l, label: 'Left side' },
   ];
 }
 /** Faces matching wallPanels() order. */
@@ -243,10 +243,9 @@ const DEF_DIMS = slimDims({});
 export const slimBoxModel: ModelDefinition = {
   id: 'box-slim',
   category: 'box',
-  name: L('Slim box'),
-  description: L(
+  name: 'Slim box',
+  description:
     'Flat two-piece box with a lid over a base (board game, gift, phone, cosmetics). Lying flat or standing.',
-  ),
   icon: icon(
     '<path d="M8 30 L22 20 H56 L42 30 Z"/><path d="M8 30 V44 H42 V30"/><path d="M42 44 L56 34 V20"/>' +
       '<path d="M8 39 H42 L56 29" stroke-width="2"/>',
@@ -255,21 +254,21 @@ export const slimBoxModel: ModelDefinition = {
     {
       id: 'lid',
       label: LID_LABEL,
-      hint: L('Main artwork on the lid.'),
+      hint: 'Main artwork on the lid.',
       aspect: aspectOf(faceTemplate(DEF_DIMS.W, DEF_DIMS.H, BLEED_MM, LID_LABEL)),
       template: lidTemplate,
     },
     {
       id: 'lidSides',
-      label: L('Lid – sides'),
-      hint: L('Band: front | right | back | left.'),
+      label: 'Lid – sides',
+      hint: 'Band: front | right | back | left.',
       aspect: aspectOf(bandTemplate(wallPanels(DEF_DIMS.W, DEF_DIMS.H), DEF_DIMS.lidH, BLEED_MM)),
       template: lidSidesTemplate,
     },
     {
       id: 'base',
-      label: L('Base – sides'),
-      hint: L('Visible part of the base below the lid, same band layout.'),
+      label: 'Base – sides',
+      hint: 'Visible part of the base below the lid, same band layout.',
       aspect: aspectOf(
         bandTemplate(wallPanels(DEF_DIMS.W - 2 * DEF_DIMS.t, DEF_DIMS.H - 2 * DEF_DIMS.t), DEF_DIMS.baseVis, BLEED_MM),
       ),
@@ -278,8 +277,8 @@ export const slimBoxModel: ModelDefinition = {
   ],
   params: [
     widthParam(DEFAULTS.w, 20),
-    heightParam(DEFAULTS.h, 20, 600, L('Length')),
-    depthParam(DEFAULTS.d, 5, 200, L('Thickness')),
+    heightParam(DEFAULTS.h, 20, 600, 'Length'),
+    depthParam(DEFAULTS.d, 5, 200, 'Thickness'),
     lidCoverParam,
     orientationParam,
     bevelParam,

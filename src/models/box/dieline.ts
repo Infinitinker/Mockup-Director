@@ -11,7 +11,6 @@
  */
 import * as THREE from 'three';
 import type { ModelContext, ModelDefinition, ParamValues, PrintTemplate, TemplateRegion } from '../../core/types';
-import { L } from '../shared';
 import {
   aspectOf,
   bevelParam,
@@ -40,12 +39,12 @@ const NET_FACES: readonly FaceId[] = ['py', 'nx', 'pz', 'px', 'nz', 'ny'];
 /** Exact net template for a W x H x D box (mm) with bleed b. */
 export function netTemplate(W: number, H: number, D: number, b: number): PrintTemplate {
   const regions: TemplateRegion[] = [
-    { xMm: b + D, yMm: b, wMm: W, hMm: D, label: L('Top') },
-    { xMm: b, yMm: b + D, wMm: D, hMm: H, label: L('Left side') },
-    { xMm: b + D, yMm: b + D, wMm: W, hMm: H, label: L('Front') },
-    { xMm: b + D + W, yMm: b + D, wMm: D, hMm: H, label: L('Right side') },
-    { xMm: b + 2 * D + W, yMm: b + D, wMm: W, hMm: H, label: L('Back') },
-    { xMm: b + D, yMm: b + D + H, wMm: W, hMm: D, label: L('Bottom') },
+    { xMm: b + D, yMm: b, wMm: W, hMm: D, label: 'Top' },
+    { xMm: b, yMm: b + D, wMm: D, hMm: H, label: 'Left side' },
+    { xMm: b + D, yMm: b + D, wMm: W, hMm: H, label: 'Front' },
+    { xMm: b + D + W, yMm: b + D, wMm: D, hMm: H, label: 'Right side' },
+    { xMm: b + 2 * D + W, yMm: b + D, wMm: W, hMm: H, label: 'Back' },
+    { xMm: b + D, yMm: b + D + H, wMm: W, hMm: D, label: 'Bottom' },
   ];
   return {
     widthMm: 2 * W + 2 * D + 2 * b,
@@ -92,8 +91,8 @@ function buildDielineBox(ctx: ModelContext): THREE.Object3D {
 export const dielineBoxModel: ModelDefinition = {
   id: 'box-dieline',
   category: 'box',
-  name: L('Box – dieline (single image)'),
-  description: L('The same box, with all artwork in one file: a cross-shaped net.'),
+  name: 'Box – dieline (single image)',
+  description: 'The same box, with all artwork in one file: a cross-shaped net.',
   icon: icon(
     '<path d="M8 24 H16 V16 H32 V24 H56 V40 H32 V48 H16 V40 H8 Z"/>' +
       '<path d="M16 24 V40 M32 24 V40 M40 24 V40 M16 24 H32 M16 40 H32" stroke-width="2" stroke-dasharray="2.5 3"/>',
@@ -101,8 +100,8 @@ export const dielineBoxModel: ModelDefinition = {
   slots: [
     {
       id: 'net',
-      label: L('Box net'),
-      hint: L('Row: left | front | right | back; top above the front, bottom below it. Download the template.'),
+      label: 'Box net',
+      hint: 'Row: left | front | right | back; top above the front, bottom below it. Download the template.',
       aspect: aspectOf(netTemplate(DEFAULTS.w, DEFAULTS.h, DEFAULTS.d, BLEED_MM)),
       template: templateFor,
     },

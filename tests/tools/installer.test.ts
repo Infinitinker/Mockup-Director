@@ -1,13 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LOCALES } from '../../src/i18n';
-import {
-  findCompiler,
-  INNO_LANGUAGES,
-  innoMessage,
-  languageSections,
-  numericVersion,
-  placeholders,
-} from '../../tools/installer.mjs';
+import { findCompiler, numericVersion } from '../../tools/installer.mjs';
 
 describe('numericVersion', () => {
   it('pads a release with a zero', () => {
@@ -20,51 +12,6 @@ describe('numericVersion', () => {
 
   it('rejects other versions', () => {
     expect(() => numericVersion('1.2')).toThrow('1.2 is not of the form');
-  });
-});
-
-describe('innoMessage', () => {
-  it('numbers the placeholders in the order of the English text and keeps line breaks', () => {
-    const names = placeholders('{a} and {b}, {a}');
-    expect(names).toEqual(['a', 'b']);
-    expect(innoMessage('{b}\n\n{a}', names, 'pl: key')).toBe('%2%n%n%1');
-  });
-
-  it('rejects a placeholder the English text does not have', () => {
-    expect(() => innoMessage('{c}', ['a'], 'pl: key')).toThrow('pl: key has the placeholder {c}');
-  });
-
-  it('rejects a percent sign', () => {
-    expect(() => innoMessage('100%', [], 'en: key')).toThrow('en: key contains %');
-  });
-});
-
-describe('languageSections', () => {
-  const sections = languageSections(LOCALES);
-
-  it('gives every interface language an Inno Setup messages file', () => {
-    for (const { code } of LOCALES) expect(Object.keys(INNO_LANGUAGES)).toContain(code);
-    expect(sections).toContain('Name: "en"; MessagesFile: "compiler:Default.isl"');
-  });
-
-  it('writes every installer message in every language', () => {
-    expect(sections).toContain('en.DeleteData=Also delete');
-    expect(sections).toContain('%n%n%1\r\n');
-    for (const name of [
-      'ProjectFile',
-      'DeleteData',
-      'DataNotDeleted',
-      'WebView2Title',
-      'WebView2Text',
-      'WebView2ExitCode',
-      'WebView2Failed',
-    ])
-      for (const { code } of LOCALES) expect(sections).toContain(`\r\n${code}.${name}=`);
-  });
-
-  it('asks for a messages file for a language Inno Setup does not know', () => {
-    const extra = { code: 'xx', messages: LOCALES[0].messages };
-    expect(() => languageSections([...LOCALES, extra])).toThrow('add it to INNO_LANGUAGES');
   });
 });
 

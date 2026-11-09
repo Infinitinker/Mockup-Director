@@ -11,7 +11,6 @@ import type {
   ExportFormat,
   ExportSettings,
   ImageSlotDef,
-  Lang,
   ParamValues,
   StageAPI,
 } from '../core/types';
@@ -36,16 +35,12 @@ export function exportBlob(stage: StageAPI, settings: ExportSettings, background
 export async function templateBlob(
   modelId: string,
   slot: ImageSlotDef,
-  lang: Lang,
   dpi: number,
   params: ParamValues,
 ): Promise<{ blob: Blob; name: string } | null> {
-  const res = await renderTemplateDetailed(slot, lang, dpi, params);
+  const res = await renderTemplateDetailed(slot, dpi, params);
   if (!res) return null;
-  const name = templateFileName(slot, lang, res.dpi, params).replace(
-    /^mockup-director-/,
-    `mockup-director-${modelId}-`,
-  );
+  const name = templateFileName(slot, res.dpi, params).replace(/^mockup-director-/, `mockup-director-${modelId}-`);
   return { blob: res.blob, name };
 }
 

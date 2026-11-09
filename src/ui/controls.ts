@@ -5,7 +5,7 @@
  */
 import { clamp, h, nextId, safeStorage } from './dom';
 import { ICONS } from './icons';
-import { formatNumber, parseNumber } from '../i18n';
+import { formatNumber, parseNumber } from './numbers';
 
 export interface Control {
   el: HTMLElement;
@@ -182,7 +182,7 @@ export interface SegmentedOpts<T extends string> {
   set(v: T): void;
   /** Smaller variant without the label row. */
   compact?: boolean;
-  /** Accessible name for controls without a visible label (localized by the caller). */
+  /** Accessible name for controls without a visible label. */
   ariaLabel?: string;
   disabled?(): boolean;
 }

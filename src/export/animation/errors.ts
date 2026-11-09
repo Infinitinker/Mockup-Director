@@ -1,8 +1,7 @@
 /**
- * Errors of the animation export. `text` carries a Message so the UI's errorMessage() shows it in
- * the interface language; `message` is the English text (same convention as ExportError in ../exporter.ts).
+ * Errors of the animation export. Their `message` can be shown to the user (as with ExportError in
+ * ../exporter.ts).
  */
-import { mtIn, type Message } from '../../i18n';
 
 export type AnimationErrorCode =
   | 'unsupported'
@@ -13,12 +12,10 @@ export type AnimationErrorCode =
 
 export class AnimationError extends Error {
   readonly code: AnimationErrorCode;
-  readonly text: Message;
-  constructor(code: AnimationErrorCode, text: Message, cause?: unknown) {
-    super(mtIn('en', text));
+  constructor(code: AnimationErrorCode, message: string, cause?: unknown) {
+    super(message);
     this.name = 'AnimationError';
     this.code = code;
-    this.text = text;
     if (cause !== undefined) (this as { cause?: unknown }).cause = cause;
   }
 }

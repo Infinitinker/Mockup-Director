@@ -9,17 +9,14 @@
  * written by a newer version of the app is never overwritten (the user gets it back by updating).
  */
 import type { ProjectFile } from '../core/types';
-import { msg, mtIn, type Message } from '../i18n';
 import type { TabSnapshot } from './documents';
 import { ProjectError, isPlain, parseProjectFile, toProjectFile } from './project';
 
 /** A session that cannot be read or written, with a message for the user (see ImageLoadError). */
 export class SessionError extends Error {
-  readonly text: Message;
-  constructor(text: Message, cause?: unknown) {
-    super(mtIn('en', text));
+  constructor(message: string, cause?: unknown) {
+    super(message);
     this.name = 'SessionError';
-    this.text = text;
     if (cause !== undefined) (this as { cause?: unknown }).cause = cause;
   }
 }
@@ -55,6 +52,11 @@ const INDEX_KEY = 'session';
 const TAB_PREFIX = 'tab:';
 const SESSION_VERSION = 1;
 
+const STORAGE_UNAVAILABLE =
+  'This system does not let Mockup Director keep data between starts, so open projects are not reopened after a restart.';
+const SESSION_NEWER =
+  'The projects that were open were saved by a newer version of Mockup Director. Update the app to get them back.';
+
 const tabKey = (id: string): string => TAB_PREFIX + id;
 const noop = (): void => undefined;
 
@@ -73,7 +75,7 @@ interface IndexRecord {
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     if (typeof indexedDB === 'undefined') {
-      reject(new SessionError(msg('errStorageUnavailable')));
+      reject(new SessionError(STORAGE_UNAVAILABLE));
       return;
     }
     const req = indexedDB.open(DB_NAME, 1);
@@ -82,8 +84,8 @@ function openDb(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains(DB_STORE)) db.createObjectStore(DB_STORE);
     };
     req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(new SessionError(msg('errStorageUnavailable'), req.error));
-    req.onblocked = () => reject(new SessionError(msg('errStorageUnavailable')));
+    req.onerror = () => reject(new SessionError(STORAGE_UNAVAILABLE, req.error));
+    req.onblocked = () => reject(new SessionError(STORAGE_UNAVAILABLE));
   });
 }
 
@@ -110,9 +112,11 @@ function finish(tx: IDBTransaction, what: string): Promise<void> {
 /** Validates the index record; entries that are not usable are counted in `malformed`. */
 function readIndex(raw: unknown): { index: IndexRecord; malformed: number } {
   if (!isPlain(raw) || typeof raw.version !== 'number' || !Array.isArray(raw.tabs)) {
-    throw new SessionError(msg('errSessionDamaged'));
+    throw new SessionError(
+      'The record of the projects that were open is damaged. Open your projects again from their files; changes that were not saved to a file cannot be recovered.',
+    );
   }
-  if (raw.version > SESSION_VERSION) throw new SessionError(msg('errSessionNewer'));
+  if (raw.version > SESSION_VERSION) throw new SessionError(SESSION_NEWER);
   const tabs: IndexTab[] = [];
   const seen = new Set<string>();
   let malformed = 0;
@@ -260,7 +264,7 @@ export class SessionSaver {
     existing.onsuccess = () => {
       const stored: unknown = existing.result;
       if (isPlain(stored) && typeof stored.version === 'number' && stored.version > SESSION_VERSION) {
-        refused = new SessionError(msg('errSessionNewer'));
+        refused = new SessionError(SESSION_NEWER);
         tx.abort();
         return;
       }

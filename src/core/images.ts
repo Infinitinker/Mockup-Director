@@ -15,7 +15,6 @@
  *  - GPU copies are downscaled so the longest side is ≤ 4096 px (high-quality step-down).
  */
 import * as THREE from 'three';
-import { msg, mtIn, type Message } from '../i18n';
 import type { ImageAsset } from './types';
 
 /** Longest side of the GPU texture. Originals stay untouched in the data URL. */
@@ -23,13 +22,11 @@ export const MAX_TEXTURE_SIZE = 4096;
 /** SVGs are rasterised so their longest side is this many px (unless that exceeds the texture cap). */
 const SVG_RASTER_SIZE = 3072;
 
-/** Error with a user-presentable message: `text` is shown in the interface language, `message` is the English text. */
+/** Error with a message that can be shown to the user. */
 export class ImageLoadError extends Error {
-  readonly text: Message;
-  constructor(text: Message, cause?: unknown) {
-    super(mtIn('en', text));
+  constructor(message: string, cause?: unknown) {
+    super(message);
     this.name = 'ImageLoadError';
-    this.text = text;
     if (cause !== undefined) (this as { cause?: unknown }).cause = cause;
   }
 }
@@ -55,7 +52,7 @@ export async function loadImageDataUrl(dataUrl: string, name: string): Promise<I
   // Decoded manually instead of fetch(dataUrl): a strict CSP (connect-src) may block fetching data: URLs.
   const parsed = parseDataUrl(dataUrl);
   if (!parsed) {
-    throw new ImageLoadError(msg('errImageCorrupt', { name }));
+    throw new ImageLoadError(`Corrupted image in the project: ${name}`);
   }
   const mime = sniffMime(parsed.bytes, parsed.mime, name);
   const blob = new Blob([parsed.bytes], { type: mime });
@@ -83,7 +80,10 @@ async function decodeToAsset(blob: Blob, mime: string, dataUrl: string, name: st
     else canvas = await decodeRaster(blob, mime);
   } catch (err) {
     if (err instanceof ImageLoadError) throw err;
-    throw new ImageLoadError(msg('errImageDecode', { name }), err);
+    throw new ImageLoadError(
+      `Could not decode the image "${name}". Supported formats: PNG, JPEG, WebP, GIF, SVG, AVIF.`,
+      err,
+    );
   }
   return {
     name,
@@ -223,7 +223,7 @@ function createCanvas(w: number, h: number): HTMLCanvasElement {
 function get2d(c: HTMLCanvasElement): CanvasRenderingContext2D {
   const g = c.getContext('2d');
   if (!g) {
-    throw new ImageLoadError(msg('errImageMemory'));
+    throw new ImageLoadError('Not enough memory to process the image.');
   }
   return g;
 }

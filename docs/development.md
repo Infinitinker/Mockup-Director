@@ -69,12 +69,6 @@ npm test
 
 `tests/layout.test.ts` checks the repository's source files: every module opens with its header comment, and no banner comment splits a file into sections. Its allow-lists name the files that do not follow these rules yet; they may only shrink. `tests/models/ids.test.ts` pins the IDs saved in project files in a snapshot; [models.md](models.md#testing) says when it may be updated.
 
-Every text in the code has a translation in every interface language (see [translations.md](translations.md)):
-
-```bash
-npm run check:i18n
-```
-
 The licenses of the npm dependencies, and the third-party notices (see [licenses.md](licenses.md)):
 
 ```bash
@@ -107,11 +101,11 @@ cargo fmt --check --manifest-path src-tauri/Cargo.toml
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 ```
 
-The **Checks** workflow (`.github/workflows/checks.yml`) runs all of these for every push to `main` and `dev` and for every pull request, in a few minutes: `Lint` (Biome, rustfmt, and that `package.json` and `src-tauri/Cargo.toml` have the same version), `Web` (type-check, build, unit tests, translations), `Licenses`, and clippy and the Rust tests on two systems, `Windows` (with MSYS2 and the GNU toolchain) and `Linux`. The Rust code differs per system and clippy only sees the code of the system it runs on, hence two runs; the macOS code is compiled by the macOS build. Once a month Dependabot opens a pull request to `dev` with new versions of the actions the workflows use (`.github/dependabot.yml`).
+The **Checks** workflow (`.github/workflows/checks.yml`) runs all of these for every push to `main` and `dev` and for every pull request, in a few minutes: `Lint` (Biome, rustfmt, and that `package.json` and `src-tauri/Cargo.toml` have the same version), `Web` (type-check, build, unit tests), `Licenses`, and clippy and the Rust tests on two systems, `Windows` (with MSYS2 and the GNU toolchain) and `Linux`. The Rust code differs per system and clippy only sees the code of the system it runs on, hence two runs; the macOS code is compiled by the macOS build. Once a month Dependabot opens a pull request to `dev` with new versions of the actions the workflows use (`.github/dependabot.yml`).
 
 ## Interface texts
 
-The interface's texts are the messages in `src/i18n/en.ts`, shown with `t(key)` (and carried by errors with `msg(key, vars)`), and the labels and hints of models and presets, written in the code with `L('…')` or `Lctx(context, '…')`. How they reach other languages is described in [translations.md](translations.md). Every new or changed text follows these rules:
+The interface's texts are plain English strings, written in the code where they are used: in the interface modules, in the errors a user sees, and in the labels and hints of models and looks. Every new or changed text follows these rules:
 
 | Rule | Write | Not |
 | --- | --- | --- |
@@ -120,15 +114,15 @@ The interface's texts are the messages in `src/i18n/en.ts`, shown with `t(key)` 
 | The ellipsis character `…`, never three dots, and only on a command that asks for more before it acts, and on a progress text. A command that acts at once has none. | Open project…, Save project…, Export image…, Choose…, Loading…, Exporting… | Loading..., Restore defaults… |
 | Hints and descriptions are full sentences ending with a period. Labels have no period. | This model has no settings. (hint); Lock aspect ratio (label) | Small = flat telephoto look, large = strong perspective (hint) |
 | Clauses are joined with a colon. The en dash `–` is only for ranges and as a separator in names and labels. | They are still open: save them to keep them. Ø 22–119.5 mm, A5 – 148 × 210 mm, Inside – left | Drop artwork – it fills the empty slots of the model |
-| Curly quotes “ ” and the apostrophe ’. | Save changes to “{name}”?, Don’t save | Could not decode the image "{name}", Don't save |
+| Curly quotes “ ” and the apostrophe ’. | Save changes to “${name}”?, Don’t save | Could not decode the image "${name}", Don't save |
 | No "Please". | Choose PNG or JPEG. | Please choose PNG or JPEG. |
-| A count is written as "Label: {n}". | Files chosen: {n}, Imported looks: {n} | {n} files chosen, Errors ({n}) |
+| A count is written as "Label: ${n}". | Files chosen: ${n}, Imported looks: ${n} | ${n} files chosen, Errors (${n}) |
 | A control with a shortcut shows it as "Action (shortcut)", in its tooltip. `shortcutLabel` in `src/ui/dom.ts` writes the keys for the system. | Undo (Ctrl+Z), New tab (⌘T) | Ctrl+Z: Undo |
 | An error message says what happened, then what to do. | Not enough memory for an image this large. Reduce the export size. The file could not be read: it is not a Mockup Director project. Choose a .mdproj file. | This is not a Mockup Director project file. |
 | One name per concept: the terms in [architecture.md](architecture.md#terms). | look, artwork, light preset, view | preset or style for a look, image for artwork |
-| Millimeters as mm after a space, degrees as ° with no space, × between dimensions. | Standard 10.4 mm, 120 × 120 mm, 360° turn, ±{a}° | 10.4mm, 90 deg, 120x120 mm |
+| Millimeters as mm after a space, degrees as ° with no space, × between dimensions. | Standard 10.4 mm, 120 × 120 mm, 360° turn, ±${a}° | 10.4mm, 90 deg, 120x120 mm |
 
-Today's texts take values through `{placeholders}` (see [translations.md](translations.md)), never through concatenated strings: `'Save changes to “{name}”?'`, not `'Save changes to “' + name + '”?'`.
+Texts take values through template literals, never through concatenated strings: `` `Save changes to “${name}”?` ``, not `'Save changes to “' + name + '”?'`.
 
 ## Building the desktop app
 
@@ -142,7 +136,7 @@ On macOS and Linux the result lands in `src-tauri/target/release/bundle/`: `.app
 npm run installer
 ```
 
-It writes `src-tauri/target/release/installer/MockupDirector-<version>-windows-x64-setup.exe`, with Mockup Director's texts in every interface language from the `installer…` messages (see [translations.md](translations.md)). It finds Inno Setup where its installer puts it, or wherever the `ISCC` environment variable points. Setup installs for the current user into `%LOCALAPPDATA%\Programs\Mockup Director` with no administrator rights, or for all users if they choose; it registers `.mdproj` files, downloads WebView2 if Windows has none, and, when uninstalling an install for the current user, asks whether to delete that user's data too.
+It writes `src-tauri/target/release/installer/MockupDirector-<version>-windows-x64-setup.exe`, in English. It finds Inno Setup where its installer puts it, or wherever the `ISCC` environment variable points. Setup installs for the current user into `%LOCALAPPDATA%\Programs\Mockup Director` with no administrator rights, or for all users if they choose; it registers `.mdproj` files, downloads WebView2 if Windows has none, and, when uninstalling an install for the current user, asks whether to delete that user's data too.
 
 A universal macOS build (Apple Silicon + Intel) needs both Rust targets:
 

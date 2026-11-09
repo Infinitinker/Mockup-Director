@@ -13,7 +13,6 @@
  *  5. Encode and embed the print resolution (PNG pHYs / JPEG JFIF density, default 300 dpi).
  */
 import type { BackgroundSettings, ExportFormat, ExportSettings, StageAPI } from '../core/types';
-import { msg, mtIn, type Message } from '../i18n';
 import { DEFAULT_EXPORT, MAX_EXPORT_SIZE } from '../core/defaults';
 import { clampInt, findAlphaBounds, fitInside, supersampleSize, type PixelRect } from './layout';
 import { isJpeg, isPng, setJpegDensity, setPngPhys } from './png';
@@ -56,15 +55,13 @@ export interface ExportResult {
 
 export type ExportErrorCode = 'webp-unsupported' | 'encode-failed' | 'render-failed';
 
-/** Export failure with a user-presentable message: `text` is shown in the interface language, `message` is the English text. */
+/** Export failure with a message that can be shown to the user. */
 export class ExportError extends Error {
   readonly code: ExportErrorCode;
-  readonly text: Message;
-  constructor(code: ExportErrorCode, text: Message) {
-    super(mtIn('en', text));
+  constructor(code: ExportErrorCode, message: string) {
+    super(message);
     this.name = 'ExportError';
     this.code = code;
-    this.text = text;
   }
 }
 
@@ -112,7 +109,7 @@ export async function exportImageDetailed(
   const rw = src.width;
   const rh = src.height;
   if (!rw || !rh) {
-    throw new ExportError('render-failed', msg('errRenderFailed'));
+    throw new ExportError('render-failed', 'Rendering failed (not enough GPU memory?).');
   }
 
   // --- 2. content bounds from alpha --------------------------------------------------------
@@ -169,7 +166,7 @@ export async function exportImageDetailed(
     if (format === 'webp' && options.webpFallback === 'png' && blob.type === 'image/png') format = 'png';
     else if (format === 'webp') throw webpError();
     else {
-      throw new ExportError('encode-failed', msg('errEncodeAs', { format: format.toUpperCase() }));
+      throw new ExportError('encode-failed', `Could not encode the image as ${format.toUpperCase()}.`);
     }
   }
   if (dpi > 0) {
@@ -297,7 +294,10 @@ function normaliseSettings(s: ExportSettings): ExportSettings {
 }
 
 function webpError(): ExportError {
-  return new ExportError('webp-unsupported', msg('errWebpImage'));
+  return new ExportError(
+    'webp-unsupported',
+    'WebP encoding is not supported on this system. Please choose PNG or JPEG.',
+  );
 }
 
 function measureContent(src: HTMLCanvasElement): PixelRect | null {
@@ -358,7 +358,7 @@ function canvasToBlob(c: HTMLCanvasElement, mime: string, quality?: number): Pro
       (b) => {
         if (b) resolve(b);
         else {
-          reject(new ExportError('encode-failed', msg('errEncodeImage')));
+          reject(new ExportError('encode-failed', 'Could not encode the image (out of memory?).'));
         }
       },
       mime,
@@ -377,7 +377,7 @@ function createCanvas(w: number, h: number): HTMLCanvasElement {
 function get2d(c: HTMLCanvasElement): CanvasRenderingContext2D {
   const g = c.getContext('2d');
   if (!g) {
-    throw new ExportError('render-failed', msg('errImageTooLarge'));
+    throw new ExportError('render-failed', 'Not enough memory for an image this large. Reduce the export size.');
   }
   return g;
 }

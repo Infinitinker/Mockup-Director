@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Documents } from '../../src/ui/documents';
 import { Store } from '../../src/ui/state';
-import { appState, documentState, fakeImage } from '../fixtures';
+import { documentState, fakeImage } from '../fixtures';
 
 function setup(): { store: Store; docs: Documents } {
-  const store = new Store(appState());
+  const store = new Store(documentState());
   return { store, docs: new Documents(store, () => documentState()) };
 }
 
@@ -208,7 +208,6 @@ describe('Documents', () => {
     expect(snap.map((t) => t.id)).toEqual([first, second]);
     expect(snap[0]).toMatchObject({ name: '', dirty: true, revision: firstRevision });
     expect(snap[0].state.params.box).toEqual({ width: 1 });
-    expect(snap[0].state).not.toHaveProperty('lang');
     expect(snap[1]).toMatchObject({ name: 'Disc', dirty: false, revision: secondRevision });
     expect(snap[1].state.modelId).toBe('dvd');
   });

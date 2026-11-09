@@ -18,14 +18,14 @@ A model is one kind of product the app can show: a box, a keep case, a book, a p
 
 ## The definition
 
-Texts (`name`, labels, hints) are `LocalizedText` values, written in English with `L('…')` or `Lctx(context, '…')` (see [Adding a model](#adding-a-model)).
+Texts (`name`, labels, hints) are plain English strings, written where they are used.
 
 | Field | Type | Required | Meaning |
 |---|---|---|---|
 | `id` | `string` | yes | Unique, kebab-case ID (`dvd-case-disc`). Saved in project files and used in file names; see [Naming](#naming). |
-| `category` | `ModelCategory` | yes | Gallery group: `box`, `disc`, `book`, `print` or `device`. The gallery shows the groups in that order (`src/ui/gallery.ts`); a new category needs a change to `ModelCategory`, to `CATEGORY_ORDER` and `CATEGORY_LABEL` in `src/ui/gallery.ts`, and a message for its heading in `src/i18n/en.ts` and every locale. |
-| `name` | `LocalizedText` | yes | Shown in the gallery and as the Model tab's title. |
-| `description` | `LocalizedText` | no | One sentence: the gallery's tooltip (instead of the name) and the line under the Model tab's title. |
+| `category` | `ModelCategory` | yes | Gallery group: `box`, `disc`, `book`, `print` or `device`. The gallery shows the groups in that order (`src/ui/gallery.ts`); a new category needs a change to `ModelCategory`, and to `CATEGORY_ORDER` and `CATEGORY_LABEL` (its heading) in `src/ui/gallery.ts`. |
+| `name` | `string` | yes | Shown in the gallery and as the Model tab's title. |
+| `description` | `string` | no | One sentence: the gallery's tooltip (instead of the name) and the line under the Model tab's title. |
 | `icon` | `string` | yes | Inline SVG markup for the gallery: `viewBox="0 0 64 64"`, line art in `currentColor`. |
 | `slots` | `ImageSlotDef[]` | yes | The artwork the model takes, in the order of the Artwork tab. May be empty. See [Slots and artwork](#slots-and-artwork). |
 | `params` | `ParamDef[]` | yes | What the user can change, in the order of the Model tab. May be empty. See [Parameters](#parameters). |
@@ -42,19 +42,19 @@ A parameter is one setting in the Model tab. Every kind has these fields:
 |---|---|---|
 | `id` | `string` | Unique within the model, camelCase (`cornerRadius`). The key of its value in `ctx.params` and in project files. |
 | `type` | `'number' \| 'boolean' \| 'select' \| 'color'` | The kind, below. |
-| `label` | `LocalizedText` | Shown next to the control. |
-| `group` | `LocalizedText`, optional | The section of the Model tab it appears in. |
+| `label` | `string` | Shown next to the control. |
+| `group` | `string`, optional | The section of the Model tab it appears in. |
 | `default` | depends on the kind | The value of a new document and of Restore defaults. |
 
 | Kind | Own fields | Value | Control |
 |---|---|---|---|
 | `number` | `min`, `max`, `step`, `unit?` | `number` | A number field with a slider. Typed values are snapped to `step` and kept between `min` and `max`. `unit` is `'mm'` (shown as mm), `'deg'` (°), `'%'` or `''` (none). |
 | `boolean` | – | `boolean` | A switch. |
-| `select` | `options: { value: string; label: LocalizedText }[]` | one of the `value`s | Segmented buttons when there are at most 3 options whose labels together have at most 26 characters in the current language; otherwise a menu. |
+| `select` | `options: { value: string; label: string }[]` | one of the `value`s | Segmented buttons when there are at most 3 options whose labels together have at most 26 characters; otherwise a menu. |
 | `color` | – | `'#rrggbb'` | A color picker. |
 
 - Lengths are in millimeters, angles in degrees, percentages from 0 to 100 (the model divides by 100 itself, as `discOffset` in `composites.ts` does).
-- Parameters are grouped by `group`, in the order each group first appears; parameters without a group go into a General section. Groups match by their English text, so define a group once (`const G_DIM = L('Dimensions')`) and reuse it.
+- Parameters are grouped by `group`, in the order each group first appears; parameters without a group go into a General section. Groups match by their text, so define a group once (`const G_DIM = 'Dimensions'`) and reuse it.
 - Values are checked wherever they come from (`sanitizeParam` in `src/ui/modelUtils.ts`): a number outside `min`..`max` is clamped, a select value that is not an option, a color that is not `#rrggbb`, or a value of the wrong type is dropped and the default used instead.
 - When the user switches to a model they have not changed yet, artwork and parameter values carry over from the previous model wherever the slot or parameter ID is the same (`selectModel` in `src/ui/app.ts`). Use the same ID for the same meaning: `width`, `front`, `finish`.
 
@@ -76,8 +76,8 @@ A slot is one piece of artwork: a face, a wrap-around cover, a disc label, a scr
 | Field | Type | Required | Meaning |
 |---|---|---|---|
 | `id` | `string` | yes | Unique within the model, camelCase (`front`, `lidSides`). The key of the image in project files. |
-| `label` | `LocalizedText` | yes | The card's title; also drawn on the placeholder and on the print template. |
-| `hint` | `LocalizedText` | no | Help under the title: the size the artwork should have, which edge meets which. |
+| `label` | `string` | yes | The card's title; also drawn on the placeholder and on the print template. |
+| `hint` | `string` | no | Help under the title: the size the artwork should have, which edge meets which. |
 | `aspect` | `number` | yes | Expected width / height of the artwork. Shapes the placeholder and the aspect warning. |
 | `anyAspect` | `boolean` | no | The slot takes any aspect ratio (a screenshot whose panel follows the image). No warning is shown. |
 | `template` | `PrintTemplate` or `(params) => PrintTemplate` | no | A downloadable print template; see [Print templates](#print-templates). |
@@ -92,9 +92,9 @@ Artwork textures are `CanvasTexture`s with `flipY = true` and the sRGB color spa
 
 ## Print templates
 
-A print template is a PNG the user downloads with the Template button on a slot's card, to design the artwork on: the exact physical size at 300 dpi, with bleed, trim line, safe area, labeled regions and fold lines. The PNG records its resolution, so an image editor opens it at print size. It is drawn in the interface language by `src/export/templates.ts`, and saved as `mockup-director-<model id>-<“template” in the interface language>-<slot label in the interface language, slugified>-<width>x<height>mm-<dpi>dpi.png`, with the resolution actually used. Very large templates are drawn at a lower resolution, which the legend states.
+A print template is a PNG the user downloads with the Template button on a slot's card, to design the artwork on: the exact physical size at 300 dpi, with bleed, trim line, safe area, labeled regions and fold lines. The PNG records its resolution, so an image editor opens it at print size. It is drawn by `src/export/templates.ts`, and saved as `mockup-director-<model id>-template-<slot label, slugified>-<width>x<height>mm-<dpi>dpi.png`, with the resolution actually used. Very large templates are drawn at a lower resolution, which the legend states.
 
-`template` is a `PrintTemplate`, or a function of the parameters when the size depends on them (a box's net follows its width, height and depth). The function gets the model's complete parameters when the user downloads it, the defaults in `npm run check:i18n`, and an empty object when the placeholder checks whether the template is round, so read values with `num()` and its fallbacks.
+`template` is a `PrintTemplate`, or a function of the parameters when the size depends on them (a box's net follows its width, height and depth). The function gets the model's complete parameters when the user downloads it, and an empty object when the placeholder checks whether the template is round, so read values with `num()` and its fallbacks.
 
 | Field | Type | Required | Meaning |
 |---|---|---|---|
@@ -141,8 +141,7 @@ Helpers in `src/models/shared.ts`:
 | `planarUVs(geo, uAxis, vAxis, uRange, vRange, rect)` | Projects UVs from two axes of the vertex positions. |
 | `num`, `bool`, `str` | Read a parameter value, with a fallback for a missing or wrong one. |
 | `mmParam(...)` | A number parameter in millimeters. |
-| `L`, `Lctx` | Write a text in English. |
-| `round1(v)` | Rounds to one decimal, for a number in a `{placeholder}` of a text. |
+| `round1(v)` | Rounds to one decimal, for a number shown in a text. |
 
 The app's side of the contract is in `src/ui/modelUtils.ts` (`completeParams`, `sanitizeParam`, `slotFor`, `resolveTemplate`, `expectedAspects`, `snapToStep`) and `defaultParams` in `src/core/defaults.ts`; models do not import them.
 
@@ -171,18 +170,18 @@ To add a composite, export the base model's build function from its file, define
    ```ts
    import * as THREE from 'three';
    import type { ModelDefinition } from '../core/types';
-   import { L, castShadows, mmParam, num, placeOnGround, printMaterial, solidPlastic } from './shared';
+   import { castShadows, mmParam, num, placeOnGround, printMaterial, solidPlastic } from './shared';
 
    export const posterModel: ModelDefinition = {
      id: 'poster',
      category: 'print',
-     name: L('Mounted poster'),
+     name: 'Mounted poster',
      icon: '<svg viewBox="0 0 64 64"><rect x="16" y="8" width="32" height="48" fill="none" stroke="currentColor" stroke-width="3"/></svg>',
-     slots: [{ id: 'front', label: L('Front'), aspect: 210 / 297 }],
+     slots: [{ id: 'front', label: 'Front', aspect: 210 / 297 }],
      params: [
-       mmParam('width', L('Width'), 210, 50, 1000),
-       mmParam('height', L('Height'), 297, 50, 1000),
-       mmParam('thickness', L('Thickness'), 5, 1, 30, 0.5),
+       mmParam('width', 'Width', 210, 50, 1000),
+       mmParam('height', 'Height', 297, 50, 1000),
+       mmParam('thickness', 'Thickness', 5, 1, 30, 0.5),
      ],
      build(ctx) {
        const w = num(ctx.params, 'width', 210), h = num(ctx.params, 'height', 297), t = num(ctx.params, 'thickness', 5);
@@ -198,14 +197,7 @@ To add a composite, export the base model's build function from its file, define
 
 2. Add it to the `MODELS` array in `src/models/registry.ts`, at its place in the gallery. It then appears in its category, with its Model and Artwork tabs.
 3. Where it helps, give a slot a `template` and a `hint`, and the model a `description` and a `defaultCamera`.
-4. Translate its texts. Every `L()` text needs an entry in the `texts` table of each locale other than English (`src/i18n/<code>.ts`), keyed by the English text:
-
-   ```ts
-   'Mounted poster': '…',
-   ```
-
-   Texts that already exist (such as `'Front'` or `'Width'`) are translated once for all models. See [translations.md](translations.md), also for texts with numbers in them and for contexts.
-5. Its new IDs and slots change the snapshots of the model tests (see [Testing](#testing)): update them with `npx vitest run -u tests/models`, and check in the diff that they only add. Add tests for what the model does beyond the contract, then run the checks:
+4. Its new IDs and slots change the snapshots of the model tests (see [Testing](#testing)): update them with `npx vitest run -u tests/models`, and check in the diff that they only add. Add tests for what the model does beyond the contract, then run the checks:
 
    ```bash
    npm run lint
@@ -218,12 +210,6 @@ To add a composite, export the base model's build function from its file, define
    ```bash
    npm test
    ```
-
-   ```bash
-   npm run check:i18n
-   ```
-
-   `npm run check:i18n` lists the texts that are still missing.
 
 ## Testing
 

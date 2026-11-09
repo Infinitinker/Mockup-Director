@@ -4,7 +4,6 @@
  */
 import { h } from './dom';
 import { ICONS } from './icons';
-import { t } from '../i18n';
 
 export type ToastKind = 'info' | 'success' | 'error' | 'warning';
 
@@ -44,8 +43,8 @@ export function toast(kind: ToastKind, title: string, detail?: string): void {
   const close = h('button', {
     class: 'toast-close',
     html: ICONS.close,
-    title: t('close'),
-    label: t('close'),
+    title: 'Close',
+    label: 'Close',
     attrs: { type: 'button' },
     on: { click: () => dismiss() },
   });

@@ -30,25 +30,25 @@ import { seededRandom } from '../random';
 
 const NUMBER: NumberParamDef = {
   id: 'width',
-  label: { en: 'Width' },
+  label: 'Width',
   type: 'number',
   min: 10,
   max: 500,
   step: 1,
   default: 100,
 };
-const BOOLEAN: BooleanParamDef = { id: 'gloss', label: { en: 'Gloss' }, type: 'boolean', default: true };
+const BOOLEAN: BooleanParamDef = { id: 'gloss', label: 'Gloss', type: 'boolean', default: true };
 const SELECT: SelectParamDef = {
   id: 'finish',
-  label: { en: 'Finish' },
+  label: 'Finish',
   type: 'select',
   options: [
-    { value: 'matte', label: { en: 'Matte' } },
-    { value: 'glossy', label: { en: 'Glossy' } },
+    { value: 'matte', label: 'Matte' },
+    { value: 'glossy', label: 'Glossy' },
   ],
   default: 'matte',
 };
-const COLOR: ColorParamDef = { id: 'tint', label: { en: 'Tint' }, type: 'color', default: '#ffffff' };
+const COLOR: ColorParamDef = { id: 'tint', label: 'Tint', type: 'color', default: '#ffffff' };
 
 /** Values of every type that some parameter type rejects. */
 const JUNK: unknown[] = [
@@ -73,7 +73,7 @@ const JUNK: unknown[] = [
 
 const slot = (overrides: Partial<ImageSlotDef> = {}): ImageSlotDef => ({
   id: 'front',
-  label: { en: 'Front' },
+  label: 'Front',
   aspect: 0.5,
   ...overrides,
 });

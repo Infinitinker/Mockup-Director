@@ -15,7 +15,7 @@ import {
   MIN_ANIMATION_SIZE,
 } from '../../core/defaults';
 import type { AppContext } from '../context';
-import { formatNumber, t, type MessageKey } from '../../i18n';
+import { formatNumber } from '../numbers';
 import { clamp, h, nextId, safeStorage, shortcutLabel } from '../dom';
 import { ICONS } from '../icons';
 import { numberControl, section, segmentedControl, selectControl, switchControl, type Control } from '../controls';
@@ -48,7 +48,18 @@ interface DimTarget {
 
 const FORMAT_LABEL: Record<AnimationFormat, string> = { gif: 'GIF', webp: 'WebP', mp4: 'MP4' };
 
-export function createExportPanel(ctx: AppContext): { el: HTMLElement; render(): void } {
+const SIZING_HINT: Record<ExportSettings['sizing'], string> = {
+  canvas: 'The image has exactly the given size, the object is centred.',
+  trim: 'The image is cropped to the object plus margin – one side is usually smaller.',
+};
+const WEBP_UNSUPPORTED = 'WebP encoding is not supported by this browser engine – use PNG.';
+const USE_VIEW_HINT =
+  'Off: the whole composition always fits. On: the preview zoom and pan are applied on top of the fixed framing (may crop).';
+const ANIM_WEBP_UNSUPPORTED = 'Animated WebP is unavailable – this system’s web engine cannot encode WebP.';
+const MP4_UNSUPPORTED =
+  'MP4 needs WebCodecs (Windows with WebView2, Safari 16.4+ / macOS 13.3+, or a recent WebKitGTK on Linux) – not available on this system.';
+
+export function createExportPanel(ctx: AppContext): { el: HTMLElement } {
   const el = h('div', { class: 'panel panel-export' });
   let controls: Control[] = [];
   let lockAspect = safeStorage.get(LOCK_KEY) !== '0';
@@ -103,7 +114,7 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
     const el = h(
       'div',
       { class: 'dim-field' },
-      h('label', { class: 'ctl-label', text: which === 'width' ? t('width') : t('height'), attrs: { for: id } }),
+      h('label', { class: 'ctl-label', text: which === 'width' ? 'Width' : 'Height', attrs: { for: id } }),
       h('span', { class: 'num-wrap' }, input, h('span', { class: 'unit', text: 'px' })),
     );
     const commit = () => {
@@ -153,8 +164,8 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
     const lockBtn = h('button', {
       class: `btn btn-icon-only lock-btn${lockAspect ? ' active' : ''}`,
       html: lockAspect ? ICONS.lock : ICONS.unlock,
-      title: t('lockAspect'),
-      attrs: { type: 'button', 'aria-pressed': String(lockAspect), 'aria-label': t('lockAspect') },
+      title: 'Lock aspect ratio',
+      attrs: { type: 'button', 'aria-pressed': String(lockAspect), 'aria-label': 'Lock aspect ratio' },
       on: {
         click: () => {
           lockAspect = !lockAspect;
@@ -170,7 +181,7 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
 
   /** Square size preset chips. `disabled(n)` greys out presets above the format's limit. */
   const sizeChips = (presets: number[], target: DimTarget, add: <T extends Control>(c: T) => T): HTMLElement => {
-    const chips = h('div', { class: 'chips', attrs: { role: 'group', 'aria-label': t('sizePresets') } });
+    const chips = h('div', { class: 'chips', attrs: { role: 'group', 'aria-label': 'Size presets (square)' } });
     const chipButtons = presets.map((n) => {
       const b = h('button', {
         class: 'chip',
@@ -215,7 +226,7 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
     );
     const margin = add(
       numberControl({
-        label: t('margin'),
+        label: 'Margin',
         min: 0,
         max: 400,
         step: 1,
@@ -230,10 +241,18 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
     );
     const sizing = add(
       segmentedControl<ExportSettings['sizing']>({
-        label: t('sizing'),
+        label: 'Framing',
         options: [
-          { value: 'canvas', label: t('sizingCanvas'), title: t('sizingCanvasHint') },
-          { value: 'trim', label: t('sizingTrim'), title: t('sizingTrimHint') },
+          {
+            value: 'canvas',
+            label: 'Fit to canvas',
+            title: SIZING_HINT.canvas,
+          },
+          {
+            value: 'trim',
+            label: 'Trim to object',
+            title: SIZING_HINT.trim,
+          },
         ],
         get: () => ex().sizing,
         set: (v) => upd((e) => (e.sizing = v)),
@@ -242,13 +261,13 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
     const sizingNote = h('p', { class: 'ctl-note' });
     add({
       el: sizingNote,
-      sync: () => (sizingNote.textContent = ex().sizing === 'canvas' ? t('sizingCanvasHint') : t('sizingTrimHint')),
+      sync: () => (sizingNote.textContent = SIZING_HINT[ex().sizing]),
     });
 
-    const sizeSection = section('export.size', t('size'), [
-      h('div', { class: 'ctl' }, h('div', { class: 'ctl-label', text: t('sizePresets') }), chips),
+    const sizeSection = section('export.size', 'Size', [
+      h('div', { class: 'ctl' }, h('div', { class: 'ctl-label', text: 'Size presets (square)' }), chips),
       dims,
-      h('p', { class: 'ctl-note', text: t('maxSize', { n: MAX_EXPORT_SIZE }) }),
+      h('p', { class: 'ctl-note', text: `Maximum ${MAX_EXPORT_SIZE} × ${MAX_EXPORT_SIZE} px.` }),
       margin.el,
       sizing.el,
       sizingNote,
@@ -258,11 +277,16 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
     const webp = webpEncodingSupported();
     const format = add(
       segmentedControl<ExportFormat>({
-        label: t('format'),
+        label: 'Format',
         options: [
           { value: 'png', label: 'PNG' },
           { value: 'jpeg', label: 'JPEG' },
-          { value: 'webp', label: 'WebP', disabled: !webp, title: webp ? 'WebP' : t('webpUnsupported') },
+          {
+            value: 'webp',
+            label: 'WebP',
+            disabled: !webp,
+            title: webp ? 'WebP' : WEBP_UNSUPPORTED,
+          },
         ],
         get: () => ex().format,
         set: (v) => upd((e) => (e.format = v)),
@@ -270,7 +294,7 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
     );
     const quality = add(
       numberControl({
-        label: t('quality'),
+        label: 'Quality',
         min: 0.5,
         max: 1,
         step: 0.01,
@@ -285,23 +309,26 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
     add({ el: quality.el, sync: () => (quality.el.hidden = ex().format === 'png') });
     const background = add(
       segmentedControl<ExportSettings['background']>({
-        label: t('exportBackground'),
+        label: 'Background',
         options: [
-          { value: 'transparent', label: t('bgTransparentShort'), title: t('bgTransparent') },
-          { value: 'scene', label: t('bgAsPreview') },
+          { value: 'transparent', label: 'Transparent', title: 'Transparent (checkerboard)' },
+          { value: 'scene', label: 'As preview' },
         ],
         get: () => ex().background,
         set: (v) => upd((e) => (e.background = v)),
       }),
     );
-    const jpegNote = h('p', { class: 'ctl-note warn-note', text: t('jpegNoAlpha') });
+    const jpegNote = h('p', {
+      class: 'ctl-note warn-note',
+      text: 'JPEG has no transparency – the background will be white.',
+    });
     add({
       el: jpegNote,
       sync: () => (jpegNote.hidden = !(ex().format === 'jpeg' && ex().background === 'transparent')),
     });
-    const formatSection = section('export.format', t('formatSection'), [
+    const formatSection = section('export.format', 'Format & background', [
       format.el,
-      !webp ? h('p', { class: 'ctl-note', text: t('webpUnsupported') }) : null,
+      !webp ? h('p', { class: 'ctl-note', text: WEBP_UNSUPPORTED }) : null,
       quality.el,
       background.el,
       jpegNote,
@@ -316,32 +343,32 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
         const fmt = e.format === 'jpeg' ? 'JPEG' : e.format.toUpperCase();
         const transparent = e.background === 'transparent' && e.format !== 'jpeg';
         const size =
-          e.sizing === 'trim' ? t('summaryTrim', { w: e.width, h: e.height }) : `${e.width} × ${e.height} px`;
-        summary.textContent = `${size} · ${fmt} · ${transparent ? t('summaryTransparent') : t('summaryOpaque')}`;
+          e.sizing === 'trim' ? `up to ${e.width} × ${e.height} px (trimmed)` : `${e.width} × ${e.height} px`;
+        summary.textContent = `${size} · ${fmt} · ${transparent ? 'transparent background' : 'with background'}`;
       },
     });
     exportBtn = h(
       'button',
       {
         class: 'btn btn-primary btn-large export-btn',
-        title: `${t('exportImageDots')} (${shortcutLabel('E')})`,
+        title: `Export image… (${shortcutLabel('E')})`,
         attrs: { type: 'button' },
         on: { click: () => void ctx.actions.exportImage() },
       },
       h('span', { class: 'spinner small' }),
       h('span', { class: 'btn-icon', html: ICONS.exportImg }),
-      h('span', { class: 'btn-text', text: t('exportImageDots') }),
+      h('span', { class: 'btn-text', text: 'Export image…' }),
     );
     batchBtn = h(
       'button',
       {
         class: 'btn batch-btn',
-        title: t('batchExportHint'),
+        title: 'Many mockups at once, packed into one ZIP file (current export settings).',
         attrs: { type: 'button' },
         on: { click: () => ctx.actions.openBatchExport() },
       },
       h('span', { class: 'btn-icon', html: ICONS.folderImg }),
-      h('span', { class: 'btn-text', text: t('batchExportDots') }),
+      h('span', { class: 'btn-text', text: 'Batch export…' }),
     );
     const footer = h('div', { class: 'export-footer' }, summary, exportBtn, batchBtn);
     return [sizeSection, formatSection, footer];
@@ -358,10 +385,10 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
     /* Motion ------------------------------------------------------- */
     const motion = add(
       segmentedControl<AnimationSettings['motion']>({
-        label: t('animMotionType'),
+        label: 'Motion type',
         options: [
-          { value: 'loop', label: t('animLoop') },
-          { value: 'swing', label: t('animSwing') },
+          { value: 'loop', label: '360° turn' },
+          { value: 'swing', label: 'Swing' },
         ],
         get: () => an().motion,
         set: (v) => updA((a) => (a.motion = v)),
@@ -372,11 +399,13 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
       el: motionNote,
       sync: () =>
         (motionNote.textContent =
-          an().motion === 'loop' ? t('animLoopHint') : t('animSwingHint', { a: an().swingAngle })),
+          an().motion === 'loop'
+            ? 'The product turns a full 360° at constant speed – the animation loops seamlessly.'
+            : `The product turns back and forth by ±${an().swingAngle}° around the current view.`),
     });
     const swingAngle = add(
       numberControl({
-        label: t('animSwingAngle'),
+        label: 'Swing angle (±)',
         min: 5,
         max: 90,
         step: 1,
@@ -389,10 +418,10 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
     );
     const easing = add(
       segmentedControl<AnimationSettings['easing']>({
-        label: t('animEasing'),
+        label: 'Easing',
         options: [
-          { value: 'sine', label: t('animEaseSine') },
-          { value: 'linear', label: t('animEaseLinear') },
+          { value: 'sine', label: 'Smooth (sine)' },
+          { value: 'linear', label: 'Linear' },
         ],
         get: () => an().easing,
         set: (v) => updA((a) => (a.easing = v)),
@@ -408,10 +437,10 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
     });
     const direction = add(
       segmentedControl<AnimationSettings['direction']>({
-        label: t('animDirection'),
+        label: 'Direction (seen from above)',
         options: [
-          { value: 'cw', label: t('animCw') },
-          { value: 'ccw', label: t('animCcw') },
+          { value: 'cw', label: 'Clockwise' },
+          { value: 'ccw', label: 'Counter-clockwise' },
         ],
         get: () => an().direction,
         set: (v) => updA((a) => (a.direction = v)),
@@ -419,7 +448,7 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
     );
     const duration = add(
       numberControl({
-        label: t('animDuration'),
+        label: 'Duration',
         min: MIN_ANIMATION_DURATION,
         max: MAX_ANIMATION_DURATION,
         step: 0.5,
@@ -432,7 +461,7 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
     );
     const fps = add(
       numberControl({
-        label: t('animFps'),
+        label: 'Frames per second',
         min: 5,
         max: maxFpsFor(an().format), // the panel is re-rendered when the format changes
         step: 1,
@@ -444,14 +473,17 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
     );
     const useView = add(
       switchControl({
-        label: t('animUseView'),
-        title: t('animUseViewHint'),
+        label: 'Zoom & pan from the preview',
+        title: USE_VIEW_HINT,
         get: () => an().useViewZoomPan,
         set: (v) => updA((a) => (a.useViewZoomPan = v)),
       }),
     );
-    const motionSection = section('export.anim.motion', t('animMotion'), [
-      h('p', { class: 'ctl-note', text: t('animStartNote') }),
+    const motionSection = section('export.anim.motion', 'Motion', [
+      h('p', {
+        class: 'ctl-note',
+        text: 'The animation starts from the current view – camera angle, lighting, shadow and reflection are kept, and the framing is fixed for all frames.',
+      }),
       motion.el,
       motionNote,
       swingAngle.el,
@@ -460,7 +492,7 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
       duration.el,
       fps.el,
       useView.el,
-      h('p', { class: 'ctl-note', text: t('animUseViewHint') }),
+      h('p', { class: 'ctl-note', text: USE_VIEW_HINT }),
     ]);
 
     /* Size --------------------------------------------------------- */
@@ -479,7 +511,7 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
     add({
       el: maxNote,
       sync: () =>
-        (maxNote.textContent = t('animMaxSize', { n: maxSizeFor(an().format), fmt: FORMAT_LABEL[an().format] })),
+        (maxNote.textContent = `Maximum ${maxSizeFor(an().format)} px per side (${FORMAT_LABEL[an().format]}).`),
     });
     const evenNote = h('p', { class: 'ctl-note warn-note' });
     add({
@@ -488,12 +520,12 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
         const a = an();
         const o = outputSizeOf(a);
         evenNote.hidden = !(a.format === 'mp4' && (o.width !== a.width || o.height !== a.height));
-        evenNote.textContent = t('animMp4Even', { w: o.width, h: o.height });
+        evenNote.textContent = `MP4 needs even dimensions – the file will be ${o.width} × ${o.height} px.`;
       },
     });
     const margin = add(
       numberControl({
-        label: t('margin'),
+        label: 'Margin',
         min: 0,
         max: 200,
         step: 1,
@@ -503,8 +535,8 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
         set: (v) => updA((a) => (a.margin = Math.round(clamp(v, 0, maxMarginFor(a.width, a.height))))),
       }),
     );
-    const sizeSection = section('export.anim.size', t('size'), [
-      h('div', { class: 'ctl' }, h('div', { class: 'ctl-label', text: t('animSizePresets') }), chips),
+    const sizeSection = section('export.anim.size', 'Size', [
+      h('div', { class: 'ctl' }, h('div', { class: 'ctl-label', text: 'Size presets (square)' }), chips),
       dims,
       maxNote,
       evenNote,
@@ -514,20 +546,20 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
     /* Format ------------------------------------------------------- */
     const format = add(
       segmentedControl<AnimationFormat>({
-        label: t('format'),
+        label: 'Format',
         options: [
           { value: 'gif', label: 'GIF' },
           {
             value: 'webp',
             label: 'WebP',
             disabled: !support.webp,
-            title: support.webp ? 'WebP' : t('animWebpUnsupported'),
+            title: support.webp ? 'WebP' : ANIM_WEBP_UNSUPPORTED,
           },
           {
             value: 'mp4',
             label: 'MP4',
             disabled: !support.mp4,
-            title: support.mp4 ? 'MP4 (H.264)' : t('animMp4Unsupported'),
+            title: support.mp4 ? 'MP4 (H.264)' : MP4_UNSUPPORTED,
           },
         ],
         get: () => an().format,
@@ -550,29 +582,29 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
       }),
     );
     const unsupportedNotes: HTMLElement[] = [];
-    if (!support.webp) unsupportedNotes.push(h('p', { class: 'ctl-note', text: t('animWebpUnsupported') }));
-    if (!support.mp4) unsupportedNotes.push(h('p', { class: 'ctl-note', text: t('animMp4Unsupported') }));
+    if (!support.webp) unsupportedNotes.push(h('p', { class: 'ctl-note', text: ANIM_WEBP_UNSUPPORTED }));
+    if (!support.mp4) unsupportedNotes.push(h('p', { class: 'ctl-note', text: MP4_UNSUPPORTED }));
 
-    const qualityKeys: Record<AnimationSettings['quality'], MessageKey> = {
-      low: 'animQualityLow',
-      medium: 'animQualityMedium',
-      high: 'animQualityHigh',
+    const qualityLabels: Record<AnimationSettings['quality'], string> = {
+      low: 'Low',
+      medium: 'Medium',
+      high: 'High',
     };
     const quality = add(
       segmentedControl<AnimationSettings['quality']>({
-        label: t('quality'),
-        options: (['low', 'medium', 'high'] as const).map((q) => ({ value: q, label: t(qualityKeys[q]) })),
+        label: 'Quality',
+        options: (['low', 'medium', 'high'] as const).map((q) => ({ value: q, label: qualityLabels[q] })),
         get: () => an().quality,
         set: (v) => updA((a) => (a.quality = v)),
       }),
     );
     const dither = add(
       selectControl({
-        label: t('animDither'),
+        label: 'Dithering',
         options: [
-          { value: 'floyd', label: t('animDitherFloyd') },
-          { value: 'ordered', label: t('animDitherOrdered') },
-          { value: 'none', label: t('animDitherNone') },
+          { value: 'floyd', label: 'Floyd–Steinberg' },
+          { value: 'ordered', label: 'Ordered (Bayer)' },
+          { value: 'none', label: 'None' },
         ],
         get: () => an().dither,
         set: (v) => updA((a) => (a.dither = v === 'ordered' || v === 'none' ? v : 'floyd')),
@@ -580,29 +612,38 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
     );
     const palette = add(
       segmentedControl<AnimationSettings['palette']>({
-        label: t('animPalette'),
+        label: 'Colour palette',
         options: [
-          { value: 'global', label: t('animPaletteGlobal') },
-          { value: 'frame', label: t('animPaletteFrame') },
+          { value: 'global', label: 'Global' },
+          { value: 'frame', label: 'Per frame' },
         ],
         get: () => an().palette,
         set: (v) => updA((a) => (a.palette = v)),
       }),
     );
-    const paletteNote = h('p', { class: 'ctl-note', text: t('animPaletteHint') });
+    const paletteNote = h('p', {
+      class: 'ctl-note',
+      text: 'Global palette: stable colours and a smaller file. Per frame: more accurate colours, a larger file.',
+    });
     const background = add(
       segmentedControl<AnimationSettings['background']>({
-        label: t('exportBackground'),
+        label: 'Background',
         options: [
-          { value: 'transparent', label: t('bgTransparentShort'), title: t('bgTransparent') },
-          { value: 'scene', label: t('bgAsPreview') },
+          { value: 'transparent', label: 'Transparent', title: 'Transparent (checkerboard)' },
+          { value: 'scene', label: 'As preview' },
         ],
         get: () => an().background,
         set: (v) => updA((a) => (a.background = v)),
       }),
     );
-    const gifAlphaNote = h('p', { class: 'ctl-note warn-note', text: t('animGifAlphaNote') });
-    const mp4AlphaNote = h('p', { class: 'ctl-note warn-note', text: t('animMp4NoAlpha') });
+    const gifAlphaNote = h('p', {
+      class: 'ctl-note warn-note',
+      text: 'GIF only has 1-bit transparency: the soft shadow and reflection disappear and edges may look jagged. Prefer the preview background or WebP.',
+    });
+    const mp4AlphaNote = h('p', {
+      class: 'ctl-note warn-note',
+      text: 'MP4 has no transparency – the background will be white.',
+    });
     add({
       el: quality.el,
       sync: () => {
@@ -617,7 +658,7 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
         mp4AlphaNote.hidden = !(a.format === 'mp4' && transparent);
       },
     });
-    const formatSection = section('export.anim.format', t('formatSection'), [
+    const formatSection = section('export.anim.format', 'Format & background', [
       format.el,
       ...unsupportedNotes,
       quality.el,
@@ -636,26 +677,20 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
       sync: () => {
         const a = an();
         const o = outputSizeOf(a);
-        summary.textContent = t('animSummary', {
-          w: o.width,
-          h: o.height,
-          fmt: FORMAT_LABEL[a.format],
-          n: frameCountOf(a),
-          d: formatNumber(a.duration, a.duration % 1 ? 1 : 0),
-        });
+        summary.textContent = `${o.width} × ${o.height} px · ${FORMAT_LABEL[a.format]} · ${formatNumber(a.duration, a.duration % 1 ? 1 : 0)} s · ${frameCountOf(a)} frames`;
       },
     });
     animBtn = h(
       'button',
       {
         class: 'btn btn-primary btn-large export-btn',
-        title: t('exportAnimationDots'),
+        title: 'Export animation…',
         attrs: { type: 'button' },
         on: { click: () => void ctx.actions.exportAnimation() },
       },
       h('span', { class: 'spinner small' }),
       h('span', { class: 'btn-icon', html: ICONS.exportImg }),
-      h('span', { class: 'btn-text', text: t('exportAnimationDots') }),
+      h('span', { class: 'btn-text', text: 'Export animation…' }),
     );
     const footer = h('div', { class: 'export-footer' }, summary, animBtn);
     return [motionSection, sizeSection, formatSection, footer];
@@ -677,7 +712,7 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
   );
   const cancelBtn = h('button', {
     class: 'btn anim-cancel',
-    text: t('cancel'),
+    text: 'Cancel',
     attrs: { type: 'button' },
     on: { click: () => ctx.actions.cancelAnimation() },
   });
@@ -696,19 +731,19 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
     let text: string;
     switch (p.phase) {
       case 'palette':
-        text = t('animPhasePalette', { done: p.done, total: p.total });
+        text = `Analysing colours: ${p.done} / ${p.total}`;
         frac = p.total ? (0.1 * p.done) / p.total : 0;
         break;
       case 'frames':
-        text = t('animPhaseFrames', { done: p.done, total: p.total });
+        text = `Frames rendered & encoded: ${p.done} / ${p.total}`;
         frac = 0.1 + (p.total ? (0.85 * p.done) / p.total : 0);
         break;
       case 'finalize':
-        text = t('animPhaseFinalize');
+        text = 'Finishing the file…';
         frac = p.done ? 1 : 0.95;
         break;
       default:
-        text = t('animPhasePrepare');
+        text = 'Preparing…';
     }
     const pct = Math.round(clamp(frac, 0, 1) * 100);
     progressText.textContent = text;
@@ -731,11 +766,11 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
     };
 
     const modeCtl = segmentedControl<Mode>({
-      ariaLabel: t('exportMode'),
+      ariaLabel: 'Export type',
       compact: true,
       options: [
-        { value: 'image', label: t('exportModeImage'), icon: ICONS.image },
-        { value: 'animation', label: t('exportModeAnimation'), icon: ICONS.reset },
+        { value: 'image', label: 'Image', icon: ICONS.image },
+        { value: 'animation', label: 'Animation', icon: ICONS.reset },
       ],
       get: () => mode,
       set: (v) => {
@@ -747,7 +782,7 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
     });
     modeCtl.el.classList.add('export-mode');
 
-    cancelBtn.textContent = t('cancel');
+    cancelBtn.textContent = 'Cancel';
     const parts = mode === 'animation' ? renderAnimation(add) : renderImage(add);
     el.append(modeCtl.el, ...parts, progressEl);
     updateBusy(ctx.exportBusy.value);
@@ -760,14 +795,14 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
       exportBtn.disabled = busy;
       exportBtn.classList.toggle('busy', busy && !animating);
       const text = exportBtn.querySelector('.btn-text');
-      if (text) text.textContent = busy && !animating ? t('exporting') : t('exportImageDots');
+      if (text) text.textContent = busy && !animating ? 'Exporting…' : 'Export image…';
     }
     if (batchBtn) batchBtn.disabled = busy;
     if (animBtn) {
       animBtn.disabled = busy;
       animBtn.classList.toggle('busy', animating);
       const text = animBtn.querySelector('.btn-text');
-      if (text) text.textContent = animating ? t('exporting') : t('exportAnimationDots');
+      if (text) text.textContent = animating ? 'Exporting…' : 'Export animation…';
     }
   };
 
@@ -776,10 +811,7 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
       c.sync();
     });
   ctx.store.subscribe((e) => {
-    if (e.kinds.has('lang')) {
-      render();
-      syncAll();
-    } else if (hasAny(e, 'export', 'scene')) {
+    if (hasAny(e, 'export', 'scene')) {
       if (mode === 'animation' && an().format !== renderedFormat) render();
       syncAll();
     }
@@ -791,5 +823,5 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement; render():
   });
   render();
   syncAll();
-  return { el, render };
+  return { el };
 }

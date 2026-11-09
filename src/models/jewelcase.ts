@@ -22,7 +22,7 @@
  */
 import * as THREE from 'three';
 import type { ImageSlotDef, ModelContext, ModelDefinition, ParamDef, PrintTemplate } from '../core/types';
-import { L, Lctx, bool, castShadows, clearPlastic, printMaterial, roundedRectShape, solidPlastic, str } from './shared';
+import { bool, castShadows, clearPlastic, printMaterial, roundedRectShape, solidPlastic, str } from './shared';
 import { buildDisc, discParams, discSlot } from './disc';
 
 /* ------------------------------------------------------------------ */
@@ -116,7 +116,7 @@ const BOOKLET_TEMPLATE: PrintTemplate = {
   widthMm: BOOKLET + 2 * BLEED,
   heightMm: BOOKLET + 2 * BLEED,
   bleedMm: BLEED,
-  regions: [{ xMm: BLEED, yMm: BLEED, wMm: BOOKLET, hMm: BOOKLET, label: L('Front (cover)') }],
+  regions: [{ xMm: BLEED, yMm: BLEED, wMm: BOOKLET, hMm: BOOKLET, label: 'Front (cover)' }],
 };
 
 const IW = INLAY_W + 2 * BLEED; // 157
@@ -129,30 +129,28 @@ const INLAY_TEMPLATE: PrintTemplate = {
   heightMm: IH,
   bleedMm: BLEED,
   regions: [
-    { xMm: BLEED, yMm: BLEED, wMm: INLAY_SPINE, hMm: INLAY_H, label: L('Spine') },
-    { xMm: X_FOLD_L, yMm: BLEED, wMm: INLAY_BACK, hMm: INLAY_H, label: L('Back') },
-    { xMm: X_FOLD_R, yMm: BLEED, wMm: INLAY_SPINE, hMm: INLAY_H, label: L('Spine') },
+    { xMm: BLEED, yMm: BLEED, wMm: INLAY_SPINE, hMm: INLAY_H, label: 'Spine' },
+    { xMm: X_FOLD_L, yMm: BLEED, wMm: INLAY_BACK, hMm: INLAY_H, label: 'Back' },
+    { xMm: X_FOLD_R, yMm: BLEED, wMm: INLAY_SPINE, hMm: INLAY_H, label: 'Spine' },
   ],
   guides: [
-    { orientation: 'v', posMm: X_FOLD_L, label: L('Fold') },
-    { orientation: 'v', posMm: X_FOLD_R, label: L('Fold') },
+    { orientation: 'v', posMm: X_FOLD_L, label: 'Fold' },
+    { orientation: 'v', posMm: X_FOLD_R, label: 'Fold' },
   ],
 };
 
 export const bookletSlot: ImageSlotDef = {
   id: 'booklet',
-  label: L('Booklet (cover)'),
-  hint: L('Booklet front 120 × 120 mm + 3 mm bleed (file 126 × 126 mm). Shown under the clear lid.'),
+  label: 'Booklet (cover)',
+  hint: 'Booklet front 120 × 120 mm + 3 mm bleed (file 126 × 126 mm). Shown under the clear lid.',
   aspect: 1,
   template: BOOKLET_TEMPLATE,
 };
 
 export const inlaySlot: ImageSlotDef = {
   id: 'inlay',
-  label: L('Back inlay (tray card)'),
-  hint: L(
-    '151 × 118 mm (spine 6.5 | back 138 | spine 6.5) + 3 mm bleed = 157 × 124 mm. The template’s left spine ends up on the case’s right (opening) side, the right one on the hinge side. Slim cases show only the back (with a clear tray).',
-  ),
+  label: 'Back inlay (tray card)',
+  hint: '151 × 118 mm (spine 6.5 | back 138 | spine 6.5) + 3 mm bleed = 157 × 124 mm. The template’s left spine ends up on the case’s right (opening) side, the right one on the hinge side. Slim cases show only the back (with a clear tray).',
   aspect: IW / IH,
   template: INLAY_TEMPLATE,
 };
@@ -161,56 +159,56 @@ export const inlaySlot: ImageSlotDef = {
 /* Params                                                              */
 /* ------------------------------------------------------------------ */
 
-const G_DIM = L('Dimensions');
-const G_MAT = L('Material');
-const G_CONTENT = L('Contents');
+const G_DIM = 'Dimensions';
+const G_MAT = 'Material';
+const G_CONTENT = 'Contents';
 
 export const jewelCaseParams: ParamDef[] = [
   {
     id: 'variant',
     type: 'select',
-    label: L('Case type'),
+    label: 'Case type',
     group: G_DIM,
     options: [
-      { value: 'standard', label: L('Standard 10.4 mm') },
-      { value: 'slim', label: L('Slim 5.2 mm') },
+      { value: 'standard', label: 'Standard 10.4 mm' },
+      { value: 'slim', label: 'Slim 5.2 mm' },
     ],
     default: 'standard',
   },
   {
     id: 'trayColor',
     type: 'select',
-    label: L('Tray'),
+    label: 'Tray',
     group: G_MAT,
     options: [
-      { value: 'black', label: Lctx('jewel case', 'Black') },
-      { value: 'clear', label: L('Clear') },
-      { value: 'white', label: Lctx('jewel case', 'White') },
-      { value: 'smoke', label: L('Smoked') },
+      { value: 'black', label: 'Black' },
+      { value: 'clear', label: 'Clear' },
+      { value: 'white', label: 'White' },
+      { value: 'smoke', label: 'Smoked' },
     ],
     default: 'black',
   },
   {
     id: 'inlayColor',
     type: 'color',
-    label: L('Inlay colour (no artwork)'),
+    label: 'Inlay colour (no artwork)',
     group: G_MAT,
     default: '#ffffff',
   },
   {
     id: 'paperFinish',
     type: 'select',
-    label: L('Paper finish'),
+    label: 'Paper finish',
     group: G_MAT,
     options: [
-      { value: 'matte', label: Lctx('jewel case', 'Matte') },
-      { value: 'satin', label: Lctx('jewel case', 'Satin') },
-      { value: 'gloss', label: Lctx('jewel case', 'Gloss') },
+      { value: 'matte', label: 'Matte' },
+      { value: 'satin', label: 'Satin' },
+      { value: 'gloss', label: 'Gloss' },
     ],
     default: 'satin',
   },
-  { id: 'showBooklet', type: 'boolean', label: L('Booklet in the lid'), group: G_CONTENT, default: true },
-  { id: 'showDisc', type: 'boolean', label: L('Disc inside'), group: G_CONTENT, default: false },
+  { id: 'showBooklet', type: 'boolean', label: 'Booklet in the lid', group: G_CONTENT, default: true },
+  { id: 'showDisc', type: 'boolean', label: 'Disc inside', group: G_CONTENT, default: false },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -556,8 +554,8 @@ export function buildJewelCase(ctx: ModelContext): THREE.Object3D {
 export const cdCaseModel: ModelDefinition = {
   id: 'cd-case',
   category: 'disc',
-  name: L('CD jewel case'),
-  description: L('Classic CD jewel case 142 × 125 × 10.4 mm (or slim 5.2 mm) with booklet, back inlay and spines.'),
+  name: 'CD jewel case',
+  description: 'Classic CD jewel case 142 × 125 × 10.4 mm (or slim 5.2 mm) with booklet, back inlay and spines.',
   icon:
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">' +
     '<rect x="6" y="10" width="52" height="44" rx="2.5"/><path d="M12 10v44M15.5 14v36"/>' +
@@ -567,7 +565,7 @@ export const cdCaseModel: ModelDefinition = {
     inlaySlot,
     {
       ...discSlot,
-      hint: L('A 120 × 120 mm square. Visible when “Disc inside” is on and “Booklet in the lid” is off.'),
+      hint: 'A 120 × 120 mm square. Visible when “Disc inside” is on and “Booklet in the lid” is off.',
     },
   ],
   params: [...jewelCaseParams, ...discParams],

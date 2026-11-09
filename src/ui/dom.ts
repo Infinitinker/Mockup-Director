@@ -1,7 +1,6 @@
 /**
  * Tiny DOM helpers – the UI is vanilla TS, so this keeps element creation readable.
  */
-import { isMessage, mt } from '../i18n';
 
 export type Child = Node | string | number | null | undefined | false;
 
@@ -126,10 +125,6 @@ export class Signal<T> {
 }
 
 export function errorMessage(e: unknown): string {
-  // The app's errors (ImageLoadError, ExportError, StageError, AnimationError) carry a Message in
-  // `.text`, shown in the interface language; their `message` is the English text.
-  const text = e && typeof e === 'object' ? (e as { text?: unknown }).text : undefined;
-  if (isMessage(text)) return mt(text);
   if (e instanceof Error) return e.message;
   if (typeof e === 'string') return e;
   try {

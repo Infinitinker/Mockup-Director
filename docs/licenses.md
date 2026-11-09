@@ -37,7 +37,7 @@ The Windows app is built with Rust's GNU toolchain (MSYS2's MinGW-w64), which pu
 
 ## The Windows installer
 
-The installer is made by [Inno Setup](https://jrsoftware.org/isinfo.php), whose setup program (and its translations of the standard texts) is in every installer it makes. Its license is permissive: binaries must keep its copyright notices, which they do as long as Setup is not modified (Setup shows them in its About box), so nothing goes into the notices. The installer and the portable ZIP ship the same app files: the executable, `WebView2Loader.dll`, `LICENSE.txt` and `THIRD-PARTY-NOTICES.txt`.
+The installer is made by [Inno Setup](https://jrsoftware.org/isinfo.php), whose setup program (with its standard texts) is in every installer it makes. Its license is permissive: binaries must keep its copyright notices, which they do as long as Setup is not modified (Setup shows them in its About box), so nothing goes into the notices. The installer and the portable ZIP ship the same app files: the executable, `WebView2Loader.dll`, `LICENSE.txt` and `THIRD-PARTY-NOTICES.txt`.
 
 ## The Linux AppImage
 

@@ -73,4 +73,4 @@ Under **Settings → General → Pull Requests**, allow only merge commits, so t
 
 When the repository is public, turn on **Settings → Code security → Private vulnerability reporting**: [SECURITY.md](../SECURITY.md) and the issue chooser's "Security problem" link (`.github/ISSUE_TEMPLATE/config.yml`) send reporters to it.
 
-The issue forms in `.github/ISSUE_TEMPLATE/` add the labels `bug`, `model` and `translation`, which must exist in the repository (**Issues → Labels**); a form leaves out a label that does not.
+The issue forms in `.github/ISSUE_TEMPLATE/` add the labels `bug` and `model`, which must exist in the repository (**Issues → Labels**); a form leaves out a label that does not.

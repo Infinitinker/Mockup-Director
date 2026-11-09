@@ -190,7 +190,7 @@ export class Documents {
   snapshot(): TabSnapshot[] {
     return this.entries.map((e) => {
       const isActive = e === this.active;
-      const state: DocumentState = isActive ? omitLang(this.store.state) : e.doc!.state;
+      const state: DocumentState = isActive ? { ...this.store.state } : e.doc!.state;
       const revision = isActive ? this.store.revision : e.doc!.revision;
       return { id: e.id, name: e.name, dirty: this.isDirty(e), revision, state };
     });
@@ -219,10 +219,4 @@ export class Documents {
       }
     }
   }
-}
-
-function omitLang(s: DocumentState & { lang?: unknown }): DocumentState {
-  const { lang: _lang, ...rest } = s;
-  void _lang;
-  return rest;
 }

@@ -47,8 +47,8 @@ The page also uses Tauri's own APIs, allowed in `src-tauri/capabilities/default.
 1. **The user picks a model** in the gallery (`src/ui/gallery.ts`). `selectModel` in `src/ui/app.ts` sets the active model in the store (`src/ui/state.ts`) and applies the model's `defaultCamera`. If the new model has no artwork or parameters yet, it takes those of the previous model whose slot and parameter ids match, so artwork moves from "DVD case" to "DVD case with disc".
 2. **The user adds artwork**, by dropping files on the viewport (`src/ui/viewport.ts`), on a slot's card in the Artwork tab (`src/ui/panels/imagesPanel.ts`), or with Choose…. `assignImages` in `src/ui/app.ts` fills the empty slots first, in slot order. A dropped `.mdproj` file opens as a project instead. `loadImageFile` in `src/core/images.ts` keeps the original file as a data URL (saved in the project) and makes a texture from it, drawn through a 2D canvas so every format comes out the right way up. The store keeps the artwork by model and slot (`images[modelId][slotId]`).
 3. **The user sets parameters** in the Model tab (`src/ui/panels/modelPanel.ts`), whose controls are made from the model's `params`. The store keeps the values by model (`params[modelId]`); `completeParams` (`src/ui/modelUtils.ts`) fills in the defaults.
-4. **The store reports the change.** Every change goes through `store.update(kinds, …)`, and the listener in `src/ui/app.ts` schedules a rebuild for `model`, `params`, `images` and `lang`, and a scene update for `scene` and `camera`. Both are coalesced to one per animation frame (`frameCoalescer` in `src/ui/dom.ts`).
-5. **The model is built** (`rebuild` in `src/ui/app.ts`). The app gives `model.build()` a `ModelContext`: the complete parameters, `hasImage`, and `getTexture`, which returns the slot's artwork or a placeholder that shows the slot's name (`src/core/placeholder.ts`). The new object goes to `stage.setModel()` (`src/scene/stage.ts`), which disposes the previous model, measures the new one for framing, and updates the reflection and the shadow. If `build()` throws, the error goes to the console and a toast says "Could not build model …" with the error's message (`errBuild`); `setModel` is not called, so the stage keeps the model it had (none at start-up). The toast stack drops repeats of the same message (`src/ui/toast.ts`), so a model that fails on every slider step shows one toast. While an animation or batch export runs, the model is locked and the rebuild waits until the export ends.
+4. **The store reports the change.** Every change goes through `store.update(kinds, …)`, and the listener in `src/ui/app.ts` schedules a rebuild for `model`, `params` and `images`, and a scene update for `scene` and `camera`. Both are coalesced to one per animation frame (`frameCoalescer` in `src/ui/dom.ts`).
+5. **The model is built** (`rebuild` in `src/ui/app.ts`). The app gives `model.build()` a `ModelContext`: the complete parameters, `hasImage`, and `getTexture`, which returns the slot's artwork or a placeholder that shows the slot's name (`src/core/placeholder.ts`). The new object goes to `stage.setModel()` (`src/scene/stage.ts`), which disposes the previous model, measures the new one for framing, and updates the reflection and the shadow. If `build()` throws, the error goes to the console and a toast says "Could not build model …" with the error's message; `setModel` is not called, so the stage keeps the model it had (none at start-up). The toast stack drops repeats of the same message (`src/ui/toast.ts`), so a model that fails on every slider step shows one toast. While an animation or batch export runs, the model is locked and the rebuild waits until the export ends.
 6. **The scene is applied.** `stage.applySettings()` takes the scene settings: camera, light, shadow, reflection and background. A light preset in the Scene tab (`src/scene/lightPresets.ts`, `src/ui/panels/scenePanel.ts`) copies its light, and its shadow and reflection changes, into the scene settings. A look in the Looks tab (`src/ui/presets.ts`, `src/ui/panels/stylesPanel.ts`) replaces the light, shadow, reflection and background, and the camera if the look has one. The stage adds the lights and a studio environment; the lighting follows the camera, so the key light stays where it is while the user orbits. The ground shadow (`src/scene/shadows.ts`) and the floor reflection (`src/scene/reflection.ts`) are drawn by the stage. The WebGL canvas is always transparent; the preview background is CSS on the viewport (`src/scene/background.ts`). The stage renders only when something changed.
 7. **The camera frames the composition.** `src/scene/framing.ts` places the camera so the model, its reflection and its shadow fit the view; zoom and pan are applied afterwards. Orbiting, zooming and panning in the viewport reach the store through `stage.onCameraChange()` with the source `stage`, so they are not pushed back to the stage. The view bar and the keys 1–6 set one of the `VIEW_PRESETS` (`src/ui/context.ts`).
 8. **The user exports.**
@@ -68,8 +68,6 @@ src/
   styles.css    all of the interface's CSS
   core/         the shared contract: types (types.ts, with the 3D conventions), defaults (defaults.ts),
                 decoding artwork (images.ts), placeholder textures for empty slots (placeholder.ts)
-  i18n/         interface translations: the API (index.ts), its types (types.ts), English (en.ts, the
-                source), Polish (pl.ts)
   models/       the 3D models and registry.ts, the list shown in the gallery:
                   box.ts and box/ (cuboid box, dieline, two-piece box; rounded geometry, shared parts),
                   keepcase.ts (DVD and Blu-ray cases), jewelcase.ts (CD case), disc.ts,
@@ -80,7 +78,7 @@ src/
                   shared.ts (helpers for every model)
   scene/        the three.js scene: the stage (stage.ts), light presets (lightPresets.ts), ground shadow
                 (shadows.ts), floor reflection (reflection.ts), background (background.ts), camera
-                framing (framing.ts)
+                framing (framing.ts), and the errors whose message the user sees (errors.ts)
   export/       still image export (exporter.ts, layout.ts), print resolution in PNG and JPEG (png.ts),
                 print templates (templates.ts), ZIP (zip.ts), and animation/: the turntable export
                 (index.ts, turntable.ts, settings.ts, errors.ts) and its encoders (gif.ts, lzw.ts,
@@ -94,7 +92,8 @@ src/
                 (presets.ts), toolbar, gallery, viewport, inspector and panels/ (imagesPanel.ts,
                 modelPanel.ts, scenePanel.ts, exportPanel.ts, stylesPanel.ts), controls, dialogs, toasts,
                 batch export (batch.ts), the bridge to export (exportBridge.ts), model helpers
-                (modelUtils.ts), shortcuts, icons and DOM helpers (dom.ts)
+                (modelUtils.ts), number formatting and parsing (numbers.ts), shortcuts, icons and DOM
+                helpers (dom.ts)
 tests/          unit tests (Vitest, config in vitest.config.ts); their folders mirror src/ and tools/;
                 shared test data in fixtures.ts, a seeded random generator in random.ts, and the
                 checks of header and banner comments in layout.test.ts
@@ -116,10 +115,10 @@ src-tauri/      the Tauri v2 shell (Rust): main.rs starts lib.rs, which sets up 
 .github/
   dependabot.yml     a monthly pull request with new versions of the actions the workflows use
   FUNDING.yml        the donation links of the Sponsor button
-  ISSUE_TEMPLATE/    the issue forms: bug report, model request, translation; a link to report a security
+  ISSUE_TEMPLATE/    the issue forms: bug report, model request; a link to report a security
                      problem privately (GitHub's advisory form, see SECURITY.md)
 .github/workflows/
-  checks.yml         the Checks: Lint, Web (build, tests, translations), Licenses, and clippy and the
+  checks.yml         the Checks: Lint, Web (build, tests), Licenses, and clippy and the
                      Rust tests on Windows and Linux; for main, dev and pull requests
   build-windows.yml  the installer (x64, Inno Setup) and a portable ZIP, built with MSYS2; then checks
                      the files
@@ -145,10 +144,8 @@ tools/release.mjs           the release rules: version and tag, the files, the n
 tools/release-notes.md      the template of the release notes
 tools/installer.iss         the Windows installer (Inno Setup 7): files, the .mdproj association,
                             WebView2, uninstalling
-tools/installer.mjs         builds it, with its texts from src/i18n (npm run installer)
-tools/import-app.mjs        loads the app's TypeScript into a tool (check-i18n.mjs, installer.mjs)
+tools/installer.mjs         builds it (npm run installer)
 tools/draw-icon.mjs         draws the app icon and writes every icon file (npm run icons)
-tools/check-i18n.mjs        checks that every text has a translation (npm run check:i18n)
 start.bat, start.sh         run the desktop app from source (npm run app:dev), see docs/development.md
 README.md                   for users
 CONTRIBUTING.md, SECURITY.md how to contribute, and how to report a security problem
@@ -204,11 +201,6 @@ Each concept has one name, used everywhere. Where the interface or today's code 
 | Still | One image (PNG, JPEG or WebP); the interface calls it an image ("Export image", export type Image). | `exporter.ts`, `ExportSettings` |
 | Turntable animation | The model turning a full 360° or swinging back and forth, as GIF, WebP or MP4; the interface calls it an animation (export type Animation). | `src/export/animation/`, `AnimationSettings` |
 | Batch export | Many stills in one ZIP file, in one of three modes: many images (artwork files into one slot), many views, many projects. | `src/ui/batch.ts` |
-| Interface language | The language the interface is shown in. | `mockup-director.lang`, `src/i18n/` |
-
-## Translations
-
-All texts are written in English; other languages are one file each in `src/i18n/`. See [translations.md](translations.md).
 
 ## Files and data
 
@@ -216,7 +208,7 @@ All texts are written in English; other languages are one file each in `src/i18n
 - The installers register `.mdproj` (on Windows `tools/installer.iss`; on macOS and Linux `bundle.fileAssociations` in `src-tauri/tauri.conf.json`, on Linux also `src-tauri/linux/`: a MIME definition and a `.desktop` template). A double-clicked project reaches the app as a command-line argument (Windows, Linux) or an event (macOS); `src-tauri/src/opened.rs` queues it, and `src/platform/launch.ts` opens it once the app has started. Only one copy of the app runs: on Windows and Linux, a second launch hands its files (relative paths resolved against its own working directory) to the running app and exits (tauri-plugin-single-instance, `src-tauri/src/lib.rs`); they are queued the same way and announced with the `files-opened` event, open in new tabs, and the window is brought forward. On macOS the system sends files to the running app itself, through the same `Opened` event as at start-up.
 - Every open project is a tab: `src/ui/documents.ts` keeps the tabs, and the store (`src/ui/state.ts`) works on the active one, whose state, undo history and images it swaps in and out (`Store.swap`). A tab is dirty while its revision differs from the one it was saved at; undo brings the earlier revision back.
 - The session autosave (`src/ui/session.ts`) keeps every open tab in the web engine's IndexedDB, unsaved changes included, a moment (1.5 seconds) after each change and when the window closes, and the app reopens them at start-up. It never overwrites a session written by a newer version of the app. If the stored session cannot be read, autosave stays off until the next start, so the stored tabs are kept. On macOS, quitting the app (⌘Q, Quit in the Dock, logging out) skips the window's close event, so changes made since editing last paused for 1.5 seconds may not be saved.
-- User looks, the interface language and a few interface choices are kept in the web engine's localStorage (see the table below). In the desktop app the web engine keeps its localStorage and IndexedDB in a folder of its own for the app identifier; on Windows that is `%LOCALAPPDATA%\io.github.infinitinker.mockupdirector`, which the uninstaller of a per-user install offers to delete (`tools/installer.iss`); an all-users uninstall leaves it alone.
+- User looks and a few interface choices are kept in the web engine's localStorage (see the table below). In the desktop app the web engine keeps its localStorage and IndexedDB in a folder of its own for the app identifier; on Windows that is `%LOCALAPPDATA%\io.github.infinitinker.mockupdirector`, which the uninstaller of a per-user install offers to delete (`tools/installer.iss`); an all-users uninstall leaves it alone.
 - On the desktop, files are written by the Rust `save_file` command (`src-tauri/src/lib.rs`), atomically, to a path the user chose in the native save dialog.
 
 ### Project file (`.mdproj`)
@@ -258,7 +250,6 @@ The index's `version` is 1 (`SESSION_VERSION`). A stored index with a higher ver
 |---|---|---|---|
 | `mockup-director` | IndexedDB database | the session: the open tabs and their projects | `src/ui/session.ts` |
 | `mockup-director.presets` | localStorage | the user's looks, a JSON array | `src/ui/presets.ts` |
-| `mockup-director.lang` | localStorage | the interface language the user picked (`en`, `pl`) | `src/ui/app.ts` |
 | `mockup-director.ui.tab` | localStorage | the inspector tab last shown | `src/ui/inspector.ts` |
 | `mockup-director.ui.collapsed` | localStorage | the keys of the collapsed inspector sections, a JSON array | `src/ui/controls.ts` |
 | `mockup-director.ui.exportMode` | localStorage | the export type last chosen: `image` or `animation` | `src/ui/panels/exportPanel.ts` |

@@ -16,9 +16,6 @@
  *    towards +X (front + RIGHT side visible). Pitch: positive = camera above, looking down.
  */
 import type * as THREE from 'three';
-import type { LocalizedText } from '../i18n/types';
-
-export type { Lang, LocalizedText } from '../i18n/types';
 
 /* ------------------------------------------------------------------ */
 /* Models                                                              */
@@ -29,9 +26,9 @@ export type ParamValues = Record<string, ParamValue>;
 
 interface ParamBase {
   id: string;
-  label: LocalizedText;
+  label: string;
   /** Optional grouping label for the UI ("Dimensions", "Material", ...). */
-  group?: LocalizedText;
+  group?: string;
 }
 export interface NumberParamDef extends ParamBase {
   type: 'number';
@@ -47,7 +44,7 @@ export interface BooleanParamDef extends ParamBase {
 }
 export interface SelectParamDef extends ParamBase {
   type: 'select';
-  options: { value: string; label: LocalizedText }[];
+  options: { value: string; label: string }[];
   default: string;
 }
 export interface ColorParamDef extends ParamBase {
@@ -61,7 +58,7 @@ export type ParamDef = NumberParamDef | BooleanParamDef | SelectParamDef | Color
 export interface TemplateGuide {
   orientation: 'v' | 'h';
   posMm: number;
-  label?: LocalizedText;
+  label?: string;
 }
 /** A labelled region on a print template (e.g. "Front", "Spine", "Back"). */
 export interface TemplateRegion {
@@ -69,7 +66,7 @@ export interface TemplateRegion {
   yMm: number;
   wMm: number;
   hMm: number;
-  label: LocalizedText;
+  label: string;
 }
 export interface PrintTemplate {
   /** Full artwork size in mm (INCLUDING bleed, if any). */
@@ -90,9 +87,9 @@ export interface PrintTemplate {
 /** One image input of a model (a face, a wrap-around cover, a disc label ...). */
 export interface ImageSlotDef {
   id: string;
-  label: LocalizedText;
+  label: string;
   /** Short help text shown under the slot in the UI. */
-  hint?: LocalizedText;
+  hint?: string;
   /** Expected artwork aspect ratio (width / height) – used by the UI to warn about mismatches. */
   aspect: number;
   /**
@@ -121,8 +118,8 @@ export type ModelCategory = 'box' | 'disc' | 'book' | 'print' | 'device';
 export interface ModelDefinition {
   id: string;
   category: ModelCategory;
-  name: LocalizedText;
-  description?: LocalizedText;
+  name: string;
+  description?: string;
   /** Inline SVG markup (viewBox 0 0 64 64, use currentColor) used as a gallery icon. */
   icon: string;
   slots: ImageSlotDef[];

@@ -1,9 +1,8 @@
 /**
- * "Style" tab: named looks (scene presets) – built-in and user-defined, import/export as JSON.
+ * "Looks" tab: named looks – built-in and the user's own, imported and exported as JSON.
  */
 import type { ScenePreset } from '../../core/types';
 import type { AppContext } from '../context';
-import { lt, t } from '../../i18n';
 import { errorMessage, h, nextId } from '../dom';
 import { ICONS } from '../icons';
 import { iconButton, section } from '../controls';
@@ -31,7 +30,7 @@ function swatch(p: ScenePreset['scene']): HTMLElement {
   });
 }
 
-export function createStylesPanel(ctx: AppContext): { el: HTMLElement; render(): void } {
+export function createStylesPanel(ctx: AppContext): { el: HTMLElement } {
   const el = h('div', { class: 'panel panel-styles' });
   let presets = loadUserPresets();
 
@@ -42,7 +41,7 @@ export function createStylesPanel(ctx: AppContext): { el: HTMLElement; render():
     ctx.store.update(kinds, (s) => {
       s.scene = applyPresetToScene(s.scene, p);
     });
-    notify.success(t('styleApplied', { name }));
+    notify.success(`Applied look “${name}”`);
   };
 
   const row = (name: string, scene: ScenePreset['scene'], index: number | null) => {
@@ -50,26 +49,26 @@ export function createStylesPanel(ctx: AppContext): { el: HTMLElement; render():
       'button',
       {
         class: 'preset-apply',
-        title: t('applyStyle'),
+        title: 'Apply look',
         attrs: { type: 'button' },
         on: { click: () => apply(scene, name) },
       },
       swatch(scene),
       h('span', { class: 'preset-name', text: name }),
-      scene.camera ? h('span', { class: 'preset-tag', text: t('withCamera') }) : null,
+      scene.camera ? h('span', { class: 'preset-tag', text: '+ camera' }) : null,
     );
     const actions = h('span', { class: 'preset-actions' });
     if (index !== null) {
       actions.append(
         iconButton(
           ICONS.pencil,
-          t('rename'),
+          'Rename',
           async () => {
             const v = await promptDialog({
-              title: t('renameStyle'),
-              label: t('styleName'),
+              title: 'Rename look',
+              label: 'Look name',
               value: presets[index].name,
-              okLabel: t('rename'),
+              okLabel: 'Rename',
             });
             if (!v) return;
             presets[index] = { ...presets[index], name: uniqueName(v, presets, index) };
@@ -80,12 +79,12 @@ export function createStylesPanel(ctx: AppContext): { el: HTMLElement; render():
         ),
         iconButton(
           ICONS.trash,
-          t('delete'),
+          'Delete',
           async () => {
             const ok = await confirmDialog({
-              title: t('deleteStyleTitle', { name: presets[index].name }),
-              message: t('deleteStyleMsg'),
-              okLabel: t('delete'),
+              title: `Delete look “${presets[index].name}”?`,
+              message: 'This cannot be undone.',
+              okLabel: 'Delete',
               danger: true,
             });
             if (!ok) return;
@@ -109,15 +108,21 @@ export function createStylesPanel(ctx: AppContext): { el: HTMLElement; render():
     const camId = nextId('pc');
     const nameInput = h('input', {
       class: 'text-input',
-      attrs: { id: nameId, type: 'text', maxlength: 80, placeholder: t('styleNamePlaceholder'), autocomplete: 'off' },
+      attrs: {
+        id: nameId,
+        type: 'text',
+        maxlength: 80,
+        placeholder: 'e.g. Bright studio – client X',
+        autocomplete: 'off',
+      },
     });
     const camInput = h('input', { attrs: { id: camId, type: 'checkbox' } });
     const save = () => {
-      const raw = nameInput.value.trim() || t('styleDefaultName');
+      const raw = nameInput.value.trim() || 'My look';
       const name = uniqueName(raw, presets);
       presets.push(presetFromScene(name, ctx.store.state.scene, camInput.checked));
       persist();
-      notify.success(t('styleSaved', { name }));
+      notify.success(`Saved look “${name}”`);
       render();
     };
     nameInput.addEventListener('keydown', (e) => {
@@ -126,14 +131,14 @@ export function createStylesPanel(ctx: AppContext): { el: HTMLElement; render():
         save();
       }
     });
-    const saveSection = section('styles.save', t('saveCurrentStyle'), [
+    const saveSection = section('styles.save', 'Save current look', [
       h(
         'div',
         { class: 'ctl' },
-        h('label', { class: 'ctl-label', text: t('styleName'), attrs: { for: nameId } }),
+        h('label', { class: 'ctl-label', text: 'Look name', attrs: { for: nameId } }),
         nameInput,
       ),
-      h('label', { class: 'check-row', attrs: { for: camId } }, camInput, h('span', { text: t('includeCamera') })),
+      h('label', { class: 'check-row', attrs: { for: camId } }, camInput, h('span', { text: 'Also save the camera' })),
       h(
         'div',
         { class: 'ctl-actions' },
@@ -141,7 +146,7 @@ export function createStylesPanel(ctx: AppContext): { el: HTMLElement; render():
           'button',
           { class: 'btn btn-primary btn-small', attrs: { type: 'button' }, on: { click: save } },
           h('span', { class: 'btn-icon', html: ICONS.plus }),
-          h('span', { class: 'btn-text', text: t('saveStyle') }),
+          h('span', { class: 'btn-text', text: 'Save look' }),
         ),
       ),
     ]);
@@ -151,18 +156,18 @@ export function createStylesPanel(ctx: AppContext): { el: HTMLElement; render():
     presets.forEach((p, i) => {
       userList.appendChild(row(p.name, p.scene, i));
     });
-    const userSection = section('styles.user', t('myStyles'), [
-      presets.length ? userList : h('p', { class: 'empty-state small', text: t('noUserStyles') }),
+    const userSection = section('styles.user', 'My looks', [
+      presets.length ? userList : h('p', { class: 'empty-state small', text: 'You have no saved looks yet.' }),
       h(
         'div',
         { class: 'ctl-actions' },
-        iconButton(ICONS.upload, t('importStyles'), () => void importPresets(), {
+        iconButton(ICONS.upload, 'Import looks from a JSON file', () => void importPresets(), {
           cls: 'btn-small',
-          text: t('import'),
+          text: 'Import…',
         }),
-        iconButton(ICONS.download, t('exportStyles'), () => void exportPresets(), {
+        iconButton(ICONS.download, 'Export my looks to a JSON file', () => void exportPresets(), {
           cls: 'btn-small',
-          text: t('exportJson'),
+          text: 'Export…',
         }),
       ),
     ]);
@@ -170,9 +175,9 @@ export function createStylesPanel(ctx: AppContext): { el: HTMLElement; render():
     // Built-ins.
     const builtinList = h('ul', { class: 'preset-list', attrs: { role: 'list' } });
     BUILTIN_PRESETS.forEach((p) => {
-      builtinList.appendChild(row(lt(p.name), p.scene, null));
+      builtinList.appendChild(row(p.name, p.scene, null));
     });
-    const builtinSection = section('styles.builtin', t('builtinStyles'), [builtinList]);
+    const builtinSection = section('styles.builtin', 'Built-in looks', [builtinList]);
 
     el.append(saveSection, userSection, builtinSection);
   };
@@ -190,36 +195,33 @@ export function createStylesPanel(ctx: AppContext): { el: HTMLElement; render():
         }
       }
       if (!added) {
-        notify.warning(t('noStylesInFile'));
+        notify.warning('No looks found in the file.');
         return;
       }
       persist();
       render();
-      notify.success(t('stylesImported', { n: added }));
+      notify.success(`Imported looks: ${added}`);
     } catch (e) {
-      notify.error(t('errImportStyles'), errorMessage(e));
+      notify.error('Could not import looks', errorMessage(e));
     }
   };
 
   const exportPresets = async () => {
     try {
       if (!presets.length) {
-        notify.info(t('noUserStyles'));
+        notify.info('You have no saved looks yet.');
         return;
       }
       const blob = new Blob([JSON.stringify({ app: 'mockup-director', kind: 'presets', presets }, null, 2)], {
         type: 'application/json',
       });
       const saved = await saveBlob(blob, 'mockup-director-style.json', [{ name: 'JSON', extensions: ['json'] }]);
-      if (saved) notify.success(t('saved'), saved);
+      if (saved) notify.success('Saved', saved);
     } catch (e) {
-      notify.error(t('errExportStyles'), errorMessage(e));
+      notify.error('Could not export looks', errorMessage(e));
     }
   };
 
-  ctx.store.subscribe((e) => {
-    if (e.kinds.has('lang')) render();
-  });
   render();
-  return { el, render };
+  return { el };
 }

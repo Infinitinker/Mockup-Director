@@ -2,7 +2,6 @@
  * Left sidebar: model gallery grouped by category.
  */
 import { h } from './dom';
-import { lt, t, type MessageKey } from '../i18n';
 import type { AppContext } from './context';
 import { MODELS } from '../models/registry';
 import type { ModelCategory } from '../core/types';
@@ -10,12 +9,12 @@ import { hasAny } from './state';
 
 const CATEGORY_ORDER: ModelCategory[] = ['box', 'disc', 'book', 'print', 'device'];
 
-const CATEGORY_LABEL: Record<ModelCategory, MessageKey> = {
-  box: 'catBoxes',
-  disc: 'catDiscs',
-  book: 'catBooks',
-  print: 'catPrint',
-  device: 'catDevices',
+const CATEGORY_LABEL: Record<ModelCategory, string> = {
+  box: 'Boxes',
+  disc: 'Discs & disc cases',
+  book: 'Books & notebooks',
+  print: 'Print',
+  device: 'Devices & screens',
 };
 
 export function createGallery(ctx: AppContext): { el: HTMLElement; render(): void } {
@@ -25,7 +24,7 @@ export function createGallery(ctx: AppContext): { el: HTMLElement; render(): voi
     // Re-rendering replaces the buttons – keep keyboard focus on the selected model.
     const hadFocus = el.contains(document.activeElement);
     el.replaceChildren();
-    el.setAttribute('aria-label', t('models'));
+    el.setAttribute('aria-label', 'Models');
     const current = ctx.store.state.modelId;
     const cats = [
       ...CATEGORY_ORDER,
@@ -42,26 +41,26 @@ export function createGallery(ctx: AppContext): { el: HTMLElement; render(): voi
           'button',
           {
             class: `gallery-item${active ? ' active' : ''}`,
-            title: m.description ? lt(m.description) : lt(m.name),
+            title: m.description || m.name,
             attrs: { type: 'button', 'aria-pressed': String(active), 'data-model': m.id },
             on: { click: () => ctx.actions.selectModel(m.id) },
           },
           // model.icon is static SVG markup from our own model modules.
           h('span', { class: 'gallery-icon', html: m.icon }),
-          h('span', { class: 'gallery-name', text: lt(m.name) }),
+          h('span', { class: 'gallery-name', text: m.name }),
           filled
-            ? h('span', { class: 'gallery-badge', text: String(filled), title: t('imagesAssigned', { n: filled }) })
+            ? h('span', { class: 'gallery-badge', text: String(filled), title: `Images assigned: ${filled}` })
             : null,
         );
         list.appendChild(h('li', {}, btn));
       }
-      el.append(h('div', { class: 'sidebar-heading', text: t(CATEGORY_LABEL[cat]) }), list);
+      el.append(h('div', { class: 'sidebar-heading', text: CATEGORY_LABEL[cat] }), list);
     }
     if (hadFocus) el.querySelector<HTMLButtonElement>('.gallery-item.active')?.focus();
   };
 
   ctx.store.subscribe((e) => {
-    if (hasAny(e, 'model', 'lang', 'images')) render();
+    if (hasAny(e, 'model', 'images')) render();
   });
   render();
   return { el, render };

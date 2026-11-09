@@ -2,9 +2,9 @@
 
 A desktop app that turns flat artwork into photorealistic 3D mockups (boxes, disc cases, books, print, devices) and exports stills, turntable animations and batches. Tauri v2 (Rust shell in `src-tauri/`) with a TypeScript + three.js web UI in `src/`, for Windows, macOS and Linux.
 
-`README.md` is for users. Developer documentation is in `docs/`: `architecture.md` (design, code map, folders, terms, files and data), `models.md` (the model contract), `development.md` (setup, checks, interface texts), `releasing.md`, `licenses.md`, and `translations.md` until the translation layer is removed. Keep them current when the code changes.
+`README.md` is for users. Developer documentation is in `docs/`: `architecture.md` (design, code map, folders, terms, files and data), `models.md` (the model contract), `development.md` (setup, checks, interface texts), `releasing.md` and `licenses.md`. Keep them current when the code changes.
 
-Code written before these rules is being brought in line with them, stage by stage. Follow the rules in new and changed code, and don't extend what they replace (such as the translation layer in `src/i18n/`).
+Code written before these rules is being brought in line with them, stage by stage. Follow the rules in new and changed code, and don't extend what they replace.
 
 ## Language and naming
 
@@ -58,6 +58,6 @@ The goal is clean code, modularity, portability, and that anyone can make a conv
 ## Tooling
 
 - Node.js 22+ with npm, and the Rust stable toolchain for the desktop app; on Windows MSYS2 with Rust's GNU toolchain. See `docs/development.md`.
-- Before committing: `npm run lint`, `npm run build`, `npm test` and `npm run check:i18n` (`npm run format` fixes formatting); for Rust changes `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` (in `src-tauri/`); `npm run licenses` and `npm run notices` after changing dependencies (commit the regenerated `THIRD-PARTY-NOTICES.md`).
+- Before committing: `npm run lint`, `npm run build` and `npm test` (`npm run format` fixes formatting); for Rust changes `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` (in `src-tauri/`); `npm run licenses` and `npm run notices` after changing dependencies (commit the regenerated `THIRD-PARTY-NOTICES.md`).
 - The Windows installer is made by Inno Setup 7 from `tools/installer.iss` (`npm run installer`, after `npm run tauri build`).
 - Branches: `main` is stable, work happens on `dev`, changes reach `main` through pull requests.

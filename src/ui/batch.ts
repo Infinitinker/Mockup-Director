@@ -23,7 +23,6 @@ import type {
   ExportFormat,
   ExportSettings,
   ImageAsset,
-  Lang,
   ModelContext,
   ParamValues,
   SceneSettings,
@@ -38,7 +37,6 @@ import { slugify } from '../export/exporter';
 import { ZipLimitError, ZipWriter } from '../export/zip';
 import { VIEW_PRESETS, type AppContext } from './context';
 import { append, errorMessage, h, nextFrame, nextId, safeStorage, type Child } from './dom';
-import { lt, t, type MessageKey } from '../i18n';
 import { ICONS } from './icons';
 import { segmentedControl, selectControl } from './controls';
 import { completeParams, slotFor } from './modelUtils';
@@ -111,13 +109,12 @@ function buildModel(
   modelId: string,
   params: ParamValues | undefined,
   images: Record<string, ImageAsset>,
-  lang: Lang,
 ): THREE.Object3D {
   const model = getModel(modelId);
   const ctx: ModelContext = {
     params: completeParams(model, params),
     hasImage: (id) => !!images[id],
-    getTexture: (id) => images[id]?.texture ?? getPlaceholderTexture(slotFor(model, id), lang),
+    getTexture: (id) => images[id]?.texture ?? getPlaceholderTexture(slotFor(model, id)),
   };
   return model.build(ctx);
 }
@@ -128,7 +125,7 @@ async function renderStill(stage: StageAPI, settings: ExportSettings, scene: Sce
   const s: ExportSettings = { ...settings };
   if (s.format === 'webp' && !webpEncodingSupported()) s.format = 'png';
   const blob = await exportBlob(stage, s, { ...scene.background });
-  if (!blob || blob.size === 0) throw new Error(t('errExportEmpty'));
+  if (!blob || blob.size === 0) throw new Error('The rendered image is empty.');
   return { blob, format: s.format };
 }
 
@@ -207,7 +204,10 @@ async function runBatch(
       } catch (e) {
         if (e instanceof ZipLimitError) {
           res.limitHit = true;
-          res.errors.push({ label: item.label, message: t('batchZipLimit') });
+          res.errors.push({
+            label: item.label,
+            message: 'The archive reached the 4 GB limit – the remaining items were skipped.',
+          });
           break;
         }
         console.warn('[mockup-director] batch item failed', item.label, e);
@@ -262,8 +262,8 @@ function settingsSummary(e: ExportSettings): string {
   const format = e.format === 'webp' && !webpEncodingSupported() ? 'png' : e.format;
   const fmt = format === 'jpeg' ? 'JPEG' : format === 'webp' ? 'WebP' : 'PNG';
   const transparent = e.background === 'transparent' && format !== 'jpeg';
-  const size = e.sizing === 'trim' ? t('summaryTrim', { w: e.width, h: e.height }) : `${e.width} × ${e.height} px`;
-  return `${size} · ${fmt} · ${transparent ? t('summaryTransparent') : t('summaryOpaque')}`;
+  const size = e.sizing === 'trim' ? `up to ${e.width} × ${e.height} px (trimmed)` : `${e.width} × ${e.height} px`;
+  return `${size} · ${fmt} · ${transparent ? 'transparent background' : 'with background'}`;
 }
 
 /** Suggested archive name, e.g. mockup-director-batch-2026-11-05-1530.zip (local time). */
@@ -302,7 +302,7 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
   const dialog = h(
     'div',
     { class: 'dialog dialog-batch', attrs: { role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': titleId } },
-    h('h2', { class: 'dialog-title', text: t('batchExport'), attrs: { id: titleId } }),
+    h('h2', { class: 'dialog-title', text: 'Batch export', attrs: { id: titleId } }),
     content,
     actions,
   );
@@ -319,11 +319,11 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
     },
     progressBar,
   );
-  const stoppingNote = h('p', { class: 'ctl-note', text: t('batchStopping'), attrs: { hidden: true } });
+  const stoppingNote = h('p', { class: 'ctl-note', text: 'Stopping after the current item…', attrs: { hidden: true } });
 
   const setProgress = (index: number, total: number, label: string) => {
     const pct = total ? Math.round((index / total) * 100) : 0;
-    const text = index < total ? t('batchProgress', { i: index + 1, n: total, name: label }) : t('batchFinishing');
+    const text = index < total ? `${index + 1} / ${total}: ${label}` : 'Finishing…';
     progressText.textContent = text;
     progressBar.style.width = `${pct}%`;
     progressTrack.setAttribute('aria-valuenow', String(pct));
@@ -346,7 +346,7 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
   };
 
   const fileList = (files: File[], onRemove: (i: number) => void): HTMLElement => {
-    if (!files.length) return h('p', { class: 'ctl-note batch-empty', text: t('batchNoFiles') });
+    if (!files.length) return h('p', { class: 'ctl-note batch-empty', text: 'No files chosen yet.' });
     const list = h('ul', { class: 'batch-list' });
     files.forEach((f, i) => {
       list.appendChild(
@@ -357,8 +357,8 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
           h('button', {
             class: 'btn btn-ghost btn-small btn-icon-only',
             html: ICONS.close,
-            title: t('batchRemove'),
-            label: `${t('batchRemove')}: ${f.name}`,
+            title: 'Remove from list',
+            label: `Remove from list: ${f.name}`,
             attrs: { type: 'button' },
             on: { click: () => onRemove(i) },
           }),
@@ -379,7 +379,7 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
       else memory.projectFiles = addUnique(memory.projectFiles, files);
       render();
     } catch (e) {
-      notify.error(t('errPick'), errorMessage(e));
+      notify.error('Could not pick the file', errorMessage(e));
     }
   };
 
@@ -387,15 +387,15 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
   const renderImagesMode = (): Child[] => {
     const s = ctx.store.state;
     const model = getModel(s.modelId);
-    const out: Child[] = [h('p', { class: 'batch-model', text: t('batchModel', { name: lt(model.name) }) })];
+    const out: Child[] = [h('p', { class: 'batch-model', text: `Model: ${model.name}` })];
     if (!model.slots.length) {
-      out.push(h('p', { class: 'ctl-note warn-note', text: t('noSlots') }));
+      out.push(h('p', { class: 'ctl-note warn-note', text: 'This model has no artwork slots.' }));
       return out;
     }
     if (!model.slots.some((x) => x.id === slotId)) slotId = defaultSlot(model.id);
     const slotCtl = selectControl({
-      label: t('batchSlot'),
-      options: model.slots.map((x) => ({ value: x.id, label: lt(x.label) })),
+      label: 'Slot to vary',
+      options: model.slots.map((x) => ({ value: x.id, label: x.label })),
       get: () => slotId,
       set: (v) => {
         slotId = v;
@@ -404,7 +404,10 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
     });
     out.push(
       slotCtl.el,
-      h('p', { class: 'ctl-note', text: t('batchSlotHint') }),
+      h('p', {
+        class: 'ctl-note',
+        text: 'If a wrap-around cover image is set it may take precedence over separate faces – choose the cover slot then.',
+      }),
       h(
         'div',
         { class: 'batch-pick' },
@@ -412,18 +415,18 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
           'button',
           { class: 'btn', attrs: { type: 'button' }, on: { click: () => void pickInto('images') } },
           h('span', { class: 'btn-icon', html: ICONS.image }),
-          h('span', { class: 'btn-text', text: t('batchPickImages') }),
+          h('span', { class: 'btn-text', text: 'Choose images…' }),
         ),
         memory.imageFiles.length
-          ? button(t('batchClear'), 'btn-ghost', () => {
+          ? button('Clear list', 'btn-ghost', () => {
               memory.imageFiles = [];
               render();
             })
           : null,
       ),
-      h('p', { class: 'ctl-note', text: t('batchDropHint') }),
+      h('p', { class: 'ctl-note', text: 'You can also drop files onto this window.' }),
       memory.imageFiles.length
-        ? h('div', { class: 'batch-count', text: t('batchFilesCount', { n: memory.imageFiles.length }) })
+        ? h('div', { class: 'batch-count', text: `Files chosen: ${memory.imageFiles.length}` })
         : null,
       fileList(memory.imageFiles, (i) => {
         memory.imageFiles = memory.imageFiles.filter((_, j) => j !== i);
@@ -434,8 +437,8 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
   };
 
   const renderViewsMode = (): Child[] => {
-    const list = h('div', { class: 'batch-views', attrs: { role: 'group', 'aria-label': t('batchModeViews') } });
-    const labels: string[] = [t('batchCurrentView'), ...VIEW_PRESETS.map((v) => t(v.key))];
+    const list = h('div', { class: 'batch-views', attrs: { role: 'group', 'aria-label': 'Many views' } });
+    const labels: string[] = ['Current view', ...VIEW_PRESETS.map((v) => v.label)];
     labels.forEach((label, i) => {
       const id = nextId('batch-view');
       const input = h('input', { attrs: { id, type: 'checkbox', checked: memory.views[i] } });
@@ -463,24 +466,29 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
           'button',
           { class: 'btn', attrs: { type: 'button' }, on: { click: () => void pickInto('projects') } },
           h('span', { class: 'btn-icon', html: ICONS.open }),
-          h('span', { class: 'btn-text', text: t('batchPickProjects') }),
+          h('span', { class: 'btn-text', text: 'Choose projects…' }),
         ),
         memory.projectFiles.length
-          ? button(t('batchClear'), 'btn-ghost', () => {
+          ? button('Clear list', 'btn-ghost', () => {
               memory.projectFiles = [];
               render();
             })
           : null,
       ),
-      h('p', { class: 'ctl-note', text: t('batchDropHint') }),
+      h('p', { class: 'ctl-note', text: 'You can also drop files onto this window.' }),
       memory.projectFiles.length
-        ? h('div', { class: 'batch-count', text: t('batchFilesCount', { n: memory.projectFiles.length }) })
+        ? h('div', { class: 'batch-count', text: `Files chosen: ${memory.projectFiles.length}` })
         : null,
       fileList(memory.projectFiles, (i) => {
         memory.projectFiles = memory.projectFiles.filter((_, j) => j !== i);
         render();
       }),
-      h('label', { class: 'check-row batch-own', attrs: { for: id } }, own, h('span', { text: t('batchOwnExport') })),
+      h(
+        'label',
+        { class: 'check-row batch-own', attrs: { for: id } },
+        own,
+        h('span', { text: 'Use each project’s export settings' }),
+      ),
     ];
   };
 
@@ -491,25 +499,40 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
   const syncSetup = () => {
     const n = itemCount();
     const settings =
-      mode === 'projects' && memory.ownExport ? t('batchOwnSettingsSummary') : settingsSummary(ctx.store.state.export);
-    outputSummary.textContent = t('batchOutputSummary', { n, settings });
+      mode === 'projects' && memory.ownExport
+        ? 'each project’s export settings'
+        : settingsSummary(ctx.store.state.export);
+    outputSummary.textContent = `Images: ${n} · ${settings} → one ZIP file`;
     if (startBtn) startBtn.disabled = n === 0;
   };
 
-  const MODE_HINT: Record<BatchMode, MessageKey> = {
-    images: 'batchModeImagesHint',
-    views: 'batchModeViewsHint',
-    projects: 'batchModeProjectsHint',
+  const MODE_HINT: Record<BatchMode, string> = {
+    images:
+      'Many images → one model: every file goes into the chosen slot and becomes a separate mockup. Other slots, parameters and the scene stay unchanged.',
+    views: 'The current project from several camera views – one image per selected view.',
+    projects: 'Every project file (.mdproj) is rendered with its own model, artwork and scene.',
   };
 
   const renderSetup = () => {
     const modeCtl = segmentedControl<BatchMode>({
-      ariaLabel: t('batchMode'),
+      ariaLabel: 'Batch export mode',
       compact: true,
       options: [
-        { value: 'images', label: t('batchModeImages'), title: t('batchModeImagesHint') },
-        { value: 'views', label: t('batchModeViews'), title: t('batchModeViewsHint') },
-        { value: 'projects', label: t('batchModeProjects'), title: t('batchModeProjectsHint') },
+        {
+          value: 'images',
+          label: 'Many images',
+          title: MODE_HINT.images,
+        },
+        {
+          value: 'views',
+          label: 'Many views',
+          title: MODE_HINT.views,
+        },
+        {
+          value: 'projects',
+          label: 'Many projects',
+          title: MODE_HINT.projects,
+        },
       ],
       get: () => mode,
       set: (v) => {
@@ -524,12 +547,12 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
     const body = mode === 'images' ? renderImagesMode() : mode === 'views' ? renderViewsMode() : renderProjectsMode();
     content.replaceChildren(
       modeCtl.el,
-      h('p', { class: 'dialog-message', text: t(MODE_HINT[mode]) }),
+      h('p', { class: 'dialog-message', text: MODE_HINT[mode] }),
       h('div', { class: 'batch-body' }, ...body),
-      h('div', { class: 'batch-output' }, h('div', { class: 'ctl-label', text: t('batchOutput') }), outputSummary),
+      h('div', { class: 'batch-output' }, h('div', { class: 'ctl-label', text: 'Output' }), outputSummary),
     );
-    startBtn = button(t('batchStart'), 'btn-primary', () => void start());
-    actions.replaceChildren(button(t('close'), '', close), startBtn);
+    startBtn = button('Start', 'btn-primary', () => void start());
+    actions.replaceChildren(button('Close', '', close), startBtn);
     syncSetup();
   };
 
@@ -540,7 +563,7 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
       h('div', { class: 'anim-progress batch-progress' }, progressText, progressTrack),
       stoppingNote,
     );
-    const cancel = button(t('cancel'), '', () => {
+    const cancel = button('Cancel', '', () => {
       cancelRequested = true;
       cancel.disabled = true;
       stoppingNote.hidden = false;
@@ -562,23 +585,23 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
     if (!r) return;
     const status =
       phase === 'saved'
-        ? t('batchSavedAs', { name: savedName })
+        ? `Saved the archive “${savedName}”.`
         : r.cancelled
-          ? t('batchCancelledMsg', { done: r.done, n: r.total })
-          : t('batchDone', { done: r.done, n: r.total });
+          ? `Stopped – done: ${r.done} of ${r.total}.`
+          : `Done: ${r.done} of ${r.total}.`;
     content.replaceChildren();
     append(
       content,
       h('p', { class: `batch-status${r.errors.length ? ' has-errors' : ''}`, text: status }),
-      r.done === 0 ? h('p', { class: 'ctl-note warn-note', text: t('batchNothing') }) : null,
-      noteList(t('batchErrors', { n: r.errors.length }), r.errors, 'is-error'),
-      noteList(t('batchWarnings', { n: r.warnings.length }), r.warnings, 'is-warning'),
+      r.done === 0 ? h('p', { class: 'ctl-note warn-note', text: 'No images were created.' }) : null,
+      noteList(`Errors (${r.errors.length})`, r.errors, 'is-error'),
+      noteList(`Warnings (${r.warnings.length})`, r.warnings, 'is-warning'),
     );
     if (phase === 'saved' || r.done === 0) {
-      actions.replaceChildren(button(t('close'), 'btn-primary', close));
+      actions.replaceChildren(button('Close', 'btn-primary', close));
     } else {
-      const save = button(t('batchSaveZip'), 'btn-primary', () => void saveResult(save));
-      actions.replaceChildren(button(t('batchDiscard'), '', close), save);
+      const save = button('Save ZIP…', 'btn-primary', () => void saveResult(save));
+      actions.replaceChildren(button('Discard', '', close), save);
     }
   };
 
@@ -591,7 +614,6 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
   /* Building the items --------------------------------------------------- */
   const buildItems = (): BatchItem[] => {
     const s = ctx.store.state;
-    const lang = s.lang;
     const settings: ExportSettings = { ...s.export };
     const scene = cloneScene(s.scene);
     switch (mode) {
@@ -609,7 +631,7 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
             const asset = await loadImageFile(file);
             let object: THREE.Object3D;
             try {
-              object = buildModel(model.id, params, { ...baseImages, [slot]: asset }, lang);
+              object = buildModel(model.id, params, { ...baseImages, [slot]: asset });
             } catch (e) {
               disposeImageAsset(asset);
               throw e;
@@ -623,14 +645,14 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
         const items: BatchItem[] = [];
         if (memory.views[0]) {
           items.push({
-            label: t('batchCurrentView'),
-            slug: slugOf(t('batchCurrentView')),
+            label: 'Current view',
+            slug: slugOf('Current view'),
             render: (r) => renderStill(r.stage, settings, scene),
           });
         }
         VIEW_PRESETS.forEach((v, i) => {
           if (!memory.views[i + 1]) return;
-          const label = t(v.key);
+          const label = v.label;
           // Same camera change as the preset-view action (keeps fov, zoom and projection).
           const viewScene: SceneSettings = {
             ...scene,
@@ -650,7 +672,7 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
             try {
               json = JSON.parse(await file.text());
             } catch {
-              throw new ProjectError(t('errNotProject'));
+              throw new ProjectError('This is not a Mockup Director project file.');
             }
             const parsed = parseProjectFile(json);
             // Only the shown model's images are needed – don't decode artwork of other models.
@@ -658,14 +680,14 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
             const { state, failed } = await hydrateProject({ ...parsed, images: own ? { [parsed.modelId]: own } : {} });
             let object: THREE.Object3D;
             try {
-              object = buildModel(state.modelId, state.params[state.modelId], state.images[state.modelId] ?? {}, lang);
+              object = buildModel(state.modelId, state.params[state.modelId], state.images[state.modelId] ?? {});
             } catch (e) {
               disposeImageMap(state.images);
               throw e;
             }
             r.showModel(object, () => disposeImageMap(state.images));
             const out = await renderStill(r.stage, ownExport ? state.export : settings, state.scene);
-            if (failed) out.warning = t('imagesFailed', { n: failed });
+            if (failed) out.warning = `Could not load images: ${failed}`;
             return out;
           },
         }));
@@ -679,7 +701,7 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
     const items = buildItems();
     if (!items.length) return;
     if (!host.begin()) {
-      notify.warning(t('batchBusy'));
+      notify.warning('Another export is running – wait for it to finish.');
       return;
     }
     try {
@@ -699,7 +721,7 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
       // runBatch() reports item errors itself; this is an unexpected failure of the batch as a whole.
       console.error('[mockup-director] batch export failed', e);
       host.end(); // idempotent – runBatch() normally ends the session itself
-      notify.error(t('errBatch'), errorMessage(e));
+      notify.error('Batch export failed', errorMessage(e));
       result = null;
       phase = 'setup';
       render();
@@ -720,11 +742,11 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
       if (!saved) return; // save panel cancelled – keep the results
       savedName = saved;
       phase = 'saved';
-      notify.success(t('batchSaved'), saved);
+      notify.success('ZIP archive saved', saved);
       render();
       actions.querySelector<HTMLButtonElement>('.btn-primary')?.focus();
     } catch (e) {
-      notify.error(t('errBatch'), errorMessage(e));
+      notify.error('Batch export failed', errorMessage(e));
     } finally {
       btn.disabled = false;
     }
@@ -747,7 +769,7 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
     const projects = files.filter(isProjectFile);
     const images = files.filter((f) => !isProjectFile(f) && isImageFile(f));
     if (!projects.length && !images.length) {
-      notify.warning(t('batchUnsupportedDrop'));
+      notify.warning('Unsupported files – drop images or project files (.mdproj).');
       return;
     }
     // Switch to the mode the dropped files belong to. When both kinds are dropped, a file mode that is

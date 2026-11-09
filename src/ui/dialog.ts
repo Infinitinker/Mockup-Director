@@ -3,7 +3,6 @@
  * implement them), so we draw our own sheet-like dialogs.
  */
 import { h } from './dom';
-import { t } from '../i18n';
 
 interface DialogOptions {
   title: string;
@@ -109,8 +108,8 @@ function openDialog<T>(
 /** Cancel and OK buttons; OK is the default. */
 function okCancel<T>(opts: DialogOptions, ok: () => T, cancel: T): DialogButton<T>[] {
   return [
-    { label: opts.cancelLabel ?? t('cancel'), result: () => cancel },
-    { label: opts.okLabel ?? t('ok'), primary: !opts.danger, danger: opts.danger, isDefault: true, result: ok },
+    { label: opts.cancelLabel ?? 'Cancel', result: () => cancel },
+    { label: opts.okLabel ?? 'OK', primary: !opts.danger, danger: opts.danger, isDefault: true, result: ok },
   ];
 }
 

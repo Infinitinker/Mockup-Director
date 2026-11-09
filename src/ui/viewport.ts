@@ -3,7 +3,6 @@
  */
 import { h } from './dom';
 import { ICONS } from './icons';
-import { t } from '../i18n';
 import { VIEW_PRESETS, type AppContext } from './context';
 import { hasAny } from './state';
 import { isProjectFileName } from './project';
@@ -55,15 +54,14 @@ export function createViewportShell(): ViewportShell {
   const renderBar = () => {
     if (!ctx) return;
     const c = ctx;
-    bar.replaceChildren();
-    bar.setAttribute('aria-label', t('viewBar'));
+    bar.setAttribute('aria-label', 'View');
     const views = h('div', { class: 'vb-group' });
     VIEW_PRESETS.forEach((v, i) => {
       views.appendChild(
         h('button', {
           class: 'vb-btn',
-          text: t(v.key),
-          title: `${t(v.key)} (${i + 1})`,
+          text: v.label,
+          title: `${v.label} (${i + 1})`,
           attrs: { type: 'button' },
           on: { click: () => c.actions.setView(i) },
         }),
@@ -73,8 +71,8 @@ export function createViewportShell(): ViewportShell {
       'button',
       {
         class: 'vb-btn vb-icon',
-        title: t('resetView'),
-        label: t('resetView'),
+        title: 'Reset view',
+        label: 'Reset view',
         attrs: { type: 'button' },
         on: { click: () => c.actions.resetView() },
       },
@@ -82,21 +80,21 @@ export function createViewportShell(): ViewportShell {
     );
     const proj = segmentedControl<CameraSettings['projection']>({
       compact: true,
-      ariaLabel: t('projection'),
+      ariaLabel: 'Projection',
       options: [
-        { value: 'perspective', label: '', icon: ICONS.perspective, title: t('perspective') },
-        { value: 'orthographic', label: '', icon: ICONS.ortho, title: t('orthographic') },
+        { value: 'perspective', label: '', icon: ICONS.perspective, title: 'Perspective' },
+        { value: 'orthographic', label: '', icon: ICONS.ortho, title: 'Orthographic' },
       ],
       get: () => c.store.state.scene.camera.projection,
       set: (v) => setCamera({ projection: v }),
     });
     const bg = segmentedControl<BackgroundSettings['mode']>({
       compact: true,
-      ariaLabel: t('previewBackground'),
+      ariaLabel: 'Preview background',
       options: [
-        { value: 'transparent', label: '', icon: ICONS.checker, title: t('bgTransparent') },
-        { value: 'color', label: '', icon: ICONS.fill, title: t('bgColor') },
-        { value: 'gradient', label: '', icon: ICONS.gradient, title: t('bgGradient') },
+        { value: 'transparent', label: '', icon: ICONS.checker, title: 'Transparent (checkerboard)' },
+        { value: 'color', label: '', icon: ICONS.fill, title: 'Colour' },
+        { value: 'gradient', label: '', icon: ICONS.gradient, title: 'Gradient' },
       ],
       get: () => c.store.state.scene.background.mode,
       set: (v) =>
@@ -104,8 +102,8 @@ export function createViewportShell(): ViewportShell {
           s.scene.background.mode = v;
         }),
     });
-    proj.el.title = t('projection');
-    bg.el.title = t('previewBackground');
+    proj.el.title = 'Projection';
+    bg.el.title = 'Preview background';
     controls = [proj, bg];
     bar.append(
       views,
@@ -116,13 +114,13 @@ export function createViewportShell(): ViewportShell {
       h('div', { class: 'vb-sep' }),
       bg.el,
     );
-    hint.textContent = t('viewportHint');
+    hint.textContent = 'Drag to orbit · ⇧-drag to pan · scroll or pinch to zoom · double-click resets the view';
     overlay.replaceChildren(
       h(
         'div',
         { class: 'drop-card' },
         h('span', { class: 'drop-icon', html: ICONS.image }),
-        h('div', { text: t('dropHere') }),
+        h('div', { text: 'Drop artwork – it fills the empty slots of the model' }),
       ),
     );
   };
@@ -176,8 +174,7 @@ export function createViewportShell(): ViewportShell {
       renderBar();
       sync();
       c.store.subscribe((e) => {
-        if (e.kinds.has('lang')) renderBar();
-        if (hasAny(e, 'scene', 'camera', 'lang')) sync();
+        if (hasAny(e, 'scene', 'camera')) sync();
       });
     },
     showError(message: string) {

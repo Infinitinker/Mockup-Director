@@ -30,7 +30,6 @@
 import * as THREE from 'three';
 import type {
   ImageSlotDef,
-  LocalizedText,
   ModelContext,
   ModelDefinition,
   NumberParamDef,
@@ -41,7 +40,7 @@ import type {
   TemplateGuide,
   TemplateRegion,
 } from '../core/types';
-import { L, Lctx, castShadows, mmParam, num, placeOnGround, printMaterial, round1, str } from './shared';
+import { castShadows, mmParam, num, placeOnGround, printMaterial, round1, str } from './shared';
 
 /* ------------------------------------------------------------------ */
 /* Constants / small helpers                                           */
@@ -54,12 +53,12 @@ const LAYER_GAP = 0.03;
 /** Segments of a crease bend. */
 const ARC_SEGS = 8;
 
-const G_DIM = L('Dimensions');
-const G_MAT = L('Material');
-const G_POSE = L('Pose');
+const G_DIM = 'Dimensions';
+const G_MAT = 'Material';
+const G_POSE = 'Pose';
 
-const TRIM = L('Trim line');
-const FOLD = L('Fold line (crease)');
+const TRIM = 'Trim line';
+const FOLD = 'Fold line (crease)';
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 const deg = THREE.MathUtils.degToRad;
@@ -551,7 +550,7 @@ function horizontalUV(W: number, H: number): { out: UVFn; inn: UVFn } {
 
 interface TemplatePanel {
   size: number;
-  label: LocalizedText;
+  label: string;
 }
 
 /**
@@ -593,7 +592,7 @@ function thicknessParam(def: number): NumberParamDef {
   return {
     id: 'thickness',
     type: 'number',
-    label: L('Paper thickness'),
+    label: 'Paper thickness',
     group: G_MAT,
     min: 0.06,
     max: 0.8,
@@ -607,12 +606,12 @@ function finishParam(def: Finish): SelectParamDef {
   return {
     id: 'finish',
     type: 'select',
-    label: L('Finish'),
+    label: 'Finish',
     group: G_MAT,
     options: [
-      { value: 'matte', label: L('Matte') },
-      { value: 'satin', label: Lctx('folded print', 'Satin') },
-      { value: 'gloss', label: L('Gloss') },
+      { value: 'matte', label: 'Matte' },
+      { value: 'satin', label: 'Satin' },
+      { value: 'gloss', label: 'Gloss' },
     ],
     default: def,
   };
@@ -621,7 +620,7 @@ function finishParam(def: Finish): SelectParamDef {
 const paperColorParam: ParamDef = {
   id: 'paperColor',
   type: 'color',
-  label: L('Paper colour (no artwork, edges)'),
+  label: 'Paper colour (no artwork, edges)',
   group: G_MAT,
   default: '#f6f5f1',
 };
@@ -630,11 +629,11 @@ function poseParam(def: 'standing' | 'lying'): SelectParamDef {
   return {
     id: 'pose',
     type: 'select',
-    label: L('Pose'),
+    label: 'Pose',
     group: G_POSE,
     options: [
-      { value: 'standing', label: L('Standing, opened') },
-      { value: 'lying', label: L('Lying (cover lifted by the open angle)') },
+      { value: 'standing', label: 'Standing, opened' },
+      { value: 'lying', label: 'Lying (cover lifted by the open angle)' },
     ],
     default: def,
   };
@@ -644,7 +643,7 @@ function openAngleParam(def: number): NumberParamDef {
   return {
     id: 'openAngle',
     type: 'number',
-    label: L('Open angle (0 = closed, lying)'),
+    label: 'Open angle (0 = closed, lying)',
     group: G_POSE,
     min: 0,
     max: 180,
@@ -697,14 +696,14 @@ function trifoldLayout(p: ParamValues): TrifoldLayout {
   return { type, widths: [pw - (2 * inset) / 3, pw + inset / 3, pw + inset / 3], height };
 }
 
-const TRI_OUT_LABELS: Record<TriFoldType, LocalizedText[]> = {
-  roll: [L('Inner flap (folds in)'), L('Back'), L('Front cover')],
-  z: [L('Panel 1'), L('Panel 2'), L('Front cover')],
+const TRI_OUT_LABELS: Record<TriFoldType, string[]> = {
+  roll: ['Inner flap (folds in)', 'Back', 'Front cover'],
+  z: ['Panel 1', 'Panel 2', 'Front cover'],
 };
 /** Inside labels in INSIDE-image order (left to right), i.e. the reverse panel order. */
-const TRI_IN_LABELS: Record<TriFoldType, LocalizedText[]> = {
-  roll: [L('Inside – left'), L('Inside – middle'), L('Inside – right (on the flap)')],
-  z: [L('Inside 1'), L('Inside 2'), L('Inside 3 / back cover')],
+const TRI_IN_LABELS: Record<TriFoldType, string[]> = {
+  roll: ['Inside – left', 'Inside – middle', 'Inside – right (on the flap)'],
+  z: ['Inside 1', 'Inside 2', 'Inside 3 / back cover'],
 };
 
 function trifoldTemplate(p: ParamValues, side: 'outside' | 'inside'): PrintTemplate {
@@ -739,21 +738,19 @@ const TRI_ASPECT = (297 + 2 * BLEED) / (210 + 2 * BLEED);
 const trifoldSlots: ImageSlotDef[] = [
   {
     id: 'outside',
-    label: L('Outside'),
-    hint: L(
+    label: 'Outside',
+    hint:
       'The whole outside of the sheet (3 panels), left to right: roll fold – Inner flap | Back | Front cover; ' +
-        'Z-fold – Panel 1 | Panel 2 | Front cover. A4: 297 × 210 mm + 3 mm bleed = 303 × 216 mm (download the template).',
-    ),
+      'Z-fold – Panel 1 | Panel 2 | Front cover. A4: 297 × 210 mm + 3 mm bleed = 303 × 216 mm (download the template).',
     aspect: TRI_ASPECT,
     template: (p) => trifoldTemplate(p, 'outside'),
   },
   {
     id: 'inside',
-    label: L('Inside'),
-    hint: L(
+    label: 'Inside',
+    hint:
       'The inside of the leaflet (3 panels) as seen when opened. The left panel backs the front cover, the right one ' +
-        'the flap (Z-fold: backs panel 1 = back cover). Without an image: plain paper.',
-    ),
+      'the flap (Z-fold: backs panel 1 = back cover). Without an image: plain paper.',
     aspect: TRI_ASPECT,
     template: (p) => trifoldTemplate(p, 'inside'),
   },
@@ -763,17 +760,17 @@ const trifoldParams: ParamDef[] = [
   {
     id: 'foldType',
     type: 'select',
-    label: L('Fold type'),
+    label: 'Fold type',
     group: G_DIM,
     options: [
-      { value: 'roll', label: L('Roll / letter fold') },
-      { value: 'z', label: L('Z-fold (zigzag)') },
+      { value: 'roll', label: 'Roll / letter fold' },
+      { value: 'z', label: 'Z-fold (zigzag)' },
     ],
     default: 'z',
   },
-  mmParam('panelWidth', L('Panel width (sheet = 3 ×)'), 99, 50, 200, 0.5, G_DIM),
-  mmParam('height', L('Height'), 210, 50, 400, 0.5, G_DIM),
-  mmParam('flapInset', L('Narrower flap (roll fold)'), 3, 0, 6, 0.5, G_DIM),
+  mmParam('panelWidth', 'Panel width (sheet = 3 ×)', 99, 50, 200, 0.5, G_DIM),
+  mmParam('height', 'Height', 210, 50, 400, 0.5, G_DIM),
+  mmParam('flapInset', 'Narrower flap (roll fold)', 3, 0, 6, 0.5, G_DIM),
   poseParam('standing'),
   openAngleParam(60),
   thicknessParam(0.15),
@@ -836,10 +833,9 @@ const ICON_TRIFOLD =
 export const trifoldModel: ModelDefinition = {
   id: 'print-trifold',
   category: 'print',
-  name: L('Tri-fold leaflet'),
-  description: L(
+  name: 'Tri-fold leaflet',
+  description:
     'DL leaflet from an A4 sheet (297 × 210 mm → 99 × 210 mm), roll or Z fold; standing partially opened or lying.',
-  ),
   icon: ICON_TRIFOLD,
   slots: trifoldSlots,
   params: trifoldParams,
@@ -853,7 +849,7 @@ export const trifoldModel: ModelDefinition = {
 
 interface SizePreset {
   value: string;
-  label: LocalizedText;
+  label: string;
   /** Folded size, portrait (w <= h for the named paper formats). */
   w: number;
   h: number;
@@ -909,18 +905,14 @@ function cardLayout(p: ParamValues, v: CardVariant): CardLayout {
 function cardTemplate(p: ParamValues, v: CardVariant, side: 'outside' | 'inside'): PrintTemplate {
   const { pw, ph, tent } = cardLayout(p, v);
   if (!tent) {
-    const labels =
-      side === 'outside'
-        ? [L('Back'), L('Front (cover)')]
-        : [Lctx('greeting card page', 'Inside – left'), L('Inside – right')];
+    const labels = side === 'outside' ? ['Back', 'Front (cover)'] : ['Inside – left', 'Inside – right'];
     return spreadTemplate(
       labels.map((label) => ({ size: pw, label })),
       ph,
       'h',
     );
   }
-  const labels =
-    side === 'outside' ? [L('Back (upside down)'), L('Front (cover)')] : [L('Inside – top'), L('Inside – bottom')];
+  const labels = side === 'outside' ? ['Back (upside down)', 'Front (cover)'] : ['Inside – top', 'Inside – bottom'];
   return spreadTemplate(
     labels.map((label) => ({ size: ph, label })),
     pw,
@@ -936,21 +928,17 @@ function cardSlots(v: CardVariant): ImageSlotDef[] {
   return [
     {
       id: 'outside',
-      label: L('Outside'),
-      hint: L(
-        'Outside spread: Back | Front ({w} × {h} mm + 3 mm bleed for the default size). ' +
-          'With the fold at the top the layout is vertical: back (upside down) above the front – download the template.',
-        { w: round1(2 * w), h: round1(h) },
-      ),
+      label: 'Outside',
+      hint:
+        `Outside spread: Back | Front (${round1(2 * w)} × ${round1(h)} mm + 3 mm bleed for the default size). ` +
+        'With the fold at the top the layout is vertical: back (upside down) above the front – download the template.',
       aspect,
       template: (p) => cardTemplate(p, v, 'outside'),
     },
     {
       id: 'inside',
-      label: L('Inside'),
-      hint: L(
-        'Inside spread as seen when opened (left | right, or top / bottom with the fold at the top). Without an image: plain paper.',
-      ),
+      label: 'Inside',
+      hint: 'Inside spread as seen when opened (left | right, or top / bottom with the fold at the top). Without an image: plain paper.',
       aspect,
       template: (p) => cardTemplate(p, v, 'inside'),
     },
@@ -962,24 +950,24 @@ function cardParams(v: CardVariant): ParamDef[] {
     {
       id: 'size',
       type: 'select',
-      label: L('Size (folded)'),
+      label: 'Size (folded)',
       group: G_DIM,
-      options: [...v.sizes.map((s) => ({ value: s.value, label: s.label })), { value: 'custom', label: L('Custom') }],
+      options: [...v.sizes.map((s) => ({ value: s.value, label: s.label })), { value: 'custom', label: 'Custom' }],
       default: v.defaultSize,
     },
     {
       id: 'orientation',
       type: 'select',
-      label: L('Fold'),
+      label: 'Fold',
       group: G_DIM,
       options: [
-        { value: 'portrait', label: L('On the left (portrait, like a book)') },
-        { value: 'top', label: L('At the top (landscape tent)') },
+        { value: 'portrait', label: 'On the left (portrait, like a book)' },
+        { value: 'top', label: 'At the top (landscape tent)' },
       ],
       default: 'portrait',
     },
-    mmParam('customWidth', L('Width (custom size)'), v.customW, 30, 500, 0.5, G_DIM),
-    mmParam('customHeight', L('Height (custom size)'), v.customH, 30, 500, 0.5, G_DIM),
+    mmParam('customWidth', 'Width (custom size)', v.customW, 30, 500, 0.5, G_DIM),
+    mmParam('customHeight', 'Height (custom size)', v.customH, 30, 500, 0.5, G_DIM),
     poseParam(v.defaultPose),
     openAngleParam(v.defaultAngle),
     thicknessParam(v.defaultThickness),
@@ -1062,10 +1050,10 @@ function cardModel(
 
 const GREETING: CardVariant = {
   sizes: [
-    { value: 'a6', label: L('A6 – 105 × 148 mm'), w: 105, h: 148 },
-    { value: 'square', label: L('Square 148 × 148 mm'), w: 148, h: 148 },
-    { value: 'dl', label: L('DL – 99 × 210 mm'), w: 99, h: 210 },
-    { value: 'a5', label: L('A5 – 148 × 210 mm'), w: 148, h: 210 },
+    { value: 'a6', label: 'A6 – 105 × 148 mm', w: 105, h: 148 },
+    { value: 'square', label: 'Square 148 × 148 mm', w: 148, h: 148 },
+    { value: 'dl', label: 'DL – 99 × 210 mm', w: 99, h: 210 },
+    { value: 'a5', label: 'A5 – 148 × 210 mm', w: 148, h: 210 },
   ],
   defaultSize: 'a6',
   customW: 105,
@@ -1084,10 +1072,9 @@ const ICON_CARD =
 
 export const greetingCardModel: ModelDefinition = cardModel(GREETING, {
   id: 'print-greeting-card',
-  name: L('Greeting card'),
-  description: L(
+  name: 'Greeting card',
+  description:
     'Folded greeting card (A6, square, DL, A5 or custom) standing opened – fold on the left or at the top (tent).',
-  ),
   icon: ICON_CARD,
   defaultCamera: { yaw: 20, pitch: 12 },
 });
@@ -1096,12 +1083,12 @@ export const greetingCardModel: ModelDefinition = cardModel(GREETING, {
 
 const BIFOLD: CardVariant = {
   sizes: [
-    { value: 'a5', label: L('A4 → A5 (148 × 210 mm)'), w: 148, h: 210 },
-    { value: 'a6', label: L('A5 → A6 (105 × 148 mm)'), w: 105, h: 148 },
-    { value: 'a4', label: L('A3 → A4 (210 × 297 mm)'), w: 210, h: 297 },
-    { value: 'dl', label: L('2 × DL → DL (99 × 210 mm)'), w: 99, h: 210 },
-    { value: 'square', label: L('Square 210 × 210 mm'), w: 210, h: 210 },
-    { value: 'letter', label: L('Letter → 5.5 × 8.5″ (139.7 × 215.9 mm)'), w: 139.7, h: 215.9 },
+    { value: 'a5', label: 'A4 → A5 (148 × 210 mm)', w: 148, h: 210 },
+    { value: 'a6', label: 'A5 → A6 (105 × 148 mm)', w: 105, h: 148 },
+    { value: 'a4', label: 'A3 → A4 (210 × 297 mm)', w: 210, h: 297 },
+    { value: 'dl', label: '2 × DL → DL (99 × 210 mm)', w: 99, h: 210 },
+    { value: 'square', label: 'Square 210 × 210 mm', w: 210, h: 210 },
+    { value: 'letter', label: 'Letter → 5.5 × 8.5″ (139.7 × 215.9 mm)', w: 139.7, h: 215.9 },
   ],
   defaultSize: 'a5',
   customW: 148,
@@ -1120,8 +1107,8 @@ const ICON_BIFOLD =
 
 export const bifoldModel: ModelDefinition = cardModel(BIFOLD, {
   id: 'print-bifold',
-  name: L('Bi-fold brochure'),
-  description: L('Brochure from a sheet folded in half (A4 → A5 by default), lying flat or standing slightly open.'),
+  name: 'Bi-fold brochure',
+  description: 'Brochure from a sheet folded in half (A4 → A5 by default), lying flat or standing slightly open.',
   icon: ICON_BIFOLD,
   defaultCamera: { yaw: 20, pitch: 14 },
 });

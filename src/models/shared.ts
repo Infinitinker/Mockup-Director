@@ -3,7 +3,7 @@
  * files, but should not change the behaviour of these.
  */
 import * as THREE from 'three';
-import type { LocalizedText, ModelContext, NumberParamDef, ParamValues } from '../core/types';
+import type { ModelContext, NumberParamDef, ParamValues } from '../core/types';
 
 /** Dispose geometries and materials of a tree (and textures flagged userData.disposeWithModel). */
 export function disposeObject(root: THREE.Object3D | null | undefined): void {
@@ -154,20 +154,17 @@ export function str(params: ParamValues, id: string, fallback: string): string {
   return typeof v === 'string' ? v : fallback;
 }
 
-/** Labels and hints are written in English; see src/i18n for how they are translated. */
-export { L, Lctx } from '../i18n';
-
-/** Rounds to one decimal place for a `{name}` placeholder (shown as "129.5", or "129,5" in Polish). */
+/** Rounds to one decimal place, for sizes shown in texts (129.53 → 129.5). */
 export const round1 = (v: number): number => Math.round(v * 10) / 10;
 
 export function mmParam(
   id: string,
-  label: LocalizedText,
+  label: string,
   def: number,
   min: number,
   max: number,
   step = 1,
-  group?: LocalizedText,
+  group?: string,
 ): NumberParamDef {
   return { id, label, type: 'number', min, max, step, default: def, unit: 'mm', group };
 }

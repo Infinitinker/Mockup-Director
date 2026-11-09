@@ -10,7 +10,6 @@
 import type { Documents, TabInfo } from './documents';
 import { h, clear, isMac, shortcutLabel, type Signal } from './dom';
 import { ICONS } from './icons';
-import { t } from '../i18n';
 
 export interface TabBarOptions {
   onNew(): void;
@@ -23,10 +22,10 @@ export interface TabBarOptions {
 /** The name shown for a tab. */
 export function tabLabel(tab: TabInfo): string {
   if (tab.name) return tab.name;
-  return tab.untitledNumber > 1 ? t('untitledN', { n: tab.untitledNumber }) : t('untitled');
+  return tab.untitledNumber > 1 ? `Untitled ${tab.untitledNumber}` : 'Untitled';
 }
 
-export function createTabBar(docs: Documents, opts: TabBarOptions): { el: HTMLElement; render(): void } {
+export function createTabBar(docs: Documents, opts: TabBarOptions): { el: HTMLElement } {
   const list = h('div', { class: 'doctabs-list', attrs: { role: 'tablist', 'aria-orientation': 'horizontal' } });
   const newBtn = h('button', {
     class: 'doctabs-new',
@@ -67,7 +66,7 @@ export function createTabBar(docs: Documents, opts: TabBarOptions): { el: HTMLEl
   const renderTab = (tab: TabInfo, ids: string[], busy: boolean) => {
     const label = tabLabel(tab);
     // The • is visual only; the unsaved state is part of the name a screen reader announces.
-    const name = tab.dirty ? t('tabUnsaved', { name: label }) : label;
+    const name = tab.dirty ? `${label} (unsaved changes)` : label;
     const button = h(
       'button',
       {
@@ -95,8 +94,8 @@ export function createTabBar(docs: Documents, opts: TabBarOptions): { el: HTMLEl
     const close = h('button', {
       class: 'doctab-close',
       html: ICONS.close,
-      label: t('closeTab'),
-      title: t('closeTab'),
+      label: 'Close tab',
+      title: 'Close tab',
       attrs: { type: 'button', tabindex: -1, disabled: busy },
       on: { click: () => opts.onClose(tab.id) },
     });
@@ -150,12 +149,12 @@ export function createTabBar(docs: Documents, opts: TabBarOptions): { el: HTMLEl
     const ids = tabs.map((tb) => tb.id);
     tabEls = new Map();
     clear(list);
-    list.setAttribute('aria-label', t('tabsLabel'));
+    list.setAttribute('aria-label', 'Open projects');
     for (const tab of tabs) list.appendChild(renderTab(tab, ids, busy));
     el.classList.toggle('busy', busy);
     newBtn.disabled = busy;
-    newBtn.title = `${t('newTab')} (${shortcutLabel('T')})`;
-    newBtn.setAttribute('aria-label', t('newTab'));
+    newBtn.title = `New tab (${shortcutLabel('T')})`;
+    newBtn.setAttribute('aria-label', 'New tab');
     // Keep the keyboard focus in the strip across re-renders: on the same tab, or on the active
     // one when the focused tab was closed.
     if (focusedId) focusTab(tabEls.has(focusedId) ? focusedId : docs.activeId);
@@ -179,5 +178,5 @@ export function createTabBar(docs: Documents, opts: TabBarOptions): { el: HTMLEl
   docs.subscribe(render);
   opts.busy.subscribe(render);
   render();
-  return { el, render };
+  return { el };
 }

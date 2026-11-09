@@ -1,17 +1,15 @@
 /**
  * Shared context passed to every UI component: the store, the stage and the app-level actions.
  */
-import type { Lang, StageAPI } from '../core/types';
+import type { StageAPI } from '../core/types';
 import type { Signal } from './dom';
 import type { Store } from './state';
-import type { MessageKey } from '../i18n';
 import type { AnimationProgress } from './exportBridge';
 
 export type TabId = 'images' | 'model' | 'scene' | 'export' | 'styles';
 
 export interface Actions {
   selectModel(id: string): void;
-  setLang(lang: Lang): void;
   /** A new project in a new tab. */
   newProject(): Promise<void>;
   /** Opens project files, each in its own tab (an untouched new tab is reused). Without files: asks for one. */
@@ -55,17 +53,17 @@ export interface AppContext {
 }
 
 export interface ViewPreset {
-  key: MessageKey;
+  label: string;
   yaw: number;
   pitch: number;
 }
 
 /** Preset camera views (keyboard 1–6). */
 export const VIEW_PRESETS: ViewPreset[] = [
-  { key: 'viewFront', yaw: 0, pitch: 0 },
-  { key: 'viewLeft34', yaw: -30, pitch: 12 },
-  { key: 'viewRight34', yaw: 30, pitch: 12 },
-  { key: 'viewSide', yaw: 90, pitch: 5 },
-  { key: 'viewTop', yaw: 0, pitch: 60 },
-  { key: 'viewBack', yaw: 180, pitch: 10 },
+  { label: 'Front', yaw: 0, pitch: 0 },
+  { label: '3/4 left', yaw: -30, pitch: 12 },
+  { label: '3/4 right', yaw: 30, pitch: 12 },
+  { label: 'Side', yaw: 90, pitch: 5 },
+  { label: 'Top', yaw: 0, pitch: 60 },
+  { label: 'Back', yaw: 180, pitch: 10 },
 ];

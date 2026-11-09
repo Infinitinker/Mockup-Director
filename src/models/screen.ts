@@ -22,8 +22,8 @@
  * so no print template is offered – the artwork itself defines the size.
  */
 import * as THREE from 'three';
-import type { ImageSlotDef, LocalizedText, ModelContext, ModelDefinition, ParamDef, ParamValues } from '../core/types';
-import { L, castShadows, num, placeOnGround, printMaterial, str } from './shared';
+import type { ImageSlotDef, ModelContext, ModelDefinition, ParamDef, ParamValues } from '../core/types';
+import { castShadows, num, placeOnGround, printMaterial, str } from './shared';
 
 /* ------------------------------------------------------------------ */
 /* Constants / small helpers                                           */
@@ -374,17 +374,17 @@ function finishPanel(panel: THREE.Group, tiltDeg: number): THREE.Object3D {
 /* Params                                                              */
 /* ------------------------------------------------------------------ */
 
-const G_DIM = L('Dimensions');
-const G_SHAPE = L('Shape & placement');
-const G_FRAME = L('Frame');
-const G_WIN = L('Window');
-const G_MAT = L('Material');
+const G_DIM = 'Dimensions';
+const G_SHAPE = 'Shape & placement';
+const G_FRAME = 'Frame';
+const G_WIN = 'Window';
+const G_MAT = 'Material';
 
 function widthParam(def: number): ParamDef {
   return {
     id: 'width',
     type: 'number',
-    label: L('Panel width'),
+    label: 'Panel width',
     group: G_DIM,
     min: 40,
     max: 2000,
@@ -399,7 +399,7 @@ function commonParams(defRadius: number): ParamDef[] {
     {
       id: 'thickness',
       type: 'number',
-      label: L('Thickness'),
+      label: 'Thickness',
       group: G_DIM,
       min: 0.5,
       max: 10,
@@ -410,7 +410,7 @@ function commonParams(defRadius: number): ParamDef[] {
     {
       id: 'cornerRadius',
       type: 'number',
-      label: L('Corner radius'),
+      label: 'Corner radius',
       group: G_DIM,
       min: 0,
       max: 60,
@@ -421,7 +421,7 @@ function commonParams(defRadius: number): ParamDef[] {
     {
       id: 'curvature',
       type: 'number',
-      label: L('Curvature (− convex, + concave)'),
+      label: 'Curvature (− convex, + concave)',
       group: G_SHAPE,
       min: -100,
       max: 100,
@@ -432,7 +432,7 @@ function commonParams(defRadius: number): ParamDef[] {
     {
       id: 'tilt',
       type: 'number',
-      label: L('Lean back'),
+      label: 'Lean back',
       group: G_SHAPE,
       min: 0,
       max: 75,
@@ -448,20 +448,20 @@ function finishParams(): ParamDef[] {
     {
       id: 'finish',
       type: 'select',
-      label: L('Finish'),
+      label: 'Finish',
       group: G_MAT,
       options: [
-        { value: 'screen', label: L('Glossy screen (lit)') },
-        { value: 'screenMatte', label: L('Matte screen (lit)') },
-        { value: 'printMatte', label: L('Matte print') },
-        { value: 'printGloss', label: L('Glossy print') },
+        { value: 'screen', label: 'Glossy screen (lit)' },
+        { value: 'screenMatte', label: 'Matte screen (lit)' },
+        { value: 'printMatte', label: 'Matte print' },
+        { value: 'printGloss', label: 'Glossy print' },
       ],
       default: 'screen',
     },
     {
       id: 'glow',
       type: 'number',
-      label: L('Screen brightness'),
+      label: 'Screen brightness',
       group: G_MAT,
       min: 0,
       max: 200,
@@ -472,12 +472,12 @@ function finishParams(): ParamDef[] {
     {
       id: 'bodyFinish',
       type: 'select',
-      label: L('Edges & back'),
+      label: 'Edges & back',
       group: G_MAT,
       options: [
-        { value: 'plastic', label: L('Satin plastic') },
-        { value: 'gloss', label: L('Glossy plastic') },
-        { value: 'metal', label: L('Metal (aluminium)') },
+        { value: 'plastic', label: 'Satin plastic' },
+        { value: 'gloss', label: 'Glossy plastic' },
+        { value: 'metal', label: 'Metal (aluminium)' },
       ],
       default: 'plastic',
     },
@@ -497,10 +497,10 @@ const finishOf = (p: ParamValues): Finish => {
  * 'screen' accepts ANY aspect ratio – the panel height follows the image. `aspect` (16:10) is only
  * the placeholder shape used without an image.
  */
-function screenSlot(hint: LocalizedText): ImageSlotDef {
+function screenSlot(hint: string): ImageSlotDef {
   return {
     id: 'screen',
-    label: L('Screen'),
+    label: 'Screen',
     hint,
     aspect: DEFAULT_ASPECT,
     anyAspect: true,
@@ -588,16 +588,13 @@ const ICON_SCREENSHOT =
 export const screenshotModel: ModelDefinition = {
   id: 'device-screenshot',
   category: 'device',
-  name: L('Screenshot'),
-  description: L(
+  name: 'Screenshot',
+  description:
     'A thin floating panel showing a screenshot – flat or curved, with an optional frame; the height follows the image.',
-  ),
   icon: ICON_SCREENSHOT,
   slots: [
     screenSlot(
-      L(
-        'A screenshot or any artwork – any aspect ratio (the panel height follows the image). Without an image: 16:10.',
-      ),
+      'A screenshot or any artwork – any aspect ratio (the panel height follows the image). Without an image: 16:10.',
     ),
   ],
   params: [
@@ -606,19 +603,19 @@ export const screenshotModel: ModelDefinition = {
     {
       id: 'frame',
       type: 'select',
-      label: L('Frame'),
+      label: 'Frame',
       group: G_FRAME,
       options: [
-        { value: 'none', label: L('None') },
-        { value: 'light', label: L('Thin light') },
-        { value: 'dark', label: L('Thin dark') },
+        { value: 'none', label: 'None' },
+        { value: 'light', label: 'Thin light' },
+        { value: 'dark', label: 'Thin dark' },
       ],
       default: 'none',
     },
     {
       id: 'frameWidth',
       type: 'number',
-      label: L('Frame width'),
+      label: 'Frame width',
       group: G_FRAME,
       min: 1,
       max: 40,
@@ -630,7 +627,7 @@ export const screenshotModel: ModelDefinition = {
     {
       id: 'bodyColor',
       type: 'color',
-      label: L('Edge & back colour (no frame)'),
+      label: 'Edge & back colour (no frame)',
       group: G_MAT,
       default: '#2a2b2f',
     },
@@ -889,16 +886,13 @@ const ICON_BROWSER =
 export const browserWindowModel: ModelDefinition = {
   id: 'device-browser',
   category: 'device',
-  name: L('Browser window'),
-  description: L(
+  name: 'Browser window',
+  description:
     'A browser / app window with a generic title bar (buttons, address bar) – flat or curved; the height follows the image.',
-  ),
   icon: ICON_BROWSER,
   slots: [
     screenSlot(
-      L(
-        'Window content under the bar (e.g. a page screenshot) – any aspect ratio, the window height follows the image. Without an image: 16:10.',
-      ),
+      'Window content under the bar (e.g. a page screenshot) – any aspect ratio, the window height follows the image. Without an image: 16:10.',
     ),
   ],
   params: [
@@ -907,43 +901,42 @@ export const browserWindowModel: ModelDefinition = {
     {
       id: 'theme',
       type: 'select',
-      label: L('Bar theme'),
+      label: 'Bar theme',
       group: G_WIN,
       options: [
-        { value: 'light', label: L('Light') },
-        { value: 'dark', label: L('Dark') },
+        { value: 'light', label: 'Light' },
+        { value: 'dark', label: 'Dark' },
       ],
       default: 'light',
     },
     {
       id: 'buttons',
       type: 'select',
-      label: L('Window buttons'),
+      label: 'Window buttons',
       group: G_WIN,
       options: [
-        { value: 'color', label: L('Coloured') },
-        { value: 'grey', label: L('Grey') },
-        { value: 'none', label: L('None') },
+        { value: 'color', label: 'Coloured' },
+        { value: 'grey', label: 'Grey' },
+        { value: 'none', label: 'None' },
       ],
       default: 'color',
     },
     {
       id: 'address',
       type: 'select',
-      label: L('Address bar'),
+      label: 'Address bar',
       group: G_WIN,
       options: [
-        // Domain names read the same in every language: they have no translations.
-        ...ADDRESS_OPTIONS.map((a) => ({ value: a, label: L(a) })),
-        { value: 'empty', label: L('Empty') },
-        { value: 'none', label: L('None') },
+        ...ADDRESS_OPTIONS.map((a) => ({ value: a, label: a })),
+        { value: 'empty', label: 'Empty' },
+        { value: 'none', label: 'None' },
       ],
       default: 'example.com',
     },
     {
       id: 'barScale',
       type: 'number',
-      label: L('Bar height'),
+      label: 'Bar height',
       group: G_WIN,
       min: 50,
       max: 200,

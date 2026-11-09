@@ -45,8 +45,8 @@ jobs:
       - name: Version
         run: node tools/release.mjs check
 
-  # The web UI: the TypeScript type-check and the Vite build, the unit tests (Vitest, tests/), and a
-  # translation of every text in every interface language. It runs in Node.js, the same on every system.
+  # The web UI: the TypeScript type-check and the Vite build, and the unit tests (Vitest, tests/). It
+  # runs in Node.js, the same on every system.
   web:
     name: Web
     runs-on: ubuntu-latest
@@ -63,8 +63,6 @@ jobs:
         run: npm run build
       - name: Tests
         run: npm test
-      - name: Translations
-        run: npm run check:i18n
 
   # No copyleft (GPL, AGPL, LGPL…) dependency in npm or Rust, and THIRD-PARTY-NOTICES.md (the license
   # texts of the app's dependencies) up to date with them: the same checks as a release.

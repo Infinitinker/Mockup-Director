@@ -4,7 +4,6 @@
  */
 import type { ImageSlotDef, ModelDefinition, ParamDef, ParamValue, ParamValues, PrintTemplate } from '../core/types';
 import { defaultParams } from '../core/defaults';
-import { L } from '../i18n';
 
 const HEX = /^#[0-9a-f]{6}$/i;
 
@@ -37,8 +36,8 @@ export function completeParams(model: ModelDefinition, stored: ParamValues | und
 
 /** The slot definition, or a neutral fallback for an unknown id (models may ask for any id). */
 export function slotFor(model: ModelDefinition, slotId: string): ImageSlotDef {
-  // The id stands in for the label; it has no translation.
-  return model.slots.find((s) => s.id === slotId) ?? { id: slotId, label: L(slotId), aspect: 1 };
+  // The id stands in for the label.
+  return model.slots.find((s) => s.id === slotId) ?? { id: slotId, label: slotId, aspect: 1 };
 }
 
 export function resolveTemplate(slot: ImageSlotDef, params: ParamValues): PrintTemplate | null {

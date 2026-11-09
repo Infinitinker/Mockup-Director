@@ -3,7 +3,7 @@
  * models, export and project handling together. Every open project is a tab (./documents); the
  * store works on the active one, and the whole set of tabs is autosaved as a session (./session).
  */
-import type { CameraSettings, ImageAsset, Lang, ModelContext, ParamValues, StageAPI } from '../core/types';
+import type { CameraSettings, ImageAsset, ModelContext, ParamValues, StageAPI } from '../core/types';
 import { DEFAULT_ANIMATION, DEFAULT_EXPORT, DEFAULT_SCENE, cloneScene } from '../core/defaults';
 import { getPlaceholderTexture } from '../core/placeholder';
 import { disposeImageAsset, loadImageFile } from '../core/images';
@@ -12,11 +12,8 @@ import { createStage } from '../scene/stage';
 import { inDesktopApp, pickFiles, saveBlob } from '../platform/files';
 import { handleOpenedFiles } from '../platform/launch';
 import { onWindowClose, setWindowTitle } from '../platform/window';
-import { Signal, errorMessage, frameCoalescer, h, isMac, nextFrame, safeStorage } from './dom';
+import { Signal, errorMessage, frameCoalescer, h, isMac, nextFrame } from './dom';
 
-/** localStorage key of the interface language the user picked. */
-const LANG_KEY = 'mockup-director.lang';
-import { getLang, initLang, lt, setLang, t } from '../i18n';
 import { Store, hasAny, type DocumentState, type ImageMap } from './state';
 import { Documents } from './documents';
 import { loadSession, SessionSaver } from './session';
@@ -98,8 +95,6 @@ function createNullStage(): StageAPI {
 }
 
 export function startApp(root: HTMLElement): void {
-  initLang(safeStorage.get(LANG_KEY), navigator.languages ?? [navigator.language]);
-  document.documentElement.lang = getLang();
   root.classList.add('app');
   try {
     // Only macOS draws traffic lights over the toolbar (titleBarStyle "Overlay"); Windows keeps its
@@ -111,7 +106,7 @@ export function startApp(root: HTMLElement): void {
   mountToasts(document.body);
 
   /* State ------------------------------------------------------------ */
-  const store = new Store({ ...freshDocument(MODELS[0].id), lang: getLang() });
+  const store = new Store(freshDocument(MODELS[0].id));
   /** The open projects (tabs); the store holds the active one. */
   const docs = new Documents(store, () => freshDocument(store.state.modelId));
   const exportBusy = new Signal(false);
@@ -139,7 +134,7 @@ export function startApp(root: HTMLElement): void {
   } catch (e) {
     console.error('[mockup-director] stage init failed', e);
     stage = createNullStage();
-    viewport.showError(`${t('errWebgl')} (${errorMessage(e)})`);
+    viewport.showError(`3D preview unavailable – WebGL does not work on this computer (${errorMessage(e)})`);
   }
 
   /* Model rebuild (coalesced to one per frame) ------------------------ */
@@ -151,17 +146,16 @@ export function startApp(root: HTMLElement): void {
     const s = store.state;
     const model = getModel(s.modelId);
     const imgs = s.images[model.id] ?? {};
-    const lang = s.lang;
     const ctx: ModelContext = {
       params: completeParams(model, s.params[model.id]),
       hasImage: (id) => !!imgs[id],
-      getTexture: (id) => imgs[id]?.texture ?? getPlaceholderTexture(slotFor(model, id), lang),
+      getTexture: (id) => imgs[id]?.texture ?? getPlaceholderTexture(slotFor(model, id)),
     };
     try {
       stage.setModel(model.build(ctx));
     } catch (e) {
       console.error('[mockup-director] model build failed', e);
-      notify.error(t('errBuild', { name: lt(model.name) }), errorMessage(e));
+      notify.error(`Could not build model “${model.name}”`, errorMessage(e));
     }
   });
   const applyScene = frameCoalescer(() => {
@@ -170,7 +164,7 @@ export function startApp(root: HTMLElement): void {
       stage.applySettings(store.state.scene);
     } catch (e) {
       console.error('[mockup-director] applySettings failed', e);
-      notify.error(t('errScene'), errorMessage(e));
+      notify.error('Scene settings error', errorMessage(e));
     }
   });
 
@@ -196,7 +190,10 @@ export function startApp(root: HTMLElement): void {
       // Once per run: the work is still open, but would not come back after a restart.
       if (!autosaveFailureShown) {
         autosaveFailureShown = true;
-        notify.error(t('errAutosave'), errorMessage(e));
+        notify.error(
+          'Your open projects could not be saved for the next start. They are still open: save them to keep them.',
+          errorMessage(e),
+        );
       }
     });
     return saving;
@@ -218,10 +215,9 @@ export function startApp(root: HTMLElement): void {
     // (locked) model of a running animation export still renders – stop the export before its next
     // frame instead of encoding frames with blank artwork.
     if (modelLocked && (e.source === 'project' || e.source === 'document')) animationAbort?.abort();
-    if (hasAny(e, 'model', 'params', 'images', 'lang')) rebuild.schedule();
+    if (hasAny(e, 'model', 'params', 'images')) rebuild.schedule();
     // Camera changes made in the viewport are already applied there – never push them back.
     if (e.kinds.has('scene') || (e.kinds.has('camera') && e.source !== 'stage')) applyScene.schedule();
-    if (e.kinds.has('lang')) document.documentElement.lang = store.state.lang;
     if (hasAny(e, 'model', 'params', 'images', 'scene', 'camera', 'export')) scheduleAutosave();
   });
 
@@ -266,7 +262,7 @@ export function startApp(root: HTMLElement): void {
     if (!files.length) return;
     if (exportBusy.value) {
       waitingFiles.push(...files);
-      notify.info(t('openAfterExport', { n: files.length }));
+      notify.info(`Projects to open: ${files.length}. They open when the export ends.`);
       return;
     }
     document.body.classList.add('is-busy');
@@ -277,7 +273,7 @@ export function startApp(root: HTMLElement): void {
           try {
             json = JSON.parse(await f.text());
           } catch {
-            throw new ProjectError(t('errNotProject'));
+            throw new ProjectError('This is not a Mockup Director project file.');
           }
           const { state, failed } = await hydrateProject(parseProjectFile(json));
           const name = projectNameOf(f.name);
@@ -290,10 +286,10 @@ export function startApp(root: HTMLElement): void {
           } else {
             docs.add(state, { name });
           }
-          notify.success(t('projectOpened'), f.name);
-          if (failed) notify.warning(t('imagesFailed', { n: failed }));
+          notify.success('Project opened', f.name);
+          if (failed) notify.warning(`Could not load images: ${failed}`);
         } catch (e) {
-          notify.error(t('errOpen'), `${f.name}: ${errorMessage(e)}`);
+          notify.error('Could not open the project', `${f.name}: ${errorMessage(e)}`);
         }
       }
     } finally {
@@ -334,19 +330,6 @@ export function startApp(root: HTMLElement): void {
       });
     },
 
-    setLang(lang: Lang) {
-      if (lang === store.state.lang) return;
-      setLang(lang);
-      safeStorage.set(LANG_KEY, lang);
-      store.update(
-        ['lang'],
-        (s) => {
-          s.lang = lang;
-        },
-        { history: false },
-      );
-    },
-
     async newProject() {
       if (exportBusy.value) return;
       docs.add(freshDocument(store.state.modelId));
@@ -357,7 +340,7 @@ export function startApp(root: HTMLElement): void {
         const files = file ? [file] : await pickFiles(`.${PROJECT_EXT}`, true);
         await openProjectFiles(files);
       } catch (e) {
-        notify.error(t('errOpen'), errorMessage(e));
+        notify.error('Could not open the project', errorMessage(e));
       }
     },
 
@@ -370,14 +353,14 @@ export function startApp(root: HTMLElement): void {
         const revision = store.revision;
         const file = toProjectFile(store.state);
         const blob = new Blob([JSON.stringify(file)], { type: 'application/json' });
-        const suggested = `${docs.tab(tabId)?.name || t('defaultProjectName')}.${PROJECT_EXT}`;
-        const saved = await saveBlob(blob, suggested, [{ name: t('projectFileType'), extensions: [PROJECT_EXT] }]);
+        const suggested = `${docs.tab(tabId)?.name || 'project'}.${PROJECT_EXT}`;
+        const saved = await saveBlob(blob, suggested, [{ name: 'Mockup Director project', extensions: [PROJECT_EXT] }]);
         if (!saved) return false;
         docs.markSaved(tabId, revision, projectNameOf(saved));
-        notify.success(t('projectSaved'), saved);
+        notify.success('Project saved', saved);
         return true;
       } catch (e) {
-        notify.error(t('errSave'), errorMessage(e));
+        notify.error('Could not save the project', errorMessage(e));
         return false;
       }
     },
@@ -390,12 +373,12 @@ export function startApp(root: HTMLElement): void {
         // Show the project the question is about.
         docs.activate(tabId);
         const choice = await choiceDialog({
-          title: t('unsavedTitle', { name: tabLabel(tab) }),
-          message: t('unsavedMsg'),
+          title: `Save changes to “${tabLabel(tab)}”?`,
+          message: 'Your changes will be lost if you don’t save them.',
           choices: [
-            { id: 'save', label: t('save'), primary: true },
-            { id: 'discard', label: t('dontSave'), danger: true },
-            { id: 'cancel', label: t('cancel') },
+            { id: 'save', label: 'Save', primary: true },
+            { id: 'discard', label: 'Don’t save', danger: true },
+            { id: 'cancel', label: 'Cancel' },
           ],
         });
         // The tab may have been closed meanwhile; save exactly this tab, whatever is active now.
@@ -427,16 +410,16 @@ export function startApp(root: HTMLElement): void {
         const settings = { ...s.export };
         if (settings.format === 'webp' && !webpEncodingSupported()) settings.format = 'png';
         const blob = await exportBlob(stage, settings, { ...s.scene.background });
-        if (!blob || blob.size === 0) throw new Error(t('errExportEmpty'));
+        if (!blob || blob.size === 0) throw new Error('The rendered image is empty.');
         const name = fileNameFor(s.modelId, settings.format);
         const ext = extensionFor(settings.format);
         const saved = await saveBlob(blob, name, [
           { name: settings.format === 'jpeg' ? 'JPEG' : settings.format.toUpperCase(), extensions: [ext] },
         ]);
-        if (saved) notify.success(t('saved'), saved);
+        if (saved) notify.success('Saved', saved);
       } catch (e) {
         console.error('[mockup-director] export failed', e);
-        notify.error(t('errExport'), errorMessage(e));
+        notify.error('Export failed', errorMessage(e));
       } finally {
         exportBusy.set(false);
       }
@@ -476,13 +459,13 @@ export function startApp(root: HTMLElement): void {
         animationProgress.set(null);
         const name = animationFileName(modelId, result.format);
         const saved = await saveBlob(result.blob, name, [animationFileFilter(result.format)]);
-        if (saved) notify.success(t('saved'), saved);
+        if (saved) notify.success('Saved', saved);
       } catch (e) {
         if (isAnimationCancelled(e)) {
-          notify.info(t('animCancelled'));
+          notify.info('Animation export cancelled');
         } else {
           console.error('[mockup-director] animation export failed', e);
-          notify.error(t('errExportAnimation'), errorMessage(e));
+          notify.error('Animation export failed', errorMessage(e));
         }
       } finally {
         animationAbort = null;
@@ -497,7 +480,7 @@ export function startApp(root: HTMLElement): void {
 
     openBatchExport() {
       if (exportBusy.value) {
-        notify.warning(t('batchBusy'));
+        notify.warning('Another export is running – wait for it to finish.');
         return;
       }
       openBatchDialog(ctx, batchHost);
@@ -532,11 +515,11 @@ export function startApp(root: HTMLElement): void {
     async assignImages(files, slotIds) {
       const model = getModel(store.state.modelId);
       if (!files.length) {
-        notify.warning(t('unsupportedFile'));
+        notify.warning('Unsupported file – choose an image (PNG, JPEG, WebP…).');
         return;
       }
       if (!model.slots.length) {
-        notify.warning(t('noSlots'));
+        notify.warning('This model has no artwork slots.');
         return;
       }
       let targets: string[];
@@ -549,7 +532,8 @@ export function startApp(root: HTMLElement): void {
         const filled = model.slots.filter((s) => !!imgs[s.id]).map((s) => s.id);
         targets = [...empty, ...filled].slice(0, files.length);
       }
-      if (files.length > targets.length) notify.info(t('tooManyFiles', { n: files.length - targets.length }));
+      if (files.length > targets.length)
+        notify.info(`Skipped files: ${files.length - targets.length} (no free slots).`);
       const pairs = targets.map((slotId, i) => ({ slotId, file: files[i] }));
       // Decoding takes a while: the images belong to this tab, even if another one is shown by then.
       const tabId = docs.activeId;
@@ -560,7 +544,7 @@ export function startApp(root: HTMLElement): void {
         const loaded: Record<string, ImageMap[string][string]> = {};
         results.forEach((r, i) => {
           if (r.status === 'fulfilled') loaded[pairs[i].slotId] = r.value;
-          else notify.error(t('errImage', { name: pairs[i].file.name }), errorMessage(r.reason));
+          else notify.error(`Could not load “${pairs[i].file.name}”`, errorMessage(r.reason));
         });
         if (Object.keys(loaded).length && !docs.tab(tabId)) {
           // The tab was closed meanwhile.
@@ -572,7 +556,7 @@ export function startApp(root: HTMLElement): void {
             s.images[model.id] = { ...(s.images[model.id] ?? {}), ...loaded };
           });
           store.endBurst();
-          if (model.id !== store.state.modelId) notify.info(t('imagesAssignedTo', { name: lt(model.name) }));
+          if (model.id !== store.state.modelId) notify.info(`Artwork assigned to “${model.name}”.`);
         }
       } finally {
         setLoading(keys, false);
@@ -584,7 +568,7 @@ export function startApp(root: HTMLElement): void {
         const files = await pickFiles('image/*', false);
         if (files.length) await actions.assignImages(files.slice(0, 1), [slotId]);
       } catch (e) {
-        notify.error(t('errPick'), errorMessage(e));
+        notify.error('Could not pick the file', errorMessage(e));
       }
     },
 
@@ -605,16 +589,16 @@ export function startApp(root: HTMLElement): void {
         const model = getModel(s.modelId);
         const slot = model.slots.find((x) => x.id === slotId);
         if (!slot) return;
-        const res = await templateBlob(model.id, slot, s.lang, 300, completeParams(model, s.params[model.id]));
+        const res = await templateBlob(model.id, slot, 300, completeParams(model, s.params[model.id]));
         if (!res) {
-          notify.warning(t('noTemplate'));
+          notify.warning('This item has no template.');
           return;
         }
         const { blob, name } = res;
         const saved = await saveBlob(blob, name, [{ name: 'PNG', extensions: ['png'] }]);
-        if (saved) notify.success(t('saved'), saved);
+        if (saved) notify.success('Saved', saved);
       } catch (e) {
-        notify.error(t('errTemplate'), errorMessage(e));
+        notify.error('Could not create the template', errorMessage(e));
       }
     },
 
@@ -690,13 +674,6 @@ export function startApp(root: HTMLElement): void {
   };
   docs.subscribe(updateTitle);
   updateTitle();
-  store.subscribe((e) => {
-    if (e.kinds.has('lang')) {
-      toolbar.render();
-      tabBar.render();
-      updateTitle();
-    }
-  });
 
   installShortcuts(ctx);
 
@@ -705,7 +682,7 @@ export function startApp(root: HTMLElement): void {
   window.addEventListener('drop', (e) => e.preventDefault());
   window.addEventListener('unhandledrejection', (e) => {
     console.error('[mockup-director] unhandled rejection', e.reason);
-    notify.error(t('errUnexpected'), errorMessage(e.reason));
+    notify.error('An unexpected error occurred', errorMessage(e.reason));
   });
 
   // Keep the renderer sized to its container.
@@ -728,7 +705,10 @@ export function startApp(root: HTMLElement): void {
   restoreSession()
     .catch((e) => {
       console.error('[mockup-director] session restore failed', e);
-      notify.error(t('errRestore'), errorMessage(e));
+      notify.error(
+        'The projects that were open last time could not be reopened. They are kept for the next start; until then, open projects are not saved automatically, so save them to files.',
+        errorMessage(e),
+      );
     })
     .finally(() => {
       restoring = false;
@@ -737,7 +717,7 @@ export function startApp(root: HTMLElement): void {
       // Projects the operating system asked to open (a double-clicked .mdproj), each in a tab.
       void handleOpenedFiles(
         (files) => void openProjectFiles(files),
-        (e) => notify.error(t('errOpen'), errorMessage(e)),
+        (e) => notify.error('Could not open the project', errorMessage(e)),
       );
     });
 
@@ -766,8 +746,8 @@ export function startApp(root: HTMLElement): void {
       docs.activate(restored.some((r) => r.id === stored.activeId) ? stored.activeId : restored[0].id);
       docs.close(initial);
     }
-    if (restored.length) notify.info(t('restoredTabs', { n: restored.length }));
-    if (skipped) notify.warning(t('restoreSkipped', { n: skipped }));
-    if (failedImages) notify.warning(t('imagesFailed', { n: failedImages }));
+    if (restored.length) notify.info(`Restored the projects that were open: ${restored.length}`);
+    if (skipped) notify.warning(`Projects that could not be reopened: ${skipped}. Open them again from their files.`);
+    if (failedImages) notify.warning(`Could not load images: ${failedImages}`);
   }
 }

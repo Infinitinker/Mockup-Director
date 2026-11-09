@@ -1,10 +1,10 @@
 /**
- * "Grafiki" tab: one card per image slot of the current model.
+ * "Artwork" tab: one card per artwork slot of the current model.
  */
 import type { ImageAsset, ImageSlotDef } from '../../core/types';
 import { getModel } from '../../models/registry';
 import type { AppContext } from '../context';
-import { formatNumber, lt, t } from '../../i18n';
+import { formatNumber } from '../numbers';
 import { h } from '../dom';
 import { ICONS } from '../icons';
 import { aspectMismatch, completeParams, expectedAspects } from '../modelUtils';
@@ -45,7 +45,7 @@ function thumbnailFor(a: ImageAsset): string {
   return url;
 }
 
-export function createImagesPanel(ctx: AppContext): { el: HTMLElement; render(): void } {
+export function createImagesPanel(ctx: AppContext): { el: HTMLElement } {
   const el = h('div', { class: 'panel panel-images' });
   /** Re-checked on params changes (template size may depend on dimensions). */
   let warnUpdaters: (() => void)[] = [];
@@ -58,10 +58,10 @@ export function createImagesPanel(ctx: AppContext): { el: HTMLElement; render():
     if (asset)
       thumb.appendChild(h('img', { attrs: { src: thumbnailFor(asset), alt: asset.name, draggable: 'false' } }));
     else thumb.appendChild(h('span', { class: 'slot-empty-icon', html: ICONS.image }));
-    if (loading) thumb.appendChild(h('span', { class: 'spinner', attrs: { 'aria-label': t('loading') } }));
+    if (loading) thumb.appendChild(h('span', { class: 'spinner', attrs: { 'aria-label': 'Loading…' } }));
 
     const badge = h('span', { class: 'warn-badge', html: ICONS.warn, attrs: { hidden: true } });
-    badge.appendChild(h('span', { text: t('aspectBadge') }));
+    badge.appendChild(h('span', { text: 'Aspect' }));
     thumb.appendChild(badge);
 
     const fileLine = asset
@@ -71,15 +71,15 @@ export function createImagesPanel(ctx: AppContext): { el: HTMLElement; render():
           h('span', { class: 'slot-filename', text: asset.name }),
           h('span', { class: 'slot-size', text: `${asset.width} × ${asset.height} px` }),
         )
-      : h('div', { class: 'slot-file empty', text: t('noImage') });
+      : h('div', { class: 'slot-file empty', text: 'No artwork – drop a file here' });
 
     const actions = h(
       'div',
       { class: 'slot-actions' },
       h('button', {
         class: 'btn btn-small',
-        text: t('choose'),
-        title: t('chooseImageFor', { name: lt(slot.label) }),
+        text: 'Choose…',
+        title: `Choose artwork: ${slot.label}`,
         attrs: { type: 'button' },
         on: { click: () => void ctx.actions.pickImageFor(slot.id) },
       }),
@@ -88,8 +88,8 @@ export function createImagesPanel(ctx: AppContext): { el: HTMLElement; render():
             'button',
             {
               class: 'btn btn-small btn-icon-only',
-              title: t('removeImage'),
-              label: t('removeImage'),
+              title: 'Remove artwork',
+              label: 'Remove artwork',
               attrs: { type: 'button' },
               on: { click: () => ctx.actions.removeImage(slot.id) },
             },
@@ -101,12 +101,12 @@ export function createImagesPanel(ctx: AppContext): { el: HTMLElement; render():
             'button',
             {
               class: 'btn btn-small',
-              title: t('templateTitle'),
+              title: 'Download print template (PNG, 300 dpi)',
               attrs: { type: 'button' },
               on: { click: () => void ctx.actions.downloadTemplate(slot.id) },
             },
             h('span', { class: 'btn-icon', html: ICONS.template }),
-            h('span', { class: 'btn-text', text: t('template') }),
+            h('span', { class: 'btn-text', text: 'Template' }),
           )
         : null,
     );
@@ -118,8 +118,8 @@ export function createImagesPanel(ctx: AppContext): { el: HTMLElement; render():
       h(
         'div',
         { class: 'slot-info' },
-        h('div', { class: 'slot-name', text: lt(slot.label) }),
-        slot.hint ? h('div', { class: 'slot-hint', text: lt(slot.hint) }) : null,
+        h('div', { class: 'slot-name', text: slot.label }),
+        slot.hint ? h('div', { class: 'slot-hint', text: slot.hint }) : null,
         fileLine,
         actions,
       ),
@@ -136,7 +136,7 @@ export function createImagesPanel(ctx: AppContext): { el: HTMLElement; render():
       el.classList.toggle('warn', bad);
       if (bad) {
         const exp = expected.map((x) => formatNumber(x, 3)).join(' / ');
-        badge.title = t('aspectWarning', { actual: formatNumber(asset.width / asset.height, 3), expected: exp });
+        badge.title = `Artwork aspect ratio (${formatNumber(asset.width / asset.height, 3)}) differs from the expected one (${exp}) by more than 3% – the image may look distorted.`;
       }
     };
     updateWarn();
@@ -180,17 +180,24 @@ export function createImagesPanel(ctx: AppContext): { el: HTMLElement; render():
     const s = ctx.store.state;
     const model = getModel(s.modelId);
     if (!model.slots.length) {
-      el.appendChild(h('p', { class: 'empty-state', text: t('noSlots') }));
+      el.appendChild(h('p', { class: 'empty-state', text: 'This model has no artwork slots.' }));
       return;
     }
     // Mention print templates only when this model actually offers one (screens/devices do not).
     const hasTemplates = model.slots.some((sl) => !!sl.template);
-    el.appendChild(h('p', { class: 'panel-intro', text: t(hasTemplates ? 'imagesIntro' : 'imagesIntroNoTemplates') }));
+    el.appendChild(
+      h('p', {
+        class: 'panel-intro',
+        text: hasTemplates
+          ? 'Drop a file on a card or on the preview. A template is a 300 dpi PNG with trim and bleed guides.'
+          : 'Drop a file on a card or on the preview.',
+      }),
+    );
     for (const slot of model.slots) el.appendChild(card(slot, model.id));
   };
 
   ctx.store.subscribe((e) => {
-    if (hasAny(e, 'model', 'images', 'lang')) render();
+    if (hasAny(e, 'model', 'images')) render();
     else if (e.kinds.has('params'))
       warnUpdaters.forEach((u) => {
         u();
@@ -198,5 +205,5 @@ export function createImagesPanel(ctx: AppContext): { el: HTMLElement; render():
   });
   ctx.loadingSlots.subscribe(() => render());
   render();
-  return { el, render };
+  return { el };
 }

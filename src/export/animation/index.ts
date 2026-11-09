@@ -12,8 +12,8 @@
  * The stage is always restored (try/finally), also on errors and cancellation.
  */
 import type { AnimationFormat, AnimationSettings, BackgroundSettings, StageAPI } from '../../core/types';
-import { msg } from '../../i18n';
 import { paintBackground } from '../exporter';
+import { StageError } from '../../scene/errors';
 import { AnimationCancelled, AnimationError } from './errors';
 import { GifAnimationEncoder } from './gif';
 import { AnimatedWebpWriter } from './webp';
@@ -90,7 +90,7 @@ export async function exportAnimation(
     throw raw.format === 'webp' ? webpUnsupported() : mp4Unsupported();
   }
   if (!stage.beginAnimation) {
-    throw new AnimationError('unsupported', msg('errAnimationNeedsWebgl'));
+    throw new AnimationError('unsupported', 'Animation export needs the 3D view (WebGL).');
   }
   const signal = opts.signal;
   const checkAbort = () => {
@@ -158,7 +158,7 @@ export async function exportAnimation(
       try {
         mp4 = await Mp4Writer.create(W, H, fps, s.quality);
       } catch (e) {
-        throw new AnimationError('mp4-unsupported', msg('errMp4Unsupported'), e);
+        throw mp4Unsupported(e);
       }
       if (!mp4) throw mp4Unsupported();
     }
@@ -225,9 +225,9 @@ export async function exportAnimation(
     return { blob, format: s.format, width: W, height: H, frames: n };
   } catch (e) {
     if (e instanceof AnimationError || e instanceof AnimationCancelled) throw e;
-    if (e && typeof e === 'object' && 'text' in e) throw e; // localized stage errors
+    if (e instanceof StageError) throw e; // its message is meant for the user
     console.error('[mockup-director] animation export failed', e);
-    throw new AnimationError('encode-failed', msg('errAnimationFailed', { error: errorText(e) }), e);
+    throw new AnimationError('encode-failed', `Could not create the animation (${errorText(e)}).`, e);
   } finally {
     session?.end();
     if (mp4 && !finished) void mp4.cancel();
@@ -284,7 +284,7 @@ function createCanvas(w: number, h: number): HTMLCanvasElement {
 function get2d(c: HTMLCanvasElement, willReadFrequently = false): CanvasRenderingContext2D {
   const g = c.getContext('2d', willReadFrequently ? { willReadFrequently: true } : undefined);
   if (!g) {
-    throw new AnimationError('render-failed', msg('errAnimationTooLarge'));
+    throw new AnimationError('render-failed', 'Not enough memory for an animation this large. Reduce the size.');
   }
   return g;
 }
@@ -306,15 +306,22 @@ function errorText(e: unknown): string {
 }
 
 function encodeFailed(): AnimationError {
-  return new AnimationError('encode-failed', msg('errAnimationEncode'));
+  return new AnimationError('encode-failed', 'Could not encode the animation (out of memory?).');
 }
 
 function webpUnsupported(): AnimationError {
-  return new AnimationError('webp-unsupported', msg('errWebpAnimation'));
+  return new AnimationError(
+    'webp-unsupported',
+    'WebP encoding is not supported on this system. Please choose GIF or MP4.',
+  );
 }
 
-function mp4Unsupported(): AnimationError {
-  return new AnimationError('mp4-unsupported', msg('errMp4Unsupported'));
+function mp4Unsupported(cause?: unknown): AnimationError {
+  return new AnimationError(
+    'mp4-unsupported',
+    'This system cannot encode H.264 video (MP4) at this size. WebView2 / Chromium, Safari 16.4+ (macOS 13.3+) or a recent WebKitGTK is required. Choose GIF or a smaller size.',
+    cause,
+  );
 }
 
 /** Frame count shown in the UI (same rule as the exporter). */

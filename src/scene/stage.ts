@@ -28,7 +28,7 @@ import type {
   StageAPI,
 } from '../core/types';
 import { DEFAULT_SCENE, cloneScene } from '../core/defaults';
-import { msg, mtIn, type Message } from '../i18n';
+import { StageError } from './errors';
 import { disposeObject } from '../models/shared';
 import { UnionFit, fitCamera, type FitResult } from './framing';
 import { GroundShadow, computeShadowLayout, type ShadowLayout } from './shadows';
@@ -185,16 +185,6 @@ function cameraEquals(a: CameraSettings, b: CameraSettings): boolean {
     eq(a.panX, b.panX) &&
     eq(a.panY, b.panY)
   );
-}
-
-/** Stage failure with a user-presentable message (errorMessage() in the UI shows `text`; `message` is the English text). */
-class StageError extends Error {
-  readonly text: Message;
-  constructor(text: Message) {
-    super(mtIn('en', text));
-    this.name = 'StageError';
-    this.text = text;
-  }
 }
 
 /** Safari's non-standard trackpad pinch event. */
@@ -724,7 +714,7 @@ export function createStage(container: HTMLElement): StageAPI {
    * valid for all frames – the composition is fixed and never cropped.
    */
   function startAnimation(o: AnimationFramingOptions): AnimationRenderSession {
-    if (disposed || contextLost) throw new StageError(msg('errStageUnavailable'));
+    if (disposed || contextLost) throw new StageError('The 3D view is not available.');
     anim?.end();
 
     const angles = (Array.isArray(o.angles) ? o.angles : []).map((a) => finite(a, 0));
@@ -837,7 +827,7 @@ export function createStage(container: HTMLElement): StageAPI {
       renderFrame(index: number, target: HTMLCanvasElement) {
         if (ended) throw new Error('The animation session has ended.');
         if (disposed || contextLost || model !== startModel) {
-          throw new StageError(msg('errSceneChanged'));
+          throw new StageError('The scene changed while the animation was being rendered. Please try again.');
         }
         const i = THREE.MathUtils.clamp(Math.round(finite(index, 0)), 0, angles.length - 1);
         const a = angles[i];
@@ -845,7 +835,7 @@ export function createStage(container: HTMLElement): StageAPI {
         if (target.height !== H) target.height = H;
         const outCtx = target.getContext('2d');
         if (!outCtx) {
-          throw new StageError(msg('errFrameMemory'));
+          throw new StageError('Not enough memory for an animation frame.');
         }
         outCtx.clearRect(0, 0, W, H);
         let ctx = outCtx;

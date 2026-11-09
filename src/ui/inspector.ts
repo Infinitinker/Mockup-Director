@@ -2,7 +2,6 @@
  * Right sidebar: tabbed inspector (Artwork / Model / Scene / Export / Looks).
  */
 import { h, safeStorage } from './dom';
-import { t, type MessageKey } from '../i18n';
 import type { AppContext, TabId } from './context';
 import { createImagesPanel } from './panels/imagesPanel';
 import { createModelPanel } from './panels/modelPanel';
@@ -13,12 +12,12 @@ import { getModel } from '../models/registry';
 import { hasAny } from './state';
 
 const TAB_KEY = 'mockup-director.ui.tab';
-const TABS: { id: TabId; label: MessageKey }[] = [
-  { id: 'images', label: 'tabImages' },
-  { id: 'model', label: 'tabModel' },
-  { id: 'scene', label: 'tabScene' },
-  { id: 'export', label: 'tabExport' },
-  { id: 'styles', label: 'tabStyles' },
+const TABS: { id: TabId; label: string }[] = [
+  { id: 'images', label: 'Artwork' },
+  { id: 'model', label: 'Model' },
+  { id: 'scene', label: 'Scene' },
+  { id: 'export', label: 'Export' },
+  { id: 'styles', label: 'Looks' },
 ];
 
 export function createInspector(ctx: AppContext): { el: HTMLElement; show(tab: TabId): void } {
@@ -55,7 +54,7 @@ export function createInspector(ctx: AppContext): { el: HTMLElement; show(tab: T
 
   const renderTabs = () => {
     tabBar.replaceChildren();
-    tabBar.setAttribute('aria-label', t('inspector'));
+    tabBar.setAttribute('aria-label', 'Inspector');
     for (const tab of TABS) {
       const b = h(
         'button',
@@ -64,7 +63,7 @@ export function createInspector(ctx: AppContext): { el: HTMLElement; show(tab: T
           attrs: { type: 'button', role: 'tab', id: `tab-${tab.id}`, 'aria-controls': `panel-${tab.id}` },
           on: { click: () => show(tab.id) },
         },
-        h('span', { text: t(tab.label) }),
+        h('span', { text: tab.label }),
         tab.id === 'images' && imagesBadge() ? h('span', { class: 'tab-badge', text: imagesBadge() }) : null,
       );
       buttons.set(tab.id, b);
@@ -103,7 +102,7 @@ export function createInspector(ctx: AppContext): { el: HTMLElement; show(tab: T
   };
 
   ctx.store.subscribe((e) => {
-    if (hasAny(e, 'lang', 'model', 'images')) renderTabs();
+    if (hasAny(e, 'model', 'images')) renderTabs();
   });
   renderTabs();
   return { el, show };

@@ -164,10 +164,6 @@ On macOS use ⌘ instead of Ctrl, except for switching tabs (Ctrl+Tab / Ctrl+Shi
 | Ctrl+Shift+Z (or Ctrl+Y on Windows and Linux) | Redo |
 | 1–6 | Preset camera views (front, 3/4 left, 3/4 right, side, top, back) |
 
-## Language
-
-Mockup Director speaks English and Polish. On the first start it follows your system language (Polish systems get Polish, everyone else English); switch it any time with **EN / PL** in the toolbar.
-
 ## Questions
 
 **Windows says "Windows protected your PC".**
@@ -205,7 +201,7 @@ No. It makes no network connections: no accounts, no telemetry and no update che
 Yes. The images you export are yours, and the app contains no third-party templates, artwork or logos. If your design needs a logo such as the DVD Video, Blu-ray Disc or Apple logos, add it to your own artwork under its owner's terms.
 
 **Where are my settings and open tabs?**
-Your looks, the interface language and the open tabs are kept in your user profile, in a folder named after the app's identifier, `io.github.infinitinker.mockupdirector`: on Windows in `%LOCALAPPDATA%`, on Linux in `~/.local/share`, on macOS in `~/Library/WebKit`. Your projects are wherever you saved the `.mdproj` files.
+Your looks, the open tabs and a few interface choices are kept in your user profile, in a folder named after the app's identifier, `io.github.infinitinker.mockupdirector`: on Windows in `%LOCALAPPDATA%`, on Linux in `~/.local/share`, on macOS in `~/Library/WebKit`. Your projects are wherever you saved the `.mdproj` files.
 
 **How do I update or remove it?**
 To update, install the newer version over the old one: run the new installer on Windows, drag the new app to **Applications** on macOS, or install the new package or replace the AppImage on Linux; with the portable ZIP, replace its folder. Your looks and open tabs stay. To remove it, uninstall it like any other app (on Windows in Settings → Apps). Uninstalling keeps the settings folder above; delete it yourself to remove everything. On Windows, if you installed Mockup Director for you alone, the uninstaller asks whether to delete it too.
@@ -217,12 +213,11 @@ Hold the pointer over **Mockup Director** at the left of the toolbar.
 
 New models, fixes and ideas are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md). Found a security problem? Please report it privately, as [SECURITY.md](SECURITY.md) describes.
 
-Further documentation, for developers and translators:
+Further documentation, for developers:
 
 - [docs/development.md](docs/development.md): building and running from source, checks, branches
 - [docs/architecture.md](docs/architecture.md): how the app is built and where the code lives
 - [docs/models.md](docs/models.md): adding a new 3D model
-- [docs/translations.md](docs/translations.md): how translations work, and adding a language
 - [docs/releasing.md](docs/releasing.md): versions, releases and code signing
 - [docs/licenses.md](docs/licenses.md): the dependency license policy and third-party notices
 
@@ -235,7 +230,7 @@ Mockup Director is free, with no ads and no tracking. If it saves you time, you 
   <a href="https://buycoffee.to/infinitinker"><img src="https://img.shields.io/badge/buycoffee.to-support-FFB400" alt="Support on buycoffee.to"></a>
 </p>
 
-Ko-fi takes cards and PayPal; buycoffee.to suits Polish supporters, with BLIK and Polish bank transfers.
+Ko-fi takes cards and PayPal; buycoffee.to suits supporters in Poland, with BLIK and local bank transfers.
 
 ## License
 

@@ -9,7 +9,6 @@ import { MODELS, getModel } from '../models/registry';
 import type { DocumentState, ImageMap } from './state';
 import { sanitizeParam } from './modelUtils';
 import { clamp } from './dom';
-import { t } from '../i18n';
 import { animationFormatSupport, webpEncodingSupported } from './exportBridge';
 import { normaliseAnimationSettings } from '../export/animation/settings';
 
@@ -130,10 +129,12 @@ export function toProjectFile(s: DocumentState): ProjectFile {
 
 export class ProjectError extends Error {}
 
-/** Validate untrusted JSON and return a clean ProjectFile. Throws ProjectError with a localized message. */
+/** Validate untrusted JSON and return a clean ProjectFile. Throws ProjectError with a message for the user. */
 export function parseProjectFile(json: unknown): ProjectFile {
-  if (!isPlain(json) || json.app !== 'mockup-director') throw new ProjectError(t('errNotProject'));
-  if (typeof json.version !== 'number' || json.version > 1) throw new ProjectError(t('errProjectVersion'));
+  if (!isPlain(json) || json.app !== 'mockup-director')
+    throw new ProjectError('This is not a Mockup Director project file.');
+  if (typeof json.version !== 'number' || json.version > 1)
+    throw new ProjectError('The project file comes from a newer Mockup Director version.');
 
   const modelId =
     typeof json.modelId === 'string' && MODELS.some((m) => m.id === json.modelId) ? json.modelId : MODELS[0].id;

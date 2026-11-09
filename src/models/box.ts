@@ -9,15 +9,7 @@
  * Templates / params / materials: src/models/box/common.ts.
  */
 import * as THREE from 'three';
-import type {
-  ImageSlotDef,
-  LocalizedText,
-  ModelContext,
-  ModelDefinition,
-  ParamValues,
-  PrintTemplate,
-} from '../core/types';
-import { L } from './shared';
+import type { ImageSlotDef, ModelContext, ModelDefinition, ParamValues, PrintTemplate } from '../core/types';
 import {
   aspectOf,
   bevelParam,
@@ -51,8 +43,8 @@ export type BoxSlotId = 'front' | 'back' | 'left' | 'right' | 'top' | 'bottom';
 interface FaceSpec {
   slot: BoxSlotId;
   face: FaceId;
-  label: LocalizedText;
-  hint: LocalizedText;
+  label: string;
+  hint: string;
   /** Trim size of the face in mm (w = horizontal as seen from outside). */
   size: (W: number, H: number, D: number) => [number, number];
 }
@@ -61,43 +53,43 @@ const FACE_SPECS: readonly FaceSpec[] = [
   {
     slot: 'front',
     face: 'pz',
-    label: L('Front'),
-    hint: L('Main artwork of the box.'),
+    label: 'Front',
+    hint: 'Main artwork of the box.',
     size: (W, H) => [W, H],
   },
   {
     slot: 'back',
     face: 'nz',
-    label: L('Back'),
-    hint: L('Back of the box, as seen from behind.'),
+    label: 'Back',
+    hint: 'Back of the box, as seen from behind.',
     size: (W, H) => [W, H],
   },
   {
     slot: 'left',
     face: 'nx',
-    label: L('Left side'),
-    hint: L('The right edge of the artwork meets the front.'),
+    label: 'Left side',
+    hint: 'The right edge of the artwork meets the front.',
     size: (_W, H, D) => [D, H],
   },
   {
     slot: 'right',
     face: 'px',
-    label: L('Right side'),
-    hint: L('The left edge of the artwork meets the front.'),
+    label: 'Right side',
+    hint: 'The left edge of the artwork meets the front.',
     size: (_W, H, D) => [D, H],
   },
   {
     slot: 'top',
     face: 'py',
-    label: L('Top'),
-    hint: L('The bottom edge of the artwork meets the front.'),
+    label: 'Top',
+    hint: 'The bottom edge of the artwork meets the front.',
     size: (W, _H, D) => [W, D],
   },
   {
     slot: 'bottom',
     face: 'ny',
-    label: L('Bottom'),
-    hint: L('The top edge of the artwork meets the front.'),
+    label: 'Bottom',
+    hint: 'The top edge of the artwork meets the front.',
     size: (W, _H, D) => [W, D],
   },
 ];
@@ -161,8 +153,8 @@ export function buildBox(ctx: ModelContext): THREE.Object3D {
 export const boxModel: ModelDefinition = {
   id: 'box',
   category: 'box',
-  name: L('Box'),
-  description: L('Cardboard product box with separate artwork for every face.'),
+  name: 'Box',
+  description: 'Cardboard product box with separate artwork for every face.',
   icon: icon('<path d="M14 20 H40 V56 H14 Z"/><path d="M14 20 L25 9 H51 L40 20"/><path d="M40 56 L51 45 V9"/>'),
   slots: BOX_SLOTS,
   params: [

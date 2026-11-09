@@ -21,8 +21,8 @@
  */
 import * as THREE from 'three';
 import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
-import type { LocalizedText, ModelContext, ModelDefinition, ParamDef, ParamValues } from '../core/types';
-import { L, Lctx, bool, castShadows, num, placeOnGround, remapUVs, str } from './shared';
+import type { ModelContext, ModelDefinition, ParamDef, ParamValues } from '../core/types';
+import { bool, castShadows, num, placeOnGround, remapUVs, str } from './shared';
 
 /* ------------------------------------------------------------------ */
 /* Small helpers                                                       */
@@ -335,23 +335,23 @@ function screenMesh(ctx: ModelContext, w: number, h: number, segX: number, R: nu
 /* Shared params                                                       */
 /* ------------------------------------------------------------------ */
 
-const G_DIM = L('Dimensions');
-const G_POSE = Lctx('computer', 'Pose');
-const G_MAT = L('Material');
-const G_SCREEN = L('Screen');
+const G_DIM = 'Dimensions';
+const G_POSE = 'Pose';
+const G_MAT = 'Material';
+const G_SCREEN = 'Screen';
 
 const SCREEN_PARAMS: ParamDef[] = [
   {
     id: 'screenOn',
     type: 'boolean',
-    label: L('Screen on'),
+    label: 'Screen on',
     group: G_SCREEN,
     default: true,
   },
   {
     id: 'brightness',
     type: 'number',
-    label: L('Screen brightness'),
+    label: 'Screen brightness',
     group: G_SCREEN,
     min: 0,
     max: 200,
@@ -362,22 +362,22 @@ const SCREEN_PARAMS: ParamDef[] = [
   {
     id: 'screenFinish',
     type: 'select',
-    label: L('Screen finish'),
+    label: 'Screen finish',
     group: G_SCREEN,
     options: [
-      { value: 'glossy', label: L('Glossy (glass)') },
-      { value: 'matte', label: L('Matte (anti-glare)') },
+      { value: 'glossy', label: 'Glossy (glass)' },
+      { value: 'matte', label: 'Matte (anti-glare)' },
     ],
     default: 'glossy',
   },
   {
     id: 'fit',
     type: 'select',
-    label: L('Image fit'),
+    label: 'Image fit',
     group: G_SCREEN,
     options: [
-      { value: 'fill', label: L('Fill (crop the excess)') },
-      { value: 'stretch', label: L('Stretch') },
+      { value: 'fill', label: 'Fill (crop the excess)' },
+      { value: 'stretch', label: 'Stretch' },
     ],
     default: 'fill',
   },
@@ -411,7 +411,7 @@ const LAPTOPS: Record<string, LaptopSpec> = {
 };
 
 interface LaptopFinish {
-  label: LocalizedText;
+  label: string;
   body: string;
   metalness: number;
   roughness: number;
@@ -422,7 +422,7 @@ interface LaptopFinish {
 
 const LAPTOP_FINISHES: Record<string, LaptopFinish> = {
   darkGrey: {
-    label: L('Dark grey'),
+    label: 'Dark grey',
     body: '#5f6166',
     metalness: 0.85,
     roughness: 0.38,
@@ -431,7 +431,7 @@ const LAPTOP_FINISHES: Record<string, LaptopFinish> = {
     well: '#2c2d31',
   },
   silver: {
-    label: L('Silver'),
+    label: 'Silver',
     body: '#cfd1d5',
     metalness: 0.95,
     roughness: 0.32,
@@ -440,7 +440,7 @@ const LAPTOP_FINISHES: Record<string, LaptopFinish> = {
     well: '#7c7e83',
   },
   black: {
-    label: L('Black'),
+    label: 'Black',
     body: '#2a2b2e',
     metalness: 0.55,
     roughness: 0.42,
@@ -449,7 +449,7 @@ const LAPTOP_FINISHES: Record<string, LaptopFinish> = {
     well: '#161719',
   },
   white: {
-    label: L('White'),
+    label: 'White',
     body: '#eeede9',
     metalness: 0,
     roughness: 0.4,
@@ -756,16 +756,14 @@ const ICON_LAPTOP =
 export const laptopModel: ModelDefinition = {
   id: 'device-laptop',
   category: 'device',
-  name: L('Laptop'),
-  description: L('Generic modern 13" / 14" / 16" laptop (16:10 screen) with an adjustable lid angle.'),
+  name: 'Laptop',
+  description: 'Generic modern 13" / 14" / 16" laptop (16:10 screen) with an adjustable lid angle.',
   icon: ICON_LAPTOP,
   slots: [
     {
       id: 'screen',
-      label: L('Screen'),
-      hint: L(
-        'A 16:10 screenshot, e.g. 2560 × 1600 px (or 2880 × 1800 / 3456 × 2160 px). Other proportions are cropped or stretched (see “Image fit”).',
-      ),
+      label: 'Screen',
+      hint: 'A 16:10 screenshot, e.g. 2560 × 1600 px (or 2880 × 1800 / 3456 × 2160 px). Other proportions are cropped or stretched (see “Image fit”).',
       aspect: 16 / 10,
     },
   ],
@@ -773,19 +771,19 @@ export const laptopModel: ModelDefinition = {
     {
       id: 'size',
       type: 'select',
-      label: Lctx('computer', 'Size'),
+      label: 'Size',
       group: G_DIM,
       options: [
-        { value: '13', label: L('13" (304 × 215 mm)') },
-        { value: '14', label: L('14" (314 × 221 mm)') },
-        { value: '16', label: L('16" (358 × 248 mm)') },
+        { value: '13', label: '13" (304 × 215 mm)' },
+        { value: '14', label: '14" (314 × 221 mm)' },
+        { value: '16', label: '16" (358 × 248 mm)' },
       ],
       default: '14',
     },
     {
       id: 'openAngle',
       type: 'number',
-      label: L('Lid opening angle'),
+      label: 'Lid opening angle',
       group: G_POSE,
       min: 0,
       max: 180,
@@ -796,7 +794,7 @@ export const laptopModel: ModelDefinition = {
     {
       id: 'color',
       type: 'select',
-      label: L('Body colour'),
+      label: 'Body colour',
       group: G_MAT,
       options: Object.entries(LAPTOP_FINISHES).map(([value, f]) => ({ value, label: f.label })),
       default: 'darkGrey',
@@ -831,7 +829,7 @@ const MONITORS: Record<string, MonitorSpec> = {
 };
 
 interface MonitorFinish {
-  label: LocalizedText;
+  label: string;
   frame: string;
   frameMetal: number;
   frameRough: number;
@@ -842,7 +840,7 @@ interface MonitorFinish {
 
 const MONITOR_FINISHES: Record<string, MonitorFinish> = {
   black: {
-    label: L('Black'),
+    label: 'Black',
     frame: '#1b1c1e',
     frameMetal: 0,
     frameRough: 0.48,
@@ -851,7 +849,7 @@ const MONITOR_FINISHES: Record<string, MonitorFinish> = {
     standRough: 0.4,
   },
   silver: {
-    label: L('Silver'),
+    label: 'Silver',
     frame: '#c6c8cc',
     frameMetal: 0.95,
     frameRough: 0.34,
@@ -860,7 +858,7 @@ const MONITOR_FINISHES: Record<string, MonitorFinish> = {
     standRough: 0.3,
   },
   white: {
-    label: L('White'),
+    label: 'White',
     frame: '#eceae6',
     frameMetal: 0,
     frameRough: 0.42,
@@ -1044,18 +1042,15 @@ const ICON_MONITOR =
 export const monitorModel: ModelDefinition = {
   id: 'device-monitor',
   category: 'device',
-  name: L('Monitor'),
-  description: L(
+  name: 'Monitor',
+  description:
     'Generic thin-bezel monitor: 24" / 27" / 32" (16:9) or a curved 34" ultrawide (21:9), L-shaped or pedestal stand.',
-  ),
   icon: ICON_MONITOR,
   slots: [
     {
       id: 'screen',
-      label: L('Screen'),
-      hint: L(
-        'A 16:9 screenshot, e.g. 2560 × 1440 px (24–32"). For the 34" ultrawide: 21:9, e.g. 3440 × 1440 px. Other proportions are cropped or stretched (see “Image fit”).',
-      ),
+      label: 'Screen',
+      hint: 'A 16:9 screenshot, e.g. 2560 × 1440 px (24–32"). For the 34" ultrawide: 21:9, e.g. 3440 × 1440 px. Other proportions are cropped or stretched (see “Image fit”).',
       aspect: 16 / 9,
     },
   ],
@@ -1063,43 +1058,43 @@ export const monitorModel: ModelDefinition = {
     {
       id: 'size',
       type: 'select',
-      label: Lctx('computer', 'Size'),
+      label: 'Size',
       group: G_DIM,
       options: [
-        { value: '24', label: L('24" (16:9)') },
-        { value: '27', label: L('27" (16:9)') },
-        { value: '32', label: L('32" (16:9)') },
-        { value: '34', label: L('34" ultrawide (21:9)') },
+        { value: '24', label: '24" (16:9)' },
+        { value: '27', label: '27" (16:9)' },
+        { value: '32', label: '32" (16:9)' },
+        { value: '34', label: '34" ultrawide (21:9)' },
       ],
       default: '27',
     },
     {
       id: 'curve',
       type: 'select',
-      label: L('Curvature (34" only)'),
+      label: 'Curvature (34" only)',
       group: G_DIM,
       options: [
-        { value: 'r1800', label: L('1800R (strong)') },
-        { value: 'r3800', label: L('3800R (gentle)') },
-        { value: 'flat', label: L('Flat') },
+        { value: 'r1800', label: '1800R (strong)' },
+        { value: 'r3800', label: '3800R (gentle)' },
+        { value: 'flat', label: 'Flat' },
       ],
       default: 'r1800',
     },
     {
       id: 'stand',
       type: 'select',
-      label: L('Stand'),
+      label: 'Stand',
       group: G_POSE,
       options: [
-        { value: 'arm', label: L('L-shaped arm') },
-        { value: 'pedestal', label: L('Pedestal') },
+        { value: 'arm', label: 'L-shaped arm' },
+        { value: 'pedestal', label: 'Pedestal' },
       ],
       default: 'arm',
     },
     {
       id: 'standHeight',
       type: 'number',
-      label: L('Height (bottom edge above desk)'),
+      label: 'Height (bottom edge above desk)',
       group: G_POSE,
       min: 30,
       max: 200,
@@ -1110,7 +1105,7 @@ export const monitorModel: ModelDefinition = {
     {
       id: 'tilt',
       type: 'number',
-      label: L('Screen tilt'),
+      label: 'Screen tilt',
       group: G_POSE,
       min: -5,
       max: 20,
@@ -1121,7 +1116,7 @@ export const monitorModel: ModelDefinition = {
     {
       id: 'color',
       type: 'select',
-      label: L('Body colour'),
+      label: 'Body colour',
       group: G_MAT,
       options: Object.entries(MONITOR_FINISHES).map(([value, f]) => ({ value, label: f.label })),
       default: 'black',

@@ -14,23 +14,23 @@
  * listeners see that as a change of everything (source 'document'). A document's `revision` changes
  * with every edit and comes back with undo, so "changed since saved" is a revision comparison.
  */
-import type { ExportSettings, ImageAsset, Lang, ParamValues, SceneSettings } from '../core/types';
+import type { ExportSettings, ImageAsset, ParamValues, SceneSettings } from '../core/types';
 import { disposeImageAsset } from '../core/images';
 
-export type ChangeKind = 'model' | 'params' | 'images' | 'scene' | 'camera' | 'export' | 'lang';
+export type ChangeKind = 'model' | 'params' | 'images' | 'scene' | 'camera' | 'export';
 export type ChangeSource = 'ui' | 'stage' | 'history' | 'project' | 'init' | 'document';
 
 /** modelId -> slotId -> image */
 export type ImageMap = Record<string, Record<string, ImageAsset>>;
 
-export interface AppState {
+/** The state of one document (an open project). */
+export interface DocumentState {
   modelId: string;
   /** modelId -> param values (may be partial – always complete with defaults before use) */
   params: Record<string, ParamValues>;
   images: ImageMap;
   scene: SceneSettings;
   export: ExportSettings;
-  lang: Lang;
 }
 
 export interface ChangeEvent {
@@ -40,12 +40,7 @@ export interface ChangeEvent {
 
 export interface UpdateOptions {
   source?: ChangeSource;
-  /** Record an undo step (default: true, except for pure language changes). */
-  history?: boolean;
 }
-
-/** The document part of the state (everything but the interface language). */
-export type DocumentState = Omit<AppState, 'lang'>;
 
 interface Snapshot {
   modelId: string;
@@ -108,7 +103,7 @@ function sameImages(a: ImageMap, b: ImageMap): boolean {
 }
 
 export class Store {
-  private s: AppState;
+  private s: DocumentState;
   private listeners = new Set<(e: ChangeEvent) => void>();
   private historyListeners = new Set<() => void>();
   private undoStack: Snapshot[] = [];
@@ -118,7 +113,7 @@ export class Store {
   private tracked = new Set<ImageAsset>();
   private rev = nextRevision();
 
-  constructor(initial: AppState) {
+  constructor(initial: DocumentState) {
     this.s = initial;
     this.track();
   }
@@ -147,15 +142,14 @@ export class Store {
    */
   swap(next: StoreDocument): StoreDocument {
     this.endBurst();
-    const { lang, ...state } = this.s;
     const out: StoreDocument = {
-      state,
+      state: { ...this.s },
       revision: this.rev,
       undoStack: this.undoStack,
       redoStack: this.redoStack,
       tracked: this.tracked,
     };
-    this.s = { ...next.state, lang };
+    this.s = { ...next.state };
     this.rev = next.revision;
     this.undoStack = next.undoStack;
     this.redoStack = next.redoStack;
@@ -166,7 +160,7 @@ export class Store {
   }
 
   /** Current state. Treat as read-only – mutate only inside update(). */
-  get state(): AppState {
+  get state(): DocumentState {
     return this.s;
   }
 
@@ -180,13 +174,11 @@ export class Store {
     return () => this.historyListeners.delete(fn);
   }
 
-  update(kinds: ChangeKind[], mutate: (s: AppState) => void, opts: UpdateOptions = {}): void {
+  update(kinds: ChangeKind[], mutate: (s: DocumentState) => void, opts: UpdateOptions = {}): void {
     const source = opts.source ?? 'ui';
-    const onlyLang = kinds.length > 0 && kinds.every((k) => k === 'lang');
-    const record = opts.history ?? !onlyLang;
-    if (record) this.checkpoint();
+    this.checkpoint();
     mutate(this.s);
-    if (!onlyLang) this.rev = nextRevision();
+    this.rev = nextRevision();
     this.track();
     this.emit(new Set(kinds), source);
   }
@@ -196,7 +188,7 @@ export class Store {
     this.endBurst();
     this.undoStack = [];
     this.redoStack = [];
-    this.s = { ...next, lang: this.s.lang };
+    this.s = { ...next };
     this.rev = nextRevision();
     this.track();
     this.gc();
@@ -282,7 +274,6 @@ export class Store {
       images: snap.images,
       scene: snap.scene,
       export: snap.export,
-      lang: cur.lang,
     };
     this.rev = snap.revision;
     this.track();

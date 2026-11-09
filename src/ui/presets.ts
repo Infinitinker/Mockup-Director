@@ -2,17 +2,16 @@
  * Style presets ("looks"): named scene settings, optionally including the camera.
  * User presets live in localStorage under 'mockup-director.presets'; a few built-in looks ship with the app.
  */
-import type { CameraSettings, LocalizedText, SceneSettings, ScenePreset } from '../core/types';
+import type { CameraSettings, SceneSettings, ScenePreset } from '../core/types';
 import { DEFAULT_SCENE, cloneScene } from '../core/defaults';
 import { safeStorage } from './dom';
 import { sanitizeScene } from './project';
-import { L } from '../i18n';
 
 export const PRESETS_KEY = 'mockup-director.presets';
 
 export interface BuiltinPreset {
   id: string;
-  name: LocalizedText;
+  name: string;
   scene: ScenePreset['scene'];
 }
 
@@ -26,7 +25,7 @@ const base = (): Omit<SceneSettings, 'camera'> => {
 export const BUILTIN_PRESETS: BuiltinPreset[] = [
   {
     id: 'studio-light',
-    name: L('Bright studio'),
+    name: 'Bright studio',
     scene: {
       ...base(),
       light: { azimuth: -35, elevation: 45, intensity: 1.2, ambient: 0.55, environment: 1, color: '#ffffff' },
@@ -37,7 +36,7 @@ export const BUILTIN_PRESETS: BuiltinPreset[] = [
   },
   {
     id: 'dark-stage',
-    name: L('Dark stage'),
+    name: 'Dark stage',
     scene: {
       ...base(),
       light: { azimuth: 40, elevation: 35, intensity: 1.6, ambient: 0.25, environment: 0.8, color: '#fff4e6' },
@@ -48,7 +47,7 @@ export const BUILTIN_PRESETS: BuiltinPreset[] = [
   },
   {
     id: 'clean-catalog',
-    name: L('Catalogue – no reflection'),
+    name: 'Catalogue – no reflection',
     scene: {
       ...base(),
       light: { azimuth: -20, elevation: 60, intensity: 1.05, ambient: 0.7, environment: 1.1, color: '#ffffff' },
@@ -59,7 +58,7 @@ export const BUILTIN_PRESETS: BuiltinPreset[] = [
   },
   {
     id: 'glossy-hero',
-    name: L('Glossy hero shot'),
+    name: 'Glossy hero shot',
     scene: {
       ...base(),
       camera: { yaw: 28, pitch: 8, roll: 0, fov: 30, projection: 'perspective', zoom: 1, panX: 0, panY: 0 },

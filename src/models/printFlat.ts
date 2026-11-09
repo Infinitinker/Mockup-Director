@@ -20,7 +20,6 @@
 import * as THREE from 'three';
 import type {
   ImageSlotDef,
-  LocalizedText,
   ModelContext,
   ModelDefinition,
   NumberParamDef,
@@ -30,8 +29,6 @@ import type {
   SelectParamDef,
 } from '../core/types';
 import {
-  L,
-  Lctx,
   bool,
   castShadows,
   mmParam,
@@ -50,21 +47,21 @@ import {
 /** Print bleed on every side of every template, mm. */
 const BLEED = 3;
 
-const G_DIM = L('Dimensions');
-const G_MAT = L('Material');
-const G_LAY = L('Layout');
+const G_DIM = 'Dimensions';
+const G_MAT = 'Material';
+const G_LAY = 'Layout';
 
-const TRIM = L('Trim line');
-const FOLD = L('Fold line (spine)');
+const TRIM = 'Trim line';
+const FOLD = 'Fold line (spine)';
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 const deg = THREE.MathUtils.degToRad;
 
-/** Rounds to 2 decimals (sizes in hints; the decimal separator is added by the translation). */
+/** Rounds to 2 decimals (sizes in hints). */
 const round2 = (v: number) => Math.round(v * 100) / 100;
 
 /** Single panel template (w x h trim) with 3 mm bleed on every side. */
-function panelTemplate(w: number, h: number, label: LocalizedText): PrintTemplate {
+function panelTemplate(w: number, h: number, label: string): PrintTemplate {
   const b = BLEED;
   return {
     widthMm: w + 2 * b,
@@ -159,16 +156,16 @@ const PLASTIC_FINISH: Record<Finish, FinishDef> = {
   gloss: { roughness: 0.25, clearcoat: 1, clearcoatRoughness: 0.03 },
 };
 
-function finishParam(def: Finish, label: LocalizedText = L('Finish')): SelectParamDef {
+function finishParam(def: Finish, label: string = 'Finish'): SelectParamDef {
   return {
     id: 'finish',
     type: 'select',
     label,
     group: G_MAT,
     options: [
-      { value: 'matte', label: L('Matte') },
-      { value: 'satin', label: Lctx('flat print', 'Satin') },
-      { value: 'gloss', label: L('Gloss') },
+      { value: 'matte', label: 'Matte' },
+      { value: 'satin', label: 'Satin' },
+      { value: 'gloss', label: 'Gloss' },
     ],
     default: def,
   };
@@ -472,18 +469,18 @@ function sheetMeshes(geos: SheetGeometries, mats: SheetMaterials): THREE.Group {
 
 type Layout = 'flat' | 'leaning' | 'stack' | 'pair';
 
-const LAYOUT_OPTIONS: Record<Layout, { value: Layout; label: LocalizedText }> = {
-  flat: { value: 'flat', label: L('Lying flat') },
-  leaning: { value: 'leaning', label: L('Standing, leaning slightly') },
-  stack: { value: 'stack', label: L('Small stack') },
-  pair: { value: 'pair', label: L('Two: front and back') },
+const LAYOUT_OPTIONS: Record<Layout, { value: Layout; label: string }> = {
+  flat: { value: 'flat', label: 'Lying flat' },
+  leaning: { value: 'leaning', label: 'Standing, leaning slightly' },
+  stack: { value: 'stack', label: 'Small stack' },
+  pair: { value: 'pair', label: 'Two: front and back' },
 };
 
 function layoutParam(kinds: Layout[], def: Layout): SelectParamDef {
   return {
     id: 'layout',
     type: 'select',
-    label: L('Arrangement'),
+    label: 'Arrangement',
     group: G_LAY,
     options: kinds.map((k) => LAYOUT_OPTIONS[k]),
     default: def,
@@ -493,7 +490,7 @@ function layoutParam(kinds: Layout[], def: Layout): SelectParamDef {
 const stackCountParam: NumberParamDef = {
   id: 'stackCount',
   type: 'number',
-  label: L('Cards in the stack'),
+  label: 'Cards in the stack',
   group: G_LAY,
   min: 2,
   max: 12,
@@ -608,27 +605,27 @@ function orientationParam(def: 'landscape' | 'portrait'): SelectParamDef {
   return {
     id: 'orientation',
     type: 'select',
-    label: L('Orientation'),
+    label: 'Orientation',
     group: G_DIM,
     options: [
-      { value: 'landscape', label: Lctx('flat print', 'Landscape') },
-      { value: 'portrait', label: Lctx('flat print', 'Portrait') },
+      { value: 'landscape', label: 'Landscape' },
+      { value: 'portrait', label: 'Portrait' },
     ],
     default: def,
   };
 }
 
-function thicknessParam(def: number, min: number, max: number, step: number, label = L('Paper thickness')): ParamDef {
+function thicknessParam(def: number, min: number, max: number, step: number, label = 'Paper thickness'): ParamDef {
   return { id: 'thickness', type: 'number', label, group: G_MAT, min, max, step, default: def, unit: 'mm' };
 }
 
-function colorParam(id: string, label: LocalizedText, def: string): ParamDef {
+function colorParam(id: string, label: string, def: string): ParamDef {
   return { id, type: 'color', label, group: G_MAT, default: def };
 }
 
-/** Width / height labels of the 'custom' size, in their own context: some languages word it differently from folded print's. */
-const CUSTOM_WIDTH = Lctx('flat print', 'Width (custom size)');
-const CUSTOM_HEIGHT = Lctx('flat print', 'Height (custom size)');
+/** Width / height labels of the 'custom' size. */
+const CUSTOM_WIDTH = 'Width (custom size)';
+const CUSTOM_HEIGHT = 'Height (custom size)';
 
 /**
  * Trim size from a preset table (values given in the table's base orientation) + orientation
@@ -659,41 +656,29 @@ function twoSidedSlots(
   dims: (p: ParamValues) => [number, number],
   defW: number,
   defH: number,
-  noun: LocalizedText,
-  backFallback: LocalizedText,
+  noun: string,
+  backFallback: string,
 ): ImageSlotDef[] {
   const aspect = (defW + 2 * BLEED) / (defH + 2 * BLEED);
   return [
     {
       id: 'front',
-      label: L('Front'),
-      hint: L(
-        '{item} – front side. Default {w} × {h} mm + 3 mm bleed on every side (the template follows the chosen size).',
-        {
-          item: noun,
-          w: round2(defW),
-          h: round2(defH),
-        },
-      ),
+      label: 'Front',
+      hint: `${noun} – front side. Default ${round2(defW)} × ${round2(defH)} mm + 3 mm bleed on every side (the template follows the chosen size).`,
       aspect,
       template: (p) => {
         const [w, h] = dims(p);
-        return panelTemplate(w, h, L('Front'));
+        return panelTemplate(w, h, 'Front');
       },
     },
     {
       id: 'back',
-      label: L('Back'),
-      hint: L(
-        'Back in the same format, laid out as when turning the sheet over like a page (top stays at the top). {fallback}',
-        {
-          fallback: backFallback,
-        },
-      ),
+      label: 'Back',
+      hint: `Back in the same format, laid out as when turning the sheet over like a page (top stays at the top). ${backFallback}`,
       aspect,
       template: (p) => {
         const [w, h] = dims(p);
-        return panelTemplate(w, h, L('Back'));
+        return panelTemplate(w, h, 'Back');
       },
     },
   ];
@@ -720,39 +705,32 @@ const ICON_BUSINESS_CARD =
 export const businessCardModel: ModelDefinition = {
   id: 'print-business-card',
   category: 'print',
-  name: L('Business card'),
-  description: L(
+  name: 'Business card',
+  description:
     'Business card 90 × 50 / 85 × 55 / 89 × 51 mm or a custom size – single, standing, in a stack or front and back side by side.',
-  ),
   icon: ICON_BUSINESS_CARD,
-  slots: twoSidedSlots(
-    businessCardDims,
-    90,
-    50,
-    L('Business card'),
-    L('Without an image the back shows the paper colour.'),
-  ),
+  slots: twoSidedSlots(businessCardDims, 90, 50, 'Business card', 'Without an image the back shows the paper colour.'),
   params: [
     {
       id: 'size',
       type: 'select',
-      label: L('Size'),
+      label: 'Size',
       group: G_DIM,
       options: [
-        { value: '90x50', label: L('90 × 50 mm (Polish standard)') },
-        { value: '85x55', label: L('85 × 55 mm (EU)') },
-        { value: '89x51', label: L('89 × 51 mm (US, 3.5 × 2″)') },
-        { value: 'custom', label: L('Custom') },
+        { value: '90x50', label: '90 × 50 mm (Polish standard)' },
+        { value: '85x55', label: '85 × 55 mm (EU)' },
+        { value: '89x51', label: '89 × 51 mm (US, 3.5 × 2″)' },
+        { value: 'custom', label: 'Custom' },
       ],
       default: '90x50',
     },
     orientationParam('landscape'),
     mmParam('width', CUSTOM_WIDTH, 90, 30, 150, 0.5, G_DIM),
     mmParam('height', CUSTOM_HEIGHT, 50, 30, 150, 0.5, G_DIM),
-    mmParam('cornerRadius', L('Corner radius'), 0, 0, 6, 0.5, G_DIM),
+    mmParam('cornerRadius', 'Corner radius', 0, 0, 6, 0.5, G_DIM),
     thicknessParam(0.4, 0.3, 0.8, 0.05),
-    finishParam('matte', Lctx('business card', 'Finish')),
-    colorParam('paperColor', L('Paper colour (edges, empty back)'), '#f7f6f2'),
+    finishParam('matte', 'Finish'),
+    colorParam('paperColor', 'Paper colour (edges, empty back)', '#f7f6f2'),
     layoutParam(CARD_LAYOUTS, 'flat'),
     stackCountParam,
   ],
@@ -805,24 +783,22 @@ const ICON_FLYER =
 export const flyerModel: ModelDefinition = {
   id: 'print-flyer',
   category: 'print',
-  name: L('Flyer'),
-  description: L(
-    'Single-sheet flyer / leaflet A6 / A5 / A4 / DL or a custom size, with an optional gentle sheet bend.',
-  ),
+  name: 'Flyer',
+  description: 'Single-sheet flyer / leaflet A6 / A5 / A4 / DL or a custom size, with an optional gentle sheet bend.',
   icon: ICON_FLYER,
-  slots: twoSidedSlots(flyerDims, 148, 210, L('Flyer'), L('Without an image the back shows the paper colour.')),
+  slots: twoSidedSlots(flyerDims, 148, 210, 'Flyer', 'Without an image the back shows the paper colour.'),
   params: [
     {
       id: 'size',
       type: 'select',
-      label: L('Size'),
+      label: 'Size',
       group: G_DIM,
       options: [
-        { value: 'a6', label: L('A6 (105 × 148 mm)') },
-        { value: 'a5', label: L('A5 (148 × 210 mm)') },
-        { value: 'a4', label: L('A4 (210 × 297 mm)') },
-        { value: 'dl', label: L('DL (99 × 210 mm)') },
-        { value: 'custom', label: L('Custom') },
+        { value: 'a6', label: 'A6 (105 × 148 mm)' },
+        { value: 'a5', label: 'A5 (148 × 210 mm)' },
+        { value: 'a4', label: 'A4 (210 × 297 mm)' },
+        { value: 'dl', label: 'DL (99 × 210 mm)' },
+        { value: 'custom', label: 'Custom' },
       ],
       default: 'a5',
     },
@@ -832,7 +808,7 @@ export const flyerModel: ModelDefinition = {
     {
       id: 'bend',
       type: 'number',
-      label: L('Sheet bend'),
+      label: 'Sheet bend',
       group: G_DIM,
       min: 0,
       max: 100,
@@ -842,7 +818,7 @@ export const flyerModel: ModelDefinition = {
     },
     thicknessParam(0.12, 0.06, 0.4, 0.01),
     finishParam('satin'),
-    colorParam('paperColor', L('Paper colour (edges, empty back)'), '#f7f6f2'),
+    colorParam('paperColor', 'Paper colour (edges, empty back)', '#f7f6f2'),
     layoutParam(FLYER_LAYOUTS, 'flat'),
   ],
   defaultCamera: { yaw: 15, pitch: 40, fov: 24 },
@@ -922,40 +898,40 @@ const ICON_POSTCARD =
 export const postcardModel: ModelDefinition = {
   id: 'print-postcard',
   category: 'print',
-  name: L('Postcard'),
-  description: L('Postcard 148 × 105 mm (A6) or 6 × 4″, landscape or portrait, with optional rounded corners.'),
+  name: 'Postcard',
+  description: 'Postcard 148 × 105 mm (A6) or 6 × 4″, landscape or portrait, with optional rounded corners.',
   icon: ICON_POSTCARD,
   slots: twoSidedSlots(
     postcardDims,
     148,
     105,
-    L('Postcard'),
-    L('Without an image a neutral postcard back is shown (address lines, stamp box).'),
+    'Postcard',
+    'Without an image a neutral postcard back is shown (address lines, stamp box).',
   ),
   params: [
     {
       id: 'size',
       type: 'select',
-      label: L('Size'),
+      label: 'Size',
       group: G_DIM,
       options: [
-        { value: 'a6', label: L('A6 (148 × 105 mm)') },
-        { value: 'us', label: L('6 × 4″ (152.4 × 101.6 mm)') },
-        { value: 'custom', label: L('Custom') },
+        { value: 'a6', label: 'A6 (148 × 105 mm)' },
+        { value: 'us', label: '6 × 4″ (152.4 × 101.6 mm)' },
+        { value: 'custom', label: 'Custom' },
       ],
       default: 'a6',
     },
     orientationParam('landscape'),
     mmParam('width', CUSTOM_WIDTH, 148, 60, 300, 0.5, G_DIM),
     mmParam('height', CUSTOM_HEIGHT, 105, 60, 300, 0.5, G_DIM),
-    mmParam('cornerRadius', L('Corner radius'), 0, 0, 8, 0.5, G_DIM),
-    thicknessParam(0.5, 0.25, 0.9, 0.05, L('Card thickness')),
+    mmParam('cornerRadius', 'Corner radius', 0, 0, 8, 0.5, G_DIM),
+    thicknessParam(0.5, 0.25, 0.9, 0.05, 'Card thickness'),
     finishParam('satin'),
-    colorParam('paperColor', L('Card stock colour (edges, empty back)'), '#f6f3ec'),
+    colorParam('paperColor', 'Card stock colour (edges, empty back)', '#f6f3ec'),
     {
       id: 'backPattern',
       type: 'boolean',
-      label: L('Postcard back pattern (no artwork)'),
+      label: 'Postcard back pattern (no artwork)',
       group: G_MAT,
       default: true,
     },
@@ -1066,51 +1042,47 @@ const PLASTIC_TEMPLATE_H = ID1.h;
 export const plasticCardModel: ModelDefinition = {
   id: 'print-plastic-card',
   category: 'print',
-  name: L('Plastic card'),
-  description: L(
-    'Gift, loyalty or ID card in the ID-1 format (85.6 × 53.98 × 0.76 mm) with a printed plastic surface.',
-  ),
+  name: 'Plastic card',
+  description: 'Gift, loyalty or ID card in the ID-1 format (85.6 × 53.98 × 0.76 mm) with a printed plastic surface.',
   icon: ICON_PLASTIC_CARD,
   slots: [
     {
       id: 'front',
-      label: L('Front'),
-      hint: L('Card front: 85.6 × 53.98 mm + 3 mm bleed. The corners are rounded with a 3.18 mm radius.'),
+      label: 'Front',
+      hint: 'Card front: 85.6 × 53.98 mm + 3 mm bleed. The corners are rounded with a 3.18 mm radius.',
       aspect: (PLASTIC_TEMPLATE_W + 2 * BLEED) / (PLASTIC_TEMPLATE_H + 2 * BLEED),
-      template: panelTemplate(PLASTIC_TEMPLATE_W, PLASTIC_TEMPLATE_H, L('Front')),
+      template: panelTemplate(PLASTIC_TEMPLATE_W, PLASTIC_TEMPLATE_H, 'Front'),
     },
     {
       id: 'back',
-      label: L('Back'),
-      hint: L(
-        'Card back in the same format (turned over like a page – top stays at the top). Without an image the back shows the core colour.',
-      ),
+      label: 'Back',
+      hint: 'Card back in the same format (turned over like a page – top stays at the top). Without an image the back shows the core colour.',
       aspect: (PLASTIC_TEMPLATE_W + 2 * BLEED) / (PLASTIC_TEMPLATE_H + 2 * BLEED),
-      template: panelTemplate(PLASTIC_TEMPLATE_W, PLASTIC_TEMPLATE_H, L('Back')),
+      template: panelTemplate(PLASTIC_TEMPLATE_W, PLASTIC_TEMPLATE_H, 'Back'),
     },
   ],
   params: [
     {
       id: 'chip',
       type: 'select',
-      label: L('Contact chip'),
+      label: 'Contact chip',
       group: G_MAT,
       options: [
-        { value: 'none', label: L('None') },
-        { value: 'gold', label: L('Gold') },
-        { value: 'silver', label: Lctx('flat print', 'Silver') },
+        { value: 'none', label: 'None' },
+        { value: 'gold', label: 'Gold' },
+        { value: 'silver', label: 'Silver' },
       ],
       default: 'none',
     },
     {
       id: 'magstripe',
       type: 'boolean',
-      label: L('Magnetic stripe on the back'),
+      label: 'Magnetic stripe on the back',
       group: G_MAT,
       default: false,
     },
-    finishParam('gloss', L('Print finish')),
-    colorParam('coreColor', L('Core colour (edges, empty back)'), '#f3f3f0'),
+    finishParam('gloss', 'Print finish'),
+    colorParam('coreColor', 'Core colour (edges, empty back)', '#f3f3f0'),
     layoutParam(CARD_LAYOUTS, 'flat'),
     { ...stackCountParam, default: 5 },
   ],
@@ -1179,12 +1151,12 @@ function brochureDims(p: ParamValues): [number, number] {
 }
 
 /** Paper grades: thickness of ONE leaf (= 2 pages), mm. */
-const PAPERS: Record<string, { label: LocalizedText; caliper: number }> = {
-  '90': { label: L('90 gsm uncoated'), caliper: 0.11 },
-  '115': { label: L('115 gsm coated'), caliper: 0.1 },
-  '135': { label: L('135 gsm coated'), caliper: 0.12 },
-  '170': { label: L('170 gsm coated'), caliper: 0.15 },
-  '200': { label: L('200 gsm coated'), caliper: 0.19 },
+const PAPERS: Record<string, { label: string; caliper: number }> = {
+  '90': { label: '90 gsm uncoated', caliper: 0.11 },
+  '115': { label: '115 gsm coated', caliper: 0.1 },
+  '135': { label: '135 gsm coated', caliper: 0.12 },
+  '170': { label: '170 gsm coated', caliper: 0.15 },
+  '200': { label: '200 gsm coated', caliper: 0.19 },
 };
 
 function pagesOf(p: ParamValues): number {
@@ -1213,8 +1185,8 @@ function brochureCoverTemplate(p: ParamValues): PrintTemplate {
       { orientation: 'h', posMm: b + H, label: TRIM },
     ],
     regions: [
-      { xMm: b, yMm: b, wMm: W, hMm: H, label: L('Back') },
-      { xMm: b + W, yMm: b, wMm: W, hMm: H, label: L('Front') },
+      { xMm: b, yMm: b, wMm: W, hMm: H, label: 'Back' },
+      { xMm: b + W, yMm: b, wMm: W, hMm: H, label: 'Front' },
     ],
   };
 }
@@ -1256,42 +1228,38 @@ interface SectionPt {
 export const brochureModel: ModelDefinition = {
   id: 'print-brochure',
   category: 'print',
-  name: L('Brochure / catalogue'),
-  description: L(
+  name: 'Brochure / catalogue',
+  description:
     'Closed saddle-stitched brochure (A5 / A4 / Letter or custom); its thickness follows the page count and paper weight.',
-  ),
   icon: ICON_BROCHURE,
   slots: [
     {
       id: 'cover',
-      label: L('Cover wrap'),
-      hint: L(
+      label: 'Cover wrap',
+      hint:
         'The whole cover, left to right: Back | Front, no spine (stapled on the fold line). For A4: 420 × 297 mm + 3 mm bleed. ' +
-          'Takes priority over the separate Front / Back slots.',
-      ),
+        'Takes priority over the separate Front / Back slots.',
       aspect: (2 * 210 + 2 * BLEED) / (297 + 2 * BLEED),
       template: brochureCoverTemplate,
     },
     {
       id: 'front',
-      label: L('Front'),
-      hint: L('Used only when no “Cover wrap” image is added. For A4: 210 × 297 mm + 3 mm bleed.'),
+      label: 'Front',
+      hint: 'Used only when no “Cover wrap” image is added. For A4: 210 × 297 mm + 3 mm bleed.',
       aspect: (210 + 2 * BLEED) / (297 + 2 * BLEED),
       template: (p) => {
         const [W, H] = brochureDims(p);
-        return panelTemplate(W, H, L('Front'));
+        return panelTemplate(W, H, 'Front');
       },
     },
     {
       id: 'back',
-      label: L('Back'),
-      hint: L(
-        'Used only when no “Cover wrap” image is added. The back as seen from behind (top stays at the top). Without an image – paper colour.',
-      ),
+      label: 'Back',
+      hint: 'Used only when no “Cover wrap” image is added. The back as seen from behind (top stays at the top). Without an image – paper colour.',
       aspect: (210 + 2 * BLEED) / (297 + 2 * BLEED),
       template: (p) => {
         const [W, H] = brochureDims(p);
-        return panelTemplate(W, H, L('Back'));
+        return panelTemplate(W, H, 'Back');
       },
     },
   ],
@@ -1299,13 +1267,13 @@ export const brochureModel: ModelDefinition = {
     {
       id: 'size',
       type: 'select',
-      label: L('Size'),
+      label: 'Size',
       group: G_DIM,
       options: [
-        { value: 'a5', label: L('A5 (148 × 210 mm)') },
-        { value: 'a4', label: L('A4 (210 × 297 mm)') },
-        { value: 'letter', label: L('US Letter (215.9 × 279.4 mm)') },
-        { value: 'custom', label: L('Custom') },
+        { value: 'a5', label: 'A5 (148 × 210 mm)' },
+        { value: 'a4', label: 'A4 (210 × 297 mm)' },
+        { value: 'letter', label: 'US Letter (215.9 × 279.4 mm)' },
+        { value: 'custom', label: 'Custom' },
       ],
       default: 'a4',
     },
@@ -1314,7 +1282,7 @@ export const brochureModel: ModelDefinition = {
     {
       id: 'pages',
       type: 'number',
-      label: L('Page count (incl. cover)'),
+      label: 'Page count (incl. cover)',
       group: G_DIM,
       min: 8,
       max: 96,
@@ -1325,28 +1293,28 @@ export const brochureModel: ModelDefinition = {
     {
       id: 'paper',
       type: 'select',
-      label: L('Paper weight'),
+      label: 'Paper weight',
       group: G_MAT,
       options: Object.entries(PAPERS).map(([value, d]) => ({ value, label: d.label })),
       default: '115',
     },
-    finishParam('satin', L('Cover finish')),
-    colorParam('paperColor', L('Paper colour (edges, empty back)'), '#f5f4ef'),
+    finishParam('satin', 'Cover finish'),
+    colorParam('paperColor', 'Paper colour (edges, empty back)', '#f5f4ef'),
     {
       id: 'staples',
       type: 'boolean',
-      label: L('Staples on the spine'),
+      label: 'Staples on the spine',
       group: G_MAT,
       default: true,
     },
     {
       id: 'layout',
       type: 'select',
-      label: L('Arrangement'),
+      label: 'Arrangement',
       group: G_LAY,
       options: [
-        { value: 'flat', label: L('Lying flat') },
-        { value: 'standing', label: L('Standing') },
+        { value: 'flat', label: 'Lying flat' },
+        { value: 'standing', label: 'Standing' },
       ],
       default: 'flat',
     },

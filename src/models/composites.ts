@@ -26,7 +26,7 @@ import type {
   ParamValues,
   SelectParamDef,
 } from '../core/types';
-import { L, num, str } from './shared';
+import { num, str } from './shared';
 import { buildBox, boxModel } from './box';
 import { blurayModel, buildKeepCase, dvdModel } from './keepcase';
 import { buildJewelCase, cdCaseModel } from './jewelcase';
@@ -37,19 +37,19 @@ import { discPose, type DiscPlacement } from './composites/placement';
 /* Composition params                                                  */
 /* ------------------------------------------------------------------ */
 
-const G_COMP = L('Composition');
+const G_COMP = 'Composition';
 
 const PLACEMENTS: readonly DiscPlacement[] = ['behind', 'front', 'flat'];
 
 const placementParam: SelectParamDef = {
   id: 'discPlacement',
   type: 'select',
-  label: L('Disc placement'),
+  label: 'Disc placement',
   group: G_COMP,
   options: [
-    { value: 'behind', label: L('Behind the case, peeking out on the right') },
-    { value: 'front', label: L('Leaning against the front') },
-    { value: 'flat', label: L('Lying flat in front') },
+    { value: 'behind', label: 'Behind the case, peeking out on the right' },
+    { value: 'front', label: 'Leaning against the front' },
+    { value: 'flat', label: 'Lying flat in front' },
   ],
   default: 'behind',
 };
@@ -57,7 +57,7 @@ const placementParam: SelectParamDef = {
 const offsetParam: NumberParamDef = {
   id: 'discOffset',
   type: 'number',
-  label: L('Overhang past the right edge'),
+  label: 'Overhang past the right edge',
   group: G_COMP,
   min: 0,
   max: 100,
@@ -71,7 +71,7 @@ function angleParam(def: number): NumberParamDef {
   return {
     id: 'discAngle',
     type: 'number',
-    label: L('Disc turn'),
+    label: 'Disc turn',
     group: G_COMP,
     min: -45,
     max: 45,
@@ -244,8 +244,8 @@ const ICON_CD_DISC = icon(
 export const boxDiscModel: ModelDefinition = {
   id: 'box-disc',
   category: 'box',
-  name: L('Box with disc'),
-  description: L('Product box with a disc standing behind it, leaning against the front or lying in front.'),
+  name: 'Box with disc',
+  description: 'Product box with a disc standing behind it, leaning against the front or lying in front.',
   icon: ICON_BOX_DISC,
   slots: compositeSlots(boxModel.slots),
   params: compositeParams(boxModel.params, 15),
@@ -256,8 +256,8 @@ export const boxDiscModel: ModelDefinition = {
 export const dvdDiscModel: ModelDefinition = {
   id: 'dvd-case-disc',
   category: 'disc',
-  name: L('DVD case with disc'),
-  description: L('DVD keep case with a disc peeking out from behind, leaning against the front or lying in front.'),
+  name: 'DVD case with disc',
+  description: 'DVD keep case with a disc peeking out from behind, leaning against the front or lying in front.',
   icon: ICON_DVD_DISC,
   slots: compositeSlots(dvdModel.slots),
   // The keep-case camera looks from the front-left (printed spine): turn the label that way too.
@@ -269,8 +269,8 @@ export const dvdDiscModel: ModelDefinition = {
 export const blurayDiscModel: ModelDefinition = {
   id: 'bluray-case-disc',
   category: 'disc',
-  name: L('Blu-ray case with disc'),
-  description: L('Blu-ray keep case with a disc peeking out from behind, leaning against the front or lying in front.'),
+  name: 'Blu-ray case with disc',
+  description: 'Blu-ray keep case with a disc peeking out from behind, leaning against the front or lying in front.',
   icon: ICON_BLURAY_DISC,
   slots: compositeSlots(blurayModel.slots),
   params: compositeParams(blurayModel.params, -12),
@@ -281,8 +281,8 @@ export const blurayDiscModel: ModelDefinition = {
 export const cdDiscModel: ModelDefinition = {
   id: 'cd-case-disc',
   category: 'disc',
-  name: L('CD case with disc'),
-  description: L('CD jewel case with a disc peeking out from behind, leaning against the front or lying in front.'),
+  name: 'CD case with disc',
+  description: 'CD jewel case with a disc peeking out from behind, leaning against the front or lying in front.',
   icon: ICON_CD_DISC,
   slots: compositeSlots(cdCaseModel.slots),
   params: compositeParams(cdCaseModel.params, 15),

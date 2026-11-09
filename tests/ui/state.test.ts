@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Store, type ChangeEvent } from '../../src/ui/state';
-import { appState, documentState, fakeImage } from '../fixtures';
+import { documentState, fakeImage } from '../fixtures';
 
 /** One undo step: closes the change burst so the next edit is recorded separately. */
 function edit(store: Store, value: number): void {
@@ -12,7 +12,7 @@ function edit(store: Store, value: number): void {
 
 describe('Store revision', () => {
   it('changes on every edit', () => {
-    const store = new Store(appState());
+    const store = new Store(documentState());
     const start = store.revision;
     edit(store, 1);
     const afterFirst = store.revision;
@@ -21,19 +21,8 @@ describe('Store revision', () => {
     expect(store.revision).not.toBe(afterFirst);
   });
 
-  it('does not change when only the language changes', () => {
-    const store = new Store(appState());
-    const start = store.revision;
-    store.update(['lang'], (s) => {
-      s.lang = 'pl';
-    });
-    expect(store.state.lang).toBe('pl');
-    expect(store.revision).toBe(start);
-    expect(store.canUndo).toBe(false);
-  });
-
   it('comes back with undo and goes forward again with redo', () => {
-    const store = new Store(appState());
+    const store = new Store(documentState());
     const saved = store.revision;
     edit(store, 1);
     const edited = store.revision;
@@ -45,8 +34,8 @@ describe('Store revision', () => {
 });
 
 describe('Store.swap', () => {
-  it('exchanges state, history and revision and keeps the language', () => {
-    const store = new Store({ ...appState('box'), lang: 'pl' });
+  it('exchanges state, history and revision', () => {
+    const store = new Store(documentState('box'));
     edit(store, 1);
     const firstRevision = store.revision;
     const next = Store.createDocument(documentState('dvd'));
@@ -54,11 +43,9 @@ describe('Store.swap', () => {
     const out = store.swap(next);
 
     expect(store.state.modelId).toBe('dvd');
-    expect(store.state.lang).toBe('pl');
     expect(store.revision).toBe(next.revision);
     expect(store.canUndo).toBe(false);
     expect(out.state.modelId).toBe('box');
-    expect(out.state).not.toHaveProperty('lang');
     expect(out.revision).toBe(firstRevision);
     expect(out.undoStack).toHaveLength(1);
 
@@ -72,7 +59,7 @@ describe('Store.swap', () => {
   });
 
   it('emits one change of every kind with the source "document"', () => {
-    const store = new Store(appState());
+    const store = new Store(documentState());
     const events: ChangeEvent[] = [];
     store.subscribe((e) => events.push(e));
     const history = vi.fn();
@@ -88,7 +75,7 @@ describe('Store.swap', () => {
 
   it('does not dispose the images of the document it swaps out', () => {
     const image = fakeImage();
-    const store = new Store({ ...appState(), images: { box: { front: image.asset } } });
+    const store = new Store({ ...documentState(), images: { box: { front: image.asset } } });
 
     const out = store.swap(Store.createDocument(documentState('dvd')));
 
@@ -98,7 +85,7 @@ describe('Store.swap', () => {
 
   it('does not dispose the images of the document it swaps in', () => {
     const image = fakeImage();
-    const store = new Store(appState());
+    const store = new Store(documentState());
 
     store.swap(Store.createDocument({ ...documentState(), images: { box: { front: image.asset } } }));
     edit(store, 1);
@@ -112,7 +99,7 @@ describe('Store.disposeDocument', () => {
   it('disposes every image the document owns', () => {
     const front = fakeImage('front.png');
     const back = fakeImage('back.png');
-    const store = new Store({ ...appState(), images: { box: { front: front.asset } } });
+    const store = new Store({ ...documentState(), images: { box: { front: front.asset } } });
     store.update(['images'], (s) => {
       s.images.box = { ...s.images.box, back: back.asset };
     });

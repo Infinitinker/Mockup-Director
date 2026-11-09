@@ -10,10 +10,9 @@
 ;   Identifier      the app identifier (tauri.conf.json), which names the app's data folder
 ;   Publisher       the publisher (tauri.conf.json)
 ;   Copyright       the copyright line (tauri.conf.json)
-;   Languages       a file with the [Languages] and [CustomMessages] sections, made from src/i18n
 ;   OutputDir       where the installer is written
 
-#if !Defined(AppVersion) || !Defined(NumericVersion) || !Defined(Identifier) || !Defined(Publisher) || !Defined(Copyright) || !Defined(Languages) || !Defined(OutputDir)
+#if !Defined(AppVersion) || !Defined(NumericVersion) || !Defined(Identifier) || !Defined(Publisher) || !Defined(Copyright) || !Defined(OutputDir)
   #error Build the installer with npm run installer (tools/installer.mjs), which passes the values this script needs.
 #endif
 
@@ -56,9 +55,6 @@ SetupIconFile=..\src-tauri\icons\icon.ico
 UninstallDisplayIcon={app}\{#AppExe}
 UninstallDisplayName={#AppName}
 WizardStyle=modern
-; Setup speaks the language of Windows if Mockup Director's interface has it, and otherwise the first
-; one installer.mjs lists, English, without asking.
-ShowLanguageDialog=no
 Compression=lzma2/ultra64
 SolidCompression=yes
 ChangesAssociations=yes
@@ -70,7 +66,18 @@ AppMutex={#Identifier}-sim
 CloseApplications=yes
 RestartApplications=no
 
-#include Languages
+[Languages]
+Name: "en"; MessagesFile: "compiler:Default.isl"
+
+[CustomMessages]
+; FmtMessage fills in %1; %n is a line break.
+ProjectFile=Mockup Director project
+DeleteData=Also delete your Mockup Director looks, settings and open tabs? Your projects stay where you saved them.%n%n%1
+DataNotDeleted=Some files in %1 could not be deleted. Delete the folder yourself.
+WebView2Title=Microsoft Edge WebView2
+WebView2Text=Mockup Director needs Microsoft Edge WebView2, which this computer does not have yet. Setup downloads and installs it.
+WebView2ExitCode=the WebView2 installer stopped with code %1
+WebView2Failed=Microsoft Edge WebView2 could not be installed: %1%n%nCheck the internet connection and click Install again, or install WebView2 from https://developer.microsoft.com/microsoft-edge/webview2 and then run Setup again.
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
