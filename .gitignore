@@ -4,13 +4,12 @@ dist
 src-tauri/target
 src-tauri/gen
 
-# Local settings: environment, editors, Claude Code (only the shared launch.json is tracked)
+# Local settings: environment, editors, Claude Code
 .env
 .env.*
 .vscode/
 .idea/
-.claude/*
-!.claude/launch.json
+.claude/
 
 # System and log files
 .DS_Store
