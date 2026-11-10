@@ -4,7 +4,7 @@
  * shadow).
  */
 import * as THREE from 'three';
-import type { ShadowLayout } from '../shadows';
+import type { ShadowLayout } from '../shadows/layout';
 
 /** Max model vertices used for exact framing (subsampled above that). */
 const MAX_FIT_POINTS = 24000;

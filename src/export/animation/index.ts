@@ -214,10 +214,6 @@ export async function exportAnimation(
   }
 }
 
-/* ------------------------------------------------------------------ */
-/* Helpers                                                             */
-/* ------------------------------------------------------------------ */
-
 /**
  * Let the browser paint and handle input (rAF while visible). When the window is hidden / minimized,
  * rAF does not fire and timers are throttled to about one per second, so a MessageChannel task is

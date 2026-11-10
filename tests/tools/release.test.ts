@@ -1,3 +1,7 @@
+/**
+ * Tests the release rules in tools/release.mjs: the version and its tag, the files of each build and of the
+ * whole release, and the release notes made from tools/release-notes.md.
+ */
 import { describe, expect, it } from 'vitest';
 import packageJson from '../../package.json';
 import template from '../../tools/release-notes.md?raw';

@@ -1,3 +1,7 @@
+/**
+ * Tests the license check in tools/licenses.mjs: which license expressions are allowed, and the npm packages it
+ * reads from package-lock.json, by name and whether the app ships them.
+ */
 import { describe, expect, it } from 'vitest';
 import { isAllowed, npmPackages } from '../../tools/licenses.mjs';
 

@@ -42,16 +42,13 @@ const STRIPE_LIGHT = '#eef3fa';
 const STRIPE_DARK = '#14161c';
 const SMALL_TOP = '#b8c7dc';
 
-/* ------------------------------------------------------------------ */
-/* Drawing helpers                                                     */
-/* ------------------------------------------------------------------ */
-
 let uid = 0;
 const id = (p) => `${p}${++uid}`;
 const f1 = (n) => n.toFixed(1);
 const poly = (pts) => pts.map(([x, y]) => `${f1(x)},${f1(y)}`).join(' ');
 const pathOf = (pts) => `M${pts.map(([x, y]) => `${f1(x)} ${f1(y)}`).join(' L')} Z`;
 
+/** The bounding box of a polygon as [minX, minY, maxX, maxY]. */
 function bboxOf(pts) {
   const xs = pts.map((p) => p[0]);
   const ys = pts.map((p) => p[1]);
@@ -104,13 +101,10 @@ function background() {
   };
 }
 
-/* ------------------------------------------------------------------ */
-/* The object (drawn for a 1024 canvas, badge r = 500)                 */
-/* ------------------------------------------------------------------ */
-
 /**
  * A product box in a three-quarter view whose front face is a director's slate: a striped band
- * along its top edge and a striped clapper arm hinged at the top-left corner, lifted open.
+ * along its top edge and a striped clapper arm hinged at the top-left corner, lifted open. Drawn for a
+ * 1024-pixel canvas whose badge has a radius of 500.
  */
 function clapperBox(simple) {
   const g = simple
@@ -195,10 +189,6 @@ function clapperBox(simple) {
   </g>`;
 }
 
-/* ------------------------------------------------------------------ */
-/* Whole icons                                                         */
-/* ------------------------------------------------------------------ */
-
 /**
  * shape 'round' – circle r = 500 on 1024, transparent outside.
  * shape 'mac'   – Apple rounded square (824 body, 100 margin) with a soft drop shadow; the
@@ -242,10 +232,6 @@ function render(svg, size) {
   return new Resvg(svg, { fitTo: { mode: 'width', value: size }, shapeRendering: 2 }).render().asPng();
 }
 
-/* ------------------------------------------------------------------ */
-/* Containers                                                          */
-/* ------------------------------------------------------------------ */
-
 /** Windows .ico with PNG-compressed entries (supported since Windows Vista). */
 function ico(entries) {
   const header = Buffer.alloc(6 + 16 * entries.length);
@@ -282,8 +268,6 @@ function icns(entries) {
   h.writeUInt32BE(body.length + 8, 4);
   return Buffer.concat([h, body]);
 }
-
-/* ------------------------------------------------------------------ */
 
 function write(path, data) {
   mkdirSync(dirname(path), { recursive: true });

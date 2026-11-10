@@ -6,34 +6,14 @@
 import * as THREE from 'three';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { chromeTexture, PALETTES } from '../../../../src/models/device/screen/titleBar';
-import { stubCanvasDocument } from '../../fakeContext';
+import { recordingContext, stubCanvasDocument } from '../../fakeContext';
 
 /** The calls and property sets on a canvas's 2D context, as text, in order. */
 let drawn: string[] = [];
 
-/** A 2D context that records every call and property set; text is 10 pixels a character wide. */
-function recordingContext(): CanvasRenderingContext2D {
-  const state: Record<string | symbol, unknown> = {
-    measureText: (text: string) => ({ width: text.length * 10 }),
-  };
-  return new Proxy(state, {
-    get(target, key) {
-      if (key in target) return target[key];
-      return (...args: unknown[]) => {
-        drawn.push(`${String(key)}(${args.join(',')})`);
-      };
-    },
-    set(target, key, value) {
-      drawn.push(`${String(key)}=${String(value)}`);
-      target[key] = value;
-      return true;
-    },
-  }) as unknown as CanvasRenderingContext2D;
-}
-
 function stubRecordingDocument(): void {
   vi.stubGlobal('document', {
-    createElement: () => ({ width: 300, height: 150, getContext: () => recordingContext() }),
+    createElement: () => ({ width: 300, height: 150, getContext: () => recordingContext((call) => drawn.push(call)) }),
   });
 }
 

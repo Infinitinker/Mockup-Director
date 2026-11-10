@@ -1,7 +1,7 @@
 /**
- * Fakes for building models in Node: a `document` whose canvases have no 2D context, artwork
- * textures with a known image size, a `ModelContext` that records every texture it hands out
- * with its image, and snapshots of the texture state a model must leave alone.
+ * Fakes for building models and drawing on canvases in Node: a `document` whose canvases have no 2D context, a 2D
+ * context that records what is drawn, artwork textures with a known image size, a `ModelContext` that records every
+ * texture it hands out with its image, and snapshots of the texture state a model must leave alone.
  */
 import * as THREE from 'three';
 import { vi } from 'vitest';
@@ -22,6 +22,29 @@ export function stubCanvasDocument(): void {
       return { width: 300, height: 150, getContext: () => null };
     },
   });
+}
+
+/**
+ * A 2D context that hands every call and property set, as text and in order, to `record`; text is 10 pixels a
+ * character wide.
+ */
+export function recordingContext(record: (call: string) => void): CanvasRenderingContext2D {
+  const state: Record<string | symbol, unknown> = {
+    measureText: (text: string) => ({ width: text.length * 10 }),
+  };
+  return new Proxy(state, {
+    get(target, key) {
+      if (key in target) return target[key];
+      return (...args: unknown[]) => {
+        record(`${String(key)}(${args.join(',')})`);
+      };
+    },
+    set(target, key, value) {
+      record(`${String(key)}=${String(value)}`);
+      target[key] = value;
+      return true;
+    },
+  }) as unknown as CanvasRenderingContext2D;
 }
 
 /** A texture like the app's artwork: sRGB, flipY as three.js sets it, with an image of the given size. */

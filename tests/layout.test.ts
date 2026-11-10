@@ -37,28 +37,10 @@ const SOURCES = new Map(FILES.map((path) => [path, readFileSync(new URL(path, RO
  * Files with banner comments today. The list shrinks as their stage splits them and must never grow: a file that
  * needs a section comment is split instead.
  */
-const BANNER_ALLOWED = [
-  'src/export/animation/gif.ts',
-  'src/export/animation/index.ts',
-  'src/export/exporter.ts',
-  'src/export/templates.ts',
-  'src/platform/files.ts',
-  'src/scene/shadows.ts',
-  'src/styles.css',
-  'src/ui/controls.ts',
-  'src/ui/panels/scenePanel.ts',
-  'src/ui/viewport.ts',
-  'tools/draw-icon.mjs',
-];
+const BANNER_ALLOWED = ['src/styles.css', 'src/ui/controls.ts', 'src/ui/panels/scenePanel.ts', 'src/ui/viewport.ts'];
 
 /** Files without a header comment today. The list shrinks as their stage adds one and must never grow. */
-const HEADER_ALLOWED = [
-  'src-tauri/src/main.rs',
-  'tests/tools/installer.test.ts',
-  'tests/tools/licenses.test.ts',
-  'tests/tools/notices.test.ts',
-  'tests/tools/release.test.ts',
-];
+const HEADER_ALLOWED: string[] = [];
 
 const COMMENT_LINE = /^\s*(?:\/\/[/!]?|\/\*+|\*(?!\/))(.*?)(?:\*\/)?\s*$/;
 const SEPARATOR_RUN = /^[-=\u2500-\u257F]{3,}|[-=\u2500-\u257F]{3,}$/;

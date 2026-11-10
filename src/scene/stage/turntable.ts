@@ -24,7 +24,7 @@ import { cloneScene } from '../../core/defaults';
 import { UserError } from '../../core/errors';
 import { finite } from '../../core/math';
 import { UnionFit, type FitResult } from '../framing';
-import { computeShadowLayout } from '../shadows';
+import { computeShadowLayout } from '../shadows/layout';
 import type { Reflection } from '../reflection';
 import type { FitPoints, ModelInfo } from './modelInfo';
 import { keyIntensity, keyLightDir } from './lighting';

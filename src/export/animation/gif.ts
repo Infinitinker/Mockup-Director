@@ -191,8 +191,6 @@ export class GifAnimationEncoder {
     return blob;
   }
 
-  /* ---------------------------------------------------------------- */
-
   private finishGlobalPalette(): void {
     const hist = this.histogram ?? new ColorHistogram();
     // Opaque diff mode and transparency both need one reserved index.

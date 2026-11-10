@@ -95,10 +95,6 @@ export function pickFiles(accept: string, multiple = false): Promise<File[]> {
   });
 }
 
-/* ------------------------------------------------------------------ */
-/* Desktop (Tauri)                                                     */
-/* ------------------------------------------------------------------ */
-
 async function saveInDesktopApp(blob: Blob, suggestedName: string, filters: FileFilter[]): Promise<string | null> {
   const { save } = await import('@tauri-apps/plugin-dialog');
   const picked = await save({
@@ -136,10 +132,6 @@ function ensureExtension(path: string, filters: FileFilter[], suggestedName: str
 function stripDot(e: string): string {
   return e.replace(/^\*?\./, '');
 }
-
-/* ------------------------------------------------------------------ */
-/* Browser                                                             */
-/* ------------------------------------------------------------------ */
 
 interface SavePickerWindow {
   showSaveFilePicker?: (options: {

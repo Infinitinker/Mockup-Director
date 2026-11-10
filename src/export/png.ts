@@ -1,7 +1,7 @@
 /**
  * Pure byte-level helpers for embedding a print resolution (DPI) into encoded images.
  *
- * Browsers' canvas encoders never write a resolution, so Photoshop opens such files at 72 dpi.
+ * Browsers' canvas encoders never write a resolution, so an image editor opens such files at 72 dpi.
  * We patch the encoded bytes instead:
  *  - PNG : insert (or replace) a `pHYs` chunk right after IHDR (spec: must precede IDAT).
  *  - JPEG: set the density fields of the JFIF APP0 segment (or insert one after SOI).

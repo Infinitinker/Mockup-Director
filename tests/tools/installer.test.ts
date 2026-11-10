@@ -1,3 +1,4 @@
+/** Tests tools/installer.mjs: the four-part version Inno Setup takes, and where the Inno Setup compiler is found. */
 import { describe, expect, it } from 'vitest';
 import { findCompiler, numericVersion } from '../../tools/installer.mjs';
 

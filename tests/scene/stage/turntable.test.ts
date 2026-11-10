@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_SCENE, cloneScene } from '../../../src/core/defaults';
 import { type FitResult, fitCamera } from '../../../src/scene/framing';
-import { computeShadowLayout } from '../../../src/scene/shadows';
+import { computeShadowLayout } from '../../../src/scene/shadows/layout';
 import { keyIntensity, keyLightDir } from '../../../src/scene/stage/lighting';
 import { animationAngles, turntableFit } from '../../../src/scene/stage/turntable';
 

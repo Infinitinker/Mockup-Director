@@ -21,7 +21,7 @@ import { isJpeg, isPng, setJpegDensity, setPngPhys } from './png';
 import { paintBackground as paintSceneBackground } from '../scene/background';
 import { supportsWebpEncoding } from './formats';
 
-/** Print resolution written into exported files (Photoshop shows a sensible print size). */
+/** Print resolution written into exported files (an image editor shows a sensible print size). */
 const EXPORT_DPI = 300;
 /** Supersampling factor relative to the target content size. */
 const SUPERSAMPLE = 2;
@@ -54,7 +54,7 @@ export async function exportImage(
   if (format === 'webp' && !supportsWebpEncoding()) throw webpError();
   const opaque = format === 'jpeg';
 
-  // --- 1. supersampled transparent render --------------------------------------------------
+  // 1. Supersampled transparent render.
   const availW = Math.max(1, s.width - 2 * s.margin);
   const availH = Math.max(1, s.height - 2 * s.margin);
   const req = supersampleSize(availW, availH, SUPERSAMPLE, MAX_RENDER_SIDE, MAX_RENDER_PIXELS);
@@ -67,10 +67,10 @@ export async function exportImage(
     );
   }
 
-  // --- 2. content bounds from alpha --------------------------------------------------------
+  // 2. Content bounds from alpha.
   const crop = measureContent(src) ?? { x: 0, y: 0, w: rw, h: rh };
 
-  // --- 3. crop + scale --------------------------------------------------------------------
+  // 3. Crop and scale.
   const fit = fitInside(crop.w, crop.h, availW, availH);
   const content = resampleRegion(src, crop, fit.width, fit.height);
 
@@ -79,7 +79,7 @@ export async function exportImage(
   const ox = s.sizing === 'canvas' ? Math.round((outW - fit.width) / 2) : s.margin;
   const oy = s.sizing === 'canvas' ? Math.round((outH - fit.height) / 2) : s.margin;
 
-  // --- 4. background + composite -----------------------------------------------------------
+  // 4. Background and composite.
   const out = createCanvas(outW, outH);
   const g = get2d(out);
   if (s.background === 'scene') {
@@ -91,7 +91,7 @@ export async function exportImage(
   g.drawImage(content, ox, oy);
   releaseCanvas(content);
 
-  // --- 5. encode ----------------------------------------------------------------------------
+  // 5. Encode.
   const mime = mimeFor(format);
   let blob = await canvasToBlob(out, mime, format === 'png' ? undefined : s.quality);
   releaseCanvas(out);
@@ -153,10 +153,6 @@ export function paintBackground(
   }
   paintSceneBackground(g, width, height, bg);
 }
-
-/* ------------------------------------------------------------------ */
-/* Internals                                                           */
-/* ------------------------------------------------------------------ */
 
 function normalizeSettings(s: ExportSettings): ExportSettings {
   const width = clampInt(s.width, 1, MAX_EXPORT_SIZE, DEFAULT_EXPORT.width);

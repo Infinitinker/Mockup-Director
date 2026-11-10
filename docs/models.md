@@ -94,7 +94,7 @@ Artwork textures are `CanvasTexture`s with `flipY = true` and the sRGB color spa
 
 ## Print templates
 
-A print template is a PNG the user downloads with the Template… button on a slot's card, to design the artwork on: the exact physical size at 300 dpi, with bleed, trim line, safe area, labeled regions and fold lines. The PNG records its resolution, so an image editor opens it at print size. It is drawn by `src/export/templates.ts`, and saved as `mockup-director-<model id>-template-<slot label, slugified>-<width>x<height>mm-<dpi>dpi.png` (`templateFileName` in `src/export/fileNames.ts`), with the resolution actually used. Very large templates are drawn at a lower resolution, which the legend states.
+A print template is a PNG the user downloads with the Template… button on a slot's card, to design the artwork on: the exact physical size at 300 dpi, with bleed, trim line, safe area, labeled regions and fold lines. The PNG records its resolution, so an image editor opens it at print size. It is drawn by `src/export/templates/`, and saved as `mockup-director-<model id>-template-<slot label, slugified>-<width>x<height>mm-<dpi>dpi.png` (`templateFileName` in `src/export/fileNames.ts`), with the resolution actually used. Very large templates are drawn at a lower resolution, which the legend states.
 
 `template` is a `PrintTemplate`, or a function of the parameters when the size depends on them (a box's net follows its width, height and depth). The function gets the model's complete parameters when the user downloads it, and an empty object when the placeholder checks whether the template is round, so read values with `num()` and its fallbacks.
 
@@ -106,7 +106,7 @@ A print template is a PNG the user downloads with the Template… button on a sl
 | `regions` | `TemplateRegion[]` | no | Labeled rectangles (front, spine, back): `xMm`, `yMm`, `wMm`, `hMm` from the top-left corner, bleed included, and `label`. Each is tinted and labeled with its size after trimming; the safe area is drawn inside each one. Without regions, the whole trim area is labeled with the slot's label. |
 | `circle` | `{ outerMm, innerMm, printOuterMm?, printInnerMm? }` | no | Makes the template round (disc labels): outer and hole diameter. `printInnerMm` sets the inner edge of the printable ring; without it the template uses 0.15 × the outer diameter for discs of 60 mm or more. `printOuterMm` is not drawn; the disc model marks the outer print edge with guides. |
 
-The safe area is 3 mm inside the trim line (`SAFE_MARGIN_MM`). Models with artwork that includes bleed use 3 mm of bleed and map the trim area of the image onto the faces (`trimRect` in `print/templates.ts`). `panelTemplate` in `print/templates.ts` is a short example: one panel with bleed, four trim guides and one region; `discSlot` in `disc/label.ts` is a round one.
+The safe area is 3 mm inside the trim line (`SAFE_MARGIN_MM` in `src/export/templates/common.ts`). Models with artwork that includes bleed use 3 mm of bleed and map the trim area of the image onto the faces (`trimRect` in `print/templates.ts`). `panelTemplate` in `print/templates.ts` is a short example: one panel with bleed, four trim guides and one region; `discSlot` in `disc/label.ts` is a round one.
 
 ## Building
 
@@ -126,7 +126,7 @@ build(ctx: ModelContext): THREE.Object3D;
 - The stage owns what `build` returns. When it shows the next object, it frees the previous one with `disposeObject` (`src/scene/dispose.ts`): every geometry and material in the tree, and textures flagged `disposeWithModel`. So create geometries and materials in each build rather than keeping them between builds. A texture a model caches at module level is not flagged and is never freed (the data-side texture in `disc/build.ts`).
 - `ctx.params` is complete, but read values with `num`, `bool` and `str` and a fallback: they also cover a composite that builds its base with changed parameters.
 - An exception from `build` is shown to the user as "Could not build model “…”", and the previous object stays on screen. For a problem the user can fix, throw a `UserError` (`src/core/errors.ts`) whose message says what happened, then what to do: it is shown as it is. Any other error is shown as an unexpected error, with its message as detail (`errorMessage` in `src/ui/errors.ts`).
-- Transparent parts (clear plastic, which writes no depth) are drawn in `renderOrder`, then by depth. The stage draws the floor reflection at -3 and -2 and the shadow at -1 (`src/scene/reflection.ts`, `src/scene/shadows.ts`), so a model's transparent parts stay above -1.
+- Transparent parts (clear plastic, which writes no depth) are drawn in `renderOrder`, then by depth. The stage draws the floor reflection at -3 and -2 and the shadow at -1 (`src/scene/reflection.ts`, `src/scene/shadows/index.ts`), so a model's transparent parts stay above -1.
 
 Helpers in `src/models/geometry.ts`:
 
@@ -234,7 +234,7 @@ To add a composite, export the base model's build function from its module, defi
 
 ## Testing
 
-Every model in `MODELS` is checked by `tests/models/registry.test.ts`, so a new model is covered as soon as it is registered. Like every test (`vitest.config.ts`), it runs in Node: no WebGL and no DOM. `build` needs neither, since it only creates three.js objects. `tests/models/fakeContext.ts` holds the fakes: a context whose artwork is plain `THREE.Texture` objects shaped like each slot's aspect, with or without artwork in the slots, and a `document` whose canvases have no 2D context, which the models that draw on a 2D canvas (`book/pageEdges.ts`, `print/flat/postcard.ts`, `print/flat/brochure.ts`, `device/screen/titleBar.ts`) already handle by leaving the drawing out. Tests for what one model does beyond the contract go in `tests/models/` too, mirroring `src/models/`.
+Every model in `MODELS` is checked by `tests/models/registry.test.ts`, so a new model is covered as soon as it is registered. Like every test (`vitest.config.ts`), it runs in Node: no WebGL and no DOM. `build` needs neither, since it only creates three.js objects. `tests/models/fakeContext.ts` holds the fakes: a context whose artwork is plain `THREE.Texture` objects shaped like each slot's aspect, with or without artwork in the slots, and a `document` whose canvases have no 2D context, which the models that draw on a 2D canvas (`book/pageEdges.ts`, `print/flat/postcard.ts`, `print/flat/brochure.ts`, `device/screen/titleBar.ts`) already handle by leaving the drawing out, and a 2D context that records what is drawn, for the tests that check a drawing (the print templates in `tests/export/templates/` use it too). Tests for what one model does beyond the contract go in `tests/models/` too, mirroring `src/models/`.
 
 The registry test checks:
 
