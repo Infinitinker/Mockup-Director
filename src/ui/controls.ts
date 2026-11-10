@@ -1,7 +1,8 @@
 /**
- * Inspector controls (slider + numeric field, switch, segmented control, select, color) and
- * collapsible sections. Each control reads its value through `get()` and writes through `set()`;
- * `sync()` refreshes the DOM from the state without rebuilding it (keeps focus & drag state).
+ * Inspector controls (slider + numeric field, switch, segmented control, select, color),
+ * collapsible sections, and icon and text buttons. Each control reads its value through `get()` and
+ * writes through `set()`; `sync()` refreshes the DOM from the state without rebuilding it (keeps focus
+ * & drag state).
  */
 import { clamp } from '../core/math';
 import { h, nextId } from './dom';
@@ -452,4 +453,9 @@ export function iconButton(
     h('span', { class: 'btn-icon', html: icon }),
     opts.text ? h('span', { class: 'btn-text', text: opts.text }) : null,
   );
+}
+
+/** Text button helper: a `btn` with the classes in `cls` (may be empty). */
+export function textButton(text: string, cls: string, onClick: () => void, disabled = false): HTMLButtonElement {
+  return h('button', { class: `btn ${cls}`, text, attrs: { type: 'button', disabled }, on: { click: onClick } });
 }

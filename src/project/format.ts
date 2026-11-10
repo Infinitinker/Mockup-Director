@@ -194,3 +194,18 @@ export async function hydrateProject(file: ProjectFile): Promise<{ state: Docume
     failed,
   };
 }
+
+/**
+ * Reads a project file to render it once (the Many projects batch export): only the shown model's artwork is
+ * decoded. The warning says what was left out, or is null when nothing was.
+ */
+export async function readProjectToRender(file: File): Promise<{ state: DocumentState; warning: string | null }> {
+  const { file: parsed, report } = await readProjectFile(file);
+  // Only the shown model's artwork is needed: don't decode artwork of other models.
+  const own = parsed.artwork[parsed.modelId];
+  const { state, failed } = await hydrateProject({
+    ...parsed,
+    artwork: own ? { [parsed.modelId]: own } : {},
+  });
+  return { state, warning: projectWarning(report, failed, 'file') };
+}

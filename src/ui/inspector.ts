@@ -7,7 +7,7 @@ import type { AppContext, TabId } from './context';
 import { createArtworkPanel } from './panels/artwork';
 import { createModelPanel } from './panels/modelPanel';
 import { createScenePanel } from './panels/scenePanel';
-import { createExportPanel } from './panels/exportPanel';
+import { createExportPanel } from './panels/export';
 import { createLooksPanel } from './panels/looks';
 import { getModel } from '../models/registry';
 import { hasAny } from '../documents/store';

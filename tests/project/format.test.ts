@@ -1,7 +1,8 @@
 /**
  * Tests the project files in src/project/format.ts: file names, writing a project and reading it back,
  * what parsing leaves out, clamps and counts (the cleaning in src/project/sanitize.ts, through
- * parseProjectFile), reading text and files, and the warning about what was left out.
+ * parseProjectFile), reading text and files, reading a project to render it once, and the warning about what
+ * was left out.
  */
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_EXPORT, DEFAULT_SCENE, defaultParams } from '../../src/core/defaults';
@@ -17,6 +18,7 @@ import {
   projectWarning,
   readProjectFile,
   readProjectText,
+  readProjectToRender,
   toProjectFile,
 } from '../../src/project/format';
 import { documentState } from '../fixtures';
@@ -260,5 +262,37 @@ describe('projectWarning', () => {
     expect(projectWarning({ settings: 0, artwork: 0 }, 1, 'session')).toBe(
       'Parts of the projects that were open could not be read and were left out. Artwork: 1. Add the artwork again.',
     );
+  });
+});
+
+describe('readProjectToRender', () => {
+  /** A project file of the box with `fields`; Node decodes no image, so every artwork it decodes fails. */
+  const projectFile = (fields: Record<string, unknown> = {}) => new File([JSON.stringify(project(fields))], 'a.mdproj');
+
+  it('decodes only the shown model’s artwork', async () => {
+    const other = { 'book-paperback': { front: { name: 'front.png', dataUrl: PNG } } };
+    const { state, warning } = await readProjectToRender(projectFile({ artwork: other }));
+    expect(state.modelId).toBe('box');
+    expect(state.artwork).toEqual({});
+    expect(warning).toBeNull();
+
+    const own = { box: { front: { name: 'front.png', dataUrl: PNG } } };
+    expect((await readProjectToRender(projectFile({ artwork: own }))).warning).toBe(
+      'Parts of the project could not be read and were left out. Artwork: 1. Add the artwork again.',
+    );
+  });
+
+  it('warns about what parsing left out', async () => {
+    const { warning } = await readProjectToRender(projectFile({ params: { box: { unknown: 1 } } }));
+    expect(warning).toBe(projectWarning({ settings: 1, artwork: 0 }, 0, 'file'));
+  });
+
+  it('refuses what readProjectFile refuses', async () => {
+    const error = await readProjectToRender(new File(['not json'], 'a.mdproj')).then(
+      () => null,
+      (e: unknown) => e,
+    );
+    expect(error).toBeInstanceOf(UserError);
+    expect((error as UserError).message).toMatch(/not a Mockup Director project, or it is damaged/);
   });
 });

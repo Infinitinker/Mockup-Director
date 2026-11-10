@@ -7,6 +7,7 @@ import { crc32 } from '../../src/export/png';
 import { UserError } from '../../src/core/errors';
 import { sanitizeZipName, ZipLimitError, ZipWriter } from '../../src/export/zip';
 import { randomBytes, randomInt, seededRandom } from '../random';
+import { SizedBlob } from './sizedBlob';
 import { type ZipArchive, readZip } from './zipReader';
 
 const FLAG_UTF8 = 0x0800;
@@ -186,17 +187,6 @@ describe('ZipWriter', () => {
 });
 
 describe('ZipWriter limits', () => {
-  /** A Blob that claims a size without holding the bytes. */
-  class SizedBlob extends Blob {
-    constructor(private readonly claimed: number) {
-      super([]);
-    }
-
-    override get size(): number {
-      return this.claimed;
-    }
-  }
-
   it('names its error, a UserError', () => {
     const error = new ZipLimitError();
     expect(error).toBeInstanceOf(UserError);

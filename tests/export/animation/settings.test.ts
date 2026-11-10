@@ -1,7 +1,7 @@
 /**
  * Tests the animation settings in src/export/animation/settings.ts: the limits per format, the
  * normalization of untrusted settings (types, ranges, size and aspect ratio, formats that are not
- * available), the frame count and the encoded size.
+ * available), switching the format, the frame count and the encoded size.
  */
 import { describe, expect, it } from 'vitest';
 import {
@@ -25,6 +25,7 @@ import {
   maxSizeFor,
   normalizeAnimationSettings,
   outputSizeOf,
+  switchAnimationFormat,
 } from '../../../src/export/animation/settings';
 import { randomInt, seededRandom } from '../../random';
 
@@ -272,5 +273,42 @@ describe('outputSizeOf', () => {
     expect(outputSizeOf({ format: 'mp4', width: 801, height: 600 })).toEqual({ width: 800, height: 600 });
     expect(outputSizeOf({ format: 'mp4', width: 1921, height: 1081 })).toEqual({ width: 1920, height: 1080 });
     expect(outputSizeOf({ format: 'mp4', width: 1, height: 0 })).toEqual({ width: 2, height: 2 });
+  });
+});
+
+describe('switchAnimationFormat', () => {
+  const switched = (from: Partial<AnimationSettings>, format: AnimationFormat): AnimationSettings => {
+    const a = { ...DEFAULT_ANIMATION, ...from };
+    switchAnimationFormat(a, format);
+    return a;
+  };
+
+  it('switches to the new default fps only when the old default was in use', () => {
+    expect(switched({ format: 'gif', fps: DEFAULT_GIF_FPS }, 'mp4').fps).toBe(DEFAULT_VIDEO_FPS);
+    expect(switched({ format: 'mp4', fps: DEFAULT_VIDEO_FPS }, 'gif').fps).toBe(DEFAULT_GIF_FPS);
+    expect(switched({ format: 'gif', fps: 12 }, 'mp4').fps).toBe(12);
+  });
+
+  it('caps the fps to the new format', () => {
+    expect(switched({ format: 'mp4', fps: MAX_VIDEO_FPS }, 'webp').fps).toBe(MAX_ANIMATION_FPS);
+  });
+
+  it('scales the size into the new limit, keeping the aspect ratio, never below the minimum', () => {
+    expect(switched({ format: 'mp4', width: 1920, height: 960 }, 'gif')).toMatchObject({
+      format: 'gif',
+      width: MAX_ANIMATION_SIZE,
+      height: MAX_ANIMATION_SIZE / 2,
+    });
+    expect(switched({ format: 'mp4', width: 1920, height: 10 }, 'gif')).toMatchObject({
+      width: MAX_ANIMATION_SIZE,
+      height: MIN_ANIMATION_SIZE,
+    });
+    expect(switched({ format: 'gif', width: 1000, height: 500 }, 'mp4')).toMatchObject({ width: 1000, height: 500 });
+  });
+
+  it('keeps the margin within the new size', () => {
+    const a = switched({ format: 'mp4', width: 1920, height: 1920, margin: 900 }, 'gif');
+    expect(a.margin).toBe(maxMarginFor(a.width, a.height));
+    expect(switched({ format: 'gif', margin: 40 }, 'mp4').margin).toBe(40);
   });
 });

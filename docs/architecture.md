@@ -57,7 +57,7 @@ The page also uses Tauri's own APIs, allowed in `src-tauri/capabilities/default.
 8. **The user exports.**
    - A still image: `exportImage` in `src/ui/actions/exporting.ts` first runs the pending rebuild and scene update, then `src/export/exporter.ts` renders the stage off-screen, transparent and supersampled (`stage.renderToCanvas()`), crops it to the composition, scales it into the size minus the margins, paints the background, encodes the image and writes its print resolution (`src/export/png.ts`).
    - A turntable animation: `src/export/animation/index.ts` asks the stage for one fixed framing for all frames (`stage.beginAnimation()`, `src/scene/stage/turntable.ts`), renders each frame at the angles from `src/export/animation/turntable.ts`, and streams it into the GIF, WebP or MP4 encoder.
-   - A batch: `src/ui/batch.ts` drives the stage with temporary models (built with the model's `build()`) and scene settings, never touches the store, and packs the stills into one ZIP file (`src/export/zip.ts`). When it ends, the project's scene and model are put back on the stage.
+   - A batch: the batch export dialog (`src/ui/batch/`) asks for the items of the chosen mode (`src/export/batch/items.ts`) and runs them (`runBatch` in `src/export/batch/index.ts`), which drives the stage with temporary models (built with the model's `build()`) and scene settings, never touches the store, and packs the stills into one ZIP file (`src/export/zip.ts`). When it ends, the project's scene and model are put back on the stage.
    - A print template: `src/export/templates.ts` draws the slot's `template` as a 300 dpi PNG with trim, bleed and fold guides.
 
    Every file is saved with `saveBlob` (`src/platform/files.ts`): in the desktop app through the native save dialog and `save_file`, in a browser through the save picker or a download. A download cannot report whether the file was saved, so a save that must be sure of it (`confirmed`, used by the recovery dialog) never falls back to one: it fails with a `UserError` instead.
@@ -111,8 +111,10 @@ src/
   export/       still image export (exporter.ts, layout.ts), print resolution in PNG and JPEG (png.ts),
                 print templates (templates.ts), ZIP (zip.ts), the formats this engine can encode,
                 their labels and save-dialog filters (formats.ts), the suggested file names
-                (fileNames.ts), and animation/: the turntable export (index.ts, turntable.ts,
-                settings.ts, errors.ts) and its encoders (gif.ts, lzw.ts, quantize.ts, webp.ts, mp4.ts)
+                (fileNames.ts), batch/: the batch export (index.ts: running the items into one ZIP
+                file) and the items of each mode (items.ts), and animation/: the turntable export
+                (index.ts, turntable.ts, settings.ts, errors.ts) and its encoders (gif.ts, lzw.ts,
+                quantize.ts, webp.ts, mp4.ts)
   project/      project files: writing, reading and validating them, and decoding their artwork
                 (format.ts), cleaning the untrusted values read from them and from the stored looks
                 (sanitize.ts), and looks: the built-in ones, the looks file and the stored looks (looks.ts)
@@ -132,10 +134,15 @@ src/
                 showing the active document (preview.ts), keeping the session: autosave and restore
                 (sessionKeeper.ts), the tab strip (tabbar.ts), the recovery dialog for the session's
                 unopened entries (recovery.ts), toolbar, gallery, viewport, inspector
-                and panels/ (artwork.ts, modelPanel.ts, scenePanel.ts, exportPanel.ts, looks.ts),
+                and panels/ (artwork.ts, modelPanel.ts, scenePanel.ts, looks.ts, and export/: the
+                Export tab in index.ts, its Image and Animation export types in still.ts and
+                animation.ts, the animation's format section, its progress with Cancel, the size
+                controls both share and how they read and change the export settings),
                 controls, dialogs, toasts, the message and log entry for an error it shows
-                (errors.ts), batch export (batch.ts), number formatting and parsing (numbers.ts),
-                shortcuts, icons and DOM helpers (dom.ts)
+                (errors.ts), the batch export dialog (batch/: the dialog in index.ts, its setup
+                phase in setup.ts and what it remembers in selection.ts), the progress control of
+                the batch and the animation export (progress.ts), number formatting and parsing
+                (numbers.ts), shortcuts, icons and DOM helpers (dom.ts)
 tests/          unit tests (Vitest, config in vitest.config.ts); their folders mirror src/ and tools/;
                 shared test data in fixtures.ts, a seeded random generator in random.ts, the checks
                 of header and banner comments and of the import order in layout.test.ts, and the
@@ -206,7 +213,7 @@ How the folders are organized:
 - **A model, panel or subsystem is one module until it needs several files; then it becomes a folder.** A file never sits next to a folder of the same name.
 - **A folder that grows past about a dozen modules is split into subfolders by role**, each answering one question, with imports running one way between them. Tests mirror the subfolders. (Today `ui/` holds nineteen modules directly.)
 - **Imports run one way:** `core` ← `models` and `scene` ← `export` ← `project` ← `documents` ← `ui`. A module imports its own folder and the layers below it; `models` and `scene` sit side by side and never import each other. Only `ui` and the entry point `main.ts` use `platform`, except the log (`platform/log.ts`), which every module may use; `platform` itself imports only `core`. `core` holds the contracts the others share (`src/core/types/`). `project` sits above `export` because reading a project checks which formats this engine can export, and `documents` above `project` because the session stores project files. `tests/layout.test.ts` fails on an import against this order.
-- **A module's name does not repeat its folder** (`panels/looks.ts`, not `panels/looksPanel.ts`), as long as the shorter name still says what the module is. (Today `modelPanel.ts`, `scenePanel.ts` and `exportPanel.ts` in `ui/panels/` still end in `Panel`.)
+- **A module's name does not repeat its folder** (`panels/looks.ts`, not `panels/looksPanel.ts`), as long as the shorter name still says what the module is. (Today `modelPanel.ts` and `scenePanel.ts` in `ui/panels/` still end in `Panel`.)
 - **File names are camelCase** in `src/` and `tests/` (`plasticCard.ts`) and **kebab-case** in `tools/` (`draw-icon.mjs`).
 
 ## 3D conventions
@@ -242,16 +249,16 @@ Each concept has one name, used everywhere. Where the interface or today's code 
 | View | A preset camera direction from the view bar or the keys 1–6: Front, 3/4 left, 3/4 right, Side, Top, Back. | `VIEW_PRESETS` in `src/scene/views.ts` |
 | Light preset | A built-in lighting setup picked in the Scene tab (Studio, Soft light, Dramatic …); it sets the light and may change the shadow and reflection. | `LightPreset`, `src/scene/lightPresets.ts` |
 | Look | Named scene settings without the artwork or the model: light, shadow, reflection, background and, if saved with it, the camera. Built-in looks ship with the app; the user's own are saved, imported and exported in the Looks tab. | `Look`, `src/project/looks.ts`, `src/ui/panels/looks.ts`, the `looks` tab id, the `mockup-director.looks` key, the looks file `mockup-director-looks.json` |
-| Size preset | One of the square output sizes offered as chips in the Export tab. A model's paper sizes (A5, A6 …) are not size presets but options of its Size parameter. | `SIZE_PRESETS`, `ANIM_SIZE_PRESETS` in `src/ui/panels/exportPanel.ts` |
+| Size preset | One of the square output sizes offered as chips in the Export tab. A model's paper sizes (A5, A6 …) are not size presets but options of its Size parameter. | `SIZE_PRESETS` in `src/ui/panels/export/still.ts`, `ANIM_SIZE_PRESETS` in `src/ui/panels/export/animation.ts` |
 | Inspector | The tabbed panel on the right: Artwork, Model, Scene, Export, Looks. | `src/ui/inspector.ts`, `src/ui/panels/` |
 | Project | One mockup: its model, the artwork and parameters of every model used in it, the scene and the export settings. Saved as a `.mdproj` file. | `ProjectFile`, `src/project/format.ts`; `DocumentState` while open |
 | Tab | One open project, in the strip above the viewport ("Open projects"). A tab is dirty while it has unsaved changes. | `src/documents/tabs.ts`, `src/ui/tabbar.ts` |
 | Session | The open tabs, kept between starts. The interface does not name it; its messages speak of "the projects that were open". | `src/documents/session.ts`, `src/documents/sessionRecords.ts`, `src/documents/sessionDb.ts`; autosave and restore in `src/ui/sessionKeeper.ts` |
 | Unopened entry | A tab of the session whose stored copy this app cannot open: it comes from a newer version, or it is damaged. Kept until the user saves the copy to a file or deletes it in the recovery dialog; the interface calls it a copy. | `UnopenedTab` in `src/documents/sessionRecords.ts`, `src/ui/recovery.ts` |
 | Export | Writing the mockup to a file, in one of three ways. | `src/export/` |
-| Still | One image (PNG, JPEG or WebP); the interface calls it an image ("Export image…", export type Image). | `exporter.ts`, `ExportSettings` |
-| Turntable animation | The model turning a full 360° or swinging back and forth, as GIF, WebP or MP4; the interface calls it an animation (export type Animation). | `src/export/animation/`, `AnimationSettings`; the stage's half in `src/scene/stage/turntable.ts` |
-| Batch export | Many stills in one ZIP file, in one of three modes: Many images (artwork files into one slot), Many views, Many projects. | `src/ui/batch.ts`; the modes `artwork`, `views` and `projects` |
+| Still | One image (PNG, JPEG or WebP); the interface calls it an image ("Export image…", export type Image). | `exporter.ts`, `ExportSettings`; the export type Image in `src/ui/panels/export/still.ts` |
+| Turntable animation | The model turning a full 360° or swinging back and forth, as GIF, WebP or MP4; the interface calls it an animation (export type Animation). | `src/export/animation/`, `AnimationSettings`; the stage's half in `src/scene/stage/turntable.ts`; the export type Animation in `src/ui/panels/export/animation.ts` |
+| Batch export | Many stills in one ZIP file, in one of three modes: Many images (artwork files into one slot), Many views, Many projects. | `src/export/batch/` (running it, and the items of each mode), the dialog in `src/ui/batch/`; the modes `artwork`, `views` and `projects` (`BatchMode`) |
 
 ## Files and data
 
@@ -279,7 +286,7 @@ JSON without indentation, written by `toProjectFile` and read by `readProjectFil
 
 `params`, `artwork`, `scene` or `export` stored as something other than an object counts as one left-out value; inside `params` and `artwork`, a model whose value is not an object counts as one too. Numbers outside their range are clamped to the nearest allowed value and not counted.
 
-`readProjectFile` reads a chosen or dropped file (the Open dialog, dropped files, the files the system opens and the Many projects batch export); a file that cannot be read any more, because it was moved, deleted or locked after it was chosen, is refused: "The file could not be read: it may have been moved, deleted or locked. Check that it still exists and can be opened, then try again." (the interface names the file next to it). The looks import refuses such a file the same way, ending "then import it again." `readProjectText` holds the only `JSON.parse` of a project file. Text that is not JSON is refused: "The file could not be read: it is not a Mockup Director project, or it is damaged. Choose another .mdproj file." Every refusal is a `UserError`. Otherwise `parseProjectFile` returns the clean file together with a `ProjectReport`: how many settings and how many pieces of artwork it left out. When a project opens (`openProjectFiles` in `src/ui/actions/projects.ts`: the Open dialog, dropped `.mdproj` files and the files the system opens) and in the Many projects batch export (`src/ui/batch.ts`, whose warning goes with that item), artwork that `hydrateProject` cannot decode is left out as well, and `projectWarning` joins both counts in one warning: "Parts of the project could not be read and were left out. Settings: N. Artwork: M. The project may come from a newer Mockup Director: update Mockup Director, or set what is missing again." A count of zero is left out of the text; when the only loss is artwork that could not be decoded, the last sentence is "Add the artwork again." instead. A project that lost nothing opens without a warning.
+`readProjectFile` reads a chosen or dropped file (the Open dialog, dropped files, the files the system opens and the Many projects batch export); a file that cannot be read any more, because it was moved, deleted or locked after it was chosen, is refused: "The file could not be read: it may have been moved, deleted or locked. Check that it still exists and can be opened, then try again." (the interface names the file next to it). The looks import refuses such a file the same way, ending "then import it again." `readProjectText` holds the only `JSON.parse` of a project file. Text that is not JSON is refused: "The file could not be read: it is not a Mockup Director project, or it is damaged. Choose another .mdproj file." Every refusal is a `UserError`. Otherwise `parseProjectFile` returns the clean file together with a `ProjectReport`: how many settings and how many pieces of artwork it left out. When a project opens (`openProjectFiles` in `src/ui/actions/projects.ts`: the Open dialog, dropped `.mdproj` files and the files the system opens) and in the Many projects batch export (`readProjectToRender` in `src/project/format.ts`, which decodes only the shown model's artwork; its warning goes with that item), artwork that `hydrateProject` cannot decode is left out as well, and `projectWarning` joins both counts in one warning: "Parts of the project could not be read and were left out. Settings: N. Artwork: M. The project may come from a newer Mockup Director: update Mockup Director, or set what is missing again." A count of zero is left out of the text; when the only loss is artwork that could not be decoded, the last sentence is "Add the artwork again." instead. A project that lost nothing opens without a warning.
 
 ### Looks file
 
@@ -359,8 +366,8 @@ The desktop app writes its diagnostics to `mockup-director.log` in the log folde
 | `mockup-director.looks` | localStorage | the user's looks, in the looks file's shape | `src/project/looks.ts` |
 | `mockup-director.ui.tab` | localStorage | the inspector tab last shown | `src/ui/inspector.ts` |
 | `mockup-director.ui.collapsed` | localStorage | the keys of the collapsed inspector sections, a JSON array | `src/ui/controls.ts` |
-| `mockup-director.ui.exportMode` | localStorage | the export type last chosen: `image` or `animation` | `src/ui/panels/exportPanel.ts` |
-| `mockup-director.ui.lockAspect` | localStorage | whether the export size keeps its aspect ratio: `1` or `0` | `src/ui/panels/exportPanel.ts` |
-| `mockup-director.ui.batchMode` | localStorage | the batch export mode last chosen: `artwork`, `views` or `projects` | `src/ui/batch.ts` |
+| `mockup-director.ui.exportMode` | localStorage | the export type last chosen: `image` or `animation` | `src/ui/panels/export/index.ts` |
+| `mockup-director.ui.lockAspect` | localStorage | whether the export size keeps its aspect ratio: `1` or `0` | `src/ui/panels/export/size.ts` |
+| `mockup-director.ui.batchMode` | localStorage | the batch export mode last chosen: `artwork`, `views` or `projects` | `src/ui/batch/selection.ts` |
 
 localStorage is read and written through `safeStorage` (`src/platform/storage.ts`, behind the `KeyValueStorage` interface in `src/core/types/project.ts`), which never throws: where storage is blocked, nothing is read, and `set` returns false when a value cannot be written. The interface choices ignore a failed write, so they are simply not kept; the looks report it (above).

@@ -1,6 +1,6 @@
 /**
  * Animation settings: limits, normalization (used for persisted projects and defensively by the
- * exporter) and small derived values (frame count, effective size).
+ * exporter), switching the format, and small derived values (frame count, effective size).
  */
 import type { AnimationFormat, AnimationSettings } from '../../core/types/export';
 import { clamp } from '../../core/math';
@@ -32,6 +32,26 @@ export function maxFpsFor(format: AnimationFormat): number {
 /** Suggested fps when switching to a format. */
 export function defaultFpsFor(format: AnimationFormat): number {
   return format === 'mp4' ? DEFAULT_VIDEO_FPS : DEFAULT_GIF_FPS;
+}
+
+/**
+ * Switch the settings to another format: its default fps when the old default was in use, the fps and
+ * the size within its limits (keeping the aspect ratio), and the margin within the new size.
+ */
+export function switchAnimationFormat(a: AnimationSettings, format: AnimationFormat): void {
+  const prev = a.format;
+  a.format = format;
+  // Switch to the new format's default fps when the old default was in use.
+  if (a.fps === defaultFpsFor(prev)) a.fps = defaultFpsFor(format);
+  a.fps = Math.min(a.fps, maxFpsFor(format));
+  // Fit the size into the new limit, keeping the aspect ratio.
+  const max = maxSizeFor(format);
+  const k = Math.min(1, max / Math.max(a.width, a.height));
+  if (k < 1) {
+    a.width = Math.max(MIN_ANIMATION_SIZE, Math.round(a.width * k));
+    a.height = Math.max(MIN_ANIMATION_SIZE, Math.round(a.height * k));
+  }
+  a.margin = Math.min(a.margin, maxMarginFor(a.width, a.height));
 }
 
 /** Number of frames of one loop (at least 2). The last frame is NOT a copy of the first. */

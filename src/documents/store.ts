@@ -320,20 +320,3 @@ export class Store {
 export function hasAny(e: ChangeEvent, ...kinds: ChangeKind[]): boolean {
   return kinds.some((k) => e.kinds.has(k));
 }
-
-/**
- * Dispose every artwork of an artwork map that never entered the store (e.g. a restored autosave that
- * was discarded). Never call this for maps the store or its history still reference.
- */
-export function disposeArtworkMap(m: ArtworkMap): void {
-  for (const slots of Object.values(m)) {
-    for (const a of Object.values(slots)) {
-      if (!a) continue;
-      try {
-        disposeArtwork(a);
-      } catch {
-        /* ignore – disposal must never break the UI */
-      }
-    }
-  }
-}

@@ -8,8 +8,9 @@ import { exportImage } from '../../export/exporter';
 import { exportAnimation, isAnimationCanceled, type AnimationResult } from '../../export/animation';
 import { animationFileFilter, imageFileFilter, supportsWebpEncoding } from '../../export/formats';
 import { animationFileName, suggestFileName } from '../../export/fileNames';
+import type { BatchHost } from '../../export/batch';
 import { saveBlob } from '../../platform/files';
-import { openBatchDialog, type BatchHost } from '../batch';
+import { openBatchDialog } from '../batch';
 import type { ActionContext, Actions } from '../context';
 import { nextFrame } from '../dom';
 import { errorMessage, logShownError } from '../errors';
@@ -36,7 +37,7 @@ export function createExportingActions({
   });
 
   /**
-   * Exclusive stage access for the batch export (src/ui/batch.ts). The batch never touches the store:
+   * Exclusive stage access for the batch export (src/export/batch/). The batch never touches the store:
    * it renders temporary models / scene settings, and end() puts the document back on the stage –
    * the exact scene settings and camera from the store plus a normal rebuild of the document's model.
    */

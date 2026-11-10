@@ -13,6 +13,9 @@ interface FileFilter {
 /** How the interface names each image format. */
 export const IMAGE_FORMAT_LABEL: Record<ExportFormat, string> = { png: 'PNG', jpeg: 'JPEG', webp: 'WebP' };
 
+/** How the interface names each animation format. */
+export const ANIMATION_FORMAT_LABEL: Record<AnimationFormat, string> = { gif: 'GIF', webp: 'WebP', mp4: 'MP4' };
+
 /** The file extension of an image format, without the dot. */
 export function extensionFor(format: ExportFormat): string {
   return format === 'jpeg' ? 'jpg' : format;
@@ -25,8 +28,7 @@ export function imageFileFilter(format: ExportFormat): FileFilter {
 
 /** Save-dialog filter for an animation format. */
 export function animationFileFilter(format: AnimationFormat): FileFilter {
-  const names: Record<AnimationFormat, string> = { gif: 'GIF', webp: 'WebP', mp4: 'MP4' };
-  return { name: names[format], extensions: [format] };
+  return { name: ANIMATION_FORMAT_LABEL[format], extensions: [format] };
 }
 
 let webpSupport: boolean | null = null;

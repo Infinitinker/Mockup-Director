@@ -120,7 +120,7 @@ interface ModelContext {
 build(ctx: ModelContext): THREE.Object3D;
 ```
 
-- `build` returns a new object tree on every call. The app calls it whenever a parameter or the artwork changes (at most once per frame) and for every item of a batch export (`src/ui/preview.ts`, `src/ui/batch.ts`).
+- `build` returns a new object tree on every call. The app calls it whenever a parameter or the artwork changes (at most once per frame) and for every item of a batch export (`src/ui/preview.ts`, `src/export/batch/items.ts`).
 - The returned object follows the [3D conventions](architecture.md#3d-conventions): millimeters, lowest point at `y = 0`, centered on `x = 0` and `z = 0`, front facing `+Z`, top facing `+Y`. Build in whatever frame is convenient, then call `placeOnGround`.
 - Materials are `MeshStandardMaterial` or `MeshPhysicalMaterial`. The stage adds the lights, the environment for reflections, the shadow and the floor reflection; a model adds none of them. Meshes that cast a shadow set `castShadow` (`castShadows` sets it on the whole tree).
 - The stage owns what `build` returns. When it shows the next object, it frees the previous one with `disposeObject` (`src/scene/dispose.ts`): every geometry and material in the tree, and textures flagged `disposeWithModel`. So create geometries and materials in each build rather than keeping them between builds. A texture a model caches at module level is not flagged and is never freed (the data-side texture in `disc/build.ts`).
