@@ -18,7 +18,15 @@
  * An index from a newer version is not read at all.
  */
 import { UserError } from '../core/errors';
-import { NewerProjectError, type ParsedProject, PROJECT_EXT, parseProjectFile } from '../project/format';
+import {
+  MAX_PROJECT_SIZE,
+  NewerProjectError,
+  type ParsedProject,
+  PROJECT_EXT,
+  artworkSize,
+  overProjectLimit,
+  parseProjectFile,
+} from '../project/format';
 import { isPlain } from '../project/sanitize';
 import { log } from '../platform/log';
 
@@ -34,6 +42,15 @@ export const SESSION_DAMAGED =
 
 /** The message for a kept copy that cannot be written to a file. */
 export const COPY_UNWRITABLE = 'The copy could not be written to a file: it is damaged. Delete it instead.';
+
+/**
+ * The message for a kept copy too large to be written as a project file, `size` long when it is known. The copy
+ * itself is fine, so the message never advises deleting it.
+ */
+export function copyTooLarge(size?: number): string {
+  const what = size === undefined ? '' : `: ${overProjectLimit(size)}`;
+  return `The copy is too large to save as a project file${what}. It is kept: Mockup Director offers it again at every start.`;
+}
 
 /** The file name of a saved copy whose tab has no name, without the extension. */
 export const RECOVERED_NAME = 'Recovered project';
@@ -238,16 +255,23 @@ export function buildIndex(open: readonly IndexTab[], activeId: string, unopened
 
 /**
  * The text of the project file an unopened copy is saved to: the record's `file` as stored, or the
- * whole record when the record or its `file` is not an object. Throws a UserError when the record cannot be written as JSON.
+ * whole record when the record or its `file` is not an object. Throws a UserError when the copy is too large to
+ * write (larger than a project can hold, MAX_PROJECT_SIZE, checked from its artwork, then from the text; or longer
+ * than any string the engine can make), or cannot be written as JSON for another reason (COPY_UNWRITABLE).
  */
 export function unopenedFileText(record: unknown): string {
   const value = isPlain(record) && isPlain(record.file) ? record.file : record;
+  const size = isPlain(value) ? artworkSize(value.artwork) : 0;
+  if (size > MAX_PROJECT_SIZE) throw new UserError(copyTooLarge(size));
   let text: string | undefined;
   try {
     text = JSON.stringify(value);
   } catch (e) {
+    // The engine's string limit: the text would be longer than any string it can make.
+    if (e instanceof RangeError) throw new UserError(copyTooLarge(), { cause: e });
     throw new UserError(COPY_UNWRITABLE, { cause: e });
   }
+  if (text !== undefined && text.length > MAX_PROJECT_SIZE) throw new UserError(copyTooLarge(text.length));
   return text ?? 'null';
 }
 

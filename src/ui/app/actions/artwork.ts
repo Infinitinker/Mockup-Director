@@ -1,11 +1,13 @@
 /**
- * The artwork actions: loading artwork files into the model's slots (empty slots first), choosing a file for one
- * slot, removing artwork, and downloading a slot's print template.
+ * The artwork actions: loading artwork files into the model's slots (empty slots first, as long as the project stays
+ * within the size a project file can hold), choosing a file for one slot, removing artwork, and downloading a slot's
+ * print template.
  */
-import type { ArtworkMap } from '../../../core/types/project';
+import type { Artwork, ArtworkMap } from '../../../core/types/project';
 import { disposeArtwork, loadImageFile } from '../../../core/images';
 import { getModel } from '../../../models/registry';
 import { completeParams } from '../../../models/params';
+import { checkArtworkFits } from '../../../project/format';
 import { renderTemplateDetailed } from '../../../export/templates';
 import { templateFileName } from '../../../export/fileNames';
 import { pickFiles, saveBlob } from '../../../platform/files';
@@ -15,19 +17,30 @@ import { notify } from '../../toast';
 
 type ArtworkActions = Pick<Actions, 'assignArtwork' | 'pickArtworkFor' | 'removeArtwork' | 'downloadTemplate'>;
 
-/** The artwork actions; the slots being decoded are marked in `loadingSlots`. */
+/**
+ * The artwork actions; the slots being decoded are marked in `loadingSlots`. A slot whose artwork changes while
+ * an action decodes files for it (another drop or Choose… finished first) keeps that artwork.
+ */
 export function createArtworkActions({
   store,
   docs,
   loadingSlots,
 }: Pick<ActionContext, 'store' | 'docs' | 'loadingSlots'>): ArtworkActions {
+  /** How many running actions mark each slot (`modelId/slotId`) as loading. */
+  const loadingCounts = new Map<string, number>();
   const setLoading = (keys: string[], on: boolean) => {
-    const next = new Set(loadingSlots.value);
     for (const k of keys) {
-      if (on) next.add(k);
-      else next.delete(k);
+      const count = (loadingCounts.get(k) ?? 0) + (on ? 1 : -1);
+      if (count > 0) loadingCounts.set(k, count);
+      else loadingCounts.delete(k);
     }
-    loadingSlots.set(next);
+    loadingSlots.set(new Set(loadingCounts.keys()));
+  };
+
+  /** Shows an error toast with the title `title` and the message of `e`, and logs it. */
+  const showFailure = (title: string, e: unknown) => {
+    logShownError(title, e);
+    notify.error(title, errorMessage(e));
   };
 
   const actions: ArtworkActions = {
@@ -53,34 +66,57 @@ export function createArtworkActions({
       }
       if (files.length > targets.length)
         notify.info(`Skipped files: ${files.length - targets.length}. The model has no more slots for them.`);
-      const pairs = targets.map((slotId, i) => ({ slotId, file: files[i] }));
+      // What each slot holds now: one that holds something else once the files are decoded is left as it is then.
+      const before = store.state.artwork[model.id] ?? {};
+      const pairs = targets.map((slotId, i) => ({ slotId, file: files[i], was: before[slotId] }));
       // Decoding takes a while: the artwork belongs to this tab, even if another one is shown by then.
       const tabId = docs.activeId;
       const keys = pairs.map((p) => `${model.id}/${p.slotId}`);
       setLoading(keys, true);
       try {
         // One file after another, so that only one full-size image is in memory at once.
-        const loaded: Record<string, ArtworkMap[string][string]> = {};
-        for (const { slotId, file } of pairs) {
+        const loaded: { slotId: string; file: File; was: Artwork | undefined; art: Artwork }[] = [];
+        for (const pair of pairs) {
           try {
-            loaded[slotId] = await loadImageFile(file);
+            loaded.push({ ...pair, art: await loadImageFile(pair.file) });
           } catch (e) {
-            logShownError(`Could not load “${file.name}”`, e);
-            notify.error(`Could not load “${file.name}”`, errorMessage(e));
+            showFailure(`Could not load “${pair.file.name}”`, e);
           }
         }
-        if (Object.keys(loaded).length && !docs.tab(tabId)) {
+        if (!loaded.length) return;
+        const target = docs.state(tabId);
+        if (!target) {
           // The tab was closed meanwhile.
-          Object.values(loaded).forEach(disposeArtwork);
-        } else if (Object.keys(loaded).length) {
-          docs.activate(tabId);
-          store.endBurst();
-          store.update(['artwork'], (s) => {
-            s.artwork[model.id] = { ...(s.artwork[model.id] ?? {}), ...loaded };
-          });
-          store.endBurst();
-          if (model.id !== store.state.modelId) notify.info(`Artwork assigned to “${model.name}”`);
+          for (const { art } of loaded) disposeArtwork(art);
+          return;
         }
+        // Decided on the tab's state as it is, so that the tab is shown only when artwork goes in.
+        const own = { ...(target.artwork[model.id] ?? {}) };
+        const artwork: ArtworkMap = { ...target.artwork, [model.id]: own };
+        const added: Record<string, Artwork> = {};
+        for (const { slotId, file, was, art } of loaded) {
+          if (target.artwork[model.id]?.[slotId] !== was) {
+            disposeArtwork(art);
+            continue;
+          }
+          try {
+            checkArtworkFits(artwork, model.id, slotId, art);
+          } catch (e) {
+            disposeArtwork(art);
+            showFailure(`Could not add “${file.name}”`, e);
+            continue;
+          }
+          own[slotId] = art;
+          added[slotId] = art;
+        }
+        if (!Object.keys(added).length) return;
+        docs.activate(tabId);
+        store.endBurst();
+        store.update(['artwork'], (s) => {
+          s.artwork[model.id] = { ...(s.artwork[model.id] ?? {}), ...added };
+        });
+        store.endBurst();
+        if (model.id !== store.state.modelId) notify.info(`Artwork assigned to “${model.name}”`);
       } finally {
         setLoading(keys, false);
       }

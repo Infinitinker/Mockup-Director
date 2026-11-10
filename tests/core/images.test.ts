@@ -2,7 +2,9 @@
  * The limits on artwork in src/core/images.ts: files over the byte limit are refused before they are read, images
  * over the pixel limit before they are decoded (or, when the header does not say, once decoded, before they are
  * drawn), with messages that name the file, its size and the limit; every failure to read a file or make its data URL
- * is a UserError; and one image is loaded at a time. Node decodes no image: the decoders are stand-ins here.
+ * is a UserError, with texts that fit a batch export as well; one image is loaded at a time; and the steps that
+ * downscale an image never make a canvas side longer than the engines can draw. Node decodes no image: the decoders
+ * are stand-ins here.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { UserError } from '../../src/core/errors';
@@ -11,6 +13,7 @@ import {
   MAX_ARTWORK_PIXELS,
   checkArtworkBytes,
   checkArtworkPixels,
+  downscaleSteps,
   loadImageDataUrl,
   loadImageFile,
 } from '../../src/core/images';
@@ -62,7 +65,7 @@ describe('checkArtworkBytes', () => {
   it('refuses a larger file, naming it, its size and the limit', () => {
     expect(() => checkArtworkBytes('scan.tif', MAX_ARTWORK_BYTES + 1)).toThrow(
       new UserError(
-        'The file “scan.tif” is 101 MB, more than Mockup Director can use (100 MB). Save it as a smaller file, for example with fewer pixels, then add it again.',
+        'The file “scan.tif” is 101 MB, more than Mockup Director can use (100 MB). Save it as a smaller file, for example with fewer pixels, then choose it again.',
       ),
     );
     expect(() => checkArtworkBytes('scan.tif', MAX_ARTWORK_BYTES + 1)).toThrow(UserError);
@@ -78,7 +81,7 @@ describe('checkArtworkPixels', () => {
   it('refuses a larger image, naming it, its size and the limit', () => {
     expect(() => checkArtworkPixels('x.png', { width: 20000, height: 20000 })).toThrow(
       new UserError(
-        'The image “x.png” is 20,000 × 20,000 pixels, more than Mockup Director can use (100 megapixels). Scale it down, then add it again.',
+        'The image “x.png” is 20,000 × 20,000 pixels, more than Mockup Director can use (100 megapixels). Scale it down, then choose it again.',
       ),
     );
     expect(() => checkArtworkPixels('x.png', { width: 10001, height: 10000 })).toThrow(UserError);
@@ -119,7 +122,9 @@ describe('loadImageFile', () => {
     } as unknown as File;
     const error = await rejectionOf(loadImageFile(file));
     expect(error).toBeInstanceOf(UserError);
-    expect((error as UserError).message).toMatch(/^The file “gone\.png” could not be read\./);
+    expect((error as UserError).message).toBe(
+      'The file “gone.png” could not be read. Check that it still exists and can be opened, then choose it again.',
+    );
     expect((error as UserError).cause).toBe(failure);
   });
 
@@ -138,7 +143,7 @@ describe('loadImageFile', () => {
     const error = await rejectionOf(loadImageFile(new File([pngHeader(100, 100)], 'a.png')));
     expect(error).toBeInstanceOf(UserError);
     expect((error as UserError).message).toBe(
-      'The file “a.png” could not be read into the project. Close other projects or choose a smaller file, then add it again.',
+      'The file “a.png” could not be loaded: there is likely not enough memory. Close other projects or choose a smaller file.',
     );
     expect((error as UserError).cause).toBe(failure);
   });
@@ -210,5 +215,54 @@ describe('loadImageDataUrl', () => {
     const error = await rejectionOf(loadImageDataUrl('not a data URL', 'cover.png'));
     expect(error).toBeInstanceOf(UserError);
     expect((error as UserError).message).toMatch(/is damaged/);
+  });
+});
+
+describe('downscaleSteps', () => {
+  it('draws an image no larger than the texture once, at its own size', () => {
+    expect(downscaleSteps(4096, 1000)).toEqual([{ width: 4096, height: 1000 }]);
+    expect(downscaleSteps(1, 1)).toEqual([{ width: 1, height: 1 }]);
+  });
+
+  it('halves a large image until it is within 2× of the texture, then draws the texture', () => {
+    expect(downscaleSteps(8000, 6000)).toEqual([{ width: 4096, height: 3072 }]);
+    expect(downscaleSteps(20000, 5000)).toEqual([
+      { width: 10000, height: 2500 },
+      { width: 5000, height: 1250 },
+      { width: 4096, height: 1024 },
+    ]);
+  });
+
+  it('first scales a very wide or tall image so no side is over 16,384 px, then halves it', () => {
+    expect(downscaleSteps(100000, 1000)).toEqual([
+      { width: 16384, height: 164 },
+      { width: 8192, height: 82 },
+      { width: 4096, height: 41 },
+    ]);
+    expect(downscaleSteps(2500, 40000)).toEqual([
+      { width: 1024, height: 16384 },
+      { width: 512, height: 8192 },
+      { width: 256, height: 4096 },
+    ]);
+  });
+
+  it('never makes a canvas side longer than 16,384 px or shorter than the texture’s, for any image within the limit', () => {
+    for (const [w, h] of [
+      [100_000_000, 1],
+      [1, 100_000_000],
+      [10000, 10000],
+      [32769, 3051],
+      [65535, 1525],
+      [7016, 9933],
+    ]) {
+      const steps = downscaleSteps(w, h);
+      const last = steps[steps.length - 1];
+      expect(Math.max(last.width, last.height), `${w} × ${h}`).toBe(Math.min(4096, Math.max(w, h)));
+      for (const step of steps) {
+        expect(Math.max(step.width, step.height), `${w} × ${h}`).toBeLessThanOrEqual(16384);
+        expect(step.width).toBeGreaterThanOrEqual(last.width);
+        expect(step.height).toBeGreaterThanOrEqual(last.height);
+      }
+    }
   });
 });

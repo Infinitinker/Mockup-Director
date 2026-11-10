@@ -1,6 +1,6 @@
 /**
- * The size in pixels from the header of PNG, JPEG, GIF, WebP and BMP files, built here by hand: every header that is
- * cut off, damaged or of another format has no size, and no bytes make it throw.
+ * The size in pixels from the header of PNG, JPEG, GIF (with its first frame), WebP and BMP files, built here by
+ * hand: every header that is cut off, damaged or of another format has no size, and no bytes make it throw.
  */
 import { describe, expect, it } from 'vitest';
 import { imageSize } from '../../src/core/imageSize';
@@ -48,8 +48,53 @@ const jpeg = (w: number, h: number, sof = 0xc0, before: number[] = []) =>
     u16be(w),
   );
 
-/** A GIF up to the logical screen's height. */
-const gif = (w: number, h: number, version = '89a') => bytes(`GIF${version}`, u16le(w), u16le(h));
+/** Where a GIF's first frame lies, and how large it is. */
+interface GifFrame {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * A GIF with the logical screen `w` × `h`: the header, the screen with `flags`, the bytes `blocks` (a color table,
+ * extensions), then the first frame's image descriptor up to its height; the frame fills the screen by default.
+ */
+const gif = (
+  w: number,
+  h: number,
+  {
+    version = '89a',
+    flags = 0,
+    blocks = [] as number[],
+    frame = { left: 0, top: 0, width: w, height: h } as GifFrame,
+  } = {},
+) =>
+  bytes(
+    `GIF${version}`,
+    u16le(w),
+    u16le(h),
+    flags,
+    0,
+    0,
+    blocks,
+    0x2c,
+    u16le(frame.left),
+    u16le(frame.top),
+    u16le(frame.width),
+    u16le(frame.height),
+  );
+
+/** A GIF extension: its introducer, its label, then `data` in sub-blocks of at most 255 bytes, and the empty one. */
+function extension(label: number, data: number[]): number[] {
+  const out = [0x21, label];
+  for (let i = 0; i < data.length; i += 255) {
+    const part = data.slice(i, i + 255);
+    out.push(part.length, ...part);
+  }
+  out.push(0);
+  return out;
+}
 
 /** A RIFF WebP container around the first chunk `fourcc`, with `data` as the chunk's start. */
 const webp = (fourcc: string, data: number[]) => bytes('RIFF', u32le(100), 'WEBP', fourcc, u32le(80), data);
@@ -105,9 +150,67 @@ describe('imageSize', () => {
     ).toBeNull();
   });
 
-  it('reads the logical screen of a GIF', () => {
+  it('reads the logical screen of a GIF whose first frame lies in it', () => {
     expect(imageSize(gif(320, 240))).toEqual({ width: 320, height: 240 });
-    expect(imageSize(gif(65535, 65535, '87a'))).toEqual({ width: 65535, height: 65535 });
+    expect(imageSize(gif(320, 240, { frame: { left: 10, top: 20, width: 100, height: 50 } }))).toEqual({
+      width: 320,
+      height: 240,
+    });
+    expect(imageSize(gif(65535, 65535, { version: '87a' }))).toEqual({ width: 65535, height: 65535 });
+  });
+
+  it('widens a GIF89a to its first frame, per side, where the frame reaches past the screen', () => {
+    expect(imageSize(gif(100, 100, { frame: { left: 0, top: 0, width: 20000, height: 50 } }))).toEqual({
+      width: 20000,
+      height: 100,
+    });
+    expect(imageSize(gif(100, 100, { frame: { left: 65535, top: 90, width: 65535, height: 20 } }))).toEqual({
+      width: 131070,
+      height: 110,
+    });
+  });
+
+  it('takes the first frame’s size for a GIF87a, as the decoders do', () => {
+    expect(imageSize(gif(100, 100, { version: '87a', frame: { left: 5, top: 5, width: 30000, height: 40 } }))).toEqual({
+      width: 30000,
+      height: 40,
+    });
+    expect(imageSize(gif(5000, 5000, { version: '87a', frame: { left: 0, top: 0, width: 10, height: 20 } }))).toEqual({
+      width: 10,
+      height: 20,
+    });
+  });
+
+  it('keeps the screen of a GIF whose first frame has no size', () => {
+    expect(imageSize(gif(300, 200, { frame: { left: 9000, top: 0, width: 0, height: 10 } }))).toEqual({
+      width: 300,
+      height: 200,
+    });
+  });
+
+  it('walks past the global color table and the extensions to the first frame', () => {
+    const colors = new Array(3 * 256).fill(7);
+    const blocks = [
+      ...colors,
+      ...extension(0xff, Array.from('NETSCAPE2.0', (c) => c.charCodeAt(0)).concat([3, 1, 0, 0])),
+      ...extension(0xfe, new Array(600).fill(0x2c)),
+      ...extension(0xf9, [4, 0, 0, 0]),
+    ];
+    const frame = { left: 0, top: 0, width: 40000, height: 2500 };
+    expect(imageSize(gif(10, 10, { flags: 0x87, blocks, frame }))).toEqual({ width: 40000, height: 2500 });
+    // A small table (2 colors) too.
+    expect(imageSize(gif(10, 10, { flags: 0x80, blocks: [0, 0, 0, 1, 1, 1], frame }))).toEqual({
+      width: 40000,
+      height: 2500,
+    });
+  });
+
+  it('finds no size in a GIF that ends, or has something other than an extension, before its first frame', () => {
+    expect(imageSize(bytes('GIF89a', u16le(10), u16le(10), 0, 0, 0, 0x3b))).toBeNull();
+    expect(imageSize(bytes('GIF89a', u16le(10), u16le(10), 0, 0, 0, extension(0xf9, [4, 0, 0, 0])))).toBeNull();
+    expect(imageSize(bytes('GIF89a', u16le(10), u16le(10), 0, 0, 0, 0x00, 0x2c))).toBeNull();
+    // The color table the flags announce is not all there.
+    expect(imageSize(bytes('GIF89a', u16le(10), u16le(10), 0x87, 0, 0, new Array(100).fill(0)))).toBeNull();
   });
 
   it('reads the size of lossy, lossless and extended WebP', () => {
@@ -147,7 +250,18 @@ describe('imageSize', () => {
   });
 
   it('finds no size in a header cut off anywhere before its end', () => {
-    const headers = [png(1, 2), jpeg(1, 2), gif(1, 2), vp8(1, 2), vp8l(1, 2), vp8x(1, 2), bmp(1, 2), bmpCore(1, 2)];
+    const gifWithBlocks = gif(1, 2, { flags: 0x80, blocks: [0, 0, 0, 1, 1, 1, ...extension(0xfe, [1, 2, 3])] });
+    const headers = [
+      png(1, 2),
+      jpeg(1, 2),
+      gif(1, 2),
+      gifWithBlocks,
+      vp8(1, 2),
+      vp8l(1, 2),
+      vp8x(1, 2),
+      bmp(1, 2),
+      bmpCore(1, 2),
+    ];
     for (const header of headers) {
       expect(imageSize(header), 'the whole header').not.toBeNull();
       for (let n = 0; n < header.length; n++) expect(imageSize(header.subarray(0, n)), `${n} bytes`).toBeNull();

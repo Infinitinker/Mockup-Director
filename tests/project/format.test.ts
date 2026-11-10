@@ -1,7 +1,8 @@
 /**
  * Tests the project files in src/project/format.ts: file names, writing a project and reading it back,
  * what parsing leaves out, clamps and counts (the cleaning in src/project/sanitize.ts, through
- * parseProjectFile), the size limit of the text written, reading text and files, decoding the artwork one at a
+ * parseProjectFile), the size of a project's artwork and the limit when artwork is added, the size limit of the
+ * text written, reading text and files, decoding the artwork one at a
  * time, reading a project to render it once, and the warning about what was left out.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -15,6 +16,8 @@ import {
   MAX_PROJECT_SIZE,
   NOT_A_PROJECT,
   PROJECT_VERSION,
+  artworkSize,
+  checkArtworkFits,
   hydrateProject,
   isProjectFileName,
   parseProjectFile,
@@ -94,6 +97,49 @@ describe('toProjectFile', () => {
     state.params = { [laptop.id]: prev, [monitor.id]: inheritedParams(monitor, prev) };
     const { report } = parseProjectFile(JSON.parse(JSON.stringify(toProjectFile(state))));
     expect(report).toEqual({ settings: 0, artwork: 0 });
+  });
+});
+
+describe('artworkSize', () => {
+  it('counts the names and data URLs of every model’s artwork', () => {
+    const artwork = {
+      box: { front: { name: 'a.png', dataUrl: 'data:1' }, back: { name: 'bb.png', dataUrl: 'data:22' } },
+      'box-slim': { lid: { ...fakeImage('ccc.png').asset, dataUrl: 'data:333' } },
+    };
+    expect(artworkSize(artwork)).toBe(5 + 6 + 6 + 7 + 7 + 8);
+    expect(artworkSize({})).toBe(0);
+  });
+
+  it('counts nothing for what is not a name and a data URL, as in a stored copy that is damaged', () => {
+    expect(artworkSize(undefined)).toBe(0);
+    expect(artworkSize('text')).toBe(0);
+    expect(artworkSize({ box: 'x', book: [1], disc: { label: { name: 'a.png' }, back: null } })).toBe(0);
+    expect(artworkSize({ box: { front: { name: 'a.png', dataUrl: 'data:1' }, back: 7 } })).toBe(11);
+  });
+});
+
+describe('checkArtworkFits', () => {
+  // One string of a quarter of the limit, shared, so that the tests need little memory.
+  const quarter = 'A'.repeat(MAX_PROJECT_SIZE / 4 - 'a.png'.length);
+  const piece = () => ({ name: 'a.png', dataUrl: quarter });
+
+  it('takes artwork up to the limit, counting the artwork of every model', () => {
+    const artwork = { box: { front: piece(), back: piece() }, book: { cover: piece() } };
+    expect(() => checkArtworkFits(artwork, 'box', 'left', piece())).not.toThrow();
+  });
+
+  it('does not count the artwork the new piece replaces', () => {
+    const artwork = { box: { front: piece(), back: piece() }, book: { cover: piece(), back: piece() } };
+    expect(() => checkArtworkFits(artwork, 'box', 'front', piece())).not.toThrow();
+    expect(() => checkArtworkFits(artwork, 'book', 'cover', piece())).not.toThrow();
+  });
+
+  it('refuses artwork that would take the project past the limit, naming the file and both sizes', () => {
+    const artwork = { box: { front: piece() }, book: { cover: piece(), back: piece() } };
+    const error = errorOf(() => checkArtworkFits(artwork, 'box', 'back', { name: 'x.png', dataUrl: `${quarter}AA` }));
+    expect(error.message).toBe(
+      '“x.png” would make the project 401 MB, more than the 400 MB a project can hold. Remove artwork from this or another model, or choose a smaller file.',
+    );
   });
 });
 

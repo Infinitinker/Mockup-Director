@@ -111,6 +111,13 @@ export class Documents {
     return this.tabs().find((t) => t.id === id);
   }
 
+  /** The state of the tab `id`, whether it is active or not; undefined when there is no such tab. */
+  state(id: string): DocumentState | undefined {
+    const entry = this.entries.find((e) => e.id === id);
+    if (!entry) return undefined;
+    return entry === this.active ? this.store.state : this.parkedDoc(entry).state;
+  }
+
   /** True when the active tab is an untouched new project, which an opened file may replace. */
   activeIsPristine(): boolean {
     return this.active.name === '' && !this.isDirty(this.active) && !this.store.canUndo;

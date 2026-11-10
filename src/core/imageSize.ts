@@ -1,6 +1,7 @@
 /**
  * The size in pixels of an image, read from the header at the start of its file without decoding it: PNG, JPEG,
- * GIF, WebP and BMP. Other formats, and headers that are cut off or damaged, have no size here (null).
+ * GIF (with its first frame's descriptor), WebP and BMP. Other formats, and headers that are cut off or damaged,
+ * have no size here (null).
  */
 
 /** An image's size in pixels. */
@@ -37,10 +38,39 @@ function pngSize(b: Uint8Array): PixelSize | null {
   return { width: u32be(b, 16), height: u32be(b, 20) };
 }
 
-/** GIF: the logical screen, which every frame lies in. */
+/**
+ * GIF: the logical screen and the first frame, whose image descriptor (0x2C) is found by walking past the global
+ * color table and the extension blocks. Browser decoders widen the screen when the first frame is larger, and take
+ * the first frame's size for GIF87a, so the size is per side the larger of the screen and the frame's offset plus
+ * its size, and for GIF87a the frame's size. A frame without a size leaves the screen's, as in the decoders.
+ */
 function gifSize(b: Uint8Array): PixelSize | null {
-  if (!(ascii(b, 0, 'GIF87a') || ascii(b, 0, 'GIF89a')) || b.length < 10) return null;
-  return { width: u16le(b, 6), height: u16le(b, 8) };
+  const is87a = ascii(b, 0, 'GIF87a');
+  if (!(is87a || ascii(b, 0, 'GIF89a')) || b.length < 13) return null;
+  const screen = { width: u16le(b, 6), height: u16le(b, 8) };
+  const flags = b[10];
+  // The global color table, when there is one: 2^(n + 1) colors of 3 bytes.
+  let i = 13 + (flags & 0x80 ? 3 * 2 ** ((flags & 0x07) + 1) : 0);
+  while (i < b.length) {
+    if (b[i] === 0x2c) {
+      if (i + 9 > b.length) return null;
+      const width = u16le(b, i + 5);
+      const height = u16le(b, i + 7);
+      if (!width || !height) return screen;
+      if (is87a) return { width, height };
+      return {
+        width: Math.max(screen.width, u16le(b, i + 1) + width),
+        height: Math.max(screen.height, u16le(b, i + 3) + height),
+      };
+    }
+    // The trailer (0x3B) or anything else but an extension (0x21): no frame to read.
+    if (b[i] !== 0x21) return null;
+    // An extension: its label, then data sub-blocks, each after a byte with its length, up to an empty one.
+    i += 2;
+    while (i < b.length && b[i] !== 0) i += b[i] + 1;
+    i += 1;
+  }
+  return null;
 }
 
 /** WebP: the first chunk, lossy (VP8), lossless (VP8L) or extended (VP8X, the canvas). */

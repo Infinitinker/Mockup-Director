@@ -4,10 +4,11 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { UserError } from '../../src/core/errors';
-import { toProjectFile } from '../../src/project/format';
+import { MAX_PROJECT_SIZE, toProjectFile } from '../../src/project/format';
 import {
   buildIndex,
   COPY_UNWRITABLE,
+  copyTooLarge,
   isNewerIndex,
   type LoadedSession,
   readIndex,
@@ -316,6 +317,41 @@ describe('unopenedFileText', () => {
 
   it('refuses a record that cannot be written as JSON, and says to delete it', () => {
     expect(errorOf(() => unopenedFileText({ savedAt: 1, file: { size: 1n } })).message).toBe(COPY_UNWRITABLE);
+  });
+
+  it('refuses a copy whose artwork is over the project limit before joining the text, and keeps it', () => {
+    // Five slots share one string of 100 MB less the name: 500 MB of artwork, but only 100 MB of memory.
+    const dataUrl = 'A'.repeat(100_000_000 - 'a.png'.length);
+    const artwork = { box: Object.fromEntries(['a', 'b', 'c', 'd', 'e'].map((s) => [s, { name: 'a.png', dataUrl }])) };
+    const stringify = vi.spyOn(JSON, 'stringify');
+    const error = errorOf(() => unopenedFileText({ savedAt: 1, file: { ...newerRecord.file, artwork } }));
+    expect(error.message).toBe(copyTooLarge(500_000_000));
+    expect(error.message).toBe(
+      'The copy is too large to save as a project file: 500 MB, more than the 400 MB a project can hold. It is kept: Mockup Director offers it again at every start.',
+    );
+    expect(stringify).not.toHaveBeenCalled();
+  });
+
+  it('refuses a copy whose text is over the project limit, and keeps it', () => {
+    vi.spyOn(JSON, 'stringify').mockReturnValue({ length: MAX_PROJECT_SIZE + 1 } as unknown as string);
+    expect(errorOf(() => unopenedFileText(newerRecord)).message).toBe(copyTooLarge(MAX_PROJECT_SIZE + 1));
+  });
+
+  it('turns the engine’s string limit into a message that keeps the copy', () => {
+    const failure = new RangeError('Invalid string length');
+    vi.spyOn(JSON, 'stringify').mockImplementation(() => {
+      throw failure;
+    });
+    const error = errorOf(() => unopenedFileText(newerRecord));
+    expect(error.message).toBe(
+      'The copy is too large to save as a project file. It is kept: Mockup Director offers it again at every start.',
+    );
+    expect(error.cause).toBe(failure);
+  });
+
+  it('never advises deleting a copy that is too large', () => {
+    for (const message of [copyTooLarge(), copyTooLarge(MAX_PROJECT_SIZE + 1)])
+      expect(message).not.toMatch(/[Dd]elete/);
   });
 });
 

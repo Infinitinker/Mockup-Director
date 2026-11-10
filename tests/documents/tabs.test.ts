@@ -1,6 +1,6 @@
 /**
  * Tests the open tabs: adding, switching and closing them, when a tab is dirty, the snapshot the session saver
- * reads, and the state of a new project.
+ * reads, the state of a tab without switching to it, and the state of a new project.
  */
 import { describe, expect, it, vi } from 'vitest';
 import { DEFAULT_EXPORT, DEFAULT_SCENE } from '../../src/core/defaults';
@@ -216,6 +216,16 @@ describe('Documents', () => {
     expect(snap[0].state.params.box).toEqual({ width: 1 });
     expect(snap[1]).toMatchObject({ name: 'Disc', dirty: false, revision: secondRevision });
     expect(snap[1].state.modelId).toBe('dvd');
+  });
+
+  it('state() returns the state of an active or a waiting tab without switching, and undefined for no tab', () => {
+    const { store, docs } = setup();
+    const first = docs.activeId;
+    const second = docs.add(documentState('dvd'));
+    expect(docs.state(second)).toBe(store.state);
+    expect(docs.state(first)?.modelId).toBe('box');
+    expect(docs.activeId).toBe(second);
+    expect(docs.state('none')).toBeUndefined();
   });
 
   it('activeIsPristine() is true only for an untouched, unnamed tab', () => {

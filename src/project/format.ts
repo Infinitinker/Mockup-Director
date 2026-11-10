@@ -1,6 +1,6 @@
 /**
- * Project files (*.mdproj, JSON): writing, reading and validating them, and decoding their artwork.
- * The session stores the open tabs in this format too.
+ * Project files (*.mdproj, JSON): writing, reading and validating them, their size limit (also when artwork is
+ * added), and decoding their artwork. The session stores the open tabs in this format too.
  */
 import type { ParamValues } from '../core/types/model';
 import type { ArtworkMap, DocumentState, ProjectFile } from '../core/types/project';
@@ -56,11 +56,55 @@ export function toProjectFile(s: DocumentState): ProjectFile {
  */
 export const MAX_PROJECT_SIZE = 400_000_000;
 
+/** The size of a project over the limit, for texts: "430 MB, more than the 400 MB a project can hold". */
+export function overProjectLimit(size: number): string {
+  return `${megabytes(size)}, more than the ${megabytes(MAX_PROJECT_SIZE)} a project can hold`;
+}
+
 /** The message for a project too large to save, `size` long when it is known. */
 function tooLarge(size?: number): string {
-  const what =
-    size === undefined ? '' : `: ${megabytes(size)}, more than the ${megabytes(MAX_PROJECT_SIZE)} a project can hold`;
+  const what = size === undefined ? '' : `: ${overProjectLimit(size)}`;
   return `The project is too large to save${what}. Remove artwork or replace it with smaller files, then save again.`;
+}
+
+/** The length of one piece of artwork in a project file: its name and its data URL. */
+const pieceSize = (art: { name: string; dataUrl: string }): number => art.name.length + art.dataUrl.length;
+
+/**
+ * The length of the names and data URLs of every model's artwork in `artwork`: nearly all of a project file's text.
+ * It takes a document's artwork, a project file's, or a stored copy's as it was read; anything in it that is not a
+ * name and a data URL counts nothing.
+ */
+export function artworkSize(artwork: unknown): number {
+  let size = 0;
+  if (!isPlain(artwork)) return size;
+  for (const slots of Object.values(artwork)) {
+    if (!isPlain(slots)) continue;
+    for (const art of Object.values(slots)) {
+      if (isPlain(art) && typeof art.name === 'string' && typeof art.dataUrl === 'string')
+        size += pieceSize({ name: art.name, dataUrl: art.dataUrl });
+    }
+  }
+  return size;
+}
+
+/**
+ * Throws a UserError when the artwork `art`, put into the slot `slotId` of the model `modelId`, would make the
+ * project of a document holding `artwork` larger than MAX_PROJECT_SIZE: the artwork of every model counts, less the
+ * piece `art` replaces.
+ */
+export function checkArtworkFits(
+  artwork: ProjectFile['artwork'],
+  modelId: string,
+  slotId: string,
+  art: { name: string; dataUrl: string },
+): void {
+  const replaced = artwork[modelId]?.[slotId];
+  const size = artworkSize(artwork) - (replaced ? pieceSize(replaced) : 0) + pieceSize(art);
+  if (size <= MAX_PROJECT_SIZE) return;
+  throw new UserError(
+    `“${art.name}” would make the project ${overProjectLimit(size)}. Remove artwork from this or another model, or choose a smaller file.`,
+  );
 }
 
 /**
@@ -68,11 +112,8 @@ function tooLarge(size?: number): string {
  * its artwork before anything is joined, then from the text itself.
  */
 export function projectFileText(file: ProjectFile): string {
-  let artworkSize = 0;
-  for (const slots of Object.values(file.artwork)) {
-    for (const art of Object.values(slots)) artworkSize += art.name.length + art.dataUrl.length;
-  }
-  if (artworkSize > MAX_PROJECT_SIZE) throw new UserError(tooLarge(artworkSize));
+  const size = artworkSize(file.artwork);
+  if (size > MAX_PROJECT_SIZE) throw new UserError(tooLarge(size));
   let text: string;
   try {
     text = JSON.stringify(file);

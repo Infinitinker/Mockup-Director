@@ -12,11 +12,16 @@
  *    drawImage() of such an image paints it upright. ImageBitmap's EXIF behavior differed
  *    between engines/versions, so it is only used for non-JPEG rasters (off-main-thread decode).
  *  - SVG is rasterized through HTMLImageElement at a generous size (vector = free quality).
- *  - GPU copies are downscaled so the longest side is ≤ 4096 px (high-quality step-down).
- *  - Limits: a file over MAX_ARTWORK_BYTES is refused before it is read, and an image over
+ *  - GPU copies are downscaled so the longest side is ≤ 4096 px (high-quality step-down), through
+ *    temporary canvases no side of which is longer than MAX_STEP_SIDE (`downscaleSteps`).
+ *  - Limits: a file over MAX_ARTWORK_BYTES is refused before it is read, and a raster image over
  *    MAX_ARTWORK_PIXELS before it is decoded when its header says its size (imageSize.ts), otherwise
- *    once decoded, before it is drawn. Every load waits for the one before it (`oneAtATime`), whoever
- *    asked for it, so only one full-size image is in memory at once.
+ *    once decoded, before it is drawn. An SVG is not checked against the pixel limit: it is
+ *    rasterized at a fixed size (SVG_RASTER_SIZE), and raster images embedded in it, which the
+ *    engine decodes while drawing it, are not checked either. Every load waits for the one before
+ *    it (`oneAtATime`), whoever asked for it, so only one full-size image is in memory at once.
+ *  - The messages fit both uses of loadImageFile: artwork added to a model, and files chosen for a
+ *    batch export.
  */
 import * as THREE from 'three';
 import { UserError } from './errors';
@@ -42,7 +47,7 @@ export const MAX_ARTWORK_PIXELS = 100_000_000;
 export function checkArtworkBytes(name: string, bytes: number): void {
   if (bytes <= MAX_ARTWORK_BYTES) return;
   throw new UserError(
-    `The file “${name}” is ${megabytes(bytes)}, more than Mockup Director can use (${megabytes(MAX_ARTWORK_BYTES)}). Save it as a smaller file, for example with fewer pixels, then add it again.`,
+    `The file “${name}” is ${megabytes(bytes)}, more than Mockup Director can use (${megabytes(MAX_ARTWORK_BYTES)}). Save it as a smaller file, for example with fewer pixels, then choose it again.`,
   );
 }
 
@@ -51,7 +56,7 @@ export function checkArtworkPixels(name: string, { width, height }: PixelSize): 
   if (width * height <= MAX_ARTWORK_PIXELS) return;
   const pixels = (n: number) => n.toLocaleString('en-US');
   throw new UserError(
-    `The image “${name}” is ${pixels(width)} × ${pixels(height)} pixels, more than Mockup Director can use (${MAX_ARTWORK_PIXELS / 1_000_000} megapixels). Scale it down, then add it again.`,
+    `The image “${name}” is ${pixels(width)} × ${pixels(height)} pixels, more than Mockup Director can use (${MAX_ARTWORK_PIXELS / 1_000_000} megapixels). Scale it down, then choose it again.`,
   );
 }
 
@@ -78,7 +83,7 @@ async function readImageFile(file: File): Promise<Artwork> {
     bytes = new Uint8Array(await file.arrayBuffer());
   } catch (err) {
     throw new UserError(
-      `The file “${file.name}” could not be read. Check that it still exists and can be opened, then add it again.`,
+      `The file “${file.name}” could not be read. Check that it still exists and can be opened, then choose it again.`,
       { cause: err },
     );
   }
@@ -205,39 +210,57 @@ async function rasterizeSvg(blob: Blob): Promise<HTMLCanvasElement> {
   return canvas;
 }
 
-/** Draw a decoded source into a canvas, downscaling to MAX_TEXTURE_SIZE with a step-down filter. */
-function drawToCanvas(src: CanvasImageSource, w: number, h: number): HTMLCanvasElement {
-  const s = Math.min(1, MAX_TEXTURE_SIZE / Math.max(w, h));
-  const tw = Math.max(1, Math.round(w * s));
-  const th = Math.max(1, Math.round(h * s));
-  let cur: CanvasImageSource = src;
-  let cw = w;
-  let ch = h;
-  const temps: HTMLCanvasElement[] = [];
-  // Halve until within 2× of the target – a single big downscale aliases badly in some engines.
+/**
+ * The longest side of a temporary canvas while downscaling. The engines cannot draw into a canvas with a side over
+ * 32,767 px and drop such drawing without an error, so the first step goes down to this at most.
+ */
+const MAX_STEP_SIDE = 16384;
+
+/**
+ * The sizes of the canvases that downscale an image of `width` × `height` px to at most MAX_TEXTURE_SIZE on its
+ * longest side, in order; the last is the texture's. The first step scales so no side is over MAX_STEP_SIDE, then
+ * each step halves, until the image is within 2× of the texture's size: a single big downscale aliases badly in some
+ * engines.
+ */
+export function downscaleSteps(width: number, height: number): PixelSize[] {
+  const s = Math.min(1, MAX_TEXTURE_SIZE / Math.max(width, height));
+  const tw = Math.max(1, Math.round(width * s));
+  const th = Math.max(1, Math.round(height * s));
+  const steps: PixelSize[] = [];
+  let cw = width;
+  let ch = height;
   while (cw > tw * 2 || ch > th * 2) {
-    const nw = Math.max(tw, Math.ceil(cw / 2));
-    const nh = Math.max(th, Math.ceil(ch / 2));
-    const c = createCanvas(nw, nh);
-    const g = get2d(c);
-    g.imageSmoothingEnabled = true;
-    g.imageSmoothingQuality = 'high';
-    g.drawImage(cur, 0, 0, cw, ch, 0, 0, nw, nh);
-    temps.push(c);
-    cur = c;
-    cw = nw;
-    ch = nh;
+    const scale = Math.max(cw, ch) / 2 > MAX_STEP_SIDE ? MAX_STEP_SIDE / Math.max(cw, ch) : 0.5;
+    cw = Math.max(tw, Math.min(MAX_STEP_SIDE, Math.ceil(cw * scale)));
+    ch = Math.max(th, Math.min(MAX_STEP_SIDE, Math.ceil(ch * scale)));
+    steps.push({ width: cw, height: ch });
   }
-  const out = createCanvas(tw, th);
-  const g = get2d(out);
+  steps.push({ width: tw, height: th });
+  return steps;
+}
+
+/** Draw a decoded source into a canvas, downscaling to MAX_TEXTURE_SIZE in the steps of `downscaleSteps`. */
+function drawToCanvas(src: CanvasImageSource, w: number, h: number): HTMLCanvasElement {
+  const [first, ...rest] = downscaleSteps(w, h);
+  let canvas = drawScaled(src, w, h, first);
+  for (const size of rest) {
+    const next = drawScaled(canvas, canvas.width, canvas.height, size);
+    // WebKit has a global canvas-memory budget; shrinking the step's canvas frees its backing store now.
+    canvas.width = 0;
+    canvas.height = 0;
+    canvas = next;
+  }
+  return canvas;
+}
+
+/** A new canvas of `size` holding the `w` × `h` source, scaled with high-quality smoothing. */
+function drawScaled(src: CanvasImageSource, w: number, h: number, size: PixelSize): HTMLCanvasElement {
+  const c = createCanvas(size.width, size.height);
+  const g = get2d(c);
   g.imageSmoothingEnabled = true;
   g.imageSmoothingQuality = 'high';
-  g.drawImage(cur, 0, 0, cw, ch, 0, 0, tw, th);
-  for (const t of temps) {
-    t.width = 0;
-    t.height = 0;
-  }
-  return out;
+  g.drawImage(src, 0, 0, w, h, 0, 0, size.width, size.height);
+  return c;
 }
 
 function makeTexture(canvas: HTMLCanvasElement): THREE.Texture {
@@ -302,7 +325,7 @@ async function blobToDataUrl(blob: Blob, name: string): Promise<string> {
     });
   } catch (err) {
     throw new UserError(
-      `The file “${name}” could not be read into the project. Close other projects or choose a smaller file, then add it again.`,
+      `The file “${name}” could not be loaded: there is likely not enough memory. Close other projects or choose a smaller file.`,
       { cause: err },
     );
   }
