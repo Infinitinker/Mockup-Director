@@ -88,8 +88,12 @@ src/
                   templates they share), print/ (templates, finishes and shared parameters; flat/: business card,
                   flyer, postcard, plastic card and brochure, with the sheet, its arrangement on the
                   floor and the two-sided slots; folded/: leaflet, greeting card and bi-fold brochure,
-                  with the hinged sheet, its pose and their build), handheld.ts (phone, tablet),
-                  computer.ts (laptop, monitor), screen.ts (screenshot panel, browser window);
+                  with the hinged sheet, its pose and their build), device/ (computer/: laptop and
+                  monitor, with their display, rounded slabs, keyboard and the monitor's bend;
+                  handheld/: phone and tablet, one build from each model's spec, with their
+                  dimensions, screen slot, parameters, profile sweeps and the stylus; screen/:
+                  screenshot panel and browser window, with the panel's faces, bend, assembly,
+                  finishes, screen slot, shared parameters and the browser's title bar);
                 the helpers for every model: parameters (params.ts, which also validates and completes
                 stored values), materials (materials.ts), shapes, UVs and placing on the floor
                 (geometry.ts), textures a model draws itself (textures.ts), the frame of the gallery icons

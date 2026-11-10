@@ -17,9 +17,12 @@ import { postcardModel } from './print/flat/postcard';
 import { bifoldModel } from './print/folded/bifold';
 import { greetingCardModel } from './print/folded/greetingCard';
 import { trifoldModel } from './print/folded/trifold';
-import { handheldModels } from './handheld';
-import { computerModels } from './computer';
-import { screenModels } from './screen';
+import { laptopModel } from './device/computer/laptop';
+import { monitorModel } from './device/computer/monitor';
+import { phoneModel } from './device/handheld/phone';
+import { tabletModel } from './device/handheld/tablet';
+import { browserWindowModel } from './device/screen/browser';
+import { screenshotModel } from './device/screen/screenshot';
 
 /**
  * All models shown in the gallery, in display order (the gallery groups them by category and
@@ -48,9 +51,12 @@ export const MODELS: ModelDefinition[] = [
   trifoldModel,
   greetingCardModel,
   bifoldModel,
-  ...handheldModels,
-  ...computerModels,
-  ...screenModels,
+  phoneModel,
+  tabletModel,
+  laptopModel,
+  monitorModel,
+  screenshotModel,
+  browserWindowModel,
 ];
 
 export function getModel(id: string): ModelDefinition {
