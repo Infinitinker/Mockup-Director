@@ -42,7 +42,8 @@ interface SaveRequest {
  * Writes the session. A tab's record is written only when its revision changed since this saver
  * last wrote it. Records of closed tabs are deleted, but only those this saver owns: written by it
  * or adopted from the restored session. The unopened entries of the restore are written into every
- * index, after the open tabs, and their records are deleted only when the user chose to (`forget`).
+ * index, after the open tabs, and their records are deleted only when the user chose to (`forget`), or become
+ * an open tab's when the user opened the copy (`reopen`).
  * Saves never overlap: a save requested while one runs waits for it, and several such requests are
  * merged into one that writes the latest tabs (their promises settle together).
  */
@@ -77,6 +78,21 @@ export class SessionSaver {
       this.owned.add(id);
     });
     this.unopened = unopened.map(({ id, name, dirty }) => ({ id, name, dirty }));
+  }
+
+  /**
+   * Moves an unopened entry to the open tabs, once the user opened its copy in a tab with the same id: it is
+   * no longer written as an unopened entry, and its record, kept as it is, becomes the tab's, written by the
+   * next save and deleted when the tab is closed. A save requested before lists it as an open tab, without
+   * writing its record. Does nothing for an id that is not an unopened entry.
+   */
+  reopen(id: string): void {
+    const entry = this.unopened.find((t) => t.id === id);
+    if (!entry) return;
+    this.unopened = this.unopened.filter((t) => t.id !== id);
+    this.owned.add(id);
+    // The queued save read the tabs before this one was added: without it, it would delete its record as closed.
+    if (this.queued && !this.queued.open.some((t) => t.id === id)) this.queued.open.push(entry);
   }
 
   save(tabs: readonly TabSnapshot[], activeId: string): Promise<void> {

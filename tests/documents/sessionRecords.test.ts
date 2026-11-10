@@ -243,7 +243,7 @@ describe('readSession', () => {
     expect(errorOf(() => readSession({ version: SESSION_VERSION + 1 }, records)).message).toBe(SESSION_NEWER);
   });
 
-  it('keeps the held tabs unopened, with their records as stored, and restores the others', () => {
+  it('keeps the held tabs unopened, with their records as stored and their projects to open, and restores the others', () => {
     const held = new Set(['b', 'late', 'n', 'gone']);
     const loaded = readSession(
       index('b', 'a', 'b', 'n'),
@@ -262,10 +262,11 @@ describe('readSession', () => {
       ['early', '', true],
     ]);
     expect(loaded.session.activeId).toBe('a');
+    const project = { file, report: { settings: 0, artwork: 0 } };
     expect(loaded.unopened).toEqual([
-      { ...entry('b', 'B'), reason: 'interrupted', savedAt: 7, record: storedAt(7) },
+      { ...entry('b', 'B'), reason: 'interrupted', savedAt: 7, record: storedAt(7), project },
       { ...entry('n', 'N'), reason: 'newer', savedAt: 1, record: newerRecord },
-      { ...entry('late', '', true), reason: 'interrupted', savedAt: 30, record: storedAt(30) },
+      { ...entry('late', '', true), reason: 'interrupted', savedAt: 30, record: storedAt(30), project },
     ]);
     expect(loaded).toMatchObject({ recovered: 1, missing: 0 });
   });

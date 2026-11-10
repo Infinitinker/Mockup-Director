@@ -1,7 +1,7 @@
 /**
  * Tests the marker of the tabs being reopened (src/documents/restoreMarker.ts) with a fake storage:
- * what it holds at start, what begin, finish, cancel and forget write, and that a damaged value is ignored
- * and logged, never thrown.
+ * what it holds at start, what keepOnly, begin, finish, cancel and forget write (for the restore, and for a held
+ * copy opened from the recovery dialog), and that a damaged value is ignored and logged, never thrown.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { KeyValueStorage } from '../../src/core/types/project';
@@ -55,22 +55,31 @@ describe('RestoreMarker', () => {
     expect([...marker.held]).toEqual(['a', 'b']);
   });
 
-  it('marks the tabs being reopened next to the held ones, and keeps only the held ones still unopened when done', () => {
+  it('keeps only the held ids still unopened, and marks the tabs being reopened next to them until drawn', () => {
     const storage = fakeStorage('["a","gone"]');
     const marker = new RestoreMarker(storage);
-    marker.begin(['b', 'c']);
-    expect(storedIds(storage)).toEqual(['a', 'gone', 'b', 'c']);
     // 'gone' was deleted meanwhile, and 'n' is kept unopened for another reason: neither was held for it.
-    marker.finish(['a', 'n']);
+    marker.keepOnly(['a', 'n']);
+    expect(storedIds(storage)).toEqual(['a']);
+    marker.begin(['b', 'c']);
+    expect(storedIds(storage)).toEqual(['a', 'b', 'c']);
+    marker.finish(['b', 'c']);
     expect(storedIds(storage)).toEqual(['a']);
   });
 
+  it('writes nothing when every held id is still unopened', () => {
+    const storage = fakeStorage('[ "a" ]');
+    new RestoreMarker(storage).keepOnly(['a', 'b']);
+    expect(storage.items.get(RESTORING_KEY)).toBe('[ "a" ]');
+  });
+
   it('removes the key when the restore is done and nothing is held', () => {
-    const storage = fakeStorage();
+    const storage = fakeStorage('["gone"]');
     const marker = new RestoreMarker(storage);
+    marker.keepOnly([]);
     marker.begin(['a']);
     expect(storedIds(storage)).toEqual(['a']);
-    marker.finish([]);
+    marker.finish(['a']);
     expect(storage.items.has(RESTORING_KEY)).toBe(false);
   });
 
@@ -80,11 +89,36 @@ describe('RestoreMarker', () => {
     expect(storedIds(storage)).toEqual(['a', 'b']);
   });
 
+  it('marks a held copy being opened until it is drawn, then takes it out', () => {
+    const storage = fakeStorage('["a","b"]');
+    const marker = new RestoreMarker(storage);
+    marker.keepOnly(['a', 'b']);
+    marker.begin(['a']);
+    // A crash now holds it again at the next start.
+    expect(storedIds(storage)).toEqual(['b', 'a']);
+    // It is no held copy any more: forgetting held copies does not take it out.
+    marker.forget('a');
+    expect(storedIds(storage)).toEqual(['b', 'a']);
+    marker.finish(['a']);
+    expect(storedIds(storage)).toEqual(['b']);
+  });
+
+  it('keeps a copy being opened marked when the restore that started before it finishes', () => {
+    const storage = fakeStorage('["a"]');
+    const marker = new RestoreMarker(storage);
+    marker.keepOnly(['a']);
+    marker.begin(['r']);
+    marker.begin(['a']);
+    marker.finish(['r']);
+    expect(storedIds(storage)).toEqual(['a']);
+    marker.finish(['a']);
+    expect(storage.items.has(RESTORING_KEY)).toBe(false);
+  });
+
   it('takes out a held id the user saved or deleted, and removes the key with the last one', () => {
     const storage = fakeStorage('["a","b"]');
     const marker = new RestoreMarker(storage);
-    marker.begin([]);
-    marker.finish(['a', 'b']);
+    marker.keepOnly(['a', 'b']);
     marker.forget('a');
     expect(storedIds(storage)).toEqual(['b']);
     marker.forget('other');
@@ -94,13 +128,15 @@ describe('RestoreMarker', () => {
   });
 
   it('takes the tabs being reopened out when the window closes first, and keeps the held ones', () => {
-    const storage = fakeStorage('["a"]');
+    const storage = fakeStorage('["a","h"]');
     const marker = new RestoreMarker(storage);
     marker.begin(['b', 'c']);
+    // A held copy being opened from the recovery dialog too.
+    marker.begin(['h']);
     marker.cancel();
     expect(storedIds(storage)).toEqual(['a']);
     // The restore may still end afterwards (a browser page shown again).
-    marker.finish(['a']);
+    marker.finish(['b', 'c']);
     expect(storedIds(storage)).toEqual(['a']);
   });
 
@@ -115,8 +151,9 @@ describe('RestoreMarker', () => {
   it('writes nothing when the window closes with no restore under way', () => {
     const storage = fakeStorage('["a","gone"]');
     const marker = new RestoreMarker(storage);
-    marker.begin([]);
-    marker.finish(['a']);
+    marker.keepOnly(['a']);
+    marker.begin(['b']);
+    marker.finish(['b']);
     storage.items.set(RESTORING_KEY, 'untouched');
     marker.cancel();
     expect(storage.items.get(RESTORING_KEY)).toBe('untouched');
@@ -129,16 +166,8 @@ describe('RestoreMarker', () => {
     marker.forget('a');
     expect(storedIds(storage)).toEqual(['b', 'c']);
     // The finish that follows does not bring the forgotten one back.
-    marker.finish(['a', 'b']);
+    marker.finish(['c']);
     expect(storedIds(storage)).toEqual(['b']);
-  });
-
-  it('never holds a new tab', () => {
-    const storage = fakeStorage();
-    const marker = new RestoreMarker(storage);
-    marker.begin(['a']);
-    marker.finish(['a']);
-    expect(storage.items.has(RESTORING_KEY)).toBe(false);
   });
 
   it('ignores a damaged value and logs it', () => {
@@ -160,8 +189,9 @@ describe('RestoreMarker', () => {
     const storage = fakeStorage('["a"]');
     storage.full = true;
     const marker = new RestoreMarker(storage);
+    marker.keepOnly([]);
     marker.begin(['b']);
-    marker.finish([]);
+    marker.finish(['b']);
     marker.forget('a');
     expect(storedIds(storage)).toEqual(['a']);
   });

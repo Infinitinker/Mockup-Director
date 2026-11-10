@@ -1,6 +1,7 @@
 /**
  * Tests the bookkeeping of the session saver in src/documents/session.ts, with a fake store: which tab
- * records it writes and deletes, the unopened entries and forgetting them, and saves requested while one runs.
+ * records it writes and deletes, the unopened entries, forgetting and reopening them, and saves requested while
+ * one runs.
  */
 import { describe, expect, it } from 'vitest';
 import type { TabSnapshot } from '../../src/documents/tabs';
@@ -178,6 +179,66 @@ describe('SessionSaver', () => {
     expect(store.writes.map((w) => [ids(w), w.deletes])).toEqual([
       [['a', 'k'], []],
       [['a'], ['k']],
+    ]);
+  });
+
+  it('reopens an unopened entry as an open tab: no write by itself, its record written by the next save', async () => {
+    const store = new FakeStore();
+    const saver = new SessionSaver(store);
+    saver.adopt(['a'], [kept, other]);
+    saver.reopen('k');
+    expect(store.writes).toEqual([]);
+    await saver.save([tab('a'), tab('k')], 'k');
+    expect(store.writes.map((w) => [ids(w), w.puts, w.deletes])).toEqual([[['a', 'k', 'o'], ['a', 'k'], []]]);
+  });
+
+  it('deletes the record of a reopened entry when its tab is closed, and lists it no more', async () => {
+    const store = new FakeStore();
+    const saver = new SessionSaver(store);
+    saver.adopt([], [kept]);
+    saver.reopen('k');
+    // Closed before the next save: its record, kept until now, is deleted all the same.
+    await saver.save([tab('a')], 'a');
+    await saver.save([tab('a'), tab('k')], 'k');
+    await saver.save([tab('a')], 'a');
+    expect(store.writes.map((w) => [ids(w), w.deletes])).toEqual([
+      [['a'], ['k']],
+      [['a', 'k'], []],
+      [['a'], ['k']],
+    ]);
+  });
+
+  it('keeps the record of a reopened entry listed by a save requested before, while another one ran', async () => {
+    const store = new FakeStore();
+    const saver = new SessionSaver(store);
+    saver.adopt(['a'], [kept]);
+    store.hold = true;
+    const running = saver.save([tab('a')], 'a');
+    await settle();
+    const queued = saver.save([tab('a', 2)], 'a');
+    saver.reopen('k');
+    store.release();
+    await Promise.all([running, queued]);
+    await saver.save([tab('a', 2), tab('k')], 'k');
+    expect(store.writes.map((w) => [ids(w), w.puts, w.deletes])).toEqual([
+      [['a', 'k'], ['a'], []],
+      [['a', 'k'], ['a'], []],
+      [['a', 'k'], ['k'], []],
+    ]);
+  });
+
+  it('reopens only unopened entries', async () => {
+    const store = new FakeStore();
+    const saver = new SessionSaver(store);
+    saver.adopt([], [kept]);
+    saver.reopen('a');
+    await saver.save([], '');
+    await saver.save([tab('a')], 'a');
+    await saver.save([], '');
+    expect(store.writes.map((w) => [ids(w), w.deletes])).toEqual([
+      [['k'], []],
+      [['a', 'k'], []],
+      [['k'], ['a']],
     ]);
   });
 

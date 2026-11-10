@@ -1,17 +1,31 @@
 /**
  * The recovery dialog: the stored copies of the projects that were open but could not be reopened
  * (unopened entries, ../../documents/sessionRecords), one row each, where the user saves a copy to a project file
- * or deletes it. A copy the user does neither to is kept and offered again at the next start.
+ * or deletes it, and opens one that Mockup Director closed while reopening. A copy the user does none of that to
+ * is kept and offered again at the next start.
  */
 import { saveBlob } from '../../platform/files';
 import { panelDialog } from './modal';
 import { append, clear, h } from '../dom';
 import { errorMessage, logShownError } from '../errors';
 import { PROJECT_FILE_FILTER } from '../../project/format';
-import { type UnopenedTab, unopenedFileName, unopenedFileText } from '../../documents/sessionRecords';
+import {
+  type InterruptedTab,
+  type UnopenedTab,
+  unopenedFileName,
+  unopenedFileText,
+} from '../../documents/sessionRecords';
 
-/** Removes a copy from the app's storage; rejects with a UserError when it stays stored. */
-export type ForgetCopy = (id: string) => Promise<void>;
+/** What the dialog asks the session to do with a copy. */
+export interface CopyActions {
+  /** Removes a copy from the app's storage; rejects with a UserError when it stays stored. */
+  forget(id: string): Promise<void>;
+  /**
+   * Opens an interrupted copy in a tab; artwork that cannot be decoded is left out and reported. Rejects only on
+   * an unexpected failure, and the copy then stays offered.
+   */
+  open(copy: InterruptedTab): Promise<void>;
+}
 
 /** Numbers the rows, so the ids their buttons refer to stay unique however often the dialog opens. */
 let nextRowId = 0;
@@ -44,7 +58,7 @@ function rowButton(label: string, describedBy: string, onClick: () => void, dang
 }
 
 /** One copy: its name, why it was not reopened, its buttons and what became of it. */
-function copyRow(copy: UnopenedTab, forget: ForgetCopy): HTMLLIElement {
+function copyRow(copy: UnopenedTab, { forget, open }: CopyActions): HTMLLIElement {
   const rowId = `recovery-copy-${nextRowId++}`;
   const nameId = `${rowId}-name`;
   const detailId = `${rowId}-detail`;
@@ -80,12 +94,13 @@ function copyRow(copy: UnopenedTab, forget: ForgetCopy): HTMLLIElement {
     row.closest('.dialog')?.querySelector<HTMLButtonElement>('.dialog-actions .btn')?.focus();
   };
 
-  const showChoices = (focus: 'save' | 'delete' | null = null) => {
+  const showChoices = (focus: 'open' | 'delete' | null = null) => {
+    const openButton = copy.reason === 'interrupted' ? rowButton('Open', describedBy, () => void openCopy(copy)) : null;
     const save = rowButton('Save to file…', describedBy, () => void saveToFile());
     const del = rowButton('Delete…', describedBy, showConfirm);
     clear(actions);
-    append(actions, save, del);
-    if (focus) (focus === 'save' ? save : del).focus();
+    append(actions, openButton, save, del);
+    if (focus) (focus === 'open' ? (openButton ?? save) : del).focus();
   };
   const showConfirm = () => {
     clear(status);
@@ -129,6 +144,20 @@ function copyRow(copy: UnopenedTab, forget: ForgetCopy): HTMLLIElement {
     finish(`Saved as “${saved}”.`);
   };
 
+  const openCopy = async (interrupted: InterruptedTab) => {
+    clear(status);
+    setBusy(true);
+    try {
+      await open(interrupted);
+    } catch (e) {
+      showChoices('open');
+      logShownError('Could not open the copy', e);
+      showStatus('Could not open the copy', errorMessage(e), true);
+      return;
+    }
+    finish('Opened in a tab.');
+  };
+
   const deleteCopy = async () => {
     setBusy(true);
     try {
@@ -147,15 +176,16 @@ function copyRow(copy: UnopenedTab, forget: ForgetCopy): HTMLLIElement {
 }
 
 /**
- * Shows the copies that could not be reopened, each with Save to file… and Delete…; `forget` removes
- * a copy from the app's storage once it was saved or deleted. Resolves when the dialog is closed.
+ * Shows the copies that could not be reopened, each with Save to file… and Delete…, and Open for those
+ * Mockup Director closed while reopening; `actions.forget` removes a copy from the app's storage once it was
+ * saved or deleted, `actions.open` opens one in a tab. Resolves when the dialog is closed.
  */
-export function openRecoveryDialog(copies: readonly UnopenedTab[], forget: ForgetCopy): Promise<void> {
+export function openRecoveryDialog(copies: readonly UnopenedTab[], actions: CopyActions): Promise<void> {
   return panelDialog({
     title: 'Some projects that were open could not be reopened',
     message:
-      'Mockup Director keeps a copy of each. Save a copy to a file to keep it, or delete it. The copies you leave are kept and offered again at the next start. The ones from a newer Mockup Director open once you update it. To open one that Mockup Director closed while reopening, save it to a file, then open the file.',
-    body: h('ul', { class: 'recovery-list' }, ...copies.map((c) => copyRow(c, forget))),
+      'Mockup Director keeps a copy of each. Save a copy to a file to keep it, or delete it. The ones Mockup Director closed while reopening can also be opened here, in a tab. The copies you leave are kept and offered again at the next start. The ones from a newer Mockup Director open once you update it.',
+    body: h('ul', { class: 'recovery-list' }, ...copies.map((c) => copyRow(c, actions))),
     closeLabel: 'Close',
     className: 'dialog-recovery',
   });

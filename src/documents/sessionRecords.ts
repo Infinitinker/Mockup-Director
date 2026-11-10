@@ -13,7 +13,8 @@
  *   file or deleted it in the recovery dialog (ui/dialogs/recovery.ts). Until then the dialog comes at every start.
  * - So is a record this app could open but whose restore started at the last start and did not finish
  *   (held by ./restoreMarker): Mockup Director closed while reopening it, likely because decoding its
- *   artwork crashed the web engine, so it is not decoded again.
+ *   artwork crashed the web engine, so it is not decoded again unless the user opens it in the recovery
+ *   dialog. It then becomes an open tab again (`SessionSaver.reopen` in ./session), its record kept.
  * - An index entry whose record is missing is dropped, like one without a usable id or with a repeated one.
  * An index from a newer version is not read at all.
  */
@@ -102,22 +103,33 @@ export interface Session {
 }
 
 /**
- * Why the copy of an unopened entry is not opened: it comes from a newer version (or has a model this
- * build does not have), it is damaged, or the app closed while reopening it at the last start.
+ * Why this app cannot open a stored copy: it comes from a newer version (or has a model this build does not
+ * have), or it is damaged.
  */
-export type UnopenedReason = 'newer' | 'damaged' | 'interrupted';
+export type UnreadableReason = 'newer' | 'damaged';
 
-/**
- * A stored copy this app does not open (newer, damaged, or held by the restore marker): kept until the
- * user saves it to a file or deletes it.
- */
-export interface UnopenedTab extends IndexTab {
-  reason: UnopenedReason;
+/** What every unopened entry holds. */
+interface UnopenedCopy extends IndexTab {
   /** When the copy was stored, in milliseconds since 1970; null when its record does not say. */
   savedAt: number | null;
   /** The record as stored, for saving it to a file. */
   record: unknown;
 }
+
+/**
+ * A copy held by the restore marker: the app closed while reopening it at the last start. It can be opened,
+ * so it carries its project as read.
+ */
+export interface InterruptedTab extends UnopenedCopy {
+  reason: 'interrupted';
+  project: ParsedProject;
+}
+
+/**
+ * A stored copy the restore did not open (newer, damaged, or held by the restore marker): kept until the
+ * user saves it to a file or deletes it, or opens it when it is an interrupted one.
+ */
+export type UnopenedTab = (UnopenedCopy & { reason: UnreadableReason }) | InterruptedTab;
 
 /** A session read back. */
 export interface LoadedSession {
@@ -136,7 +148,7 @@ export interface LoadedSession {
 }
 
 /** A stored tab record read back: its project, or why it was not restored. */
-export type TabRecord = { project: ParsedProject } | { skipped: UnopenedReason };
+export type TabRecord = { project: ParsedProject } | { skipped: UnreadableReason };
 
 /** True when the stored index was written by a newer version of the app. */
 export function isNewerIndex(raw: unknown): boolean {
@@ -212,9 +224,9 @@ export function readSession(
   const unopened: UnopenedTab[] = [];
   const add = (entry: IndexTab, raw: unknown): void => {
     const tabRecord = readTabRecord(raw);
-    const keep = (reason: UnopenedReason) => unopened.push({ ...entry, reason, savedAt: savedAtOf(raw), record: raw });
-    if (!('project' in tabRecord)) keep(tabRecord.skipped);
-    else if (held.has(entry.id)) keep('interrupted');
+    const copy = { ...entry, savedAt: savedAtOf(raw), record: raw };
+    if (!('project' in tabRecord)) unopened.push({ ...copy, reason: tabRecord.skipped });
+    else if (held.has(entry.id)) unopened.push({ ...copy, reason: 'interrupted', project: tabRecord.project });
     else tabs.push({ ...entry, ...tabRecord.project });
   };
 

@@ -45,7 +45,7 @@ export function startApp(root: HTMLElement): void {
 
   const viewport = createViewportShell();
   const preview = createPreview(store, viewport.host, (message) => viewport.showError(message));
-  const session = keepSession(docs);
+  const session = keepSession(docs, exportBusy);
 
   let showTab: (tab: TabId) => void = () => undefined;
   const { openProjectFiles, ...projectActions } = createProjectActions({ store, docs, exportBusy });
