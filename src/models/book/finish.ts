@@ -7,7 +7,7 @@ import type { ParamDef, ParamValues } from '../../core/types/model';
 import { printMaterial } from '../materials';
 import { str } from '../params';
 
-const G_MAT = 'Material';
+export const G_MAT = 'Material';
 
 type Finish = 'matte' | 'satin' | 'gloss';
 

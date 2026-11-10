@@ -10,13 +10,12 @@ import { castShadows, placeOnGround, planarUVs, roundedRectShape } from '../geom
 import { icon } from '../icon';
 import { colorOf, mmParam, str } from '../params';
 import { buildCoil, coilMaterial } from './coil';
-import { coverMaterial, finishOf, finishParam } from './finish';
+import { coverMaterial, finishOf, finishParam, G_MAT } from './finish';
 import { holeCenter, noteGeom } from './notebookLayout';
 import { pageBlockUVs, pageMaterial } from './pageEdges';
 import { BLEED, noteTemplate } from './templates';
 
 const G_DIM = 'Dimensions';
-const G_MAT = 'Material';
 const G_ART = 'Artwork';
 
 /**

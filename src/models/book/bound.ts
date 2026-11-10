@@ -9,11 +9,10 @@ import { icon } from '../icon';
 import { mmParam } from '../params';
 import { buildBook } from './build';
 import { BOOK_DEFAULTS, type BookKind, wrapLayout } from './cover';
-import { finishParam } from './finish';
+import { finishParam, G_MAT } from './finish';
 import { BLEED, bookPanelTemplate, bookWrapTemplate } from './templates';
 
 const G_DIM = 'Dimensions';
-const G_MAT = 'Material';
 const G_ART = 'Artwork';
 
 function bookSlots(kind: BookKind): ImageSlotDef[] {
