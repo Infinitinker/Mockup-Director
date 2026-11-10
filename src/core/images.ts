@@ -13,12 +13,47 @@
  *    between engines/versions, so it is only used for non-JPEG rasters (off-main-thread decode).
  *  - SVG is rasterized through HTMLImageElement at a generous size (vector = free quality).
  *  - GPU copies are downscaled so the longest side is ≤ 4096 px (high-quality step-down).
+ *  - Limits: a file over MAX_ARTWORK_BYTES is refused before it is read, and an image over
+ *    MAX_ARTWORK_PIXELS before it is decoded when its header says its size (imageSize.ts), otherwise
+ *    once decoded, before it is drawn. Every load waits for the one before it (`oneAtATime`), whoever
+ *    asked for it, so only one full-size image is in memory at once.
  */
 import * as THREE from 'three';
 import { UserError } from './errors';
+import { type PixelSize, imageSize } from './imageSize';
+import { megabytes } from './math';
 import { parseDataUrl, sniffMime } from './mime';
 import { sizeSvgRoot, svgIntrinsicSize } from './svg';
 import type { Artwork } from './types/project';
+
+/**
+ * The largest artwork file the app takes, in bytes (100 MB). The file is kept whole, in memory and in the project
+ * file, as a data URL a third larger than the file.
+ */
+export const MAX_ARTWORK_BYTES = 100_000_000;
+
+/**
+ * The most pixels an artwork may have (100 megapixels): enough for an A1 poster at 300 dpi (7016 × 9933 pixels).
+ * Decoded, an image takes 4 bytes a pixel, so at most 400 MB of memory.
+ */
+export const MAX_ARTWORK_PIXELS = 100_000_000;
+
+/** Throws a UserError when the artwork file `name`, `bytes` long, is larger than MAX_ARTWORK_BYTES. */
+export function checkArtworkBytes(name: string, bytes: number): void {
+  if (bytes <= MAX_ARTWORK_BYTES) return;
+  throw new UserError(
+    `The file “${name}” is ${megabytes(bytes)}, more than Mockup Director can use (${megabytes(MAX_ARTWORK_BYTES)}). Save it as a smaller file, for example with fewer pixels, then add it again.`,
+  );
+}
+
+/** Throws a UserError when the image `name` has more pixels than MAX_ARTWORK_PIXELS. */
+export function checkArtworkPixels(name: string, { width, height }: PixelSize): void {
+  if (width * height <= MAX_ARTWORK_PIXELS) return;
+  const pixels = (n: number) => n.toLocaleString('en-US');
+  throw new UserError(
+    `The image “${name}” is ${pixels(width)} × ${pixels(height)} pixels, more than Mockup Director can use (${MAX_ARTWORK_PIXELS / 1_000_000} megapixels). Scale it down, then add it again.`,
+  );
+}
 
 /** Longest side of the GPU texture. Originals stay untouched in the data URL. */
 const MAX_TEXTURE_SIZE = 4096;
@@ -28,8 +63,16 @@ const SVG_RASTER_SIZE = 3072;
 /** File extensions / MIME types we try to decode (the engine decides what actually works). */
 export const IMAGE_ACCEPT = 'image/*,.png,.jpg,.jpeg,.webp,.gif,.svg,.avif,.heic,.heif,.bmp,.tif,.tiff';
 
-/** Decode an image File into an Artwork (sRGB texture, keeps the data URL). */
+/**
+ * Decode an image File into an Artwork (sRGB texture, keeps the data URL). Throws a UserError when the file cannot
+ * be read or decoded, or is over the limits.
+ */
 export async function loadImageFile(file: File): Promise<Artwork> {
+  checkArtworkBytes(file.name, file.size);
+  return oneAtATime(() => readImageFile(file));
+}
+
+async function readImageFile(file: File): Promise<Artwork> {
   let bytes: Uint8Array<ArrayBuffer>;
   try {
     bytes = new Uint8Array(await file.arrayBuffer());
@@ -40,21 +83,46 @@ export async function loadImageFile(file: File): Promise<Artwork> {
     );
   }
   const mime = sniffMime(bytes, file.type, file.name);
+  checkHeaderSize(bytes, file.name);
   const blob = new Blob([bytes], { type: mime });
-  const dataUrl = await blobToDataUrl(blob);
+  const dataUrl = await blobToDataUrl(blob, file.name);
   return decodeToAsset(blob, mime, dataUrl, file.name);
 }
 
-/** Recreate an Artwork from a data URL (project loading). */
-export async function loadImageDataUrl(dataUrl: string, name: string): Promise<Artwork> {
+/**
+ * Recreate an Artwork from a data URL (project loading). Throws a UserError when the data URL is damaged, cannot
+ * be decoded, or holds an image over the pixel limit.
+ */
+export function loadImageDataUrl(dataUrl: string, name: string): Promise<Artwork> {
+  return oneAtATime(() => readImageDataUrl(dataUrl, name));
+}
+
+async function readImageDataUrl(dataUrl: string, name: string): Promise<Artwork> {
   // Decoded manually instead of fetch(dataUrl): a strict CSP (connect-src) may block fetching data: URLs.
   const parsed = parseDataUrl(dataUrl);
   if (!parsed) {
     throw new UserError(`The artwork “${name}” in the project is damaged. Add the artwork again.`);
   }
   const mime = sniffMime(parsed.bytes, parsed.mime, name);
+  checkHeaderSize(parsed.bytes, name);
   const blob = new Blob([parsed.bytes], { type: mime });
   return decodeToAsset(blob, mime, dataUrl, name);
+}
+
+/** The last load started; the next one waits for it, whether it succeeded or failed. */
+let lastLoad: Promise<unknown> = Promise.resolve();
+
+/** Runs `load` after every load started before it has ended, so that only one image is read and decoded at once. */
+function oneAtATime<T>(load: () => Promise<T>): Promise<T> {
+  const run = lastLoad.then(load);
+  lastLoad = run.catch(() => undefined);
+  return run;
+}
+
+/** Refuses an image whose header says it is over the pixel limit, before anything decodes it. */
+function checkHeaderSize(bytes: Uint8Array, name: string): void {
+  const size = imageSize(bytes);
+  if (size) checkArtworkPixels(name, size);
 }
 
 export function disposeArtwork(asset: Artwork): void {
@@ -71,7 +139,7 @@ async function decodeToAsset(blob: Blob, mime: string, dataUrl: string, name: st
   let canvas: HTMLCanvasElement;
   try {
     if (mime === 'image/svg+xml') canvas = await rasterizeSvg(blob);
-    else canvas = await decodeRaster(blob, mime);
+    else canvas = await decodeRaster(blob, mime, name);
   } catch (err) {
     if (err instanceof UserError) throw err;
     throw new UserError(
@@ -88,8 +156,11 @@ async function decodeToAsset(blob: Blob, mime: string, dataUrl: string, name: st
   };
 }
 
-/** Raster formats: ImageBitmap (non-JPEG) with HTMLImageElement fallback, baked into a canvas. */
-async function decodeRaster(blob: Blob, mime: string): Promise<HTMLCanvasElement> {
+/**
+ * Raster formats: ImageBitmap (non-JPEG) with HTMLImageElement fallback, baked into a canvas. The decoded size is
+ * checked against the pixel limit before it is drawn, for the formats whose header imageSize does not read.
+ */
+async function decodeRaster(blob: Blob, mime: string, name: string): Promise<HTMLCanvasElement> {
   if (mime !== 'image/jpeg' && typeof createImageBitmap === 'function') {
     let bmp: ImageBitmap | null = null;
     try {
@@ -99,6 +170,7 @@ async function decodeRaster(blob: Blob, mime: string): Promise<HTMLCanvasElement
     }
     if (bmp && bmp.width > 0 && bmp.height > 0) {
       try {
+        checkArtworkPixels(name, bmp);
         return drawToCanvas(bmp, bmp.width, bmp.height);
       } finally {
         bmp.close();
@@ -110,6 +182,7 @@ async function decodeRaster(blob: Blob, mime: string): Promise<HTMLCanvasElement
   const w = img.naturalWidth;
   const h = img.naturalHeight;
   if (!w || !h) throw new Error('Image has no size');
+  checkArtworkPixels(name, { width: w, height: h });
   return drawToCanvas(img, w, h);
 }
 
@@ -218,11 +291,19 @@ function get2d(c: HTMLCanvasElement): CanvasRenderingContext2D {
   return g;
 }
 
-function blobToDataUrl(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(String(r.result));
-    r.onerror = () => reject(r.error ?? new Error('FileReader failed'));
-    r.readAsDataURL(blob);
-  });
+/** The data URL of the artwork file `name`. Throws a UserError when it cannot be made (most often, memory ran out). */
+async function blobToDataUrl(blob: Blob, name: string): Promise<string> {
+  try {
+    return await new Promise<string>((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(String(r.result));
+      r.onerror = () => reject(r.error ?? new Error('FileReader failed'));
+      r.readAsDataURL(blob);
+    });
+  } catch (err) {
+    throw new UserError(
+      `The file “${name}” could not be read into the project. Close other projects or choose a smaller file, then add it again.`,
+      { cause: err },
+    );
+  }
 }

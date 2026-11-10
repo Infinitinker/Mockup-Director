@@ -8,6 +8,7 @@ import {
   PROJECT_EXT,
   PROJECT_FILE_FILTER,
   hydrateProject,
+  projectFileText,
   projectNameOf,
   projectWarning,
   readProjectFile,
@@ -106,8 +107,7 @@ export function createProjectActions({
         if (!docs.tab(tabId)) return false;
         docs.activate(tabId);
         const revision = store.revision;
-        const file = toProjectFile(store.state);
-        const blob = new Blob([JSON.stringify(file)], { type: 'application/json' });
+        const blob = new Blob([projectFileText(toProjectFile(store.state))], { type: 'application/json' });
         const suggested = `${docs.tab(tabId)?.name || 'project'}.${PROJECT_EXT}`;
         const saved = await saveBlob(blob, suggested, [PROJECT_FILE_FILTER]);
         if (!saved) return false;

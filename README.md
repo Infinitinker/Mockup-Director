@@ -122,7 +122,7 @@ The notes of every release list the SHA-256 checksum of each file. To check that
 
 ## Artwork
 
-Each side of a model has its own card in the **Artwork** tab: drop an image file on it or on the preview, or choose one from disk. PNG, JPEG, WebP, GIF, SVG and AVIF are supported. A card warns you when the artwork's proportions don't match its side.
+Each side of a model has its own card in the **Artwork** tab: drop an image file on it or on the preview, or choose one from disk. PNG, JPEG, WebP, GIF, SVG and AVIF are supported. A file can have up to 100 MB and 100 megapixels, enough for an A1 poster at 300 dpi. A card warns you when the artwork's proportions don't match its side.
 
 Print models (boxes, cases, discs, books and print) have a **Template…** button on the card of each side. It saves a 300 dpi PNG with the exact size, bleed and guide lines. Design your artwork on it and it fits the model exactly. Phones and tablets get a template of the screen without bleed; laptops, monitors, screenshots and browser windows have none.
 
@@ -144,7 +144,7 @@ Some formats depend on your system's web engine: WebP export is available where 
 
 ## Projects and tabs
 
-- **Projects** are saved as `.mdproj` files, which hold the model, your artwork, the scene and the export settings. Double-click one to open it in Mockup Director (the installer and the Linux packages register the file type; with the AppImage, use the app's **Open…** button).
+- **Projects** are saved as `.mdproj` files, which hold the model, your artwork, the scene and the export settings. A project can hold up to 400 MB; if yours is larger, use smaller artwork files. Double-click one to open it in Mockup Director (the installer and the Linux packages register the file type; with the AppImage, use the app's **Open…** button).
 - **Tabs:** every open project is a tab above the 3D preview, with its own undo history. **New** opens a new tab; **Open…** opens each project in its own tab, taking the place of an untouched new tab. A project you double-click while the app is open arrives as a new tab in the same window (during an export, it opens when the export ends). A • marks a tab with unsaved changes; closing it asks whether to save them.
 - **Your open tabs are saved automatically** a moment after each change and when you close the window, unsaved changes included, and come back the next time you start the app. So closing the window does not ask. On macOS, quitting the app (⌘Q, **Quit** in the Dock, logging out) skips that last save, so changes from the last second or two may be missing: close the window first, or save the project.
 - **Projects that cannot be reopened are never thrown away.** If a project that was open comes from a newer version of Mockup Director, or its stored copy is damaged, a dialog at the start lists it: save it to a file, delete it, or leave it for the next start. A newer Mockup Director reopens the ones from a newer version by itself.

@@ -1,6 +1,6 @@
 /**
  * Small number helpers shared by every layer: clamping a value into a range, falling back from values that are not
- * finite numbers, and rounding sizes for texts.
+ * finite numbers, and rounding sizes and file sizes for texts.
  */
 
 /**
@@ -19,3 +19,11 @@ export function finite(v: unknown, fallback: number): number {
 
 /** Rounds to one decimal place, for sizes shown in texts (129.53 → 129.5). */
 export const round1 = (v: number): number => Math.round(v * 10) / 10;
+
+/**
+ * A file size for texts, in whole megabytes (1 MB = 1,000,000 bytes), rounded up so that a size over a limit never
+ * reads as the limit itself: 100,000,001 bytes → "101 MB".
+ */
+export function megabytes(bytes: number): string {
+  return `${Math.ceil(bytes / 1_000_000).toLocaleString('en-US')} MB`;
+}

@@ -59,15 +59,16 @@ export function createArtworkActions({
       const keys = pairs.map((p) => `${model.id}/${p.slotId}`);
       setLoading(keys, true);
       try {
-        const results = await Promise.allSettled(pairs.map((p) => loadImageFile(p.file)));
+        // One file after another, so that only one full-size image is in memory at once.
         const loaded: Record<string, ArtworkMap[string][string]> = {};
-        results.forEach((r, i) => {
-          if (r.status === 'fulfilled') loaded[pairs[i].slotId] = r.value;
-          else {
-            logShownError(`Could not load “${pairs[i].file.name}”`, r.reason);
-            notify.error(`Could not load “${pairs[i].file.name}”`, errorMessage(r.reason));
+        for (const { slotId, file } of pairs) {
+          try {
+            loaded[slotId] = await loadImageFile(file);
+          } catch (e) {
+            logShownError(`Could not load “${file.name}”`, e);
+            notify.error(`Could not load “${file.name}”`, errorMessage(e));
           }
-        });
+        }
         if (Object.keys(loaded).length && !docs.tab(tabId)) {
           // The tab was closed meanwhile.
           Object.values(loaded).forEach(disposeArtwork);

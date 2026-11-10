@@ -1,9 +1,9 @@
 /**
  * Clamping into a range (the upper bound wins when the range is empty), falling back from values that are not finite
- * numbers, and rounding for texts.
+ * numbers, and rounding sizes and file sizes for texts.
  */
 import { describe, expect, it } from 'vitest';
-import { clamp, finite, round1 } from '../../src/core/math';
+import { clamp, finite, megabytes, round1 } from '../../src/core/math';
 
 describe('clamp', () => {
   it('keeps a value inside the range', () => {
@@ -47,5 +47,18 @@ describe('round1', () => {
     expect(round1(129.53)).toBe(129.5);
     expect(round1(129.55)).toBe(129.6);
     expect(round1(12)).toBe(12);
+  });
+});
+
+describe('megabytes', () => {
+  it('gives whole megabytes of 1,000,000 bytes', () => {
+    expect(megabytes(0)).toBe('0 MB');
+    expect(megabytes(400_000_000)).toBe('400 MB');
+    expect(megabytes(2_500_000_000)).toBe('2,500 MB');
+  });
+
+  it('rounds up, so that a size over a limit never reads as the limit', () => {
+    expect(megabytes(100_000_001)).toBe('101 MB');
+    expect(megabytes(1)).toBe('1 MB');
   });
 });

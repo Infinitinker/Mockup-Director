@@ -3,10 +3,11 @@
  * The session stores the open tabs in this format too.
  */
 import type { ParamValues } from '../core/types/model';
-import type { Artwork, ArtworkMap, DocumentState, ProjectFile } from '../core/types/project';
+import type { ArtworkMap, DocumentState, ProjectFile } from '../core/types/project';
 import { cloneScene } from '../core/defaults';
 import { UserError } from '../core/errors';
 import { loadImageDataUrl } from '../core/images';
+import { megabytes } from '../core/math';
 import { MODELS } from '../models/registry';
 import { log } from '../platform/log';
 import { isPlain, readArtwork, readExport, readParams, readScene } from './sanitize';
@@ -46,6 +47,42 @@ export function toProjectFile(s: DocumentState): ProjectFile {
     scene: cloneScene(s.scene),
     export: { ...s.export, ...(s.export.animation ? { animation: { ...s.export.animation } } : {}) },
   };
+}
+
+/**
+ * The most text a project file may hold (400 MB). Opening a project reads the whole file as one string, and web
+ * engines cannot make a string much longer than 512 MiB (V8, in WebView2), so a larger project could not be opened
+ * again; JSON.stringify fails past that length too.
+ */
+export const MAX_PROJECT_SIZE = 400_000_000;
+
+/** The message for a project too large to save, `size` long when it is known. */
+function tooLarge(size?: number): string {
+  const what =
+    size === undefined ? '' : `: ${megabytes(size)}, more than the ${megabytes(MAX_PROJECT_SIZE)} a project can hold`;
+  return `The project is too large to save${what}. Remove artwork or replace it with smaller files, then save again.`;
+}
+
+/**
+ * The text of the project file. Throws a UserError when the project is larger than MAX_PROJECT_SIZE: checked from
+ * its artwork before anything is joined, then from the text itself.
+ */
+export function projectFileText(file: ProjectFile): string {
+  let artworkSize = 0;
+  for (const slots of Object.values(file.artwork)) {
+    for (const art of Object.values(slots)) artworkSize += art.name.length + art.dataUrl.length;
+  }
+  if (artworkSize > MAX_PROJECT_SIZE) throw new UserError(tooLarge(artworkSize));
+  let text: string;
+  try {
+    text = JSON.stringify(file);
+  } catch (e) {
+    // The engine's string limit: the text would be longer than any string it can make.
+    if (e instanceof RangeError) throw new UserError(tooLarge(), { cause: e });
+    throw e;
+  }
+  if (text.length > MAX_PROJECT_SIZE) throw new UserError(tooLarge(text.length));
+  return text;
 }
 
 /** The message for a file that is not a project. */
@@ -167,28 +204,26 @@ export function projectWarning(report: ProjectReport, failed: number, from: 'fil
   return texts.join(' ');
 }
 
-/** Decode all artwork of a project. Artwork that cannot be decoded is skipped and counted. */
+/**
+ * Decode all artwork of a project, one after another, so that only one full-size image is in memory at once.
+ * Artwork that cannot be decoded is skipped and counted.
+ */
 export async function hydrateProject(file: ProjectFile): Promise<{ state: DocumentState; failed: number }> {
   const artwork: ArtworkMap = {};
   let failed = 0;
-  const jobs: Promise<void>[] = [];
   for (const [mid, slots] of Object.entries(file.artwork)) {
     for (const [sid, art] of Object.entries(slots)) {
-      jobs.push(
-        loadImageDataUrl(art.dataUrl, art.name)
-          .then((asset: Artwork) => {
-            const forModel = artwork[mid] ?? {};
-            artwork[mid] = forModel;
-            forModel[sid] = asset;
-          })
-          .catch((e: unknown) => {
-            failed += 1;
-            log.warn(`Artwork for the slot ${sid} failed to load`, e);
-          }),
-      );
+      try {
+        const asset = await loadImageDataUrl(art.dataUrl, art.name);
+        const forModel = artwork[mid] ?? {};
+        artwork[mid] = forModel;
+        forModel[sid] = asset;
+      } catch (e) {
+        failed += 1;
+        log.warn(`Artwork for the slot ${sid} failed to load`, e);
+      }
     }
   }
-  await Promise.all(jobs);
   return {
     state: { modelId: file.modelId, params: file.params, artwork, scene: file.scene, export: file.export },
     failed,
