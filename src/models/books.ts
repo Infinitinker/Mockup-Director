@@ -26,18 +26,10 @@ import type {
   PrintTemplate,
   TemplateGuide,
 } from '../core/types';
-import {
-  bool,
-  castShadows,
-  mmParam,
-  num,
-  placeOnGround,
-  planarUVs,
-  printMaterial,
-  round1,
-  roundedRectShape,
-  str,
-} from './shared';
+import { clamp, round1 } from '../core/math';
+import { castShadows, placeOnGround, planarUVs, roundedRectShape } from './geometry';
+import { printMaterial } from './materials';
+import { bool, mmParam, num, str } from './params';
 
 /* ------------------------------------------------------------------ */
 /* Common constants / helpers                                          */
@@ -54,8 +46,6 @@ const G_ART = 'Artwork';
 const TRIM = 'Trim line';
 const FOLD = 'Spine fold';
 const GROOVE = 'Hinge groove';
-
-const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
 function colorOf(params: ParamValues, id: string, fallback: string): string {
   const c = str(params, id, fallback);

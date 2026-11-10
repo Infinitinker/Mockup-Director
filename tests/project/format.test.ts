@@ -1,6 +1,13 @@
+/**
+ * Tests the project files in src/project/format.ts: file names, writing a project and reading it back,
+ * what parsing leaves out, clamps and counts (the cleaning in src/project/sanitize.ts, through
+ * parseProjectFile), reading text and files, and the warning about what was left out.
+ */
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_EXPORT, DEFAULT_SCENE } from '../../src/core/defaults';
+import { DEFAULT_EXPORT, DEFAULT_SCENE, defaultParams } from '../../src/core/defaults';
 import { UserError } from '../../src/core/errors';
+import { inheritedParams } from '../../src/models/params';
+import { getModel } from '../../src/models/registry';
 import {
   NOT_A_PROJECT,
   PROJECT_VERSION,
@@ -11,7 +18,7 @@ import {
   readProjectFile,
   readProjectText,
   toProjectFile,
-} from '../../src/ui/project';
+} from '../../src/project/format';
 import { documentState } from '../fixtures';
 
 const PNG = 'data:image/png;base64,iVBORw0KGgo=';
@@ -58,6 +65,16 @@ describe('toProjectFile', () => {
     expect(file.version).toBe(PROJECT_VERSION);
     const { file: read, report } = parseProjectFile(JSON.parse(JSON.stringify(file)));
     expect(read).toEqual(file);
+    expect(report).toEqual({ settings: 0, artwork: 0 });
+  });
+
+  it('writes the params carried over from another model so that they read back with nothing left out', () => {
+    const laptop = getModel('device-laptop');
+    const monitor = getModel('device-monitor');
+    const prev = defaultParams(laptop);
+    const state = documentState(monitor.id);
+    state.params = { [laptop.id]: prev, [monitor.id]: inheritedParams(monitor, prev) };
+    const { report } = parseProjectFile(JSON.parse(JSON.stringify(toProjectFile(state))));
     expect(report).toEqual({ settings: 0, artwork: 0 });
   });
 });

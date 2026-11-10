@@ -5,21 +5,21 @@
 import type { Look } from '../../core/types';
 import { UserError } from '../../core/errors';
 import type { AppContext } from '../context';
-import { errorMessage, h, logShownError, nextId } from '../dom';
+import { h, nextId } from '../dom';
+import { errorMessage, logShownError } from '../errors';
 import { ICONS } from '../icons';
 import { iconButton, section } from '../controls';
 import { confirmDialog, promptDialog } from '../dialog';
 import { notify } from '../toast';
 import { saveBlob, pickFiles } from '../../platform/files';
 import { log } from '../../platform/log';
+import { safeStorage } from '../../platform/storage';
 import {
   BUILTIN_LOOKS,
   LOOKS_FILE_NAME,
   LooksError,
   MAX_LOOK_NAME,
   NOT_A_LOOKS_FILE,
-  STORED_LOOKS_DAMAGED,
-  STORED_LOOKS_NEWER,
   applyLook,
   createLooksSaver,
   loadLooks,
@@ -27,7 +27,15 @@ import {
   parseLooksFile,
   toLooksFile,
   uniqueName,
-} from '../looks';
+} from '../../project/looks';
+
+/** What the Looks tab says when the stored looks are damaged. */
+const STORED_LOOKS_DAMAGED =
+  'Your saved looks are damaged and could not be read. Until you delete them, looks you save here are not kept after Mockup Director closes: export your looks to a file to keep them.';
+
+/** What the Looks tab says when the stored looks come from a newer version. */
+const STORED_LOOKS_NEWER =
+  'Your saved looks come from a newer Mockup Director: update Mockup Director to use them. Until then, looks you save here are not kept after Mockup Director closes: export your looks to a file to keep them.';
 
 /** The valid looks of a chosen looks file. Throws a UserError when the file cannot be read. */
 async function readLooksFile(f: File): Promise<Look[]> {
@@ -62,10 +70,10 @@ function swatch(look: Look['scene']): HTMLElement {
 
 export function createLooksPanel(ctx: AppContext): { el: HTMLElement } {
   const el = h('div', { class: 'panel panel-looks' });
-  const user = loadLooks();
+  const user = loadLooks(safeStorage);
   const looks = user.looks;
 
-  const saver = createLooksSaver(user);
+  const saver = createLooksSaver(user, safeStorage);
   // One warning while saving keeps failing, not one per change.
   const persist = () => {
     if (saver.save().warn) {

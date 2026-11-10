@@ -7,8 +7,9 @@ import type { AppContext } from '../context';
 import { formatNumber } from '../numbers';
 import { h } from '../dom';
 import { ICONS } from '../icons';
-import { aspectMismatch, completeParams, expectedAspects } from '../modelUtils';
-import { hasAny } from '../state';
+import { completeParams } from '../../models/params';
+import { aspectMismatch, expectedAspects } from '../../models/slots';
+import { hasAny } from '../../documents/store';
 
 /** Small cached thumbnails (data URLs of a downscaled copy) so re-renders don't decode huge images. */
 const thumbCache = new WeakMap<Artwork, string>();

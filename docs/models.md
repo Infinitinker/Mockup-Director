@@ -32,7 +32,7 @@ Texts (`name`, labels, hints) are plain English strings, written where they are 
 | `defaultCamera` | `Partial<CameraSettings>` | no | The starting view, laid over the default camera (`DEFAULT_SCENE` in `src/core/defaults.ts`) when the model is picked and on Reset view. Usually `{ yaw, pitch }`, sometimes `fov`. |
 | `build` | `(ctx: ModelContext) => THREE.Object3D` | yes | Makes a new object tree. See [Building](#building). |
 
-`MODELS` is the gallery's order within each category. `getModel(id)` returns the model with that ID, or the first model for an unknown one; a project file whose active model this build does not have is refused with a message to update Mockup Director (`parseProjectFile` in `src/ui/project.ts`), and such a tab of the autosaved session is kept for a newer version (see [Session](architecture.md#session)).
+`MODELS` is the gallery's order within each category. `getModel(id)` returns the model with that ID, or the first model for an unknown one; a project file whose active model this build does not have is refused with a message to update Mockup Director (`parseProjectFile` in `src/project/format.ts`), and such a tab of the autosaved session is kept for a newer version (see [Session](architecture.md#session)).
 
 ## Parameters
 
@@ -55,14 +55,14 @@ A parameter is one setting in the Model tab. Every kind has these fields:
 
 - Lengths are in millimeters, angles in degrees, percentages from 0 to 100 (the model divides by 100 itself, as `discOffset` in `composites.ts` does).
 - Parameters are grouped by `group`, in the order each group first appears; parameters without a group go into a General section. Groups match by their text, so define a group once (`const G_DIM = 'Dimensions'`) and reuse it.
-- Values are checked wherever they come from (`sanitizeParam` in `src/ui/modelUtils.ts`): a number outside `min`..`max` is clamped, a select value that is not an option, a color that is not `#rrggbb`, or a value of the wrong type is dropped and the default used instead.
+- Values are checked wherever they come from (`sanitizeParam` in `src/models/params.ts`): a number outside `min`..`max` is clamped, a select value that is not an option, a color that is not `#rrggbb`, or a value of the wrong type is dropped and the default used instead.
 - When the user switches to a model they have not changed yet, artwork and parameter values carry over from the previous model wherever the slot or parameter ID is the same (`selectModel` in `src/ui/app.ts`). Use the same ID for the same meaning: `width`, `front`, `finish`.
 
 Helpers that create parameters:
 
 | Helper | File | Makes |
 |---|---|---|
-| `mmParam(id, label, default, min, max, step = 1, group?)` | `src/models/shared.ts` | A number parameter in millimeters. |
+| `mmParam(id, label, default, min, max, step = 1, group?)` | `src/models/params.ts` | A number parameter in millimeters. |
 | `widthParam`, `heightParam`, `depthParam` | `src/models/box/common.ts` | `width`, `height` and `depth` in millimeters, in the Dimensions group. |
 | `bevelParam`, `finishParam`, `sideColorParam`, `bleedParam`, `colorParam(id, label, default, group?)` | `src/models/box/common.ts` | Edge rounding, print finish, the color of faces without artwork, the switch for artwork with bleed, and any color, shared by the boxes. |
 | `discParams` | `src/models/disc.ts` | The disc's parameters, all prefixed `disc`, reused by the composites. |
@@ -82,17 +82,17 @@ A slot is one piece of artwork: a face, a wrap-around cover, a disc label, a scr
 | `anyAspect` | `boolean` | no | The slot takes any aspect ratio (a screenshot whose panel follows the artwork). No warning is shown. |
 | `template` | `PrintTemplate` or `(params) => PrintTemplate` | no | A downloadable print template; see [Print templates](#print-templates). |
 
-The Artwork tab warns when the artwork's aspect ratio is more than 3 % away from every expected one: the slot's `aspect`, the template's full size, and the template's size without bleed (`expectedAspects` and `aspectMismatch` in `src/ui/modelUtils.ts`).
+The Artwork tab warns when the artwork's aspect ratio is more than 3 % away from every expected one: the slot's `aspect`, the template's full size, and the template's size without bleed (`expectedAspects` and `aspectMismatch` in `src/models/slots.ts`).
 
 `ctx.getTexture(slotId)` returns the user's artwork, or a placeholder when there is none: a gradient with the slot's label in the slot's aspect ratio, round if its template is circular (`src/core/placeholder.ts`). It never returns `null`, also not for an ID the model does not list. `ctx.hasArtwork(slotId)` says whether the user gave artwork, for models that fall back to a plain material or to another slot (a keep case uses `front`, `spine` and `back` when there is no `cover`).
 
 The textures are shared: the store's artwork and the placeholder cache own them, and the same texture is used by every build and every model that shows it. **A model never changes them**: no `repeat`, `offset`, `rotation`, `center` or `flipY`, and it never disposes them. Map a part of the image with UVs instead. A model that really needs a changed copy clones the texture and sets `texture.userData.disposeWithModel = true`, so it is freed with the model; textures a model draws itself are flagged the same way (`modelTexture` in `printFlat.ts`).
 
-Artwork textures are `CanvasTexture`s with `flipY = true` and the sRGB color space (`src/core/images.ts`), so UV `(0, 0)` is the image's bottom-left corner and `v = 0` its bottom edge. A three.js `BoxGeometry` or `PlaneGeometry` face shows the whole image upright. To show part of an image, `remapUVs` maps a geometry's 0–1 UVs into a rectangle of the image, and `planarUVs` projects UVs along two axes, for example onto the caps of an `ExtrudeGeometry` (both in `src/models/shared.ts`). Artwork must never come out mirrored or upside down: a back face is seen from behind, so it is mapped as a page turned around the vertical axis (see the comment at the top of `printFlat.ts`).
+Artwork textures are `CanvasTexture`s with `flipY = true` and the sRGB color space (`src/core/images.ts`), so UV `(0, 0)` is the image's bottom-left corner and `v = 0` its bottom edge. A three.js `BoxGeometry` or `PlaneGeometry` face shows the whole image upright. To show part of an image, `remapUVs` maps a geometry's 0–1 UVs into a rectangle of the image, and `planarUVs` projects UVs along two axes, for example onto the caps of an `ExtrudeGeometry` (both in `src/models/geometry.ts`). Artwork must never come out mirrored or upside down: a back face is seen from behind, so it is mapped as a page turned around the vertical axis (see the comment at the top of `printFlat.ts`).
 
 ## Print templates
 
-A print template is a PNG the user downloads with the Template… button on a slot's card, to design the artwork on: the exact physical size at 300 dpi, with bleed, trim line, safe area, labeled regions and fold lines. The PNG records its resolution, so an image editor opens it at print size. It is drawn by `src/export/templates.ts`, and saved as `mockup-director-<model id>-template-<slot label, slugified>-<width>x<height>mm-<dpi>dpi.png`, with the resolution actually used. Very large templates are drawn at a lower resolution, which the legend states.
+A print template is a PNG the user downloads with the Template… button on a slot's card, to design the artwork on: the exact physical size at 300 dpi, with bleed, trim line, safe area, labeled regions and fold lines. The PNG records its resolution, so an image editor opens it at print size. It is drawn by `src/export/templates.ts`, and saved as `mockup-director-<model id>-template-<slot label, slugified>-<width>x<height>mm-<dpi>dpi.png` (`templateFileName` in `src/export/fileNames.ts`), with the resolution actually used. Very large templates are drawn at a lower resolution, which the legend states.
 
 `template` is a `PrintTemplate`, or a function of the parameters when the size depends on them (a box's net follows its width, height and depth). The function gets the model's complete parameters when the user downloads it, and an empty object when the placeholder checks whether the template is round, so read values with `num()` and its fallbacks.
 
@@ -121,29 +121,44 @@ build(ctx: ModelContext): THREE.Object3D;
 - `build` returns a new object tree on every call. The app calls it whenever a parameter or the artwork changes (at most once per frame) and for every item of a batch export (`src/ui/app.ts`, `src/ui/batch.ts`).
 - The returned object follows the [3D conventions](architecture.md#3d-conventions): millimeters, lowest point at `y = 0`, centered on `x = 0` and `z = 0`, front facing `+Z`, top facing `+Y`. Build in whatever frame is convenient, then call `placeOnGround`.
 - Materials are `MeshStandardMaterial` or `MeshPhysicalMaterial`. The stage adds the lights, the environment for reflections, the shadow and the floor reflection; a model adds none of them. Meshes that cast a shadow set `castShadow` (`castShadows` sets it on the whole tree).
-- The stage owns what `build` returns. When it shows the next object, it frees the previous one with `disposeObject`: every geometry and material in the tree, and textures flagged `disposeWithModel`. So create geometries and materials in each build rather than keeping them between builds. A texture a model caches at module level is not flagged and is never freed (the data-side texture in `disc.ts`).
+- The stage owns what `build` returns. When it shows the next object, it frees the previous one with `disposeObject` (`src/scene/dispose.ts`): every geometry and material in the tree, and textures flagged `disposeWithModel`. So create geometries and materials in each build rather than keeping them between builds. A texture a model caches at module level is not flagged and is never freed (the data-side texture in `disc.ts`).
 - `ctx.params` is complete, but read values with `num`, `bool` and `str` and a fallback: they also cover a composite that builds its base with changed parameters.
-- An exception from `build` is shown to the user as "Could not build model “…”", and the previous object stays on screen. For a problem the user can fix, throw a `UserError` (`src/core/errors.ts`) whose message says what happened, then what to do: it is shown as it is. Any other error is shown as an unexpected error, with its message as detail (`errorMessage` in `src/ui/dom.ts`).
+- An exception from `build` is shown to the user as "Could not build model “…”", and the previous object stays on screen. For a problem the user can fix, throw a `UserError` (`src/core/errors.ts`) whose message says what happened, then what to do: it is shown as it is. Any other error is shown as an unexpected error, with its message as detail (`errorMessage` in `src/ui/errors.ts`).
 - Transparent parts (clear plastic, which writes no depth) are drawn in `renderOrder`, then by depth. The stage draws the floor reflection at -3 and -2 and the shadow at -1 (`src/scene/reflection.ts`, `src/scene/shadows.ts`), so a model's transparent parts stay above -1.
 
-Helpers in `src/models/shared.ts`:
+Helpers in `src/models/geometry.ts`:
 
 | Helper | What it does |
 |---|---|
 | `placeOnGround(root)` | Moves the object so its lowest point is at `y = 0` and it is centered on `x` and `z`. Uses bounding boxes of the geometry, which can be too big for rotated parts; `composites.ts` measures vertices instead. |
 | `castShadows(root)` | Sets `castShadow` on every mesh in the tree. |
-| `disposeObject(root)` | Frees geometries, materials and flagged textures. The stage calls it; models rarely need it. |
-| `printMaterial(map, { roughness, metalness, gloss })` | Printed paper or cardboard; `gloss` adds a clear coat. |
-| `solidPlastic(color, roughness)` | Opaque plastic. |
-| `clearPlastic({ tint, opacity, roughness })` | See-through plastic with alpha blending, which also works in transparent exports. |
 | `roundedRectShape(w, h, r)` | A rounded rectangle centered on the origin, for extrusions. |
 | `remapUVs(geo, u0, v0, u1, v1)` | Maps a geometry's 0–1 UVs into a rectangle of the image. |
 | `planarUVs(geo, uAxis, vAxis, uRange, vRange, rect)` | Projects UVs from two axes of the vertex positions. |
+
+Helpers in `src/models/materials.ts`:
+
+| Helper | What it does |
+|---|---|
+| `printMaterial(map, { roughness, metalness, gloss })` | Printed paper or cardboard; `gloss` adds a clear coat. |
+| `solidPlastic(color, roughness)` | Opaque plastic. |
+| `clearPlastic({ tint, opacity, roughness })` | See-through plastic with alpha blending, which also works in transparent exports. |
+
+Helpers in `src/models/params.ts`:
+
+| Helper | What it does |
+|---|---|
 | `num`, `bool`, `str` | Read a parameter value, with a fallback for a missing or wrong one. |
 | `mmParam(...)` | A number parameter in millimeters. |
+
+Number helpers in `src/core/math.ts`:
+
+| Helper | What it does |
+|---|---|
+| `clamp(v, lo, hi)` | Limits `v` to the range; when `lo` is greater than `hi`, the result is `hi`. `THREE.MathUtils.clamp` returns `lo` instead, so geometry with a computed upper bound uses this one. |
 | `round1(v)` | Rounds to one decimal, for a number shown in a text. |
 
-The app's side of the contract is in `src/ui/modelUtils.ts` (`completeParams`, `sanitizeParam`, `slotFor`, `resolveTemplate`, `expectedAspects`, `snapToStep`) and `defaultParams` in `src/core/defaults.ts`; models do not import them.
+The app's side of the contract is in `src/models/params.ts` (`completeParams`, `sanitizeParam`, `inheritedParams`, `snapToStep`), `src/models/slots.ts` (`slotFor`, `resolveTemplate`, `expectedAspects`) and `defaultParams` in `src/core/defaults.ts`; model definitions do not use them. A template function that throws is a model bug: the print template export shows the error, and the Artwork tab's aspect ratio hint logs it and leaves the template out.
 
 ## Composite models
 
@@ -170,7 +185,9 @@ To add a composite, export the base model's build function from its file, define
    ```ts
    import * as THREE from 'three';
    import type { ModelDefinition } from '../core/types';
-   import { castShadows, mmParam, num, placeOnGround, printMaterial, solidPlastic } from './shared';
+   import { castShadows, placeOnGround } from './geometry';
+   import { printMaterial, solidPlastic } from './materials';
+   import { mmParam, num } from './params';
 
    export const posterModel: ModelDefinition = {
      id: 'poster',

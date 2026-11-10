@@ -26,7 +26,7 @@ import type {
   ParamValues,
   SelectParamDef,
 } from '../core/types';
-import { num, str } from './shared';
+import { num, str } from './params';
 import { buildBox, boxModel } from './box';
 import { blurayModel, buildKeepCase, dvdModel } from './keepCase';
 import { buildJewelCase, cdCaseModel } from './jewelCase';

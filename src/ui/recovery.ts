@@ -1,13 +1,14 @@
 /**
  * The recovery dialog: the stored copies of the projects that were open but could not be reopened
- * (unopened entries, ./sessionRecords), one row each, where the user saves a copy to a project file
+ * (unopened entries, ../documents/sessionRecords), one row each, where the user saves a copy to a project file
  * or deletes it. A copy the user does neither to is kept and offered again at the next start.
  */
 import { saveBlob } from '../platform/files';
 import { panelDialog } from './dialog';
-import { append, clear, errorMessage, h, logShownError } from './dom';
-import { PROJECT_FILE_FILTER } from './project';
-import { type UnopenedTab, unopenedFileName, unopenedFileText } from './sessionRecords';
+import { append, clear, h } from './dom';
+import { errorMessage, logShownError } from './errors';
+import { PROJECT_FILE_FILTER } from '../project/format';
+import { type UnopenedTab, unopenedFileName, unopenedFileText } from '../documents/sessionRecords';
 
 /** Removes a copy from the app's storage; rejects with a UserError when it stays stored. */
 export type ForgetCopy = (id: string) => Promise<void>;

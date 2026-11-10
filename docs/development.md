@@ -63,7 +63,7 @@ npm run build
 
 The type-check is stricter than `strict` alone (`tsconfig.json`): it also rejects unused variables and parameters, a function that returns a value on some paths only, a method that overrides another without `override`, and `undefined` given to an optional property whose type does not include it (`exactOptionalPropertyTypes`). Its `lib` lists only the parts of ES2022 that Safari 15.0 supports, so it fails on newer APIs such as `Array.prototype.at` or `Object.hasOwn`; APIs that only some engines have, such as WebCodecs, are detected at run time. Biome reports a non-null assertion (`value!`) as a warning, and `npm run lint` fails on warnings: check the value instead, and where it can never be missing, throw an `Error` that says what was missing.
 
-The unit tests, in `tests/` (their folders mirror `src/` and `tools/`, e.g. `tests/ui/state.test.ts` tests `src/ui/state.ts` and `tests/tools/release.test.ts` tests `tools/release.mjs`). They use [Vitest](https://vitest.dev/) and run in Node without a browser, so they cover code that needs no DOM or WebGL:
+The unit tests, in `tests/` (their folders mirror `src/` and `tools/`, e.g. `tests/documents/store.test.ts` tests `src/documents/store.ts` and `tests/tools/release.test.ts` tests `tools/release.mjs`). They use [Vitest](https://vitest.dev/) and run in Node without a browser, so they cover code that needs no DOM or WebGL:
 
 ```bash
 npm test
@@ -71,7 +71,7 @@ npm test
 
 `npx vitest` runs them in watch mode while you work.
 
-`tests/layout.test.ts` checks the repository's source files: every module opens with its header comment, and no banner comment splits a file into sections. Its allow-lists name the files that do not follow these rules yet; they may only shrink. `tests/tauriConfig.test.ts` checks that `tauri.conf.json` reads its version from `package.json` and has LICENSE's copyright line. `tests/models/ids.test.ts` pins the IDs saved in project files in a snapshot; [models.md](models.md#testing) says when it may be updated.
+`tests/layout.test.ts` checks the repository's source files: every module opens with its header comment, no banner comment splits a file into sections, and imports in `src/` follow the layer order in [architecture.md](architecture.md#code-map) (a new folder under `src/` needs a place in its `LAYERS` list). Its allow-lists name the files that do not follow the first two rules yet; they may only shrink. `tests/tauriConfig.test.ts` checks that `tauri.conf.json` reads its version from `package.json` and has LICENSE's copyright line. `tests/models/ids.test.ts` pins the IDs saved in project files in a snapshot; [models.md](models.md#testing) says when it may be updated.
 
 The licenses of the npm dependencies, and the third-party notices (see [licenses.md](licenses.md)):
 
@@ -109,7 +109,7 @@ The **Checks** workflow (`.github/workflows/checks.yml`) runs all of these for e
 
 ## Interface texts
 
-The interface's texts are plain English strings, written in the code where they are used: in the interface modules, in the errors a user sees (a `UserError` from `src/core/errors.ts`, whose message the interface shows as it is; `errorMessage` in `src/ui/dom.ts` turns any other error into a general message with the raw text as detail; the Rust shell sends a kind code instead of a text, and the texts for its file errors are in `src/platform/commandErrors.ts`), and in the labels and hints of models and looks. Every new or changed text follows these rules:
+The interface's texts are plain English strings, written in the code where they are used: in the interface modules, in the errors a user sees (a `UserError` from `src/core/errors.ts`, whose message the interface shows as it is; `errorMessage` in `src/ui/errors.ts` turns any other error into a general message with the raw text as detail; the Rust shell sends a kind code instead of a text, and the texts for its file errors are in `src/platform/commandErrors.ts`), and in the labels and hints of models and looks. Every new or changed text follows these rules:
 
 | Rule | Write | Not |
 | --- | --- | --- |

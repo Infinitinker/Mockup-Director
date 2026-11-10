@@ -1,5 +1,6 @@
+/** Tests the store's revision, swapping documents in and out, and disposing a document's artwork. */
 import { describe, expect, it, vi } from 'vitest';
-import { Store, type ChangeEvent } from '../../src/ui/state';
+import { Store, type ChangeEvent } from '../../src/documents/store';
 import { documentState, fakeImage } from '../fixtures';
 
 /** One undo step: closes the change burst so the next edit is recorded separately. */

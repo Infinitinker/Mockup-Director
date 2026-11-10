@@ -10,7 +10,7 @@ import { createScenePanel } from './panels/scenePanel';
 import { createExportPanel } from './panels/exportPanel';
 import { createLooksPanel } from './panels/looks';
 import { getModel } from '../models/registry';
-import { hasAny } from './state';
+import { hasAny } from '../documents/store';
 
 const TAB_KEY = 'mockup-director.ui.tab';
 const TABS: { id: TabId; label: string }[] = [

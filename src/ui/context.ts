@@ -3,8 +3,8 @@
  */
 import type { StageAPI } from '../core/types';
 import type { Signal } from './dom';
-import type { Store } from './state';
-import type { AnimationProgress } from './exportBridge';
+import type { Store } from '../documents/store';
+import type { AnimationProgress } from '../export/animation';
 
 export type TabId = 'artwork' | 'model' | 'scene' | 'export' | 'looks';
 
@@ -29,7 +29,7 @@ export interface Actions {
   openBatchExport(): void;
   undo(): void;
   redo(): void;
-  /** Apply preset view by index into VIEW_PRESETS. */
+  /** Apply preset view by index into VIEW_PRESETS (src/scene/views.ts). */
   setView(index: number): void;
   resetView(): void;
   /** Load files into slots of the current model. Without slotIds: fill empty slots in slot order. */
@@ -51,19 +51,3 @@ export interface AppContext {
   /** "modelId/slotId" keys of slots whose artwork is being decoded */
   loadingSlots: Signal<ReadonlySet<string>>;
 }
-
-interface ViewPreset {
-  label: string;
-  yaw: number;
-  pitch: number;
-}
-
-/** Preset camera views (keyboard 1–6). */
-export const VIEW_PRESETS: ViewPreset[] = [
-  { label: 'Front', yaw: 0, pitch: 0 },
-  { label: '3/4 left', yaw: -30, pitch: 12 },
-  { label: '3/4 right', yaw: 30, pitch: 12 },
-  { label: 'Side', yaw: 90, pitch: 5 },
-  { label: 'Top', yaw: 0, pitch: 60 },
-  { label: 'Back', yaw: 180, pitch: 10 },
-];

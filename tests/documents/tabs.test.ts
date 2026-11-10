@@ -1,6 +1,10 @@
+/**
+ * Tests the open tabs: adding, switching and closing them, when a tab is dirty, and the snapshot the session saver
+ * reads.
+ */
 import { describe, expect, it, vi } from 'vitest';
-import { Documents } from '../../src/ui/documents';
-import { Store } from '../../src/ui/state';
+import { Documents } from '../../src/documents/tabs';
+import { Store } from '../../src/documents/store';
 import { documentState, fakeImage } from '../fixtures';
 
 function setup(): { store: Store; docs: Documents } {

@@ -17,7 +17,10 @@
  */
 import * as THREE from 'three';
 import type { ImageSlotDef, ModelContext, ModelDefinition, ParamDef, ParamValues } from '../core/types';
-import { bool, castShadows, clearPlastic, num, round1, str } from './shared';
+import { round1 } from '../core/math';
+import { castShadows } from './geometry';
+import { clearPlastic } from './materials';
+import { bool, num, str } from './params';
 
 /* ------------------------------------------------------------------ */
 /* Dimensions (mm)                                                     */

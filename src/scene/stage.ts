@@ -29,7 +29,7 @@ import type {
 } from '../core/types';
 import { DEFAULT_SCENE, cloneScene } from '../core/defaults';
 import { UserError } from '../core/errors';
-import { disposeObject } from '../models/shared';
+import { disposeObject } from './dispose';
 import { UnionFit, fitCamera, type FitResult } from './framing';
 import { GroundShadow, computeShadowLayout, type ShadowLayout } from './shadows';
 import { Reflection, REFLECTION_LAYER } from './reflection';

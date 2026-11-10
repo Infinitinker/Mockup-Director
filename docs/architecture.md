@@ -30,7 +30,7 @@ Mockup Director is a [Tauri v2](https://v2.tauri.app/) app. The whole app is a w
 | Rust shell (`src-tauri/`) | the app's own process | the web engine cannot show native save dialogs, write files atomically, keep one app instance, receive the files the system opens with the app, write a log file, or report a start that fails before the page can |
 | Browser fallback (`npm run dev`) | any browser, served by Vite on port 1420 | developing the UI without the shell; saving falls back to the File System Access API where there is one, otherwise to a download (`src/platform/files.ts`) |
 
-The code must work in Safari 15 (Vite builds for `safari15`, `vite.config.ts`) and in WebKitGTK. Features that depend on the engine are detected at run time: WebP encoding (`supportsWebpEncoding` in `src/export/exporter.ts`) and WebCodecs for MP4 (`mp4EncodingAvailable` in `src/export/animation/mp4.ts`).
+The code must work in Safari 15 (Vite builds for `safari15`, `vite.config.ts`) and in WebKitGTK. Features that depend on the engine are detected at run time: WebP encoding (`supportsWebpEncoding`) and WebCodecs for MP4 (`mp4EncodingAvailable`), both in `src/export/formats.ts`.
 
 The page and the shell talk through these commands and events. Only `src/platform/` uses them.
 
@@ -47,13 +47,13 @@ The page also uses Tauri's own APIs, allowed in `src-tauri/capabilities/default.
 
 ## How a mockup is made
 
-1. **The user picks a model** in the gallery (`src/ui/gallery.ts`). `selectModel` in `src/ui/app.ts` sets the active model in the store (`src/ui/state.ts`) and applies the model's `defaultCamera`. If the new model has no artwork or parameters yet, it takes those of the previous model whose slot and parameter ids match, so artwork moves from "DVD case" to "DVD case with disc".
+1. **The user picks a model** in the gallery (`src/ui/gallery.ts`). `selectModel` in `src/ui/app.ts` sets the active model in the store (`src/documents/store.ts`) and applies the model's `defaultCamera`. If the new model has no artwork or parameters yet, it takes those of the previous model whose slot and parameter ids match, so artwork moves from "DVD case" to "DVD case with disc".
 2. **The user adds artwork**, by dropping files on the viewport (`src/ui/viewport.ts`), on a slot's card in the Artwork tab (`src/ui/panels/artwork.ts`), or with Choose…. `assignArtwork` in `src/ui/app.ts` fills the empty slots first, in slot order. A dropped `.mdproj` file opens as a project instead. `loadImageFile` in `src/core/images.ts` keeps the original file as a data URL (saved in the project) and makes a texture from it, drawn through a 2D canvas so every format comes out the right way up. The store keeps the artwork by model and slot (`artwork[modelId][slotId]`).
-3. **The user sets parameters** in the Model tab (`src/ui/panels/modelPanel.ts`), whose controls are made from the model's `params`. The store keeps the values by model (`params[modelId]`); `completeParams` (`src/ui/modelUtils.ts`) fills in the defaults.
+3. **The user sets parameters** in the Model tab (`src/ui/panels/modelPanel.ts`), whose controls are made from the model's `params`. The store keeps the values by model (`params[modelId]`); `completeParams` (`src/models/params.ts`) fills in the defaults.
 4. **The store reports the change.** Every change goes through `store.update(kinds, …)`, and the listener in `src/ui/app.ts` schedules a rebuild for `model`, `params` and `artwork`, and a scene update for `scene` and `camera`. Both are coalesced to one per animation frame (`frameCoalescer` in `src/ui/dom.ts`).
-5. **The model is built** (`rebuild` in `src/ui/app.ts`). The app gives `model.build()` a `ModelContext`: the complete parameters, `hasArtwork`, and `getTexture`, which returns the slot's artwork or a placeholder that shows the slot's name (`src/core/placeholder.ts`). The new object goes to `stage.setModel()` (`src/scene/stage.ts`), which disposes the previous model, measures the new one for framing, and updates the reflection and the shadow. If `build()` throws, the error is logged and a toast says "Could not build model “…”", with the error's message as `errorMessage` (`src/ui/dom.ts`) gives it; `setModel` is not called, so the stage keeps the model it had (none at start-up). The toast stack drops repeats of the same message (`src/ui/toast.ts`), so a model that fails on every slider step shows one toast. While an animation or batch export runs, the model is locked and the rebuild waits until the export ends.
-6. **The scene is applied.** `stage.applySettings()` takes the scene settings: camera, light, shadow, reflection and background. A light preset in the Scene tab (`src/scene/lightPresets.ts`, `src/ui/panels/scenePanel.ts`) copies its light, and its shadow and reflection changes, into the scene settings. A look in the Looks tab (`src/ui/looks.ts`, `src/ui/panels/looks.ts`) replaces the light, shadow, reflection and background, and the camera if the look has one. The stage adds the lights and a studio environment; the lighting follows the camera, so the key light stays where it is while the user orbits. The ground shadow (`src/scene/shadows.ts`) and the floor reflection (`src/scene/reflection.ts`) are drawn by the stage. The WebGL canvas is always transparent; the preview background is CSS on the viewport (`src/scene/background.ts`). The stage renders only when something changed.
-7. **The camera frames the composition.** `src/scene/framing.ts` places the camera so the model, its reflection and its shadow fit the view; zoom and pan are applied afterwards. Orbiting, zooming and panning in the viewport reach the store through `stage.onCameraChange()` with the source `stage`, so they are not pushed back to the stage. The view bar and the keys 1–6 set one of the `VIEW_PRESETS` (`src/ui/context.ts`).
+5. **The model is built** (`rebuild` in `src/ui/app.ts`). The app gives `model.build()` a `ModelContext`: the complete parameters, `hasArtwork`, and `getTexture`, which returns the slot's artwork or a placeholder that shows the slot's name (`src/core/placeholder.ts`). The new object goes to `stage.setModel()` (`src/scene/stage.ts`), which disposes the previous model, measures the new one for framing, and updates the reflection and the shadow. If `build()` throws, the error is logged and a toast says "Could not build model “…”", with the error's message as `errorMessage` (`src/ui/errors.ts`) gives it; `setModel` is not called, so the stage keeps the model it had (none at start-up). The toast stack drops repeats of the same message (`src/ui/toast.ts`), so a model that fails on every slider step shows one toast. While an animation or batch export runs, the model is locked and the rebuild waits until the export ends.
+6. **The scene is applied.** `stage.applySettings()` takes the scene settings: camera, light, shadow, reflection and background. A light preset in the Scene tab (`src/scene/lightPresets.ts`, `src/ui/panels/scenePanel.ts`) copies its light, and its shadow and reflection changes, into the scene settings. A look in the Looks tab (`src/project/looks.ts`, `src/ui/panels/looks.ts`) replaces the light, shadow, reflection and background, and the camera if the look has one. The stage adds the lights and a studio environment; the lighting follows the camera, so the key light stays where it is while the user orbits. The ground shadow (`src/scene/shadows.ts`) and the floor reflection (`src/scene/reflection.ts`) are drawn by the stage. The WebGL canvas is always transparent; the preview background is CSS on the viewport (`src/scene/background.ts`). The stage renders only when something changed.
+7. **The camera frames the composition.** `src/scene/framing.ts` places the camera so the model, its reflection and its shadow fit the view; zoom and pan are applied afterwards. Orbiting, zooming and panning in the viewport reach the store through `stage.onCameraChange()` with the source `stage`, so they are not pushed back to the stage. The view bar and the keys 1–6 set one of the `VIEW_PRESETS` (`src/scene/views.ts`).
 8. **The user exports.**
    - A still image: `exportImage` in `src/ui/app.ts` first runs the pending rebuild and scene update, then `src/export/exporter.ts` renders the stage off-screen, transparent and supersampled (`stage.renderToCanvas()`), crops it to the composition, scales it into the size minus the margins, paints the background, encodes the image and writes its print resolution (`src/export/png.ts`).
    - A turntable animation: `src/export/animation/index.ts` asks the stage for one fixed framing for all frames (`stage.beginAnimation()`), renders each frame at the angles from `turntable.ts`, and streams it into the GIF, WebP or MP4 encoder.
@@ -61,7 +61,7 @@ The page also uses Tauri's own APIs, allowed in `src-tauri/capabilities/default.
    - A print template: `src/export/templates.ts` draws the slot's `template` as a 300 dpi PNG with trim, bleed and fold guides.
 
    Every file is saved with `saveBlob` (`src/platform/files.ts`): in the desktop app through the native save dialog and `save_file`, in a browser through the save picker or a download. A download cannot report whether the file was saved, so a save that must be sure of it (`confirmed`, used by the recovery dialog) never falls back to one: it fails with a `UserError` instead.
-9. **The user saves the project.** `toProjectFile` (`src/ui/project.ts`) writes the tab's project as a `.mdproj` file (see [Files and data](#files-and-data)).
+9. **The user saves the project.** `toProjectFile` (`src/project/format.ts`) writes the tab's project as a `.mdproj` file (see [Files and data](#files-and-data)).
 
 ## Code map
 
@@ -70,42 +70,52 @@ src/
   main.ts       entry point; shows a plain error screen when the app cannot start
   styles.css    all of the interface's CSS
   core/         the shared contract: types (types.ts, with the 3D conventions), defaults (defaults.ts),
-                the error whose message the user sees (errors.ts: UserError), decoding artwork
-                (images.ts), placeholder textures for empty slots (placeholder.ts)
+                the error whose message the user sees (errors.ts: UserError), number helpers (math.ts:
+                clamp, round1), decoding artwork (images.ts), placeholder textures for empty slots
+                (placeholder.ts)
   models/       the 3D models and registry.ts, the list shown in the gallery:
                   box.ts and box/ (cuboid box, dieline, two-piece box; rounded geometry, shared parts),
                   keepCase.ts (DVD and Blu-ray cases), jewelCase.ts (CD case), disc.ts,
                   composites.ts and composites/ (the "… with disc" models and the disc's placement),
                   books.ts, printFlat.ts (business card, flyer, postcard, plastic card, brochure),
                   printFolded.ts (leaflet, greeting card, bi-fold brochure), handheld.ts (phone,
-                  tablet), computer.ts (laptop, monitor), screen.ts (screenshot panel, browser window),
-                  shared.ts (helpers for every model)
-  scene/        the three.js scene: the stage (stage.ts), light presets (lightPresets.ts), ground shadow
-                (shadows.ts), floor reflection (reflection.ts), background (background.ts) and camera
-                framing (framing.ts)
+                  tablet), computer.ts (laptop, monitor), screen.ts (screenshot panel, browser window);
+                the helpers for every model: parameters (params.ts, which also validates and completes
+                stored values), materials (materials.ts), shapes, UVs and placing on the floor
+                (geometry.ts); and the app's side of the slots (slots.ts: slot lookup, print
+                templates, expected aspect ratios)
+  scene/        the three.js scene: the stage (stage.ts), freeing a model it stops showing (dispose.ts),
+                light presets (lightPresets.ts), ground shadow (shadows.ts), floor reflection
+                (reflection.ts), background (background.ts), camera framing (framing.ts) and the
+                preset views (views.ts)
   export/       still image export (exporter.ts, layout.ts), print resolution in PNG and JPEG (png.ts),
-                print templates (templates.ts), ZIP (zip.ts), and animation/: the turntable export
-                (index.ts, turntable.ts, settings.ts, errors.ts) and its encoders (gif.ts, lzw.ts,
-                quantize.ts, webp.ts, mp4.ts)
+                print templates (templates.ts), ZIP (zip.ts), the formats this engine can encode,
+                their labels and save-dialog filters (formats.ts), the suggested file names
+                (fileNames.ts), and animation/: the turntable export (index.ts, turntable.ts,
+                settings.ts, errors.ts) and its encoders (gif.ts, lzw.ts, quantize.ts, webp.ts, mp4.ts)
+  project/      project files: writing, reading and validating them, and decoding their artwork
+                (format.ts), cleaning the untrusted values read from them and from the stored looks
+                (sanitize.ts), and looks: the built-in ones, the looks file and the stored looks (looks.ts)
+  documents/    the open projects: the store with each project's state and undo history (store.ts),
+                the tabs (tabs.ts), and the session autosave: the saver (session.ts), its records
+                (sessionRecords.ts) and IndexedDB (sessionDb.ts)
   platform/     reading and saving files (files.ts: the Tauri save dialog in the desktop app, the
                 browser otherwise), project files the operating system asks the app to open
                 (launch.ts), the messages for the shell's file errors (commandErrors.ts), localStorage
-                through calls that never throw (storage.ts), the window: its title and a last
-                save before it closes (window.ts), and the log (log.ts; uncaught.ts logs the errors
-                no code catches)
+                through calls that never throw (storage.ts), the operating system (os.ts: isMac),
+                the window: its title and a last save before it closes (window.ts), and the log
+                (log.ts; uncaught.ts logs the errors no code catches)
   ui/           the interface (vanilla TypeScript + CSS): the app shell (app.ts), the shared context and
-                actions (context.ts), state and undo history (state.ts), project tabs (documents.ts,
-                tabbar.ts), the session autosave (session.ts, its records in sessionRecords.ts, the
-                recovery dialog in recovery.ts),
-                project files (project.ts), looks (looks.ts), toolbar, gallery, viewport, inspector
+                actions (context.ts), the tab strip (tabbar.ts), the recovery dialog for the session's
+                unopened entries (recovery.ts), toolbar, gallery, viewport, inspector
                 and panels/ (artwork.ts, modelPanel.ts, scenePanel.ts, exportPanel.ts, looks.ts),
-                controls, dialogs, toasts, batch export (batch.ts), the bridge to export
-                (exportBridge.ts), model helpers (modelUtils.ts), number formatting and parsing
-                (numbers.ts), shortcuts, icons and DOM helpers (dom.ts)
+                controls, dialogs, toasts, the message and log entry for an error it shows
+                (errors.ts), batch export (batch.ts), number formatting and parsing (numbers.ts),
+                shortcuts, icons and DOM helpers (dom.ts)
 tests/          unit tests (Vitest, config in vitest.config.ts); their folders mirror src/ and tools/;
                 shared test data in fixtures.ts, a seeded random generator in random.ts, the checks
-                of header and banner comments in layout.test.ts, and the checks of tauri.conf.json
-                against package.json and LICENSE in tauriConfig.test.ts
+                of header and banner comments and of the import order in layout.test.ts, and the
+                checks of tauri.conf.json against package.json and LICENSE in tauriConfig.test.ts
 src-tauri/      the Tauri v2 shell (Rust): main.rs starts lib.rs, which sets up the window, the dialogs,
                 a single app process and the commands; the commands' error (error.rs), writing files
                 (files.rs), opened project files (opened.rs), closing the window if the page never
@@ -170,8 +180,8 @@ docs/images/                the README's screenshots (the app at 1440 × 900, wi
 How the folders are organized:
 
 - **A model, panel or subsystem is one module until it needs several files; then it becomes a folder.** A file never sits next to a folder of the same name. (Today `models/box.ts` and `models/composites.ts` still sit next to `models/box/` and `models/composites/`.)
-- **A folder that grows past about a dozen modules is split into subfolders by role**, each answering one question, with imports running one way between them. Tests mirror the subfolders. (Today `ui/` holds about twenty modules directly.)
-- **Imports run one way:** `core` ← `models` and `scene` ← `export` ← `ui`. Only `ui` and the entry point `main.ts` use `platform`, except the log (`platform/log.ts`), which every module may use. `core` holds the contracts the others share (`src/core/types.ts`).
+- **A folder that grows past about a dozen modules is split into subfolders by role**, each answering one question, with imports running one way between them. Tests mirror the subfolders. (Today `ui/` holds seventeen modules directly and `models/` sixteen.)
+- **Imports run one way:** `core` ← `models` and `scene` ← `export` ← `project` ← `documents` ← `ui`. A module imports its own folder and the layers below it; `models` and `scene` sit side by side and never import each other. Only `ui` and the entry point `main.ts` use `platform`, except the log (`platform/log.ts`), which every module may use; `platform` itself imports only `core`. `core` holds the contracts the others share (`src/core/types.ts`). `project` sits above `export` because reading a project checks which formats this engine can export, and `documents` above `project` because the session stores project files. `tests/layout.test.ts` fails on an import against this order.
 - **A module's name does not repeat its folder** (`panels/looks.ts`, not `panels/looksPanel.ts`), as long as the shorter name still says what the module is. (Today `modelPanel.ts`, `scenePanel.ts` and `exportPanel.ts` in `ui/panels/` still end in `Panel`.)
 - **File names are camelCase** in `src/` and `tests/` (`printFlat.ts`) and **kebab-case** in `tools/` (`draw-icon.mjs`).
 
@@ -203,15 +213,15 @@ Each concept has one name, used everywhere. Where the interface or today's code 
 | Parameter | A setting of a model: size, material, pose. The Model tab shows them grouped (Dimensions, Material …) and calls them settings ("This model has no settings."). | `ParamDef`, `params` |
 | Print template | A 300 dpi PNG of a slot's artwork area with trim, bleed and fold guides, downloaded with the Template… button on the slot's card. | `PrintTemplate`, `src/export/templates.ts` |
 | Scene | The camera, light, shadow, reflection and preview background of a project; the Scene tab. | `SceneSettings` |
-| View | A preset camera direction from the view bar or the keys 1–6: Front, 3/4 left, 3/4 right, Side, Top, Back. | `VIEW_PRESETS` in `src/ui/context.ts` |
+| View | A preset camera direction from the view bar or the keys 1–6: Front, 3/4 left, 3/4 right, Side, Top, Back. | `VIEW_PRESETS` in `src/scene/views.ts` |
 | Light preset | A built-in lighting setup picked in the Scene tab (Studio, Soft light, Dramatic …); it sets the light and may change the shadow and reflection. | `LightPreset`, `src/scene/lightPresets.ts` |
-| Look | Named scene settings without the artwork or the model: light, shadow, reflection, background and, if saved with it, the camera. Built-in looks ship with the app; the user's own are saved, imported and exported in the Looks tab. | `Look`, `src/ui/looks.ts`, `src/ui/panels/looks.ts`, the `looks` tab id, the `mockup-director.looks` key, the looks file `mockup-director-looks.json` |
+| Look | Named scene settings without the artwork or the model: light, shadow, reflection, background and, if saved with it, the camera. Built-in looks ship with the app; the user's own are saved, imported and exported in the Looks tab. | `Look`, `src/project/looks.ts`, `src/ui/panels/looks.ts`, the `looks` tab id, the `mockup-director.looks` key, the looks file `mockup-director-looks.json` |
 | Size preset | One of the square output sizes offered as chips in the Export tab. A model's paper sizes (A5, A6 …) are not size presets but options of its Size parameter. | `SIZE_PRESETS`, `ANIM_SIZE_PRESETS` in `src/ui/panels/exportPanel.ts` |
 | Inspector | The tabbed panel on the right: Artwork, Model, Scene, Export, Looks. | `src/ui/inspector.ts`, `src/ui/panels/` |
-| Project | One mockup: its model, the artwork and parameters of every model used in it, the scene and the export settings. Saved as a `.mdproj` file. | `ProjectFile`; `DocumentState` while open |
-| Tab | One open project, in the strip above the viewport ("Open projects"). A tab is dirty while it has unsaved changes. | `src/ui/documents.ts`, `src/ui/tabbar.ts` |
-| Session | The open tabs, kept between starts. The interface does not name it; its messages speak of "the projects that were open". | `src/ui/session.ts`, `src/ui/sessionRecords.ts` |
-| Unopened entry | A tab of the session whose stored copy this app cannot open: it comes from a newer version, or it is damaged. Kept until the user saves the copy to a file or deletes it in the recovery dialog; the interface calls it a copy. | `UnopenedTab` in `src/ui/sessionRecords.ts`, `src/ui/recovery.ts` |
+| Project | One mockup: its model, the artwork and parameters of every model used in it, the scene and the export settings. Saved as a `.mdproj` file. | `ProjectFile`, `src/project/format.ts`; `DocumentState` while open |
+| Tab | One open project, in the strip above the viewport ("Open projects"). A tab is dirty while it has unsaved changes. | `src/documents/tabs.ts`, `src/ui/tabbar.ts` |
+| Session | The open tabs, kept between starts. The interface does not name it; its messages speak of "the projects that were open". | `src/documents/session.ts`, `src/documents/sessionRecords.ts`, `src/documents/sessionDb.ts` |
+| Unopened entry | A tab of the session whose stored copy this app cannot open: it comes from a newer version, or it is damaged. Kept until the user saves the copy to a file or deletes it in the recovery dialog; the interface calls it a copy. | `UnopenedTab` in `src/documents/sessionRecords.ts`, `src/ui/recovery.ts` |
 | Export | Writing the mockup to a file, in one of three ways. | `src/export/` |
 | Still | One image (PNG, JPEG or WebP); the interface calls it an image ("Export image…", export type Image). | `exporter.ts`, `ExportSettings` |
 | Turntable animation | The model turning a full 360° or swinging back and forth, as GIF, WebP or MP4; the interface calls it an animation (export type Animation). | `src/export/animation/`, `AnimationSettings` |
@@ -219,26 +229,26 @@ Each concept has one name, used everywhere. Where the interface or today's code 
 
 ## Files and data
 
-- Projects are JSON files with the `.mdproj` extension, the only one the app saves and opens; `src/ui/project.ts` writes, reads and sanitizes them.
+- Projects are JSON files with the `.mdproj` extension, the only one the app saves and opens; `src/project/format.ts` writes and reads them, and `src/project/sanitize.ts` cleans what they hold.
 - The installers register `.mdproj` (on Windows `tools/installer.iss`; on macOS and Linux `bundle.fileAssociations` in `src-tauri/tauri.conf.json`, on Linux also `src-tauri/linux/`: a MIME definition and a `.desktop` template). A double-clicked project reaches the app as a command-line argument (Windows, Linux) or an event (macOS); `src-tauri/src/opened.rs` queues it, and `src/platform/launch.ts` opens it once the app has started. Only one copy of the app runs: on Windows and Linux, a second launch hands its files (relative paths resolved against its own working directory) to the running app and exits (tauri-plugin-single-instance, `src-tauri/src/lib.rs`); they are queued the same way and announced with the `files-opened` event, open in new tabs, and the window is brought forward. On macOS the system sends files to the running app itself, through the same `Opened` event as at start-up.
-- Every open project is a tab: `src/ui/documents.ts` keeps the tabs, and the store (`src/ui/state.ts`) works on the active one, whose state, undo history and artwork it swaps in and out (`Store.swap`). A tab is dirty while its revision differs from the one it was saved at; undo brings the earlier revision back.
-- The session autosave (`src/ui/session.ts`) keeps every open tab in the web engine's IndexedDB, unsaved changes included, a moment (1.5 seconds) after each change and when the window closes, and the app reopens them at start-up. It never overwrites a session written by a newer version of the app. If the stored session comes from a newer version or cannot be restored, autosave stays off for the rest of the run, so the stored tabs are kept. Nothing stored is deleted unless the user chooses to: tabs whose stored copy cannot be opened are offered in a recovery dialog, to save to a file or delete (see [Session](#session)). On macOS, quitting the app (⌘Q, Quit in the Dock, logging out) skips the window's close event, so changes made since editing last paused for 1.5 seconds may not be saved.
+- Every open project is a tab: `src/documents/tabs.ts` keeps the tabs, and the store (`src/documents/store.ts`) works on the active one, whose state, undo history and artwork it swaps in and out (`Store.swap`). A tab is dirty while its revision differs from the one it was saved at; undo brings the earlier revision back.
+- The session autosave (`src/documents/session.ts`, which writes through `src/documents/sessionDb.ts`) keeps every open tab in the web engine's IndexedDB, unsaved changes included, a moment (1.5 seconds) after each change and when the window closes, and the app reopens them at start-up. It never overwrites a session written by a newer version of the app. If the stored session comes from a newer version or cannot be restored, autosave stays off for the rest of the run, so the stored tabs are kept. Nothing stored is deleted unless the user chooses to: tabs whose stored copy cannot be opened are offered in a recovery dialog, to save to a file or delete (see [Session](#session)). On macOS, quitting the app (⌘Q, Quit in the Dock, logging out) skips the window's close event, so changes made since editing last paused for 1.5 seconds may not be saved.
 - User looks and a few interface choices are kept in the web engine's localStorage (see the table below). In the desktop app the web engine keeps its localStorage and IndexedDB in a folder of its own for the app identifier; on Windows that is `%LOCALAPPDATA%\io.github.infinitinker.mockupdirector`, which the uninstaller of a per-user install offers to delete (`tools/installer.iss`); an all-users uninstall leaves it alone.
 - On the desktop, files are written by the Rust `save_file` command (`src-tauri/src/lib.rs`), atomically, to a path the user chose in the native save dialog.
 - Diagnostics go to the log (see [Log](#log)).
 
 ### Project file (`.mdproj`)
 
-JSON without indentation, written by `toProjectFile` and read by `readProjectFile`, `readProjectText` and `parseProjectFile` in `src/ui/project.ts`; the type is `ProjectFile` in `src/core/types.ts`.
+JSON without indentation, written by `toProjectFile` and read by `readProjectFile`, `readProjectText` and `parseProjectFile` in `src/project/format.ts`; the type is `ProjectFile` in `src/core/types.ts`.
 
 | Field | Contents |
 |---|---|
 | `app` | Always `"mockup-director"`. A value that is not an object, or whose `app` is anything else, is refused: "The file could not be read: it is not a Mockup Director project. Choose a .mdproj file." |
 | `version` | `1` (`PROJECT_VERSION`). A file whose `version` is not a whole number of 1 or more is refused: "The project file could not be read: it is damaged. Choose another .mdproj file."; one above `PROJECT_VERSION`: "The project comes from a newer Mockup Director. Update Mockup Director to open it." There are no migrations; the reader always returns version 1. |
 | `modelId` | The active model. A file without one, or with one that is not a string, is refused as damaged (the message above); an id this build does not have is refused: "The project uses a model that this Mockup Director does not have. Update Mockup Director to open it." |
-| `params` | Model id → parameter id → value, for every model used in the project. Each value is checked against its definition (`sanitizeParam` in `src/ui/modelUtils.ts`). The values of unknown models, unknown parameters and values their definition does not allow are left out and counted as settings. |
+| `params` | Model id → parameter id → value, for every model used in the project. Each value is checked against its definition (`sanitizeParam` in `src/models/params.ts`). The values of unknown models, unknown parameters and values their definition does not allow are left out and counted as settings. |
 | `artwork` | Model id → slot id → `{ name, dataUrl }`: the original artwork file as a `data:image/…` URL. Pieces of unknown models or slots, entries that are not objects and other URLs are left out and counted as artwork; names are cut to 255 characters. |
-| `scene` | `camera`, `light`, `shadow`, `reflection`, `background` (`SceneSettings`). Merged over the defaults, keeping only known keys of the right type, then clamped to their ranges (`sanitizeScene`, which reads the scenes of looks too). Unknown keys, values of the wrong type, and a projection, color or background mode that is not allowed (it takes its default) are counted as settings. |
+| `scene` | `camera`, `light`, `shadow`, `reflection`, `background` (`SceneSettings`). Merged over the defaults, keeping only known keys of the right type, then clamped to their ranges (`sanitizeScene` in `src/project/sanitize.ts`, which reads the scenes of looks too). Unknown keys, values of the wrong type, and a projection, color or background mode that is not allowed (it takes its default) are counted as settings. |
 | `export` | `width`, `height`, `margin`, `format`, `quality`, `sizing`, `background` and an optional `animation` (`ExportSettings`, `AnimationSettings`). Merged, clamped and counted the same way, unknown keys and wrong types inside `animation` included; values inside `animation` that `normalizeAnimationSettings` replaces are not counted. WebP falls back to PNG where this engine cannot encode it, and animation formats this engine cannot encode fall back to GIF; these fallbacks depend on the engine, not the file, and are not counted either. |
 
 `params`, `artwork`, `scene` or `export` stored as something other than an object counts as one left-out value; inside `params` and `artwork`, a model whose value is not an object counts as one too. Numbers outside their range are clamped to the nearest allowed value and not counted.
@@ -247,7 +257,7 @@ JSON without indentation, written by `toProjectFile` and read by `readProjectFil
 
 ### Looks file
 
-The Looks tab exports the user's looks as `mockup-director-looks.json` (`LOOKS_FILE_NAME`, saved by `exportLooks` in `src/ui/panels/looks.ts`), indented, and imports one or more such files. The file is written by `toLooksFile` in `src/ui/looks.ts`; the type is `LooksFile` in `src/core/types.ts`:
+The Looks tab exports the user's looks as `mockup-director-looks.json` (`LOOKS_FILE_NAME`, saved by `exportLooks` in `src/ui/panels/looks.ts`), indented, and imports one or more such files. The file is written by `toLooksFile` in `src/project/looks.ts`; the type is `LooksFile` in `src/core/types.ts`:
 
 | Field | Contents |
 |---|---|
@@ -258,7 +268,7 @@ The Looks tab exports the user's looks as `mockup-director-looks.json` (`LOOKS_F
 
 The user's looks are stored under `mockup-director.looks` in the same shape, without indentation (`saveLooks`).
 
-One reader serves both: `parseLooksFile` in `src/ui/looks.ts`. It refuses a value with a `LooksError` (a `UserError`), whose message the import shows under "Could not import looks":
+One reader serves both: `parseLooksFile` in `src/project/looks.ts`. It refuses a value with a `LooksError` (a `UserError`), whose message the import shows under "Could not import looks":
 
 - a value whose `app` is not `"mockup-director"` or whose `kind` is not `"looks"` (the import refuses a file that is not JSON with the same message): "The file could not be read: it is not a Mockup Director looks file. Choose a file exported from the Looks tab."
 - a `version` that is not a whole number of 1 or more: "The looks file could not be read: it is damaged. Choose another looks file."
@@ -272,7 +282,7 @@ The stored looks are read once, when the Looks tab is made (`loadLooks`, which r
 - Damaged looks: "Your saved looks are damaged and could not be read. Until you delete them, looks you save here are not kept after Mockup Director closes: export your looks to a file to keep them." The note has a Delete saved looks button, which asks first ("Delete the saved looks?") and then writes this run's looks (there may be none) over the damaged value (`replaceDamagedLooks`), so they are kept from then on. When that write fails, the damaged value stays as it was, and an error says so every time: "Could not delete the saved looks": "The storage for looks is full or blocked. Export your looks to a file to keep them."
 - Looks from a newer version: "Your saved looks come from a newer Mockup Director: update Mockup Director to use them. Until then, looks you save here are not kept after Mockup Director closes: export your looks to a file to keep them." There is no button, so the newer looks come back once Mockup Director is updated.
 
-When a write fails because the storage is full or blocked, a warning says "Could not save looks": "The storage for looks is full or blocked. Delete looks you no longer need, or export your looks to a file to keep them." While saving keeps failing, it comes once; it comes again only after a save has worked in between (a save skipped because the stored looks are kept writes nothing and does not count). `createLooksSaver` in `src/ui/looks.ts` holds this rule, and the Delete saved looks button replaces the damaged looks through it.
+When a write fails because the storage is full or blocked, a warning says "Could not save looks": "The storage for looks is full or blocked. Delete looks you no longer need, or export your looks to a file to keep them." While saving keeps failing, it comes once; it comes again only after a save has worked in between (a save skipped because the stored looks are kept writes nothing and does not count). `createLooksSaver` in `src/project/looks.ts` holds this rule, and the Delete saved looks button replaces the damaged looks through it.
 
 ### Session
 
@@ -283,7 +293,7 @@ The session lives in IndexedDB: the database `mockup-director`, opened at databa
 | `session` | The index: `{ version, activeId, tabs: [{ id, name, dirty }] }`: the open tabs in tab order, then the unopened entries (below). `name` is `''` for a project never saved. |
 | `tab:<id>` | One per tab: `{ savedAt, file }`, where `savedAt` is when it was written (milliseconds since 1970) and `file` is the tab's project in the `.mdproj` format. |
 
-`src/ui/sessionRecords.ts` holds what runs without IndexedDB, and its tests run in Node: the version check (`isNewerIndex`), reading the index (`readIndex`) and a tab record (`readTabRecord`, which reads the project with `parseProjectFile`), working out what to restore and what to keep (`readSession`), building the index a save writes (`buildIndex`), and the file a kept copy is saved to (`unopenedFileText`, `unopenedFileName`). `src/ui/session.ts` reads and writes the records, and `src/ui/recovery.ts` is the recovery dialog.
+`src/documents/sessionRecords.ts` holds what runs without IndexedDB, and its tests run in Node: the version check (`isNewerIndex`), reading the index (`readIndex`) and a tab record (`readTabRecord`, which reads the project with `parseProjectFile`), working out what to restore and what to keep (`readSession`), building the index a save writes (`buildIndex`), and the file a kept copy is saved to (`unopenedFileText`, `unopenedFileName`). `src/documents/session.ts` works out which records a save writes and deletes, `src/documents/sessionDb.ts` reads and writes them in IndexedDB, and `src/ui/recovery.ts` is the recovery dialog.
 
 Nothing stored is given up unless the user chooses to, except an index entry whose record is gone. At start-up `loadSession` reads the index and every `tab:` record in one transaction, and `readSession` sorts them out:
 
@@ -311,7 +321,7 @@ The desktop app writes its diagnostics to `mockup-director.log` in the log folde
 
 - **Writing:** each entry is one line, `2026-11-10T08:05:09.042Z ERROR page: Autosave failed`, in UTC; further lines of the entry (an error's stack) are indented by four spaces. `shell` entries come from the Rust shell (`log::info`, `warn`, `error`), `page` entries from the web UI through `write_log`. The page's `log` (`src/platform/log.ts`) adds the error's name, message, stack frames and causes (at most 5) and cuts an entry at 8000 characters, never inside a character. A `SyntaxError` is logged without its message, which may quote the file being parsed.
 - **Size:** a file that a write would take past 1 MB is renamed `mockup-director.log.1`, the one before it `.log.2`, and the oldest is deleted, so the log keeps about 3 MB. An older file that cannot be renamed stays as it is; when the current file cannot be renamed, it is emptied instead. Either way the new file starts with a warning saying so.
-- **What is logged:** that the app started (version, system, architecture; written once Tauri has built the app, since a second launch on Windows and Linux exits inside that build), every error the interface shows (a failing autosave once, until it works again or fails differently), under a short title naming what failed, usually the one it is shown with (`logShownError` in `src/ui/dom.ts`: a `UserError` as a warning, anything else as an error; the toast for a rejected promise nobody handled is logged by `uncaught.ts`), the first failure to read or write each localStorage key in a run (`safeStorage`, never the value), errors the code catches without showing them (listeners, the window title, the last save before closing), uncaught errors and rejected promises in the page (`src/platform/uncaught.ts`, imported first in `src/main.ts`, so it also catches errors thrown while the other modules load), the shell's own failures, and panics (a panic hook, which also runs in release builds, where a panic aborts). Never artwork or file contents.
+- **What is logged:** that the app started (version, system, architecture; written once Tauri has built the app, since a second launch on Windows and Linux exits inside that build), every error the interface shows (a failing autosave once, until it works again or fails differently), under a short title naming what failed, usually the one it is shown with (`logShownError` in `src/ui/errors.ts`: a `UserError` as a warning, anything else as an error; the toast for a rejected promise nobody handled is logged by `uncaught.ts`), the first failure to read or write each localStorage key in a run (`safeStorage`, never the value), errors the code catches without showing them (listeners, the window title, the last save before closing, a print template that fails while the Artwork tab works out the expected aspect ratios), uncaught errors and rejected promises in the page (`src/platform/uncaught.ts`, imported first in `src/main.ts`, so it also catches errors thrown while the other modules load), the shell's own failures, and panics (a panic hook, which also runs in release builds, where a panic aborts). Never artwork or file contents.
 - **Elsewhere:** in a browser (`npm run dev`) entries go to the console. A build run from source also writes every entry to the terminal, the page's included, and the page's entries to the devtools console. Until the file is open, and when it cannot be opened or written, the shell writes to the standard error output.
 - **A failed start:** `fail_to_start` in `src-tauri/src/lib.rs` logs the error with the version and shows a native message, then ends the process. It covers two failures: Tauri cannot build the app (a plugin, Tauri's own included, fails to start): "Mockup Director could not start."; and the main window or its web engine cannot be created: "Mockup Director could not open its window." So that the second one is reported instead of ending in a panic, Tauri does not create the window (`"create": false` in `tauri.conf.json`); the app's setup hook creates it from that configuration. Either sentence is followed by "Start it again. If it still does not start, report the problem at github.com/Infinitinker/Mockup-Director/issues and attach mockup-director.log from <folder>." (the part about the log is left out when the log could not be opened), then the error as details. The message comes from rfd on Windows and macOS, and from a GTK message dialog on Linux, on the main thread, where Tauri's event loop has started GTK by then. Not covered: an event loop that cannot start (on Linux, no display) is a panic, which the panic hook logs before the app ends without a message; on Linux a missing WebKitGTK library stops the app before it runs, and on Windows a missing WebView2 runtime gets its own message from the web engine (in release builds) before this one.
 
@@ -319,12 +329,12 @@ The desktop app writes its diagnostics to `mockup-director.log` in the log folde
 
 | Key or database | Kind | What it holds | Owner |
 |---|---|---|---|
-| `mockup-director` | IndexedDB database | the session: the open tabs and their projects | `src/ui/session.ts` |
-| `mockup-director.looks` | localStorage | the user's looks, in the looks file's shape | `src/ui/looks.ts` |
+| `mockup-director` | IndexedDB database | the session: the open tabs and their projects | `src/documents/sessionDb.ts` |
+| `mockup-director.looks` | localStorage | the user's looks, in the looks file's shape | `src/project/looks.ts` |
 | `mockup-director.ui.tab` | localStorage | the inspector tab last shown | `src/ui/inspector.ts` |
 | `mockup-director.ui.collapsed` | localStorage | the keys of the collapsed inspector sections, a JSON array | `src/ui/controls.ts` |
 | `mockup-director.ui.exportMode` | localStorage | the export type last chosen: `image` or `animation` | `src/ui/panels/exportPanel.ts` |
 | `mockup-director.ui.lockAspect` | localStorage | whether the export size keeps its aspect ratio: `1` or `0` | `src/ui/panels/exportPanel.ts` |
 | `mockup-director.ui.batchMode` | localStorage | the batch export mode last chosen: `artwork`, `views` or `projects` | `src/ui/batch.ts` |
 
-localStorage is read and written through `safeStorage` (`src/platform/storage.ts`, behind the `KeyValueStorage` interface), which never throws: where storage is blocked, nothing is read, and `set` returns false when a value cannot be written. The interface choices ignore a failed write, so they are simply not kept; the looks report it (above).
+localStorage is read and written through `safeStorage` (`src/platform/storage.ts`, behind the `KeyValueStorage` interface in `src/core/types.ts`), which never throws: where storage is blocked, nothing is read, and `set` returns false when a value cannot be written. The interface choices ignore a failed write, so they are simply not kept; the looks report it (above).

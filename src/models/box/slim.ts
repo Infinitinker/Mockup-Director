@@ -23,7 +23,8 @@ import type {
   PrintTemplate,
   SelectParamDef,
 } from '../../core/types';
-import { num, placeOnGround, str } from '../shared';
+import { placeOnGround } from '../geometry';
+import { num, str } from '../params';
 import {
   aspectOf,
   bandTemplate,

@@ -1,11 +1,11 @@
 /**
- * Tests the bookkeeping of the session saver in src/ui/session.ts, with a fake store: which tab
+ * Tests the bookkeeping of the session saver in src/documents/session.ts, with a fake store: which tab
  * records it writes and deletes, the unopened entries and forgetting them, and saves requested while one runs.
  */
 import { describe, expect, it } from 'vitest';
-import type { TabSnapshot } from '../../src/ui/documents';
-import { SessionSaver, type SessionStore, type TabPut } from '../../src/ui/session';
-import type { IndexRecord } from '../../src/ui/sessionRecords';
+import type { TabSnapshot } from '../../src/documents/tabs';
+import { SessionSaver, type SessionStore, type TabPut } from '../../src/documents/session';
+import type { IndexRecord } from '../../src/documents/sessionRecords';
 import { documentState } from '../fixtures';
 
 interface Write {

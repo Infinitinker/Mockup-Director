@@ -41,7 +41,7 @@ The goal is clean code, modularity, portability, and that anyone can make a conv
 ### Modularity
 - A model is a `ModelDefinition` in `src/models/`, listed in `src/models/registry.ts`; adding one must not need UI code. See `docs/models.md`.
 - A model, panel or subsystem is one module until it needs several files, then a folder. Never put a file next to a folder of the same name. A folder that grows past about a dozen modules is split into subfolders by role. See "How the folders are organized" in `docs/architecture.md`.
-- Imports run one way: `core` ← `models` and `scene` ← `export` ← `ui`. Only `ui` and the entry point `main.ts` use `platform`, except the log (`platform/log.ts`), which every module may use.
+- Imports run one way: `core` ← `models` and `scene` ← `export` ← `project` ← `documents` ← `ui`; `models` and `scene` never import each other. Only `ui` and the entry point `main.ts` use `platform`, except the log (`platform/log.ts`), which every module may use; `platform` itself imports only `core`. `tests/layout.test.ts` checks this.
 - Logic lives in TypeScript. The Rust shell only does what the web engine cannot: native dialogs, atomic file writes, a single app instance, files the system opens with the app, closing the window, and the log.
 
 ### Portability

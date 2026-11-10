@@ -334,6 +334,19 @@ export interface Artwork {
   texture: THREE.Texture;
 }
 
+/** modelId -> slotId -> artwork */
+export type ArtworkMap = Record<string, Record<string, Artwork>>;
+
+/** The state of one document (an open project). */
+export interface DocumentState {
+  modelId: string;
+  /** modelId -> param values (may be partial – always complete with defaults before use) */
+  params: Record<string, ParamValues>;
+  artwork: ArtworkMap;
+  scene: SceneSettings;
+  export: ExportSettings;
+}
+
 /** Serializable project file (*.mdproj, JSON). */
 export interface ProjectFile {
   app: 'mockup-director';
@@ -358,4 +371,12 @@ export interface LooksFile {
   kind: 'looks';
   version: number;
   looks: Look[];
+}
+
+/** A store of string values by key. */
+export interface KeyValueStorage {
+  /** The value under `key`; null when there is none or storage cannot be read. */
+  get(key: string): string | null;
+  /** Write `value` under `key`; false when it could not be written. */
+  set(key: string, value: string): boolean;
 }

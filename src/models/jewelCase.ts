@@ -22,7 +22,9 @@
  */
 import * as THREE from 'three';
 import type { ImageSlotDef, ModelContext, ModelDefinition, ParamDef, PrintTemplate } from '../core/types';
-import { bool, castShadows, clearPlastic, printMaterial, roundedRectShape, solidPlastic, str } from './shared';
+import { castShadows, roundedRectShape } from './geometry';
+import { clearPlastic, printMaterial, solidPlastic } from './materials';
+import { bool, str } from './params';
 import { buildDisc, discParams, discSlot } from './disc';
 
 /* ------------------------------------------------------------------ */

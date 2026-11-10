@@ -7,8 +7,9 @@
  * it. The close buttons are for the mouse only and hidden from assistive technology, so the tab list
  * holds nothing but tabs.
  */
-import type { Documents, TabInfo } from './documents';
-import { h, clear, isMac, shortcutLabel, type Signal } from './dom';
+import type { Documents, TabInfo } from '../documents/tabs';
+import { h, clear, shortcutLabel, type Signal } from './dom';
+import { isMac } from '../platform/os';
 import { ICONS } from './icons';
 
 interface TabBarOptions {

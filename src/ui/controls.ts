@@ -3,7 +3,8 @@
  * collapsible sections. Each control reads its value through `get()` and writes through `set()`;
  * `sync()` refreshes the DOM from the state without rebuilding it (keeps focus & drag state).
  */
-import { clamp, h, nextId } from './dom';
+import { clamp } from '../core/math';
+import { h, nextId } from './dom';
 import { safeStorage } from '../platform/storage';
 import { ICONS } from './icons';
 import { formatNumber, parseNumber } from './numbers';

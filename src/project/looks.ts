@@ -3,11 +3,10 @@
  * localStorage under 'mockup-director.looks', in the same shape as the looks file, and are written
  * back only while the stored value could be read; a few built-in looks ship with the app.
  */
-import type { CameraSettings, Look, LooksFile, SceneSettings } from '../core/types';
+import type { CameraSettings, KeyValueStorage, Look, LooksFile, SceneSettings } from '../core/types';
 import { DEFAULT_SCENE, cloneScene } from '../core/defaults';
 import { UserError } from '../core/errors';
-import { type KeyValueStorage, safeStorage } from '../platform/storage';
-import { sanitizeScene } from './project';
+import { isPlain, sanitizeScene } from './sanitize';
 
 export const LOOKS_KEY = 'mockup-director.looks';
 
@@ -81,8 +80,6 @@ export const BUILTIN_LOOKS: BuiltinLook[] = [
   },
 ];
 
-const isPlain = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
-
 /**
  * A value that is not a looks file, or one this version cannot read. Its message is for the user;
  * `newer` is set when the looks come from a newer version.
@@ -147,14 +144,6 @@ export interface UserLooks {
   stored: StoredLooksState;
 }
 
-/** What the Looks tab says when the stored looks are damaged. */
-export const STORED_LOOKS_DAMAGED =
-  'Your saved looks are damaged and could not be read. Until you delete them, looks you save here are not kept after Mockup Director closes: export your looks to a file to keep them.';
-
-/** What the Looks tab says when the stored looks come from a newer version. */
-export const STORED_LOOKS_NEWER =
-  'Your saved looks come from a newer Mockup Director: update Mockup Director to use them. Until then, looks you save here are not kept after Mockup Director closes: export your looks to a file to keep them.';
-
 /** What the stored value `raw` means: the looks it holds, and whether it could be read. */
 export function readStoredLooks(raw: string | null): UserLooks {
   if (!raw) return { looks: [], stored: 'ok' };
@@ -173,7 +162,7 @@ export function readStoredLooks(raw: string | null): UserLooks {
 }
 
 /** Read the user's stored looks. */
-export function loadLooks(storage: KeyValueStorage = safeStorage): UserLooks {
+export function loadLooks(storage: KeyValueStorage): UserLooks {
   return readStoredLooks(storage.get(LOOKS_KEY));
 }
 
@@ -181,7 +170,7 @@ export function loadLooks(storage: KeyValueStorage = safeStorage): UserLooks {
 export type SaveLooksResult = 'saved' | 'kept' | 'failed';
 
 /** Write the user's looks to storage, unless the stored looks could not be read. */
-export function saveLooks(user: UserLooks, storage: KeyValueStorage = safeStorage): SaveLooksResult {
+export function saveLooks(user: UserLooks, storage: KeyValueStorage): SaveLooksResult {
   if (user.stored !== 'ok') return 'kept';
   return storage.set(LOOKS_KEY, JSON.stringify(toLooksFile(user.looks))) ? 'saved' : 'failed';
 }
@@ -190,7 +179,7 @@ export function saveLooks(user: UserLooks, storage: KeyValueStorage = safeStorag
  * Replace damaged stored looks with the looks of this run, so they are written back from then on.
  * When the write fails, the damaged looks stay and are still kept.
  */
-export function replaceDamagedLooks(user: UserLooks, storage: KeyValueStorage = safeStorage): SaveLooksResult {
+export function replaceDamagedLooks(user: UserLooks, storage: KeyValueStorage): SaveLooksResult {
   if (user.stored !== 'damaged') throw new Error('Only damaged stored looks can be replaced.');
   user.stored = 'ok';
   const result = saveLooks(user, storage);
@@ -216,7 +205,7 @@ export interface LooksSaver {
 }
 
 /** A LooksSaver for the user's looks of this run. */
-export function createLooksSaver(user: UserLooks, storage: KeyValueStorage = safeStorage): LooksSaver {
+export function createLooksSaver(user: UserLooks, storage: KeyValueStorage): LooksSaver {
   let failing = false;
   return {
     save() {

@@ -1,13 +1,12 @@
 /**
- * Tests the looks in src/ui/looks.ts: validating untrusted looks and looks files, the built-in
+ * Tests the looks in src/project/looks.ts: validating untrusted looks and looks files, the built-in
  * looks, making a look from the scene and applying one to it, unique names, and storing the
  * user's looks (with a fake storage): what a stored value means, when it is written back, and when
  * a failed save warns.
  */
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_SCENE, cloneScene } from '../../src/core/defaults';
-import type { CameraSettings, Look, SceneSettings } from '../../src/core/types';
-import type { KeyValueStorage } from '../../src/platform/storage';
+import type { CameraSettings, KeyValueStorage, Look, SceneSettings } from '../../src/core/types';
 import {
   BUILTIN_LOOKS,
   LOOKS_KEY,
@@ -25,7 +24,7 @@ import {
   saveLooks,
   toLooksFile,
   uniqueName,
-} from '../../src/ui/looks';
+} from '../../src/project/looks';
 
 const sceneWithoutCamera = (): Look['scene'] => {
   const { camera: _camera, ...rest } = cloneScene(DEFAULT_SCENE);

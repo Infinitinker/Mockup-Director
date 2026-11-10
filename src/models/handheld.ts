@@ -22,7 +22,9 @@
  */
 import * as THREE from 'three';
 import type { ImageSlotDef, ModelContext, ModelDefinition, ParamDef, ParamValues, PrintTemplate } from '../core/types';
-import { bool, castShadows, mmParam, num, placeOnGround, planarUVs, round1, str } from './shared';
+import { clamp, round1 } from '../core/math';
+import { castShadows, placeOnGround, planarUVs } from './geometry';
+import { bool, mmParam, num, str } from './params';
 
 /* ------------------------------------------------------------------ */
 /* Specs                                                               */
@@ -160,8 +162,6 @@ const FINISHES: Record<string, FinishDef> = {
   blue: { label: 'Navy blue', frame: '#3c5374', metalness: 0.8, roughness: 0.32, back: '#46607f' },
   custom: { label: 'Custom color', frame: '#7a7f88', metalness: 0.6, roughness: 0.34, back: '#7a7f88' },
 };
-
-const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
 /* ------------------------------------------------------------------ */
 /* Resolved dimensions (shared by build() and the slot template)       */

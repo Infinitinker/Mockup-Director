@@ -3,9 +3,10 @@
  */
 import { h } from './dom';
 import { ICONS } from './icons';
-import { VIEW_PRESETS, type AppContext } from './context';
-import { hasAny } from './state';
-import { isProjectFileName } from './project';
+import type { AppContext } from './context';
+import { VIEW_PRESETS } from '../scene/views';
+import { hasAny } from '../documents/store';
+import { isProjectFileName } from '../project/format';
 import type { BackgroundSettings, CameraSettings } from '../core/types';
 import { applyCssBackground } from '../scene/background';
 import { segmentedControl, type Control } from './controls';

@@ -28,17 +28,10 @@ import type {
   PrintTemplate,
   SelectParamDef,
 } from '../core/types';
-import {
-  bool,
-  castShadows,
-  mmParam,
-  num,
-  placeOnGround,
-  planarUVs,
-  printMaterial,
-  roundedRectShape,
-  str,
-} from './shared';
+import { clamp } from '../core/math';
+import { castShadows, placeOnGround, planarUVs, roundedRectShape } from './geometry';
+import { printMaterial } from './materials';
+import { bool, mmParam, num, str } from './params';
 
 /* ------------------------------------------------------------------ */
 /* Common constants / helpers                                          */
@@ -54,7 +47,6 @@ const G_LAY = 'Layout';
 const TRIM = 'Trim line';
 const FOLD = 'Fold line (spine)';
 
-const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 const deg = THREE.MathUtils.degToRad;
 
 /** Rounds to 2 decimals (sizes in hints). */

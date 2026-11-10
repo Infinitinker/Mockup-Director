@@ -1,6 +1,6 @@
 /**
  * The error the user sees: `UserError`, whose message is written for the user. Every other error is
- * a bug or a failure of the system, and is shown through `errorMessage` in `src/ui/dom.ts`.
+ * a bug or a failure of the system, and is shown through `errorMessage` in `src/ui/errors.ts`.
  */
 
 /**

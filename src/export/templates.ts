@@ -8,7 +8,9 @@
  */
 import type { ImageSlotDef, ParamValues, PrintTemplate, TemplateRegion } from '../core/types';
 import { UserError } from '../core/errors';
-import { setPngDpi, slugify } from './exporter';
+import { round1 } from '../core/math';
+import { resolveTemplate } from '../models/slots';
+import { setPngDpi } from './exporter';
 
 /** Safe-area inset inside the trim line, mm. */
 const SAFE_MARGIN_MM = 3;
@@ -58,13 +60,13 @@ interface TemplateRenderResult {
 
 /**
  * Renders a print template PNG (guides, regions, bleed) for a slot and reports the effective dpi and
- * pixel size; null if the slot has no template.
+ * pixel size; null if the slot has no template. A template function that throws reaches the caller.
  * @param params current model params – needed when slot.template is a function of them.
  */
 export async function renderTemplateDetailed(
   slot: ImageSlotDef,
-  dpi = 300,
-  params?: ParamValues,
+  dpi: number,
+  params: ParamValues,
 ): Promise<TemplateRenderResult | null> {
   const tpl = resolveTemplate(slot, params);
   if (!tpl) return null;
@@ -95,27 +97,11 @@ export async function renderTemplateDetailed(
   throw new UserError(T.tooLarge);
 }
 
-/** Resolve slot.template (object or function of params). Null if none / invalid. */
-function resolveTemplate(slot: ImageSlotDef, params?: ParamValues): PrintTemplate | null {
-  const t = slot.template;
-  if (!t) return null;
-  const tpl = typeof t === 'function' ? t(params ?? {}) : t;
-  if (!tpl || !(tpl.widthMm > 0) || !(tpl.heightMm > 0)) return null;
-  return tpl;
-}
-
 /** Highest dpi ≤ requested that keeps the canvas within MAX_SIDE_PX and MAX_PIXELS. */
 function effectiveDpi(tpl: PrintTemplate, requested: number): number {
   const bySide = (MAX_SIDE_PX * 25.4) / Math.max(tpl.widthMm, tpl.heightMm);
   const byArea = Math.sqrt(MAX_PIXELS / (tpl.widthMm * tpl.heightMm)) * 25.4;
   return Math.max(1, Math.min(requested, bySide, byArea));
-}
-
-/** e.g. "mockup-director-template-cover-273x183mm-300dpi.png". */
-export function templateFileName(slot: ImageSlotDef, dpi: number, params?: ParamValues): string {
-  const tpl = resolveTemplate(slot, params);
-  const size = tpl ? `-${fmtMm(tpl.widthMm)}x${fmtMm(tpl.heightMm)}mm` : '';
-  return `mockup-director-template-${slugify(slot.label) || slot.id}${size}-${Math.round(dpi)}dpi.png`;
 }
 
 /* ------------------------------------------------------------------ */
@@ -585,5 +571,5 @@ function nonNull<T>(v: T | null): v is T {
 
 /** mm with at most 1 decimal. */
 function fmtMm(n: number): string {
-  return String(Math.round(n * 10) / 10);
+  return String(round1(n));
 }

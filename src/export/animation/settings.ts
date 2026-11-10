@@ -3,6 +3,7 @@
  * exporter) and small derived values (frame count, effective size).
  */
 import type { AnimationFormat, AnimationSettings } from '../../core/types';
+import { clamp } from '../../core/math';
 import {
   DEFAULT_ANIMATION,
   DEFAULT_GIF_FPS,
@@ -54,8 +55,6 @@ function num(v: unknown, fallback: number): number {
 function pick<T extends string>(v: unknown, allowed: readonly T[], fallback: T): T {
   return typeof v === 'string' && (allowed as readonly string[]).includes(v) ? (v as T) : fallback;
 }
-
-const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
 /**
  * Return a complete, clamped copy of (possibly untrusted / partial) animation settings.

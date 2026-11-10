@@ -1,7 +1,7 @@
 /**
  * Mockup Director application shell: builds the layout, owns the store and wires the stage,
- * models, export and project handling together. Every open project is a tab (./documents); the
- * store works on the active one, and the whole set of tabs is autosaved as a session (./session).
+ * models, export and project handling together. Every open project is a tab (../documents/tabs); the
+ * store works on the active one, and the whole set of tabs is autosaved as a session (../documents/session).
  */
 import type { CameraSettings, Artwork, ModelContext, ParamValues, StageAPI } from '../core/types';
 import { DEFAULT_ANIMATION, DEFAULT_EXPORT, DEFAULT_SCENE, cloneScene } from '../core/defaults';
@@ -13,29 +13,32 @@ import { createStage } from '../scene/stage';
 import { inDesktopApp, pickFiles, saveBlob } from '../platform/files';
 import { handleOpenedFiles } from '../platform/launch';
 import { onWindowClose, setWindowTitle } from '../platform/window';
-import { Signal, errorMessage, frameCoalescer, h, isMac, logShownError, nextFrame } from './dom';
+import { Signal, frameCoalescer, h, nextFrame } from './dom';
+import { errorMessage, logShownError } from './errors';
+import { isMac } from '../platform/os';
 
-import { Store, hasAny, type DocumentState, type ArtworkMap } from './state';
-import { Documents } from './documents';
-import { indexedDbSessionStore, loadSession, SessionSaver } from './session';
-import { SESSION_DAMAGED, type UnopenedTab } from './sessionRecords';
+import type { ArtworkMap, DocumentState } from '../core/types';
+import { Store, hasAny } from '../documents/store';
+import { Documents } from '../documents/tabs';
+import { SessionSaver } from '../documents/session';
+import { indexedDbSessionStore, loadSession } from '../documents/sessionDb';
+import { SESSION_DAMAGED, type UnopenedTab } from '../documents/sessionRecords';
 import { openRecoveryDialog } from './recovery';
 import { createTabBar, tabLabel } from './tabbar';
-import { VIEW_PRESETS, type Actions, type AppContext, type TabId } from './context';
-import { completeParams, inheritedParams, slotFor } from './modelUtils';
+import type { Actions, AppContext, TabId } from './context';
+import { VIEW_PRESETS } from '../scene/views';
+import { completeParams, inheritedParams } from '../models/params';
+import { slotFor } from '../models/slots';
+import { exportImage } from '../export/exporter';
 import {
-  animationFileFilter,
-  animationFileName,
-  exportAnimationBlob,
-  exportBlob,
-  extensionFor,
-  fileNameFor,
-  IMAGE_FORMAT_LABEL,
+  exportAnimation,
   isAnimationCanceled,
-  templateBlob,
-  webpEncodingSupported,
   type AnimationProgress,
-} from './exportBridge';
+  type AnimationResult,
+} from '../export/animation';
+import { renderTemplateDetailed } from '../export/templates';
+import { animationFileFilter, imageFileFilter, supportsWebpEncoding } from '../export/formats';
+import { animationFileName, suggestFileName, templateFileName } from '../export/fileNames';
 import {
   PROJECT_EXT,
   PROJECT_FILE_FILTER,
@@ -44,7 +47,7 @@ import {
   projectWarning,
   readProjectFile,
   toProjectFile,
-} from './project';
+} from '../project/format';
 import { mountToasts, notify } from './toast';
 import { choiceDialog } from './dialog';
 import { openBatchDialog, type BatchHost } from './batch';
@@ -63,7 +66,7 @@ function freshDocument(modelId: string): DocumentState {
   const scene = cloneScene(DEFAULT_SCENE);
   scene.camera = { ...scene.camera, ...(model.defaultCamera ?? {}) };
   const exp = { ...DEFAULT_EXPORT };
-  if (exp.format === 'webp' && !webpEncodingSupported()) exp.format = 'png';
+  if (exp.format === 'webp' && !supportsWebpEncoding()) exp.format = 'png';
   return { modelId: model.id, params: {}, artwork: {}, scene, export: exp };
 }
 
@@ -434,13 +437,12 @@ export function startApp(root: HTMLElement): void {
         await nextFrame();
         const s = store.state;
         const settings = { ...s.export };
-        if (settings.format === 'webp' && !webpEncodingSupported()) settings.format = 'png';
-        const blob = await exportBlob(stage, settings, { ...s.scene.background });
+        if (settings.format === 'webp' && !supportsWebpEncoding()) settings.format = 'png';
+        const blob = await exportImage(stage, settings, { ...s.scene.background });
         if (!blob || blob.size === 0)
           throw new UserError('The rendered image is empty. Export it again, or reduce the export size.');
-        const name = fileNameFor(s.modelId, settings.format);
-        const ext = extensionFor(settings.format);
-        const saved = await saveBlob(blob, name, [{ name: IMAGE_FORMAT_LABEL[settings.format], extensions: [ext] }]);
+        const name = suggestFileName(s.modelId, settings.format);
+        const saved = await saveBlob(blob, name, [imageFileFilter(settings.format)]);
         if (saved) notify.success('Saved', saved);
       } catch (e) {
         logShownError('Export failed', e);
@@ -465,15 +467,13 @@ export function startApp(root: HTMLElement): void {
         const modelId = s.modelId;
         const settings = { ...(s.export.animation ?? DEFAULT_ANIMATION) };
         modelLocked = true;
-        let result: Awaited<ReturnType<typeof exportAnimationBlob>>;
+        let result: AnimationResult;
         try {
-          result = await exportAnimationBlob(
-            stage,
-            settings,
-            { ...s.scene.background },
-            (p) => animationProgress.set(p),
-            abort.signal,
-          );
+          result = await exportAnimation(stage, settings, {
+            background: { ...s.scene.background },
+            onProgress: (p) => animationProgress.set(p),
+            signal: abort.signal,
+          });
         } finally {
           modelLocked = false;
           if (rebuildDeferred) {
@@ -618,13 +618,15 @@ export function startApp(root: HTMLElement): void {
         const model = getModel(s.modelId);
         const slot = model.slots.find((x) => x.id === slotId);
         if (!slot) return;
-        const res = await templateBlob(model.id, slot, 300, completeParams(model, s.params[model.id]));
+        const params = completeParams(model, s.params[model.id]);
+        const res = await renderTemplateDetailed(slot, 300, params);
         if (!res) {
           notify.warning('This slot has no print template.');
           return;
         }
-        const { blob, name } = res;
-        const saved = await saveBlob(blob, name, [{ name: 'PNG', extensions: ['png'] }]);
+        // The name carries the dpi the template was rendered at: very large templates get less.
+        const name = templateFileName(model.id, slot, res.dpi, params);
+        const saved = await saveBlob(res.blob, name, [{ name: 'PNG', extensions: ['png'] }]);
         if (saved) notify.success('Saved', saved);
       } catch (e) {
         logShownError('Could not create the print template', e);

@@ -14,7 +14,7 @@ import {
   selectControl,
   type Control,
 } from '../controls';
-import { hasAny } from '../state';
+import { hasAny } from '../../documents/store';
 
 const CUSTOM = '__custom';
 

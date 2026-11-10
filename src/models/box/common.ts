@@ -14,7 +14,7 @@ import type {
   TemplateGuide,
   TemplateRegion,
 } from '../../core/types';
-import { bool, mmParam, num, str } from '../shared';
+import { bool, mmParam, num, str } from '../params';
 import { rectMapper, type FaceUVMapper } from './roundedBox';
 
 /* ------------------------------------------------------------------ */

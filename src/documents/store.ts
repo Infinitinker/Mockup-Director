@@ -14,25 +14,12 @@
  * listeners see that as a change of everything (source 'document'). A document's `revision` changes
  * with every edit and comes back with undo, so "changed since saved" is a revision comparison.
  */
-import type { ExportSettings, Artwork, ParamValues, SceneSettings } from '../core/types';
+import type { ExportSettings, Artwork, ArtworkMap, DocumentState, ParamValues, SceneSettings } from '../core/types';
 import { disposeArtwork } from '../core/images';
 import { log } from '../platform/log';
 
 type ChangeKind = 'model' | 'params' | 'artwork' | 'scene' | 'camera' | 'export';
 type ChangeSource = 'ui' | 'stage' | 'history' | 'project' | 'init' | 'document';
-
-/** modelId -> slotId -> artwork */
-export type ArtworkMap = Record<string, Record<string, Artwork>>;
-
-/** The state of one document (an open project). */
-export interface DocumentState {
-  modelId: string;
-  /** modelId -> param values (may be partial – always complete with defaults before use) */
-  params: Record<string, ParamValues>;
-  artwork: ArtworkMap;
-  scene: SceneSettings;
-  export: ExportSettings;
-}
 
 export interface ChangeEvent {
   kinds: ReadonlySet<ChangeKind>;
@@ -227,8 +214,6 @@ export class Store {
       this.burstTimer = null;
     }
   }
-
-  /* ---------------------------------------------------------------- */
 
   private checkpoint(): void {
     if (this.burstTimer === null) {

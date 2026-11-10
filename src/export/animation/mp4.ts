@@ -5,6 +5,7 @@
  * Availability: Chromium / WebView2 and Safari 16.4+ (macOS 13.3+). On older WebKit (macOS 12)
  * there is no VideoEncoder – the UI hides MP4 and explains why.
  */
+import { mp4EncodingAvailable } from '../formats';
 
 /** Bits per pixel per frame for the quality presets (≈ 7.5 Mbit/s for 1080p30 at 'medium'). */
 const BPP: Record<'low' | 'medium' | 'high', number> = { low: 0.06, medium: 0.12, high: 0.22 };
@@ -21,13 +22,6 @@ const LEVELS: [number, number, number][] = [
 ];
 /** profile_idc + constraint flags: High, Main, Constrained Baseline, Baseline. */
 const PROFILES = ['6400', '4d00', '42e0', '4200'];
-
-/** Is WebCodecs video encoding present at all? (Config support is checked per export.) */
-export function mp4EncodingAvailable(): boolean {
-  return (
-    typeof VideoEncoder === 'function' && typeof VideoFrame === 'function' && typeof EncodedVideoChunk === 'function'
-  );
-}
 
 function bitrateFor(width: number, height: number, fps: number, quality: 'low' | 'medium' | 'high'): number {
   const bps = width * height * fps * (BPP[quality] ?? BPP.medium);

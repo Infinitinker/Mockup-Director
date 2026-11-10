@@ -34,17 +34,21 @@ import { getPlaceholderTexture } from '../core/placeholder';
 import { IMAGE_ACCEPT, disposeArtwork, loadImageFile } from '../core/images';
 import { getModel } from '../models/registry';
 import { pickFiles, saveBlob } from '../platform/files';
-import { slugify } from '../export/exporter';
+import { exportImage } from '../export/exporter';
+import { extensionFor, IMAGE_FORMAT_LABEL, supportsWebpEncoding } from '../export/formats';
+import { slugify, zipFileName } from '../export/fileNames';
 import { ZipLimitError, ZipWriter } from '../export/zip';
-import { VIEW_PRESETS, type AppContext } from './context';
-import { append, errorMessage, h, logShownError, nextFrame, nextId, type Child } from './dom';
+import type { AppContext } from './context';
+import { VIEW_PRESETS } from '../scene/views';
+import { append, h, nextFrame, nextId, type Child } from './dom';
+import { errorMessage, logShownError } from './errors';
 import { safeStorage } from '../platform/storage';
 import { ICONS } from './icons';
 import { segmentedControl, selectControl } from './controls';
-import { completeParams, slotFor } from './modelUtils';
-import { exportBlob, extensionFor, IMAGE_FORMAT_LABEL, webpEncodingSupported } from './exportBridge';
-import { PROJECT_EXT, hydrateProject, isProjectFileName, projectWarning, readProjectFile } from './project';
-import { disposeArtworkMap } from './state';
+import { completeParams } from '../models/params';
+import { slotFor } from '../models/slots';
+import { PROJECT_EXT, hydrateProject, isProjectFileName, projectWarning, readProjectFile } from '../project/format';
+import { disposeArtworkMap } from '../documents/store';
 import { notify } from './toast';
 
 /** Implemented by app.ts: exclusive access to the stage for the duration of a batch. */
@@ -125,8 +129,8 @@ function buildModel(
 async function renderStill(stage: StageAPI, settings: ExportSettings, scene: SceneSettings): Promise<RenderedItem> {
   stage.applySettings(scene);
   const s: ExportSettings = { ...settings };
-  if (s.format === 'webp' && !webpEncodingSupported()) s.format = 'png';
-  const blob = await exportBlob(stage, s, { ...scene.background });
+  if (s.format === 'webp' && !supportsWebpEncoding()) s.format = 'png';
+  const blob = await exportImage(stage, s, { ...scene.background });
   if (!blob || blob.size === 0)
     throw new UserError('The rendered image is empty. Export it again, or reduce the export size.');
   return { blob, format: s.format };
@@ -259,17 +263,11 @@ function addUnique(list: File[], files: File[]): File[] {
 
 /** "1600 × 1600 px · PNG · transparent background" – mirrors the Export panel summary. */
 function settingsSummary(e: ExportSettings): string {
-  const format = e.format === 'webp' && !webpEncodingSupported() ? 'png' : e.format;
+  const format = e.format === 'webp' && !supportsWebpEncoding() ? 'png' : e.format;
   const fmt = IMAGE_FORMAT_LABEL[format];
   const transparent = e.background === 'transparent' && format !== 'jpeg';
   const size = e.sizing === 'trim' ? `up to ${e.width} × ${e.height} px (trimmed)` : `${e.width} × ${e.height} px`;
   return `${size} · ${fmt} · ${transparent ? 'transparent background' : 'with background'}`;
-}
-
-/** Suggested archive name, e.g. mockup-director-batch-2026-11-05-1530.zip (local time). */
-function zipFileName(date: Date = new Date()): string {
-  const p = (n: number) => String(n).padStart(2, '0');
-  return `mockup-director-batch-${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())}-${p(date.getHours())}${p(date.getMinutes())}.zip`;
 }
 
 /** Default slot in "many images" mode: the remembered one, else 'front' when present, else the first slot. */

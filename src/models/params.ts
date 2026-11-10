@@ -1,11 +1,48 @@
 /**
- * Helpers around ModelDefinition used by the UI: parameter validation/completion,
- * template resolution and aspect-ratio checks.
+ * Model parameters: defining them (`mmParam`), reading their values in a build (`num`, `bool`,
+ * `str`), and the app's side of the contract that validates and completes stored values and snaps
+ * numbers to a parameter's step.
  */
-import type { ImageSlotDef, ModelDefinition, ParamDef, ParamValue, ParamValues, PrintTemplate } from '../core/types';
+import type { ModelDefinition, NumberParamDef, ParamDef, ParamValue, ParamValues } from '../core/types';
 import { defaultParams } from '../core/defaults';
 
 const HEX = /^#[0-9a-f]{6}$/i;
+
+/** Read a numeric param with fallback. */
+export function num(params: ParamValues, id: string, fallback: number): number {
+  const v = params[id];
+  return typeof v === 'number' && Number.isFinite(v) ? v : fallback;
+}
+export function bool(params: ParamValues, id: string, fallback: boolean): boolean {
+  const v = params[id];
+  return typeof v === 'boolean' ? v : fallback;
+}
+export function str(params: ParamValues, id: string, fallback: string): string {
+  const v = params[id];
+  return typeof v === 'string' ? v : fallback;
+}
+
+export function mmParam(
+  id: string,
+  label: string,
+  def: number,
+  min: number,
+  max: number,
+  step = 1,
+  group?: string,
+): NumberParamDef {
+  return {
+    id,
+    label,
+    type: 'number',
+    min,
+    max,
+    step,
+    default: def,
+    unit: 'mm',
+    ...(group === undefined ? {} : { group }),
+  };
+}
 
 /** Validate one param value against its definition. Returns undefined when invalid. */
 export function sanitizeParam(def: ParamDef, v: unknown): ParamValue | undefined {
@@ -46,48 +83,6 @@ export function inheritedParams(model: ModelDefinition, prev: ParamValues): Para
     if (v !== undefined) out[p.id] = v;
   }
   return out;
-}
-
-/** The slot definition, or a neutral fallback for an unknown id (models may ask for any id). */
-export function slotFor(model: ModelDefinition, slotId: string): ImageSlotDef {
-  // The id stands in for the label.
-  return model.slots.find((s) => s.id === slotId) ?? { id: slotId, label: slotId, aspect: 1 };
-}
-
-export function resolveTemplate(slot: ImageSlotDef, params: ParamValues): PrintTemplate | null {
-  const t = slot.template;
-  if (!t) return null;
-  try {
-    const r = typeof t === 'function' ? t(params) : t;
-    if (!r || !(r.widthMm > 0) || !(r.heightMm > 0)) return null;
-    return r;
-  } catch {
-    return null;
-  }
-}
-
-/** Acceptable artwork aspect ratios for a slot: the slot's aspect and (if any) the full template incl. bleed. */
-export function expectedAspects(slot: ImageSlotDef, params: ParamValues): number[] {
-  if (slot.anyAspect) return [];
-  const list: number[] = [];
-  if (slot.aspect > 0 && Number.isFinite(slot.aspect)) list.push(slot.aspect);
-  const t = resolveTemplate(slot, params);
-  if (t) {
-    list.push(t.widthMm / t.heightMm);
-    // Template without bleed (artwork delivered trimmed) is also fine.
-    const b = t.bleedMm ?? 0;
-    if (b > 0 && t.widthMm > 2 * b && t.heightMm > 2 * b) list.push((t.widthMm - 2 * b) / (t.heightMm - 2 * b));
-  }
-  return list;
-}
-
-export const ASPECT_TOLERANCE = 0.03;
-
-/** True when the image's aspect differs from every acceptable aspect by more than 3 %. */
-export function aspectMismatch(width: number, height: number, expected: number[]): boolean {
-  if (!(width > 0 && height > 0) || expected.length === 0) return false;
-  const a = width / height;
-  return expected.every((e) => Math.abs(a / e - 1) > ASPECT_TOLERANCE);
 }
 
 /** Snap to the step grid without floating point noise (0.1 + 0.2 ...). */

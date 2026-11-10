@@ -23,7 +23,10 @@
  */
 import * as THREE from 'three';
 import type { ImageSlotDef, ModelContext, ModelDefinition, ParamDef, ParamValues } from '../core/types';
-import { castShadows, num, placeOnGround, printMaterial, str } from './shared';
+import { clamp } from '../core/math';
+import { castShadows, placeOnGround } from './geometry';
+import { printMaterial } from './materials';
+import { num, str } from './params';
 
 /* ------------------------------------------------------------------ */
 /* Constants / small helpers                                           */
@@ -42,7 +45,6 @@ const OVERLAY_OFFSET = 0.05;
 /** Default content aspect (width / height) without an image. */
 const DEFAULT_ASPECT = 16 / 10;
 
-const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 const DEG = Math.PI / 180;
 
 /** Aspect ratio of the user's image in a slot (the placeholder / missing image -> fallback). */

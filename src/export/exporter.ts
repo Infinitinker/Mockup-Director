@@ -18,6 +18,7 @@ import { UserError } from '../core/errors';
 import { clampInt, findAlphaBounds, fitInside, supersampleSize, type PixelRect } from './layout';
 import { isJpeg, isPng, setJpegDensity, setPngPhys } from './png';
 import { paintBackground as paintSceneBackground } from '../scene/background';
+import { supportsWebpEncoding } from './formats';
 
 /** Print resolution written into exported files (Photoshop shows a sensible print size). */
 const EXPORT_DPI = 300;
@@ -40,7 +41,7 @@ const ALPHA_THRESHOLD = 5;
  * @param background The scene's preview background (SceneSettings.background), painted when
  *   settings.background === 'scene'.
  * @throws UserError when the image cannot be rendered or encoded, WebP included where this engine cannot
- *   encode it (see supportsWebpEncoding()).
+ *   encode it (see supportsWebpEncoding() in formats.ts).
  */
 export async function exportImage(
   stage: StageAPI,
@@ -103,32 +104,12 @@ export async function exportImage(
   return blob;
 }
 
-export function extensionFor(format: ExportFormat): string {
-  return format === 'jpeg' ? 'jpg' : format;
-}
-
 function mimeFor(format: ExportFormat): string {
   return format === 'jpeg' ? 'image/jpeg' : `image/${format}`;
 }
 
-let webpSupport: boolean | null = null;
 /** What the user sees when this engine cannot encode a WebP image. */
 export const WEBP_IMAGE_UNSUPPORTED = 'This system cannot encode WebP images. Choose PNG or JPEG.';
-
-/**
- * Can this engine ENCODE WebP from a canvas? (Chrome/Edge/Firefox: yes; Safari / WKWebView: no –
- * toBlob silently returns PNG.) The UI should hide or disable the WebP option when false.
- */
-export function supportsWebpEncoding(): boolean {
-  if (webpSupport !== null) return webpSupport;
-  try {
-    const c = createCanvas(2, 2);
-    webpSupport = c.toDataURL('image/webp').startsWith('data:image/webp');
-  } catch {
-    webpSupport = false;
-  }
-  return webpSupport;
-}
 
 /** Return a PNG blob with a pHYs chunk set to `dpi`. Non-PNG input is returned unchanged. */
 export async function setPngDpi(blob: Blob, dpi: number): Promise<Blob> {
@@ -146,28 +127,6 @@ async function setJpegDpi(blob: Blob, dpi: number): Promise<Blob> {
   const bytes = new Uint8Array(await blob.arrayBuffer());
   if (!isJpeg(bytes)) return blob;
   return new Blob([setJpegDensity(bytes, dpi)], { type: 'image/jpeg' });
-}
-
-/**
- * File name like "mockup-director-dvd-case-2026-11-04-1530.png" (local time).
- * @param date defaults to now
- */
-export function suggestFileName(modelId: string, format: ExportFormat, date: Date = new Date()): string {
-  const p = (n: number) => String(n).padStart(2, '0');
-  const stamp = `${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())}-${p(date.getHours())}${p(date.getMinutes())}`;
-  return `mockup-director-${slugify(modelId) || 'mockup'}-${stamp}.${extensionFor(format)}`;
-}
-
-/** ASCII file-name slug. Polish letters are mapped by hand first (ł has no Unicode decomposition), other accents are stripped. */
-export function slugify(s: string): string {
-  const map: Record<string, string> = { ą: 'a', ć: 'c', ę: 'e', ł: 'l', ń: 'n', ó: 'o', ś: 's', ź: 'z', ż: 'z' };
-  return s
-    .toLowerCase()
-    .replace(/[ąćęłńóśźż]/g, (c) => map[c] ?? c)
-    .normalize('NFKD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
 }
 
 /**

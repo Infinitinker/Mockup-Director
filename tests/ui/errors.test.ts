@@ -4,8 +4,8 @@
  */
 import { describe, expect, it } from 'vitest';
 import { UserError } from '../../src/core/errors';
-import { LooksError } from '../../src/ui/looks';
-import { errorMessage } from '../../src/ui/dom';
+import { LooksError } from '../../src/project/looks';
+import { errorMessage } from '../../src/ui/errors';
 
 const unexpected = (detail: string): string =>
   `Something unexpected went wrong: ${detail}. If it keeps happening, report it at github.com/Infinitinker/Mockup-Director/issues.`;

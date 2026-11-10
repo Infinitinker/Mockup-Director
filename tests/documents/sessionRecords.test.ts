@@ -4,7 +4,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { UserError } from '../../src/core/errors';
-import { toProjectFile } from '../../src/ui/project';
+import { toProjectFile } from '../../src/project/format';
 import {
   buildIndex,
   COPY_UNWRITABLE,
@@ -19,7 +19,7 @@ import {
   tabIdOf,
   unopenedFileName,
   unopenedFileText,
-} from '../../src/ui/sessionRecords';
+} from '../../src/documents/sessionRecords';
 import { documentState } from '../fixtures';
 
 const file = toProjectFile(documentState('box'));

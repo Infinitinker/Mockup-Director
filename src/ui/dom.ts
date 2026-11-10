@@ -1,8 +1,7 @@
 /**
  * Tiny DOM helpers – the UI is vanilla TS, so this keeps element creation readable.
  */
-import { UserError } from '../core/errors';
-import { log } from '../platform/log';
+import { isMac } from '../platform/os';
 
 export type Child = Node | string | number | null | undefined | false;
 
@@ -126,50 +125,10 @@ export class Signal<T> {
   }
 }
 
-/**
- * What the interface says about an error: a UserError's own message; for anything else (a bug, a
- * failure of the web engine, a value that is not an Error) a general message with the raw text as
- * detail. Written to follow the title of an error toast.
- */
-export function errorMessage(e: unknown): string {
-  if (e instanceof UserError) return e.message;
-  let raw: string;
-  if (e instanceof Error) raw = e.message || e.name;
-  else if (typeof e === 'string') raw = e;
-  else {
-    try {
-      raw = JSON.stringify(e) ?? String(e);
-    } catch {
-      raw = String(e);
-    }
-  }
-  const detail = raw.trim().replace(/\.+$/, '');
-  return `Something unexpected went wrong${detail ? `: ${detail}` : ''}. If it keeps happening, report it at github.com/Infinitinker/Mockup-Director/issues.`;
-}
-
-/**
- * Logs an error the interface shows, under a short title naming what failed (usually the title it is
- * shown with): a UserError as a warning (the user was told what to do), anything else as an error.
- */
-export function logShownError(title: string, e: unknown): void {
-  if (e instanceof UserError) log.warn(title, e);
-  else log.error(title, e);
-}
-
-export const isMac: boolean = /Mac|iPhone|iPad|iPod/i.test(
-  (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData?.platform ||
-    navigator.platform ||
-    navigator.userAgent,
-);
-
 /** Human-readable shortcut label: ⌘S on macOS, Ctrl+S elsewhere. */
 export function shortcutLabel(key: string, shift = false): string {
   if (isMac) return `${shift ? '⇧' : ''}⌘${key}`;
   return `Ctrl+${shift ? 'Shift+' : ''}${key}`;
-}
-
-export function clamp(v: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, v));
 }
 
 /** True when keyboard focus is in a text-editing control. */

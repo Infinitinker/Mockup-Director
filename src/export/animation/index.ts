@@ -14,15 +14,15 @@
 import type { AnimationFormat, AnimationSettings, BackgroundSettings, StageAPI } from '../../core/types';
 import { UserError } from '../../core/errors';
 import { paintBackground } from '../exporter';
+import { animationFormatSupport } from '../formats';
 import { AnimationCanceled, MP4_SIZE_UNSUPPORTED, MP4_UNSUPPORTED, WEBP_ANIMATION_UNSUPPORTED } from './errors';
 import { GifAnimationEncoder } from './gif';
 import { AnimatedWebpWriter } from './webp';
-import { Mp4Writer, mp4EncodingAvailable } from './mp4';
+import { Mp4Writer } from './mp4';
 import { normalizeAnimationSettings, outputSizeOf } from './settings';
 import { frameDelays, turntableAngles } from './turntable';
 
 export { MP4_UNSUPPORTED, WEBP_ANIMATION_UNSUPPORTED, isAnimationCanceled } from './errors';
-export { mp4EncodingAvailable } from './mp4';
 
 type AnimationPhase = 'prepare' | 'palette' | 'frames' | 'finalize';
 
@@ -37,8 +37,6 @@ export interface AnimationProgress {
 interface AnimationExportOptions {
   /** Scene preview background (used for background 'scene'). */
   background: BackgroundSettings;
-  /** Can the engine encode WebP stills? (supportsWebpEncoding() from ../exporter). */
-  webpSupported: boolean;
   onProgress?: (p: AnimationProgress) => void;
   signal?: AbortSignal;
 }
@@ -58,19 +56,13 @@ const PALETTE_SAMPLES = 8;
 
 const QUALITY_WEBP: Record<AnimationSettings['quality'], number> = { low: 0.6, medium: 0.8, high: 0.92 };
 
-/** Save-dialog filter for an animation format. */
-export function animationFileFilter(format: AnimationFormat): { name: string; extensions: string[] } {
-  const names: Record<AnimationFormat, string> = { gif: 'GIF', webp: 'WebP', mp4: 'MP4' };
-  return { name: names[format], extensions: [format] };
-}
-
 /** Render and encode the turntable animation of the current stage. */
 export async function exportAnimation(
   stage: StageAPI,
   raw: AnimationSettings,
   opts: AnimationExportOptions,
 ): Promise<AnimationResult> {
-  const s = normalizeAnimationSettings(raw, { webp: opts.webpSupported, mp4: mp4EncodingAvailable() });
+  const s = normalizeAnimationSettings(raw, animationFormatSupport());
   if (s.format !== raw.format) {
     throw raw.format === 'webp' ? new UserError(WEBP_ANIMATION_UNSUPPORTED) : new UserError(MP4_UNSUPPORTED);
   }

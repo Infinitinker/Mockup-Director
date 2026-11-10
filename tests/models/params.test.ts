@@ -1,34 +1,29 @@
 /**
- * Tests the model helpers in src/ui/modelUtils.ts: validating and completing parameter values,
- * the params carried over to another model, slot lookup, print template resolution, the acceptable artwork aspect ratios and the mismatch
- * check, and snapping values to a parameter's step.
+ * Tests the model parameter helpers in src/models/params.ts: reading values in a build, the
+ * millimeter parameter, validating and completing parameter values, the params carried over to
+ * another model, and snapping values to a parameter's step.
  */
 import { describe, expect, it } from 'vitest';
 import { defaultParams } from '../../src/core/defaults';
 import type {
   BooleanParamDef,
   ColorParamDef,
-  ImageSlotDef,
   NumberParamDef,
   ParamDef,
   ParamValues,
-  PrintTemplate,
   SelectParamDef,
 } from '../../src/core/types';
 import { MODELS, getModel } from '../../src/models/registry';
-import { parseProjectFile, toProjectFile } from '../../src/ui/project';
-import { documentState } from '../fixtures';
 import {
-  ASPECT_TOLERANCE,
-  aspectMismatch,
+  bool,
   completeParams,
-  expectedAspects,
   inheritedParams,
-  resolveTemplate,
+  mmParam,
+  num,
   sanitizeParam,
-  slotFor,
   snapToStep,
-} from '../../src/ui/modelUtils';
+  str,
+} from '../../src/models/params';
 import { seededRandom } from '../random';
 
 const NUMBER: NumberParamDef = {
@@ -74,11 +69,39 @@ const JUNK: unknown[] = [
   [],
 ];
 
-const slot = (overrides: Partial<ImageSlotDef> = {}): ImageSlotDef => ({
-  id: 'front',
-  label: 'Front',
-  aspect: 0.5,
-  ...overrides,
+describe('num, bool and str', () => {
+  const params: ParamValues = { width: 12.5, gloss: false, finish: 'matte', nan: Number.NaN };
+
+  it('read a value of their type', () => {
+    expect(num(params, 'width', 1)).toBe(12.5);
+    expect(bool(params, 'gloss', true)).toBe(false);
+    expect(str(params, 'finish', 'glossy')).toBe('matte');
+  });
+
+  it('give the fallback for a missing value, a value of another type or a number that is not finite', () => {
+    expect(num(params, 'missing', 7)).toBe(7);
+    expect(num(params, 'finish', 7)).toBe(7);
+    expect(num(params, 'nan', 7)).toBe(7);
+    expect(bool(params, 'width', true)).toBe(true);
+    expect(str(params, 'gloss', 'glossy')).toBe('glossy');
+  });
+});
+
+describe('mmParam', () => {
+  it('makes a number parameter in millimeters, with a group only when one is given', () => {
+    expect(mmParam('width', 'Width', 100, 10, 500)).toEqual({
+      id: 'width',
+      label: 'Width',
+      type: 'number',
+      min: 10,
+      max: 500,
+      step: 1,
+      default: 100,
+      unit: 'mm',
+    });
+    expect(mmParam('width', 'Width', 100, 10, 500, 0.5, 'Size')).toMatchObject({ step: 0.5, group: 'Size' });
+    expect(mmParam('width', 'Width', 100, 10, 500)).not.toHaveProperty('group');
+  });
 });
 
 describe('sanitizeParam', () => {
@@ -186,106 +209,6 @@ function validValue(def: ParamDef, t: number): unknown {
   }
 }
 
-describe('slotFor', () => {
-  it('finds the slot of the model by its id', () => {
-    for (const model of MODELS) {
-      for (const s of model.slots) expect(slotFor(model, s.id)).toBe(s);
-    }
-  });
-
-  it('gives a square slot with the asked id when the model has none', () => {
-    const fallback = slotFor(MODELS[0], 'no-such-slot');
-    expect(fallback.id).toBe('no-such-slot');
-    expect(fallback.aspect).toBe(1);
-    expect(fallback.template).toBeUndefined();
-  });
-});
-
-describe('resolveTemplate', () => {
-  const template: PrintTemplate = { widthMm: 210, heightMm: 297 };
-
-  it('returns a fixed template or the one a function makes from the parameters', () => {
-    expect(resolveTemplate(slot({ template }), {})).toBe(template);
-    const made = resolveTemplate(slot({ template: (params) => ({ widthMm: Number(params.width), heightMm: 100 }) }), {
-      width: 42,
-    });
-    expect(made).toEqual({ widthMm: 42, heightMm: 100 });
-  });
-
-  it('gives null without a template, for a template without area and when the function throws', () => {
-    expect(resolveTemplate(slot(), {})).toBeNull();
-    expect(resolveTemplate(slot({ template: { widthMm: 0, heightMm: 10 } }), {})).toBeNull();
-    expect(resolveTemplate(slot({ template: { widthMm: 10, heightMm: -1 } }), {})).toBeNull();
-    expect(resolveTemplate(slot({ template: { widthMm: Number.NaN, heightMm: 10 } }), {})).toBeNull();
-    expect(
-      resolveTemplate(
-        slot({
-          template: () => {
-            throw new Error('broken template');
-          },
-        }),
-        {},
-      ),
-    ).toBeNull();
-  });
-
-  it('resolves the templates of every model at the defaults to a positive size', () => {
-    for (const model of MODELS) {
-      const params = defaultParams(model);
-      for (const s of model.slots) {
-        if (!s.template) continue;
-        const t = resolveTemplate(s, params);
-        expect(t, `${model.id}/${s.id}`).not.toBeNull();
-        expect(t?.widthMm).toBeGreaterThan(0);
-        expect(t?.heightMm).toBeGreaterThan(0);
-      }
-    }
-  });
-});
-
-describe('expectedAspects', () => {
-  it('accepts any aspect ratio for slots that say so', () => {
-    expect(expectedAspects(slot({ anyAspect: true, template: { widthMm: 100, heightMm: 50 } }), {})).toEqual([]);
-  });
-
-  it('lists the slot aspect ratio, then the template with and without bleed', () => {
-    expect(expectedAspects(slot(), {})).toEqual([0.5]);
-    expect(expectedAspects(slot({ template: { widthMm: 100, heightMm: 50 } }), {})).toEqual([0.5, 2]);
-    expect(expectedAspects(slot({ template: { widthMm: 106, heightMm: 56, bleedMm: 3 } }), {})).toEqual([
-      0.5,
-      106 / 56,
-      2,
-    ]);
-  });
-
-  it('leaves out an invalid slot aspect ratio and a bleed that would leave nothing', () => {
-    expect(expectedAspects(slot({ aspect: 0 }), {})).toEqual([]);
-    expect(expectedAspects(slot({ aspect: Number.POSITIVE_INFINITY }), {})).toEqual([]);
-    expect(expectedAspects(slot({ aspect: 0, template: { widthMm: 10, heightMm: 40, bleedMm: 5 } }), {})).toEqual([
-      0.25,
-    ]);
-  });
-});
-
-describe('aspectMismatch', () => {
-  it('allows the tolerance around any of the expected aspect ratios', () => {
-    expect(ASPECT_TOLERANCE).toBe(0.03);
-    expect(aspectMismatch(1000, 1000, [1])).toBe(false);
-    expect(aspectMismatch(1029, 1000, [1])).toBe(false);
-    expect(aspectMismatch(1031, 1000, [1])).toBe(true);
-    expect(aspectMismatch(971, 1000, [1])).toBe(false);
-    expect(aspectMismatch(969, 1000, [1])).toBe(true);
-    expect(aspectMismatch(2000, 1000, [1, 2])).toBe(false);
-  });
-
-  it('never complains without expected aspect ratios or without a size', () => {
-    expect(aspectMismatch(123, 7, [])).toBe(false);
-    expect(aspectMismatch(0, 100, [1])).toBe(false);
-    expect(aspectMismatch(100, 0, [1])).toBe(false);
-    expect(aspectMismatch(Number.NaN, 100, [1])).toBe(false);
-  });
-});
-
 describe('snapToStep', () => {
   it('snaps without floating-point noise', () => {
     expect(snapToStep(0.30000000000000004, 0.1, 0, 1)).toBe(0.3);
@@ -340,11 +263,6 @@ describe('inheritedParams', () => {
       const def = monitor.params.find((p) => p.id === id);
       expect(def && sanitizeParam(def, v)).toBe(v);
     }
-
-    const state = documentState(monitor.id);
-    state.params = { [laptop.id]: prev, [monitor.id]: inherited };
-    const { report } = parseProjectFile(JSON.parse(JSON.stringify(toProjectFile(state))));
-    expect(report).toEqual({ settings: 0, artwork: 0 });
   });
 
   it('leaves out the params the new model does not have', () => {

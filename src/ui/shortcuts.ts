@@ -5,8 +5,10 @@
  *  Next / previous tab: Ctrl+Tab / Ctrl+Shift+Tab and Ctrl+PageDown / Ctrl+PageUp everywhere (also on
  *  macOS, like its browsers), plus ⇧⌘] / ⇧⌘[ on macOS.
  */
-import { isMac, isTextEditing } from './dom';
-import { VIEW_PRESETS, type AppContext } from './context';
+import { isTextEditing } from './dom';
+import { isMac } from '../platform/os';
+import type { AppContext } from './context';
+import { VIEW_PRESETS } from '../scene/views';
 
 export function installShortcuts(ctx: AppContext): () => void {
   const onKey = (e: KeyboardEvent) => {

@@ -5,7 +5,7 @@ import { h } from './dom';
 import type { AppContext } from './context';
 import { MODELS } from '../models/registry';
 import type { ModelCategory } from '../core/types';
-import { hasAny } from './state';
+import { hasAny } from '../documents/store';
 
 const CATEGORY_ORDER: ModelCategory[] = ['box', 'disc', 'book', 'print', 'device'];
 

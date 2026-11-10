@@ -40,7 +40,10 @@ import type {
   TemplateGuide,
   TemplateRegion,
 } from '../core/types';
-import { castShadows, mmParam, num, placeOnGround, printMaterial, round1, str } from './shared';
+import { clamp, round1 } from '../core/math';
+import { castShadows, placeOnGround } from './geometry';
+import { printMaterial } from './materials';
+import { mmParam, num, str } from './params';
 
 /* ------------------------------------------------------------------ */
 /* Constants / small helpers                                           */
@@ -60,7 +63,6 @@ const G_POSE = 'Pose';
 const TRIM = 'Trim line';
 const FOLD = 'Fold line (crease)';
 
-const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 const deg = THREE.MathUtils.degToRad;
 
 /* ------------------------------------------------------------------ */

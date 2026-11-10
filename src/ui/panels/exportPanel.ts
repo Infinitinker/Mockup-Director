@@ -16,17 +16,13 @@ import {
 } from '../../core/defaults';
 import type { AppContext } from '../context';
 import { formatNumber } from '../numbers';
-import { clamp, h, nextId, shortcutLabel } from '../dom';
+import { clamp } from '../../core/math';
+import { h, nextId, shortcutLabel } from '../dom';
 import { safeStorage } from '../../platform/storage';
 import { ICONS } from '../icons';
 import { numberControl, section, segmentedControl, selectControl, switchControl, type Control } from '../controls';
-import { hasAny } from '../state';
-import {
-  animationFormatSupport,
-  IMAGE_FORMAT_LABEL,
-  webpEncodingSupported,
-  type AnimationProgress,
-} from '../exportBridge';
+import { hasAny } from '../../documents/store';
+import { animationFormatSupport, IMAGE_FORMAT_LABEL, supportsWebpEncoding } from '../../export/formats';
 import {
   defaultFpsFor,
   frameCountOf,
@@ -35,7 +31,7 @@ import {
   maxSizeFor,
   outputSizeOf,
 } from '../../export/animation/settings';
-import { MP4_UNSUPPORTED, WEBP_ANIMATION_UNSUPPORTED } from '../../export/animation';
+import { MP4_UNSUPPORTED, WEBP_ANIMATION_UNSUPPORTED, type AnimationProgress } from '../../export/animation';
 import { WEBP_IMAGE_UNSUPPORTED } from '../../export/exporter';
 
 const SIZE_PRESETS = [800, 1200, 1600, 2000, 3000, 4000];
@@ -278,7 +274,7 @@ export function createExportPanel(ctx: AppContext): { el: HTMLElement } {
     ]);
 
     /* Format ------------------------------------------------------- */
-    const webp = webpEncodingSupported();
+    const webp = supportsWebpEncoding();
     const format = add(
       segmentedControl<ExportFormat>({
         label: 'Format',

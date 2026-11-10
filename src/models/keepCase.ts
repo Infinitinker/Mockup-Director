@@ -22,7 +22,9 @@
 import * as THREE from 'three';
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { ImageSlotDef, ModelContext, ModelDefinition, ParamDef, ParamValues, PrintTemplate } from '../core/types';
-import { bool, clearPlastic, num, printMaterial, round1, str } from './shared';
+import { clamp, round1 } from '../core/math';
+import { clearPlastic, printMaterial } from './materials';
+import { bool, num, str } from './params';
 
 type KeepCaseVariant = 'dvd' | 'bluray';
 
@@ -111,8 +113,6 @@ const FINISH_ROUGHNESS: Record<string, number> = { glossy: 0.3, satin: 0.5, matt
 /* ------------------------------------------------------------------ */
 /* Small numeric helpers                                               */
 /* ------------------------------------------------------------------ */
-
-const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
 /** Case thickness (= insert spine width) in mm for the given params. */
 function thicknessOf(params: ParamValues, variant: KeepCaseVariant): number {

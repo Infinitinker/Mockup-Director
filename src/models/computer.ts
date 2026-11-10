@@ -22,13 +22,13 @@
 import * as THREE from 'three';
 import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { ModelContext, ModelDefinition, ParamDef, ParamValues } from '../core/types';
-import { bool, castShadows, num, placeOnGround, remapUVs, str } from './shared';
+import { clamp } from '../core/math';
+import { castShadows, placeOnGround, remapUVs } from './geometry';
+import { bool, num, str } from './params';
 
 /* ------------------------------------------------------------------ */
 /* Small helpers                                                       */
 /* ------------------------------------------------------------------ */
-
-const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
 /**
  * Marks a material as a thin decal lying a few hundredths of a mm over another surface: a

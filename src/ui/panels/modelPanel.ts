@@ -16,7 +16,7 @@ import {
   switchControl,
   type Control,
 } from '../controls';
-import { completeParams, snapToStep } from '../modelUtils';
+import { completeParams, snapToStep } from '../../models/params';
 
 const UNIT_LABEL: Record<string, string> = { mm: 'mm', deg: '°', '%': '%', '': '' };
 
