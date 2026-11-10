@@ -19,6 +19,7 @@ let nextRowId = 0;
 const REASON_TEXT: Record<UnopenedTab['reason'], string> = {
   newer: 'From a newer Mockup Director',
   damaged: 'Damaged',
+  interrupted: 'Mockup Director closed while reopening it',
 };
 
 /** Why the copy was not reopened, and when it was stored if its record says. */
@@ -153,7 +154,7 @@ export function openRecoveryDialog(copies: readonly UnopenedTab[], forget: Forge
   return panelDialog({
     title: 'Some projects that were open could not be reopened',
     message:
-      'Mockup Director keeps a copy of each. Save a copy to a file to keep it, or delete it. The copies you leave are kept and offered again at the next start, and the ones from a newer Mockup Director open once you update it.',
+      'Mockup Director keeps a copy of each. Save a copy to a file to keep it, or delete it. The copies you leave are kept and offered again at the next start. The ones from a newer Mockup Director open once you update it. To open one that Mockup Director closed while reopening, save it to a file, then open the file.',
     body: h('ul', { class: 'recovery-list' }, ...copies.map((c) => copyRow(c, forget))),
     closeLabel: 'Close',
     className: 'dialog-recovery',

@@ -242,6 +242,39 @@ describe('readSession', () => {
     expect(errorOf(() => readSession({ version: SESSION_VERSION + 1 }, records)).message).toBe(SESSION_NEWER);
   });
 
+  it('keeps the held tabs unopened, with their records as stored, and restores the others', () => {
+    const held = new Set(['b', 'late', 'n', 'gone']);
+    const loaded = readSession(
+      index('b', 'a', 'b', 'n'),
+      new Map<string, unknown>([
+        ['a', record],
+        ['b', storedAt(7)],
+        ['n', newerRecord],
+        ['late', storedAt(30)],
+        ['early', storedAt(10)],
+      ]),
+      held,
+    );
+    if (!loaded) throw new Error('nothing was read');
+    expect(loaded.session.tabs.map((t) => [t.id, t.name, t.dirty])).toEqual([
+      ['a', 'A', false],
+      ['early', '', true],
+    ]);
+    expect(loaded.session.activeId).toBe('a');
+    expect(loaded.unopened).toEqual([
+      { ...entry('b', 'B'), reason: 'interrupted', savedAt: 7, record: storedAt(7) },
+      { ...entry('n', 'N'), reason: 'newer', savedAt: 1, record: newerRecord },
+      { ...entry('late', '', true), reason: 'interrupted', savedAt: 30, record: storedAt(30) },
+    ]);
+    expect(loaded).toMatchObject({ recovered: 1, missing: 0 });
+  });
+
+  it('shows no tab when every tab is held', () => {
+    const loaded = readSession(index('a', 'a'), new Map([['a', record]]), new Set(['a']));
+    expect(loaded?.session).toEqual({ activeId: '', tabs: [] });
+    expect(loaded?.unopened.map((t) => [t.id, t.reason])).toEqual([['a', 'interrupted']]);
+  });
+
   it('shows no tab when none is restored', () => {
     const empty = read(index('a', 'a'), [['a', newerRecord]]);
     expect(empty.session).toEqual({ activeId: '', tabs: [] });

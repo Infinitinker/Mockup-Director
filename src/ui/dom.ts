@@ -80,6 +80,14 @@ export function nextFrame(): Promise<void> {
   });
 }
 
+/**
+ * Wait for the next animation frame, without a fallback: the engines pause animation frames while the
+ * window is hidden (minimized or covered), so this waits until the window is shown and drawn again.
+ */
+export function paintedFrame(): Promise<void> {
+  return new Promise((resolve) => requestAnimationFrame(() => resolve()));
+}
+
 /** Work coalesced to one run per animation frame: `schedule` asks for a run, `flush` runs a pending one now. */
 export interface Coalescer {
   schedule(): void;

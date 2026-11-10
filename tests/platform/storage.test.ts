@@ -1,5 +1,5 @@
 /**
- * Tests safeStorage in src/platform/storage.ts with a fake localStorage: it reads and writes
+ * Tests safeStorage in src/platform/storage.ts with a fake localStorage: it reads, writes and removes
  * values, never throws, reports a value that could not be written, and logs the first failure per key.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -14,6 +14,9 @@ function fakeLocalStorage(): { items: Map<string, string>; full: boolean } {
       setItem: (key: string, value: string) => {
         if (fake.full) throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
         fake.items.set(key, value);
+      },
+      removeItem: (key: string) => {
+        fake.items.delete(key);
       },
     },
   });
@@ -33,6 +36,14 @@ describe('safeStorage', () => {
     expect(safeStorage.get('mockup-director.missing')).toBeNull();
   });
 
+  it('removes a value', () => {
+    const fake = fakeLocalStorage();
+    safeStorage.set('mockup-director.test', 'value');
+    expect(safeStorage.remove('mockup-director.test')).toBe(true);
+    expect(fake.items.has('mockup-director.test')).toBe(false);
+    expect(safeStorage.remove('mockup-director.missing')).toBe(true);
+  });
+
   it('reports a value that could not be written because storage is full', () => {
     const fake = fakeLocalStorage();
     fake.full = true;
@@ -44,6 +55,7 @@ describe('safeStorage', () => {
     vi.stubGlobal('window', {});
     expect(safeStorage.get('mockup-director.test')).toBeNull();
     expect(safeStorage.set('mockup-director.test', 'value')).toBe(false);
+    expect(safeStorage.remove('mockup-director.test')).toBe(false);
   });
 
   it('logs the first failure for each key, without the value', () => {

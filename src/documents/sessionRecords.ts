@@ -11,6 +11,9 @@
  *   or damaged) is an unopened entry: every index the app writes lists it after the open tabs, also the
  *   last one written when the app closes, and its record is deleted only when the user saved it to a
  *   file or deleted it in the recovery dialog (ui/dialogs/recovery.ts). Until then the dialog comes at every start.
+ * - So is a record this app could open but whose restore started at the last start and did not finish
+ *   (held by ./restoreMarker): Mockup Director closed while reopening it, likely because decoding its
+ *   artwork crashed the web engine, so it is not decoded again.
  * - An index entry whose record is missing is dropped, like one without a usable id or with a repeated one.
  * An index from a newer version is not read at all.
  */
@@ -81,10 +84,16 @@ export interface Session {
   tabs: SessionTab[];
 }
 
-/** Why the copy of an unopened entry could not be opened: it comes from a newer version (or has a model this build does not have), or it is damaged. */
-export type UnopenedReason = 'newer' | 'damaged';
+/**
+ * Why the copy of an unopened entry is not opened: it comes from a newer version (or has a model this
+ * build does not have), it is damaged, or the app closed while reopening it at the last start.
+ */
+export type UnopenedReason = 'newer' | 'damaged' | 'interrupted';
 
-/** A stored copy this app cannot open: kept until the user saves it to a file or deletes it. */
+/**
+ * A stored copy this app does not open (newer, damaged, or held by the restore marker): kept until the
+ * user saves it to a file or deletes it.
+ */
 export interface UnopenedTab extends IndexTab {
   reason: UnopenedReason;
   /** When the copy was stored, in milliseconds since 1970; null when its record does not say. */
@@ -97,7 +106,7 @@ export interface UnopenedTab extends IndexTab {
 export interface LoadedSession {
   /** The tabs that can be restored; may be empty. */
   session: Session;
-  /** The copies that cannot be opened, in index order, then the orphans: the saver keeps them in the index. */
+  /** The copies that are not opened, in index order, then the orphans: the saver keeps them in the index. */
   unopened: UnopenedTab[];
   /** Restored tabs whose record no index entry pointed to (all of them when the index was damaged). */
   recovered: number;
@@ -170,10 +179,15 @@ function oldestFirst(ids: readonly string[], records: ReadonlyMap<string, unknow
 }
 
 /**
- * What to restore and what to keep, given the stored index (undefined when none is stored) and every
- * tab record by tab id. Null when nothing is stored; throws a UserError for an index from a newer version.
+ * What to restore and what to keep, given the stored index (undefined when none is stored), every tab
+ * record by tab id, and the ids of the tabs whose restore did not finish at the last start (`held`),
+ * which are kept unopened. Null when nothing is stored; throws a UserError for an index from a newer version.
  */
-export function readSession(rawIndex: unknown, records: ReadonlyMap<string, unknown>): LoadedSession | null {
+export function readSession(
+  rawIndex: unknown,
+  records: ReadonlyMap<string, unknown>,
+  held: ReadonlySet<string> = new Set(),
+): LoadedSession | null {
   if (rawIndex === undefined && records.size === 0) return null;
   const read = rawIndex === undefined ? null : readIndex(rawIndex);
   const indexed = read && read !== 'damaged' ? read.index : null;
@@ -181,8 +195,10 @@ export function readSession(rawIndex: unknown, records: ReadonlyMap<string, unkn
   const unopened: UnopenedTab[] = [];
   const add = (entry: IndexTab, raw: unknown): void => {
     const tabRecord = readTabRecord(raw);
-    if ('project' in tabRecord) tabs.push({ ...entry, ...tabRecord.project });
-    else unopened.push({ ...entry, reason: tabRecord.skipped, savedAt: savedAtOf(raw), record: raw });
+    const keep = (reason: UnopenedReason) => unopened.push({ ...entry, reason, savedAt: savedAtOf(raw), record: raw });
+    if (!('project' in tabRecord)) keep(tabRecord.skipped);
+    else if (held.has(entry.id)) keep('interrupted');
+    else tabs.push({ ...entry, ...tabRecord.project });
   };
 
   let missing = 0;

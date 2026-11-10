@@ -61,4 +61,6 @@ export interface KeyValueStorage {
   get(key: string): string | null;
   /** Write `value` under `key`; false when it could not be written. */
   set(key: string, value: string): boolean;
+  /** Remove the value under `key`; false when it could not be removed. */
+  remove(key: string): boolean;
 }

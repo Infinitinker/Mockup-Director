@@ -59,6 +59,10 @@ function fakeStorage(): KeyValueStorage & { items: Map<string, string>; full: bo
       items.set(key, value);
       return true;
     },
+    remove(key) {
+      items.delete(key);
+      return true;
+    },
   };
 }
 

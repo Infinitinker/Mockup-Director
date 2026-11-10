@@ -57,7 +57,7 @@ export class SessionSaver {
   /** Ids of the tab records this saver may delete when their tab is closed. */
   private owned = new Set<string>();
 
-  /** Entries of the restored session whose copy this app cannot open: in every index, their records kept. */
+  /** Entries of the restored session whose copy is not opened (./sessionRecords): in every index, their records kept. */
   private unopened: readonly IndexTab[] = [];
   /**
    * Unopened entry id -> the save that leaves it out of the index and deletes its record. The ids

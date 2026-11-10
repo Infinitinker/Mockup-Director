@@ -1,16 +1,21 @@
 /**
  * Keeps the session: autosaves the open tabs a moment after each change and before the window closes, reopens
- * them at start, and offers the stored copies that could not be opened in the recovery dialog. Autosave stays off
- * until the restore has read the stored tabs.
+ * them at start, and offers the stored copies that were not reopened in the recovery dialog. Autosave stays off
+ * until the restore has read the stored tabs. The tabs being reopened are marked (RestoreMarker) until the active
+ * one has been drawn, so that a crash while reopening them makes the next start offer them as copies instead of
+ * reopening them again; closing the window before then is no crash and takes them out of the marker.
  */
 import type { DocumentState } from '../../core/types/project';
 import { SessionSaver } from '../../documents/session';
 import { indexedDbSessionStore, loadSession } from '../../documents/sessionDb';
+import { RestoreMarker } from '../../documents/restoreMarker';
 import { SESSION_DAMAGED, type UnopenedTab } from '../../documents/sessionRecords';
 import type { Documents } from '../../documents/tabs';
 import { hydrateProject, projectWarning } from '../../project/format';
 import { onWindowClose } from '../../platform/window';
+import { safeStorage } from '../../platform/storage';
 import { openRecoveryDialog } from '../dialogs/recovery';
+import { paintedFrame } from '../dom';
 import { errorMessage, logShownError } from '../errors';
 import { notify } from '../toast';
 import { log } from '../../platform/log';
@@ -30,6 +35,8 @@ export interface SessionKeeper {
 /** Keeps the session of `docs`: autosaves when the tabs change and before the window closes. */
 export function keepSession(docs: Documents): SessionKeeper {
   const session = new SessionSaver(indexedDbSessionStore);
+  /** The stored tabs whose restore did not finish at the last start, and the ones this start reopens. */
+  const marker = new RestoreMarker(safeStorage);
   let restoring = true;
   /**
    * False until the last session is restored, and for the whole run when it could not be: autosave
@@ -45,7 +52,7 @@ export function keepSession(docs: Documents): SessionKeeper {
   let autosaveFailure: string | null = null;
   /** The save in progress (or the last one); the close flush waits for it. Never rejects. */
   let saving: Promise<void> = Promise.resolve();
-  /** The stored copies the restore could not open: the recovery dialog offers them once it is done. */
+  /** The stored copies the restore did not open: the recovery dialog offers them once it is done. */
   let unopened: UnopenedTab[] = [];
 
   const autosaveNow = (): Promise<void> => {
@@ -85,14 +92,19 @@ export function keepSession(docs: Documents): SessionKeeper {
   };
   // Tabs opened, closed, renamed or switched change the session too.
   docs.subscribe(scheduleAutosave);
-  onWindowClose(autosaveNow);
+  onWindowClose(() => {
+    // A restore the window closes during did not crash: the next start reopens its tabs as usual. In a
+    // browser this also runs when the page is hidden, so there a crash after that is not caught.
+    marker.cancel();
+    return autosaveNow();
+  });
 
   /**
    * Removes a copy the user saved to a file or deleted in the recovery dialog from the session, with
    * the open tabs as they are now. Rejects when it stays stored.
    */
   function forgetUnopened(id: string): Promise<void> {
-    const done = session.forget(id, docs.snapshot(), docs.activeId);
+    const done = session.forget(id, docs.snapshot(), docs.activeId).then(() => marker.forget(id));
     // The close flush waits for it, like for an autosave.
     saving = done.catch(() => undefined);
     return done;
@@ -100,8 +112,10 @@ export function keepSession(docs: Documents): SessionKeeper {
 
   /** Reopens the tabs of the last session (their unsaved changes included). */
   async function restoreSession(): Promise<void> {
-    const loaded = await loadSession();
+    // The tabs held by the marker come back as unopened entries, without decoding their artwork.
+    const loaded = await loadSession(marker.held);
     if (!loaded) {
+      marker.finish([]);
       // Nothing was stored: autosave may write from now on.
       sessionReadable = true;
       return;
@@ -110,33 +124,49 @@ export function keepSession(docs: Documents): SessionKeeper {
     const restored: { id: string; name: string; dirty: boolean; state: DocumentState }[] = [];
     let failedArtwork = 0;
     const leftOut = { settings: 0, artwork: 0 };
-    for (const tab of stored.tabs) {
-      const { state, failed } = await hydrateProject(tab.file);
-      failedArtwork += failed;
-      leftOut.settings += tab.report.settings;
-      leftOut.artwork += tab.report.artwork;
-      restored.push({ id: tab.id, name: tab.name, dirty: tab.dirty, state });
+    const unopenedIds = loaded.unopened.map((t) => t.id);
+    // Until the restored tabs are added and drawn, a crash makes the next start keep them unopened. A
+    // failure that is no crash takes them out of the marker again: the next start tries them as usual.
+    marker.begin(stored.tabs.map((t) => t.id));
+    try {
+      for (const tab of stored.tabs) {
+        const { state, failed } = await hydrateProject(tab.file);
+        failedArtwork += failed;
+        leftOut.settings += tab.report.settings;
+        leftOut.artwork += tab.report.artwork;
+        restored.push({ id: tab.id, name: tab.name, dirty: tab.dirty, state });
+      }
+      // The user may already have started working in the first tab while we were loading: keep it.
+      const initial = docs.activeId;
+      const replaceInitial = docs.activeIsPristine() && restored.length > 0;
+      for (const r of restored)
+        docs.add(r.state, { id: r.id, name: r.name, dirty: r.dirty, activate: false, position: 'end' });
+      // The unopened entries stay in the index, and their records are deleted only when the user chooses to.
+      session.adopt(
+        restored.map((r) => r.id),
+        loaded.unopened,
+      );
+      unopened = loaded.unopened;
+      // Nothing else may change: mark the session for the save that runs right after the restore, so the
+      // index is rewritten without the dropped entries and with every record it should list.
+      if (repair) autosaveDirty = true;
+      // Restored without an error: autosave may write from now on.
+      sessionReadable = true;
+      if (replaceInitial) {
+        docs.activate(restored.some((r) => r.id === stored.activeId) ? stored.activeId : restored[0].id);
+        docs.close(initial);
+      }
+    } catch (e) {
+      marker.finish(unopenedIds);
+      throw e;
     }
-    // The user may already have started working in the first tab while we were loading: keep it.
-    const initial = docs.activeId;
-    const replaceInitial = docs.activeIsPristine() && restored.length > 0;
-    for (const r of restored)
-      docs.add(r.state, { id: r.id, name: r.name, dirty: r.dirty, activate: false, position: 'end' });
-    // The unopened entries stay in the index, and their records are deleted only when the user chooses to.
-    session.adopt(
-      restored.map((r) => r.id),
-      loaded.unopened,
-    );
-    unopened = loaded.unopened;
-    // Nothing else may change: mark the session for the save that runs right after the restore, so the
-    // index is rewritten without the dropped entries and with every record it should list.
-    if (repair) autosaveDirty = true;
-    // Restored without an error: autosave may write from now on.
-    sessionReadable = true;
-    if (replaceInitial) {
-      docs.activate(restored.some((r) => r.id === stored.activeId) ? stored.activeId : restored[0].id);
-      docs.close(initial);
-    }
+    // The preview builds the active tab's model in one frame and draws it in the next, which uploads
+    // its artwork to the GPU; the frame after shows it was painted. Animation frames wait while the
+    // window is hidden, and the rest of the start does not wait for them.
+    void paintedFrame()
+      .then(paintedFrame)
+      .then(paintedFrame)
+      .then(() => marker.finish(unopenedIds));
     if (indexDamaged && restored.length) notify.warning(SESSION_DAMAGED);
     else if (recovered)
       notify.warning(`Projects reopened from their stored copies: ${recovered}. Check them and save them to files.`);

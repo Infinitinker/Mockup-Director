@@ -4,7 +4,7 @@
  *
  * Records in the object store 'autosave' of the database 'mockup-director':
  *   'session'   the index, { version: 1, activeId, tabs: [{ id, name, dirty }] }: the open tabs in tab
- *               order, then the unopened entries, whose copy this app cannot open (./sessionRecords)
+ *               order, then the unopened entries, whose copy is not opened (./sessionRecords)
  *   'tab:<id>'  one per tab, { savedAt, file: ProjectFile }
  * The index and the tab records are written in one transaction, so they always match. A session
  * written by a newer version of the app is never overwritten (the user gets it back by updating).
@@ -89,8 +89,11 @@ function finish(tx: IDBTransaction, what: string): Promise<void> {
   });
 }
 
-/** Reads the autosaved session: the index and every tab record. Null when nothing is stored. */
-export async function loadSession(): Promise<LoadedSession | null> {
+/**
+ * Reads the autosaved session: the index and every tab record. The tabs of `held` (./restoreMarker)
+ * are kept unopened. Null when nothing is stored.
+ */
+export async function loadSession(held: ReadonlySet<string>): Promise<LoadedSession | null> {
   const d = await db();
   const tx = begin(d, 'readonly');
   const store = tx.objectStore(DB_STORE);
@@ -109,7 +112,7 @@ export async function loadSession(): Promise<LoadedSession | null> {
     cursor.continue();
   };
   await finish(tx, 'session read');
-  return readSession(read.index, records);
+  return readSession(read.index, records, held);
 }
 
 /** The session in IndexedDB. */
