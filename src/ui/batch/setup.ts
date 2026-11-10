@@ -14,7 +14,9 @@ import type { AppContext } from '../context';
 import { h, nextId, type Child } from '../dom';
 import { errorMessage, logShownError } from '../errors';
 import { ICONS } from '../icons';
-import { segmentedControl, selectControl, textButton } from '../controls';
+import { textButton } from '../controls/buttons';
+import { segmentedControl } from '../controls/segmented';
+import { selectControl } from '../controls/select';
 import { notify } from '../toast';
 import { addUnique, defaultSlot, isArtworkFile, isProjectFile, selection, storeMode } from './selection';
 

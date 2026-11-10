@@ -1,5 +1,6 @@
 /**
- * "Model" tab: controls generated from model.params, grouped by param.group.
+ * The Model tab: one control per parameter of the active model, in sections by the parameter's group, and
+ * Restore defaults.
  */
 import type { ParamDef, ParamValue } from '../../core/types/model';
 import { defaultParams } from '../../core/defaults';
@@ -7,18 +8,47 @@ import { getModel } from '../../models/registry';
 import type { AppContext } from '../context';
 import { h } from '../dom';
 import { ICONS } from '../icons';
-import {
-  colorControl,
-  numberControl,
-  section,
-  segmentedControl,
-  selectControl,
-  switchControl,
-  type Control,
-} from '../controls';
+import type { Control } from '../controls';
+import { colorControl } from '../controls/color';
+import { numberControl } from '../controls/number';
+import { section } from '../controls/section';
+import { segmentedControl } from '../controls/segmented';
+import { selectControl } from '../controls/select';
+import { switchControl } from '../controls/switch';
 import { completeParams, snapToStep } from '../../models/params';
 
 const UNIT_LABEL: Record<string, string> = { mm: 'mm', deg: '°', '%': '%', '': '' };
+
+/** The parameters of one section of the Model tab, and its title. */
+interface ParamGroup {
+  title: string;
+  defs: ParamDef[];
+}
+
+/**
+ * The parameters by group, keeping the order of first appearance; those without a group go under the key
+ * `__general`, titled General. The key is part of the section's stored collapsed key: it must never change.
+ */
+export function groupParams(params: ParamDef[]): Map<string, ParamGroup> {
+  const groups = new Map<string, ParamGroup>();
+  for (const def of params) {
+    const key = def.group ?? '__general';
+    const title = def.group ?? 'General';
+    let group = groups.get(key);
+    if (!group) {
+      group = { title, defs: [] };
+      groups.set(key, group);
+    }
+    group.defs.push(def);
+  }
+  return groups;
+}
+
+/** Whether a select parameter's options read best as a segmented control: short lists do, long ones as a menu. */
+export function fitsSegmented(options: { label: string }[]): boolean {
+  const totalLen = options.reduce((n, o) => n + o.label.length, 0);
+  return options.length <= 3 && totalLen <= 26;
+}
 
 export function createModelPanel(ctx: AppContext): { el: HTMLElement } {
   const el = h('div', { class: 'panel panel-model' });
@@ -59,9 +89,7 @@ export function createModelPanel(ctx: AppContext): { el: HTMLElement } {
         });
       case 'select': {
         const opts = def.options;
-        // Short option lists read best as a segmented control; long ones as a menu.
-        const totalLen = opts.reduce((n, o) => n + o.label.length, 0);
-        if (opts.length <= 3 && totalLen <= 26) {
+        if (fitsSegmented(opts)) {
           return segmentedControl<string>({
             label: def.label,
             options: opts,
@@ -105,19 +133,7 @@ export function createModelPanel(ctx: AppContext): { el: HTMLElement } {
       el.appendChild(h('p', { class: 'empty-state', text: 'This model has no settings.' }));
       return;
     }
-    // Group params, keeping the order of first appearance.
-    const groups = new Map<string, { title: string; defs: ParamDef[] }>();
-    for (const def of model.params) {
-      const key = def.group ?? '__general';
-      const title = def.group ?? 'General';
-      let group = groups.get(key);
-      if (!group) {
-        group = { title, defs: [] };
-        groups.set(key, group);
-      }
-      group.defs.push(def);
-    }
-    for (const [key, g] of groups) {
+    for (const [key, g] of groupParams(model.params)) {
       const ctls = g.defs.map(controlFor);
       controls.push(...ctls);
       el.appendChild(

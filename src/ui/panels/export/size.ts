@@ -7,10 +7,10 @@ import { clamp } from '../../../core/math';
 import { maxMarginFor, maxSizeFor } from '../../../export/animation/settings';
 import { safeStorage } from '../../../platform/storage';
 import type { AppContext } from '../../context';
-import type { Control } from '../../controls';
+import type { AddControl, Control } from '../../controls';
 import { h, nextId } from '../../dom';
 import { ICONS } from '../../icons';
-import { animationOf, stillOf, updateAnimation, updateStill, type AddControl } from './settings';
+import { animationOf, stillOf, updateAnimation, updateStill } from './settings';
 
 const MIN_SIZE = 16;
 const LOCK_KEY = 'mockup-director.ui.lockAspect';

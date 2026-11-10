@@ -4,7 +4,7 @@
 import type { AnimationProgress } from '../../../export/animation';
 import type { AppContext } from '../../context';
 import { h } from '../../dom';
-import { createProgress } from '../../progress';
+import { createProgress } from '../../controls/progress';
 
 /** The text and the fraction done (not clamped) of a progress report. */
 export function describeProgress(p: AnimationProgress): { text: string; fraction: number } {

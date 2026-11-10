@@ -37,7 +37,7 @@ const SOURCES = new Map(FILES.map((path) => [path, readFileSync(new URL(path, RO
  * Files with banner comments today. The list shrinks as their stage splits them and must never grow: a file that
  * needs a section comment is split instead.
  */
-const BANNER_ALLOWED = ['src/styles.css', 'src/ui/controls.ts', 'src/ui/panels/scenePanel.ts', 'src/ui/viewport.ts'];
+const BANNER_ALLOWED = ['src/styles.css', 'src/ui/viewport.ts'];
 
 /** Files without a header comment today. The list shrinks as their stage adds one and must never grow. */
 const HEADER_ALLOWED: string[] = [];

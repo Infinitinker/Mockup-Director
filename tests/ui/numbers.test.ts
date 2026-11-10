@@ -1,6 +1,6 @@
-/** Formatting numbers for display and parsing typed numbers. */
+/** Formatting numbers for display, the decimals a step shows and parsing typed numbers. */
 import { describe, expect, it } from 'vitest';
-import { formatNumber, parseNumber } from '../../src/ui/numbers';
+import { decimalsFor, formatNumber, parseNumber } from '../../src/ui/numbers';
 
 describe('formatNumber', () => {
   it('uses a decimal point and the given number of decimals', () => {
@@ -18,6 +18,30 @@ describe('formatNumber', () => {
   it('shows nothing for a value that is not finite', () => {
     expect(formatNumber(Number.NaN, 1)).toBe('');
     expect(formatNumber(Number.POSITIVE_INFINITY, 1)).toBe('');
+  });
+});
+
+describe('decimalsFor', () => {
+  it('shows the decimals of the step as written', () => {
+    expect(decimalsFor(0.25)).toBe(2);
+    expect(decimalsFor(0.1)).toBe(1);
+    expect(decimalsFor(5)).toBe(0);
+  });
+
+  it('ignores float noise, as in a step times a percent factor', () => {
+    expect(decimalsFor(0.1 + 0.2)).toBe(1);
+    expect(decimalsFor(0.01 * 100)).toBe(0);
+  });
+
+  it('shows at most four decimals, also for a step written with an exponent', () => {
+    expect(decimalsFor(1e-5)).toBe(4);
+    expect(decimalsFor(1e-7)).toBe(4);
+  });
+
+  it('shows no decimals for a step that is not positive', () => {
+    expect(decimalsFor(0)).toBe(0);
+    expect(decimalsFor(-1)).toBe(0);
+    expect(decimalsFor(Number.NaN)).toBe(0);
   });
 });
 

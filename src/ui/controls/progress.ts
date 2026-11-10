@@ -2,8 +2,8 @@
  * The progress control of the batch export and the animation export: a status text read out by screen
  * readers and a bar from 0 to 100 %.
  */
-import { clamp } from '../core/math';
-import { h } from './dom';
+import { clamp } from '../../core/math';
+import { h } from '../dom';
 
 export interface Progress {
   /** The control: the text, then the bar. */

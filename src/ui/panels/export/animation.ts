@@ -8,12 +8,16 @@ import { clamp } from '../../../core/math';
 import { ANIMATION_FORMAT_LABEL, animationFormatSupport } from '../../../export/formats';
 import { frameCountOf, maxFpsFor, maxMarginFor, maxSizeFor, outputSizeOf } from '../../../export/animation/settings';
 import type { AppContext } from '../../context';
-import { numberControl, section, segmentedControl, switchControl } from '../../controls';
+import type { AddControl } from '../../controls';
+import { numberControl } from '../../controls/number';
+import { section } from '../../controls/section';
+import { segmentedControl } from '../../controls/segmented';
+import { switchControl } from '../../controls/switch';
 import { h } from '../../dom';
 import { ICONS } from '../../icons';
 import { formatNumber } from '../../numbers';
 import { formatSection } from './animationFormat';
-import { animationOf, updateAnimation, type AddControl } from './settings';
+import { animationOf, updateAnimation } from './settings';
 import { sizeRows, type AspectLock, type DimTarget } from './size';
 
 const ANIM_SIZE_PRESETS = [480, 640, 800, 1080, 1200, 1920];

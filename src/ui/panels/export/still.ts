@@ -8,10 +8,13 @@ import { clamp } from '../../../core/math';
 import { IMAGE_FORMAT_LABEL, supportsWebpEncoding } from '../../../export/formats';
 import { WEBP_IMAGE_UNSUPPORTED } from '../../../export/exporter';
 import type { AppContext } from '../../context';
-import { numberControl, section, segmentedControl } from '../../controls';
+import type { AddControl } from '../../controls';
+import { numberControl } from '../../controls/number';
+import { section } from '../../controls/section';
+import { segmentedControl } from '../../controls/segmented';
 import { h, shortcutLabel } from '../../dom';
 import { ICONS } from '../../icons';
-import { stillOf, updateStill, type AddControl } from './settings';
+import { stillOf, updateStill } from './settings';
 import { sizeRows, type AspectLock, type DimTarget } from './size';
 
 const SIZE_PRESETS = [800, 1200, 1600, 2000, 3000, 4000];

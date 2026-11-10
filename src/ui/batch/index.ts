@@ -11,8 +11,8 @@ import { saveBlob } from '../../platform/files';
 import type { AppContext } from '../context';
 import { append, h, nextFrame, nextId } from '../dom';
 import { errorMessage, logShownError } from '../errors';
-import { textButton } from '../controls';
-import { createProgress } from '../progress';
+import { textButton } from '../controls/buttons';
+import { createProgress } from '../controls/progress';
 import { notify } from '../toast';
 import {
   addUnique,

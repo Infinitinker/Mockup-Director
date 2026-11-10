@@ -1,14 +1,10 @@
 /**
- * How the Export tab's sections read and change the export settings in the store (the still's and the
- * animation's), and how they register the controls the tab syncs.
+ * How the Export tab's sections read and change the export settings in the store: the still's and the
+ * animation's.
  */
 import type { AnimationSettings, ExportSettings } from '../../../core/types/export';
 import { DEFAULT_ANIMATION } from '../../../core/defaults';
 import type { AppContext } from '../../context';
-import type { Control } from '../../controls';
-
-/** Registers a control so the tab syncs it with the store (in the order they were added), and returns it. */
-export type AddControl = <T extends Control>(c: T) => T;
 
 /** The still's export settings. */
 export const stillOf = (ctx: AppContext): ExportSettings => ctx.store.state.export;

@@ -6,9 +6,12 @@ import type { AnimationFormat, AnimationSettings } from '../../../core/types/exp
 import { switchAnimationFormat } from '../../../export/animation/settings';
 import { MP4_UNSUPPORTED, WEBP_ANIMATION_UNSUPPORTED } from '../../../export/animation';
 import type { AppContext } from '../../context';
-import { section, segmentedControl, selectControl } from '../../controls';
+import type { AddControl } from '../../controls';
+import { section } from '../../controls/section';
+import { segmentedControl } from '../../controls/segmented';
+import { selectControl } from '../../controls/select';
 import { h } from '../../dom';
-import { animationOf, updateAnimation, type AddControl } from './settings';
+import { animationOf, updateAnimation } from './settings';
 
 const QUALITY_LABEL: Record<AnimationSettings['quality'], string> = {
   low: 'Low',

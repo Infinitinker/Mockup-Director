@@ -10,12 +10,13 @@ import type { AnimationFormat } from '../../../core/types/export';
 import { hasAny } from '../../../documents/store';
 import { safeStorage } from '../../../platform/storage';
 import type { AppContext } from '../../context';
-import { segmentedControl, type Control } from '../../controls';
+import type { AddControl, Control } from '../../controls';
+import { segmentedControl } from '../../controls/segmented';
 import { h } from '../../dom';
 import { ICONS } from '../../icons';
 import { animationSections } from './animation';
 import { createAnimationProgress } from './animationProgress';
-import { animationOf, type AddControl } from './settings';
+import { animationOf } from './settings';
 import { animationDims, createAspectLock, stillDims } from './size';
 import { stillSections } from './still';
 

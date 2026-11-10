@@ -49,10 +49,10 @@ The page also uses Tauri's own APIs, allowed in `src-tauri/capabilities/default.
 
 1. **The user picks a model** in the gallery (`src/ui/gallery.ts`). `selectModel` in `src/ui/actions/model.ts` sets the active model in the store (`src/documents/store.ts`) and applies the model's `defaultCamera`. If the new model has no artwork or parameters yet, it takes those of the previous model whose slot and parameter ids match, so artwork moves from "DVD case" to "DVD case with disc".
 2. **The user adds artwork**, by dropping files on the viewport (`src/ui/viewport.ts`), on a slot's card in the Artwork tab (`src/ui/panels/artwork.ts`), or with Choose…. `assignArtwork` in `src/ui/actions/artwork.ts` fills the empty slots first, in slot order. A dropped `.mdproj` file opens as a project instead. `loadImageFile` in `src/core/images.ts` keeps the original file as a data URL (saved in the project) and makes a texture from it, drawn through a 2D canvas so every format comes out the right way up. The store keeps the artwork by model and slot (`artwork[modelId][slotId]`).
-3. **The user sets parameters** in the Model tab (`src/ui/panels/modelPanel.ts`), whose controls are made from the model's `params`. The store keeps the values by model (`params[modelId]`); `completeParams` (`src/models/params.ts`) fills in the defaults.
+3. **The user sets parameters** in the Model tab (`src/ui/panels/model.ts`), whose controls are made from the model's `params`. The store keeps the values by model (`params[modelId]`); `completeParams` (`src/models/params.ts`) fills in the defaults.
 4. **The store reports the change.** Every change goes through `store.update(kinds, …)`, and the listener in `src/ui/app.ts` schedules a rebuild for `model`, `params` and `artwork`, and a scene update for `scene` and `camera`. Both are coalesced to one per animation frame (`frameCoalescer` in `src/ui/dom.ts`).
 5. **The model is built** (`rebuild` in `src/ui/preview.ts`). The app gives `model.build()` a `ModelContext`: the complete parameters, `hasArtwork`, and `getTexture`, which returns the slot's artwork or a placeholder that shows the slot's name (`src/core/placeholder.ts`). The new object goes to `stage.setModel()` (`src/scene/stage/index.ts`), which disposes the previous model, measures the new one for framing (`src/scene/stage/modelInfo.ts`), and updates the reflection and the shadow. If `build()` throws, the error is logged and a toast says "Could not build model “…”", with the error's message as `errorMessage` (`src/ui/errors.ts`) gives it; `setModel` is not called, so the stage keeps the model it had (none at start-up). The toast stack drops repeats of the same message (`src/ui/toast.ts`), so a model that fails on every slider step shows one toast. While an animation or batch export runs, the model is locked and the rebuild waits until the export ends.
-6. **The scene is applied.** `stage.applySettings()` takes the scene settings: camera, light, shadow, reflection and background. A light preset in the Scene tab (`src/scene/lightPresets.ts`, `src/ui/panels/scenePanel.ts`) copies its light, and its shadow and reflection changes, into the scene settings. A look in the Looks tab (`src/project/looks.ts`, `src/ui/panels/looks.ts`) replaces the light, shadow, reflection and background, and the camera if the look has one. The stage adds the lights and a studio environment (`src/scene/stage/lighting.ts`); the lighting follows the camera, so the key light stays where it is while the user orbits. The ground shadow (`src/scene/shadows/`) and the floor reflection (`src/scene/reflection.ts`) are drawn by the stage. The WebGL canvas is always transparent; the preview background is CSS on the viewport (`src/scene/background.ts`). The stage renders only when something changed.
+6. **The scene is applied.** `stage.applySettings()` takes the scene settings: camera, light, shadow, reflection and background. A light preset in the Scene tab (`src/scene/lightPresets.ts`, `src/ui/panels/scene/light.ts`) copies its light, and its shadow and reflection changes, into the scene settings. A look in the Looks tab (`src/project/looks.ts`, `src/ui/panels/looks.ts`) replaces the light, shadow, reflection and background, and the camera if the look has one. The stage adds the lights and a studio environment (`src/scene/stage/lighting.ts`); the lighting follows the camera, so the key light stays where it is while the user orbits. The ground shadow (`src/scene/shadows/`) and the floor reflection (`src/scene/reflection.ts`) are drawn by the stage. The WebGL canvas is always transparent; the preview background is CSS on the viewport (`src/scene/background.ts`). The stage renders only when something changed.
 7. **The camera frames the composition.** `src/scene/framing.ts` places the camera so the model, its reflection and its shadow fit the view; zoom and pan are applied afterwards. Orbiting, zooming and panning in the viewport (`src/scene/stage/orbit.ts`) reach the store through `stage.onCameraChange()` with the source `stage`, so they are not pushed back to the stage. The camera's limits, cleaning and comparison are in `src/scene/camera.ts`, which the stage and the app share. The view bar and the keys 1–6 set one of the `VIEW_PRESETS` (`src/scene/views.ts`).
 8. **The user exports.**
    - A still image: `exportImage` in `src/ui/actions/exporting.ts` first runs the pending rebuild and scene update, then `src/export/exporter.ts` renders the stage off-screen, transparent and supersampled (`stage.renderToCanvas()`), crops it to the composition, scales it into the size minus the margins, paints the background, encodes the image and writes its print resolution (`src/export/png.ts`).
@@ -137,14 +137,20 @@ src/
                 showing the active document (preview.ts), keeping the session: autosave and restore
                 (sessionKeeper.ts), the tab strip (tabbar.ts), the recovery dialog for the session's
                 unopened entries (recovery.ts), toolbar, gallery, viewport, inspector
-                and panels/ (artwork.ts, modelPanel.ts, scenePanel.ts, looks.ts, and export/: the
+                and panels/ (artwork.ts, model.ts, scene/: the Scene tab in index.ts, one module
+                per section (camera.ts, light.ts, shadow.ts, reflection.ts, background.ts) and how
+                they read and change the scene settings (settings.ts), looks.ts, and export/: the
                 Export tab in index.ts, its Image and Animation export types in still.ts and
                 animation.ts, the animation's format section, its progress with Cancel, the size
-                controls both share and how they read and change the export settings),
-                controls, dialogs, toasts, the message and log entry for an error it shows
-                (errors.ts), the batch export dialog (batch/: the dialog in index.ts, its setup
-                phase in setup.ts and what it remembers in selection.ts), the progress control of
-                the batch and the animation export (progress.ts), number formatting and parsing
+                controls both share and how they read and change the export settings);
+                controls/: what a control is and how a tab registers the controls it syncs
+                (index.ts), then one module per control: the slider with its number field
+                (number.ts), switch.ts, segmented.ts, select.ts, color.ts, the collapsible section
+                (section.ts), the icon and text buttons (buttons.ts) and the progress control of
+                the batch and the animation export (progress.ts); dialogs, toasts, the message and
+                log entry for an error it shows (errors.ts), the batch export dialog (batch/: the
+                dialog in index.ts, its setup phase in setup.ts and what it remembers in
+                selection.ts), number formatting and parsing and the decimals a step shows
                 (numbers.ts), shortcuts, icons and DOM helpers (dom.ts)
 tests/          unit tests (Vitest, config in vitest.config.ts); their folders mirror src/ and tools/;
                 shared test data in fixtures.ts, a seeded random generator in random.ts, the checks
@@ -214,9 +220,9 @@ docs/images/                the README's screenshots (the app at 1440 × 900, wi
 How the folders are organized:
 
 - **A model, panel or subsystem is one module until it needs several files; then it becomes a folder.** A file never sits next to a folder of the same name.
-- **A folder that grows past about a dozen modules is split into subfolders by role**, each answering one question, with imports running one way between them. Tests mirror the subfolders. (Today `ui/` holds nineteen modules directly.)
+- **A folder that grows past about a dozen modules is split into subfolders by role**, each answering one question, with imports running one way between them. Tests mirror the subfolders. (Today `ui/` holds seventeen modules directly.)
 - **Imports run one way:** `core` ← `models` and `scene` ← `export` ← `project` ← `documents` ← `ui`. A module imports its own folder and the layers below it; `models` and `scene` sit side by side and never import each other. Only `ui` and the entry point `main.ts` use `platform`, except the log (`platform/log.ts`), which every module may use; `platform` itself imports only `core`. `core` holds the contracts the others share (`src/core/types/`). `project` sits above `export` because reading a project checks which formats this engine can export, and `documents` above `project` because the session stores project files. `tests/layout.test.ts` fails on an import against this order.
-- **A module's name does not repeat its folder** (`panels/looks.ts`, not `panels/looksPanel.ts`), as long as the shorter name still says what the module is. (Today `modelPanel.ts` and `scenePanel.ts` in `ui/panels/` still end in `Panel`.)
+- **A module's name does not repeat its folder** (`panels/looks.ts`, not `panels/looksPanel.ts`), as long as the shorter name still says what the module is.
 - **File names are camelCase** in `src/` and `tests/` (`plasticCard.ts`) and **kebab-case** in `tools/` (`draw-icon.mjs`).
 
 ## 3D conventions
@@ -244,13 +250,13 @@ Each concept has one name, used everywhere. Where the interface or today's code 
 | Slot | One place on a model that takes artwork: a cover, a spine, a disc label, a screen. | `ImageSlotDef` (image in the code) |
 | Artwork | The user's image in a slot. | `Artwork`, `artwork` in the state and the project file, `src/ui/panels/artwork.ts`; image in `loadImageFile`, `loadImageDataUrl` and `IMAGE_ACCEPT` (`src/core/images.ts`) |
 | Placeholder | The neutral image with the slot's name shown in a slot without artwork. | `src/core/placeholder.ts` |
-| Parameter | A setting of a model: size, material, pose. The Model tab shows them grouped (Dimensions, Material …) and calls them settings ("This model has no settings."). | `ParamDef`, `params` |
+| Parameter | A setting of a model: size, material, pose. The Model tab shows them grouped (Dimensions, Material …) and calls them settings ("This model has no settings."). | `ParamDef`, `params`; the Model tab in `src/ui/panels/model.ts` |
 | Arrangement | How a flat print item lies on the floor: lying flat, leaning, a small stack, or two showing the front and the back (the brochure: lying flat or standing); a parameter of the flat print models. | `src/models/print/flat/arrangement.ts`, the brochure's own parameter in `src/models/print/flat/brochure.ts`; the parameter id `layout`, the type `Layout` and the group heading Layout (`G_LAY` in `src/models/print/common.ts`) |
 | Print template | A 300 dpi PNG of a slot's artwork area with trim, bleed and fold guides, downloaded with the Template… button on the slot's card. | `PrintTemplate`, `src/export/templates/` |
 | Preview | The 3D view of the active project in the middle of the window, which the stage renders; the interface calls it "the 3D preview" or "the preview". | `src/ui/preview.ts`; the stage (`StageAPI`, `src/scene/stage/`) renders it, inside the viewport (`src/ui/viewport.ts`) |
-| Scene | The camera, light, shadow, reflection and preview background of a project; the Scene tab. | `SceneSettings` |
+| Scene | The camera, light, shadow, reflection and preview background of a project; the Scene tab. | `SceneSettings`; the Scene tab in `src/ui/panels/scene/` |
 | View | A preset camera direction from the view bar or the keys 1–6: Front, 3/4 left, 3/4 right, Side, Top, Back. | `VIEW_PRESETS` in `src/scene/views.ts` |
-| Light preset | A built-in lighting setup picked in the Scene tab (Studio, Soft light, Dramatic …); it sets the light and may change the shadow and reflection. | `LightPreset`, `src/scene/lightPresets.ts` |
+| Light preset | A built-in lighting setup picked in the Scene tab (Studio, Soft light, Dramatic …); it sets the light and may change the shadow and reflection. | `LightPreset`, `src/scene/lightPresets.ts`; its select in `src/ui/panels/scene/light.ts` |
 | Look | Named scene settings without the artwork or the model: light, shadow, reflection, background and, if saved with it, the camera. Built-in looks ship with the app; the user's own are saved, imported and exported in the Looks tab. | `Look`, `src/project/looks.ts`, `src/ui/panels/looks.ts`, the `looks` tab id, the `mockup-director.looks` key, the looks file `mockup-director-looks.json` |
 | Size preset | One of the square output sizes offered as chips in the Export tab. A model's paper sizes (A5, A6 …) are not size presets but options of its Size parameter. | `SIZE_PRESETS` in `src/ui/panels/export/still.ts`, `ANIM_SIZE_PRESETS` in `src/ui/panels/export/animation.ts` |
 | Inspector | The tabbed panel on the right: Artwork, Model, Scene, Export, Looks. | `src/ui/inspector.ts`, `src/ui/panels/` |
@@ -368,7 +374,7 @@ The desktop app writes its diagnostics to `mockup-director.log` in the log folde
 | `mockup-director` | IndexedDB database | the session: the open tabs and their projects | `src/documents/sessionDb.ts` |
 | `mockup-director.looks` | localStorage | the user's looks, in the looks file's shape | `src/project/looks.ts` |
 | `mockup-director.ui.tab` | localStorage | the inspector tab last shown | `src/ui/inspector.ts` |
-| `mockup-director.ui.collapsed` | localStorage | the keys of the collapsed inspector sections, a JSON array | `src/ui/controls.ts` |
+| `mockup-director.ui.collapsed` | localStorage | the keys of the collapsed inspector sections, a JSON array | `src/ui/controls/section.ts` |
 | `mockup-director.ui.exportMode` | localStorage | the export type last chosen: `image` or `animation` | `src/ui/panels/export/index.ts` |
 | `mockup-director.ui.lockAspect` | localStorage | whether the export size keeps its aspect ratio: `1` or `0` | `src/ui/panels/export/size.ts` |
 | `mockup-director.ui.batchMode` | localStorage | the batch export mode last chosen: `artwork`, `views` or `projects` | `src/ui/batch/selection.ts` |
