@@ -1,11 +1,11 @@
 /** Tests the preset views and the reset to the model's camera, each one undo step. */
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_SCENE } from '../../../src/core/defaults';
-import { getModel } from '../../../src/models/registry';
-import { VIEW_PRESETS } from '../../../src/scene/views';
-import { Store, type ChangeEvent } from '../../../src/documents/store';
-import { createViewActions } from '../../../src/ui/actions/view';
-import { documentState } from '../../fixtures';
+import { DEFAULT_SCENE } from '../../../../src/core/defaults';
+import { getModel } from '../../../../src/models/registry';
+import { VIEW_PRESETS } from '../../../../src/scene/views';
+import { Store, type ChangeEvent } from '../../../../src/documents/store';
+import { createViewActions } from '../../../../src/ui/app/actions/view';
+import { documentState } from '../../../fixtures';
 
 function setup(): { store: Store; events: ChangeEvent[]; actions: ReturnType<typeof createViewActions> } {
   const store = new Store(documentState('box'));

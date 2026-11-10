@@ -1,16 +1,16 @@
 /**
  * Center viewport: the stage host, floating view bar and the file drop overlay.
  */
-import { h } from './dom';
-import { ICONS } from './icons';
-import type { AppContext } from './context';
-import { VIEW_PRESETS } from '../scene/views';
-import { hasAny } from '../documents/store';
-import { isProjectFileName } from '../project/format';
-import type { BackgroundSettings, CameraSettings } from '../core/types/scene';
-import { applyCssBackground } from '../scene/background';
-import type { Control } from './controls';
-import { segmentedControl } from './controls/segmented';
+import { h } from '../dom';
+import { ICONS } from '../icons';
+import type { AppContext } from '../context';
+import { VIEW_PRESETS } from '../../scene/views';
+import { hasAny } from '../../documents/store';
+import { isProjectFileName } from '../../project/format';
+import type { BackgroundSettings, CameraSettings } from '../../core/types/scene';
+import { applyCssBackground } from '../../scene/background';
+import type { Control } from '../controls';
+import { segmentedControl } from '../controls/segmented';
 
 interface ViewportShell {
   el: HTMLElement;
@@ -135,7 +135,7 @@ export function createViewportShell(): ViewportShell {
     applyPreviewBackground(host, ctx.store.state.scene.background);
   };
 
-  /* Drag & drop of image and project files ------------------------------ */
+  // Dropping artwork and project files on the viewport.
   let dragDepth = 0;
   const hasFiles = (e: DragEvent) => !!e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files');
   el.addEventListener('dragenter', (e) => {

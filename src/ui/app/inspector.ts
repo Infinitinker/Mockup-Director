@@ -1,16 +1,16 @@
 /**
  * Right sidebar: tabbed inspector (Artwork / Model / Scene / Export / Looks).
  */
-import { h } from './dom';
-import { safeStorage } from '../platform/storage';
-import type { AppContext, TabId } from './context';
-import { createArtworkPanel } from './panels/artwork';
-import { createModelPanel } from './panels/model';
-import { createScenePanel } from './panels/scene';
-import { createExportPanel } from './panels/export';
-import { createLooksPanel } from './panels/looks';
-import { getModel } from '../models/registry';
-import { hasAny } from '../documents/store';
+import { h } from '../dom';
+import { safeStorage } from '../../platform/storage';
+import type { AppContext, TabId } from '../context';
+import { createArtworkPanel } from '../panels/artwork';
+import { createModelPanel } from '../panels/model';
+import { createScenePanel } from '../panels/scene';
+import { createExportPanel } from '../panels/export';
+import { createLooksPanel } from '../panels/looks';
+import { getModel } from '../../models/registry';
+import { hasAny } from '../../documents/store';
 
 const TAB_KEY = 'mockup-director.ui.tab';
 const TABS: { id: TabId; label: string }[] = [

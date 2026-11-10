@@ -5,7 +5,7 @@
  *  - the batch NEVER touches the store (no undo entries, the document stays unchanged): every item is
  *    rendered from a TEMPORARY model built with the model's build() and temporary scene settings
  *    pushed straight to the stage (see items.ts);
- *  - the host (ui/actions/exporting.ts) freezes the document on the stage while the batch runs and
+ *  - the host (ui/app/actions/exporting.ts) freezes the document on the stage while the batch runs and
  *    restores the exact previous model, scene settings and camera afterwards (BatchHost.end() in a
  *    finally block);
  *  - temporary artwork textures / models are disposed once the stage no longer shows them;
@@ -18,7 +18,7 @@ import type { StageAPI } from '../../core/types/scene';
 import { extensionFor } from '../formats';
 import { ZipLimitError, ZipWriter } from '../zip';
 
-/** Implemented by ui/actions/exporting.ts: exclusive access to the stage for the duration of a batch. */
+/** Implemented by ui/app/actions/exporting.ts: exclusive access to the stage for the duration of a batch. */
 export interface BatchHost {
   /**
    * Make the stage show the latest document, then freeze it (document rebuilds / scene updates are

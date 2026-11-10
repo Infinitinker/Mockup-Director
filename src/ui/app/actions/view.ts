@@ -2,10 +2,10 @@
  * The view actions: a preset view from the view bar or the keys 1–6, and the model's own camera; each is one undo
  * step.
  */
-import { DEFAULT_SCENE } from '../../core/defaults';
-import { getModel } from '../../models/registry';
-import { VIEW_PRESETS } from '../../scene/views';
-import type { ActionContext, Actions } from '../context';
+import { DEFAULT_SCENE } from '../../../core/defaults';
+import { getModel } from '../../../models/registry';
+import { VIEW_PRESETS } from '../../../scene/views';
+import type { ActionContext, Actions } from '../../context';
 
 /** The view actions on the store's camera. */
 export function createViewActions({ store }: Pick<ActionContext, 'store'>): Pick<Actions, 'setView' | 'resetView'> {

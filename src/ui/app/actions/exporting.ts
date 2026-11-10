@@ -2,19 +2,20 @@
  * The export actions: a still image, the turntable animation (which locks the model while its frames render, and
  * stops when the document is replaced), and the batch export, which gets the stage to itself.
  */
-import { DEFAULT_ANIMATION } from '../../core/defaults';
-import { UserError } from '../../core/errors';
-import { exportImage } from '../../export/exporter';
-import { exportAnimation, isAnimationCanceled, type AnimationResult } from '../../export/animation';
-import { animationFileFilter, imageFileFilter, supportsWebpEncoding } from '../../export/formats';
-import { animationFileName, suggestFileName } from '../../export/fileNames';
-import type { BatchHost } from '../../export/batch';
-import { saveBlob } from '../../platform/files';
-import { openBatchDialog } from '../batch';
-import type { ActionContext, Actions } from '../context';
-import { nextFrame } from '../dom';
-import { errorMessage, logShownError } from '../errors';
-import { notify } from '../toast';
+import { DEFAULT_ANIMATION } from '../../../core/defaults';
+import { UserError } from '../../../core/errors';
+import { exportImage } from '../../../export/exporter';
+import { exportAnimation, type AnimationResult } from '../../../export/animation';
+import { isAnimationCanceled } from '../../../export/animation/errors';
+import { animationFileFilter, imageFileFilter, supportsWebpEncoding } from '../../../export/formats';
+import { animationFileName, suggestFileName } from '../../../export/fileNames';
+import type { BatchHost } from '../../../export/batch';
+import { saveBlob } from '../../../platform/files';
+import { openBatchDialog } from '../../dialogs/batch';
+import type { ActionContext, Actions } from '../../context';
+import { nextFrame } from '../../dom';
+import { errorMessage, logShownError } from '../../errors';
+import { notify } from '../../toast';
 
 type ExportingActions = Pick<Actions, 'exportImage' | 'exportAnimation' | 'cancelAnimation' | 'openBatchExport'>;
 

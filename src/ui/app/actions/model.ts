@@ -2,11 +2,11 @@
  * Switching the model of the active project: artwork and parameters carry over to a model that has none yet
  * wherever the slot and parameter ids match, and the model's camera is applied.
  */
-import type { ParamValues } from '../../core/types/model';
-import type { Artwork } from '../../core/types/project';
-import { getModel } from '../../models/registry';
-import { inheritedParams } from '../../models/params';
-import type { ActionContext, Actions } from '../context';
+import type { ParamValues } from '../../../core/types/model';
+import type { Artwork } from '../../../core/types/project';
+import { getModel } from '../../../models/registry';
+import { inheritedParams } from '../../../models/params';
+import type { ActionContext, Actions } from '../../context';
 
 /** The model action on the store's active project. */
 export function createModelActions({ store }: Pick<ActionContext, 'store'>): Pick<Actions, 'selectModel'> {

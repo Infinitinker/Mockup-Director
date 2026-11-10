@@ -2,11 +2,11 @@
  * What the batch dialog remembers: its mode between runs (localStorage), and the chosen files, views and slots
  * while the app runs; which dropped or picked files it takes, and the request it makes of them.
  */
-import { getModel } from '../../models/registry';
-import { VIEW_PRESETS } from '../../scene/views';
-import { isProjectFileName } from '../../project/format';
-import type { BatchMode, BatchRequest } from '../../export/batch/items';
-import { safeStorage } from '../../platform/storage';
+import { getModel } from '../../../models/registry';
+import { VIEW_PRESETS } from '../../../scene/views';
+import { isProjectFileName } from '../../../project/format';
+import type { BatchMode, BatchRequest } from '../../../export/batch/items';
+import { safeStorage } from '../../../platform/storage';
 
 const MODE_KEY = 'mockup-director.ui.batchMode';
 const IMAGE_RE = /\.(png|jpe?g|webp|gif|svg|avif|heic|heif|bmp|tiff?)$/i;

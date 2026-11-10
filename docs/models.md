@@ -23,7 +23,7 @@ Texts (`name`, labels, hints) are plain English strings, written where they are 
 | Field | Type | Required | Meaning |
 |---|---|---|---|
 | `id` | `string` | yes | Unique, kebab-case ID (`dvd-case-disc`). Saved in project files and used in file names; see [Naming](#naming). |
-| `category` | `ModelCategory` | yes | Gallery group: `box`, `disc`, `book`, `print` or `device`. The gallery shows the groups in that order (`src/ui/gallery.ts`); a new category needs a change to `ModelCategory`, and to `CATEGORY_ORDER` and `CATEGORY_LABEL` (its heading) in `src/ui/gallery.ts`. |
+| `category` | `ModelCategory` | yes | Gallery group: `box`, `disc`, `book`, `print` or `device`. The gallery shows the groups in that order (`src/ui/app/gallery.ts`); a new category needs a change to `ModelCategory`, and to `CATEGORY_ORDER` and `CATEGORY_LABEL` (its heading) in `src/ui/app/gallery.ts`. |
 | `name` | `string` | yes | Shown in the gallery and as the Model tab's title. |
 | `description` | `string` | no | One sentence: the gallery's tooltip (instead of the name) and the line under the Model tab's title. |
 | `icon` | `string` | yes | Inline SVG markup for the gallery: `viewBox="0 0 64 64"`, line art in `currentColor`. `icon(body, strokeWidth = 2.75)` in `src/models/icon.ts` wraps the paths in that frame. |
@@ -56,7 +56,7 @@ A parameter is one setting in the Model tab. Every kind has these fields:
 - Lengths are in millimeters, angles in degrees, percentages from 0 to 100 (the model divides by 100 itself, as `discOffset` in `composites/compose.ts` does).
 - Parameters are grouped by `group`, in the order each group first appears; parameters without a group go into a General section. Groups match by their text, so define a group once (`const G_DIM = 'Dimensions'`) and reuse it.
 - Values are checked wherever they come from (`sanitizeParam` in `src/models/params.ts`): a number outside `min`..`max` is clamped, a select value that is not an option, a color that is not `#rrggbb`, or a value of the wrong type is dropped and the default used instead.
-- When the user switches to a model they have not changed yet, artwork and parameter values carry over from the previous model wherever the slot or parameter ID is the same (`selectModel` in `src/ui/actions/model.ts`). Use the same ID for the same meaning: `width`, `front`, `finish`.
+- When the user switches to a model they have not changed yet, artwork and parameter values carry over from the previous model wherever the slot or parameter ID is the same (`selectModel` in `src/ui/app/actions/model.ts`). Use the same ID for the same meaning: `width`, `front`, `finish`.
 
 Helpers that create parameters:
 
@@ -120,7 +120,7 @@ interface ModelContext {
 build(ctx: ModelContext): THREE.Object3D;
 ```
 
-- `build` returns a new object tree on every call. The app calls it whenever a parameter or the artwork changes (at most once per frame) and for every item of a batch export (`src/ui/preview.ts`, `src/export/batch/items.ts`).
+- `build` returns a new object tree on every call. The app calls it whenever a parameter or the artwork changes (at most once per frame) and for every item of a batch export (`src/ui/app/preview.ts`, `src/export/batch/items.ts`).
 - The returned object follows the [3D conventions](architecture.md#3d-conventions): millimeters, lowest point at `y = 0`, centered on `x = 0` and `z = 0`, front facing `+Z`, top facing `+Y`. Build in whatever frame is convenient, then call `placeOnGround`.
 - Materials are `MeshStandardMaterial` or `MeshPhysicalMaterial`. The stage adds the lights, the environment for reflections, the shadow and the floor reflection; a model adds none of them. Meshes that cast a shadow set `castShadow` (`castShadows` sets it on the whole tree).
 - The stage owns what `build` returns. When it shows the next object, it frees the previous one with `disposeObject` (`src/scene/dispose.ts`): every geometry and material in the tree, and textures flagged `disposeWithModel`. So create geometries and materials in each build rather than keeping them between builds. A texture a model caches at module level is not flagged and is never freed (the data-side texture in `disc/build.ts`).

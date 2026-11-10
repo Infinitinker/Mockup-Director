@@ -2,8 +2,8 @@
  * The project actions: a new project, opening project files (each in its own tab, held back while an export runs),
  * saving, closing with the unsaved-changes question, and switching tabs.
  */
-import { freshDocument } from '../../documents/tabs';
-import { pickFiles, saveBlob } from '../../platform/files';
+import { freshDocument } from '../../../documents/tabs';
+import { pickFiles, saveBlob } from '../../../platform/files';
 import {
   PROJECT_EXT,
   PROJECT_FILE_FILTER,
@@ -12,12 +12,12 @@ import {
   projectWarning,
   readProjectFile,
   toProjectFile,
-} from '../../project/format';
-import type { ActionContext, Actions } from '../context';
-import { choiceDialog } from '../dialog';
-import { errorMessage, logShownError } from '../errors';
+} from '../../../project/format';
+import type { ActionContext, Actions } from '../../context';
+import { choiceDialog } from '../../dialogs/modal';
+import { errorMessage, logShownError } from '../../errors';
 import { tabLabel } from '../tabbar';
-import { notify } from '../toast';
+import { notify } from '../../toast';
 
 export interface ProjectActions
   extends Pick<Actions, 'newProject' | 'openProject' | 'saveProject' | 'closeProject' | 'switchProject'> {

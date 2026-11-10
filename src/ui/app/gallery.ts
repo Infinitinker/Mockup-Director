@@ -1,11 +1,11 @@
 /**
  * Left sidebar: model gallery grouped by category.
  */
-import { h } from './dom';
-import type { AppContext } from './context';
-import { MODELS } from '../models/registry';
-import type { ModelCategory } from '../core/types/model';
-import { hasAny } from '../documents/store';
+import { h } from '../dom';
+import type { AppContext } from '../context';
+import { MODELS } from '../../models/registry';
+import type { ModelCategory } from '../../core/types/model';
+import { hasAny } from '../../documents/store';
 
 const CATEGORY_ORDER: ModelCategory[] = ['box', 'disc', 'book', 'print', 'device'];
 

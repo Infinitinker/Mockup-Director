@@ -10,7 +10,7 @@ import { errorMessage, logShownError } from '../errors';
 import { ICONS } from '../icons';
 import { iconButton } from '../controls/buttons';
 import { section } from '../controls/section';
-import { confirmDialog, promptDialog } from '../dialog';
+import { confirmDialog, promptDialog } from '../dialogs/modal';
 import { notify } from '../toast';
 import { saveBlob, pickFiles } from '../../platform/files';
 import { log } from '../../platform/log';

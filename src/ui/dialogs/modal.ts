@@ -1,8 +1,9 @@
 /**
- * In-app modal dialogs. window.confirm/prompt are not reliable inside WKWebView (the host must
- * implement them), so we draw our own sheet-like dialogs.
+ * The builders the modal dialogs share: confirm, prompt, choice and a panel of their own content, used by the
+ * recovery dialog, the Looks tab and the project actions. window.confirm/prompt are not reliable inside WKWebView
+ * (the host must implement them), so we draw our own sheet-like dialogs.
  */
-import { h } from './dom';
+import { h } from '../dom';
 
 interface DialogOptions {
   title: string;

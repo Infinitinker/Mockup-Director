@@ -1,9 +1,9 @@
 /**
- * Tests what the batch dialog remembers in src/ui/batch/selection.ts: the stored mode, which files it takes,
+ * Tests what the batch dialog remembers in src/ui/dialogs/batch/selection.ts: the stored mode, which files it takes,
  * adding files without duplicates, the slot it suggests, and the request it makes of the selection.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { VIEW_PRESETS } from '../../../src/scene/views';
+import { VIEW_PRESETS } from '../../../../src/scene/views';
 import {
   addUnique,
   batchRequest,
@@ -13,7 +13,7 @@ import {
   selection,
   storeMode,
   storedMode,
-} from '../../../src/ui/batch/selection';
+} from '../../../../src/ui/dialogs/batch/selection';
 
 const file = (name: string, size = 0, lastModified = 1, type = '') =>
   new File([new Uint8Array(size)], name, { lastModified, type });

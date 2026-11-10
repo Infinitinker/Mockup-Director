@@ -23,8 +23,6 @@ import { Mp4Writer } from './mp4';
 import { normalizeAnimationSettings, outputSizeOf } from './settings';
 import { frameDelays, turntableAngles } from './turntable';
 
-export { MP4_UNSUPPORTED, WEBP_ANIMATION_UNSUPPORTED, isAnimationCanceled } from './errors';
-
 type AnimationPhase = 'prepare' | 'palette' | 'frames' | 'finalize';
 
 export interface AnimationProgress {

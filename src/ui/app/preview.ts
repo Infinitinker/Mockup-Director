@@ -4,46 +4,24 @@
  * from the stage, the model is locked; a batch export gets the stage to itself. Camera moves made in the viewport
  * go back into the store.
  */
-import type { ModelContext } from '../core/types/model';
-import type { StageAPI } from '../core/types/scene';
-import { UserError } from '../core/errors';
-import { getPlaceholderTexture } from '../core/placeholder';
-import { getModel } from '../models/registry';
-import { completeParams } from '../models/params';
-import { slotFor } from '../models/slots';
-import { createStage } from '../scene/stage';
-import { cameraEquals, normalizeCamera } from '../scene/camera';
-import type { Store } from '../documents/store';
-import { frameCoalescer, type Coalescer } from './dom';
-import { errorMessage, logShownError } from './errors';
-import { notify } from './toast';
-import { log } from '../platform/log';
+import type { ModelContext } from '../../core/types/model';
+import type { StageAPI } from '../../core/types/scene';
+import { UserError } from '../../core/errors';
+import { getPlaceholderTexture } from '../../core/placeholder';
+import { getModel } from '../../models/registry';
+import { completeParams } from '../../models/params';
+import { slotFor } from '../../models/slots';
+import { createStage } from '../../scene/stage';
+import { cameraEquals, normalizeCamera } from '../../scene/camera';
+import type { Store } from '../../documents/store';
+import { frameCoalescer } from '../dom';
+import { errorMessage, logShownError } from '../errors';
+import { notify } from '../toast';
+import { log } from '../../platform/log';
+import type { Preview } from '../context';
 
 /** Viewport cameras closer than this to the store's are not stored again. */
 const CAMERA_CHANGE_TOLERANCE = 1e-4;
-
-export interface Preview {
-  /** The stage, or the stand-in that refuses to render when WebGL does not work. */
-  readonly stage: StageAPI;
-  /** Rebuilds the active document's model; while the model is locked, the rebuild waits. */
-  readonly rebuild: Coalescer;
-  /** Applies the document's scene settings; skipped while a batch export drives the stage. */
-  readonly applyScene: Coalescer;
-  /** True while an animation or a batch export renders from the stage. */
-  readonly modelLocked: boolean;
-  /** True while a batch export drives the stage. */
-  readonly batchActive: boolean;
-  /** Locks the model for an animation export: rebuilds asked for meanwhile wait. */
-  lockModel(): void;
-  /** Unlocks it and schedules a rebuild that was asked for meanwhile. */
-  unlockModel(): void;
-  /** Hands the stage to a batch export: the model is locked and the scene settings are not applied. */
-  beginBatch(): void;
-  /** Puts the document back on the stage after a batch export: its scene settings and a rebuild of its model. */
-  endBatch(): void;
-  /** Keeps the renderer sized to the host. */
-  followSize(): void;
-}
 
 /** Used when WebGL is unavailable – keeps the rest of the UI usable. */
 function createNullStage(): StageAPI {

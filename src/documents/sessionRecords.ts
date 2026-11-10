@@ -10,7 +10,7 @@
  * - A record this app cannot open (one from a newer version, with a model this build does not have,
  *   or damaged) is an unopened entry: every index the app writes lists it after the open tabs, also the
  *   last one written when the app closes, and its record is deleted only when the user saved it to a
- *   file or deleted it in the recovery dialog (ui/recovery.ts). Until then the dialog comes at every start.
+ *   file or deleted it in the recovery dialog (ui/dialogs/recovery.ts). Until then the dialog comes at every start.
  * - An index entry whose record is missing is dropped, like one without a usable id or with a repeated one.
  * An index from a newer version is not read at all.
  */

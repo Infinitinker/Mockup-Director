@@ -3,17 +3,17 @@
  * follows its progress, then saves or discards the ZIP file. While it runs the stage belongs to the batch
  * (BatchHost, src/export/batch/), and Escape cancels instead of closing.
  */
-import { runBatch, type BatchHost, type BatchResult, type ItemNote } from '../../export/batch';
-import { buildBatchItems } from '../../export/batch/items';
-import { zipFileName } from '../../export/fileNames';
-import { PROJECT_EXT, readProjectToRender } from '../../project/format';
-import { saveBlob } from '../../platform/files';
-import type { AppContext } from '../context';
-import { append, h, nextFrame, nextId } from '../dom';
-import { errorMessage, logShownError } from '../errors';
-import { textButton } from '../controls/buttons';
-import { createProgress } from '../controls/progress';
-import { notify } from '../toast';
+import { runBatch, type BatchHost, type BatchResult, type ItemNote } from '../../../export/batch';
+import { buildBatchItems } from '../../../export/batch/items';
+import { zipFileName } from '../../../export/fileNames';
+import { PROJECT_EXT, readProjectToRender } from '../../../project/format';
+import { saveBlob } from '../../../platform/files';
+import type { AppContext } from '../../context';
+import { append, h, nextFrame, nextId } from '../../dom';
+import { errorMessage, logShownError } from '../../errors';
+import { textButton } from '../../controls/buttons';
+import { createProgress } from '../../controls/progress';
+import { notify } from '../../toast';
 import {
   addUnique,
   batchRequest,
@@ -260,7 +260,7 @@ export function openBatchDialog(ctx: Pick<AppContext, 'store' | 'stage'>, host: 
   }
 
   // On the document (not the backdrop) so Escape also works when nothing inside the dialog has focus.
-  // Global shortcuts ignore keys while a .modal-backdrop is present (see shortcuts.ts).
+  // Global shortcuts ignore keys while a .modal-backdrop is present (see app/shortcuts.ts).
   document.addEventListener('keydown', onKey);
   backdrop.addEventListener('mousedown', (e) => {
     if (e.target === backdrop && phase === 'setup') close();

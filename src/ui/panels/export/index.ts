@@ -2,7 +2,7 @@
  * The Export tab with its two export types:
  *  - Image: output size, margin, sizing mode, format, quality and background (the toolbar's
  *    Export button always exports this still image) plus "Batch export…", which opens the batch
- *    export dialog (src/ui/batch/: many mockups with these settings → one ZIP); see still.ts;
+ *    export dialog (src/ui/dialogs/batch/: many mockups with these settings → one ZIP); see still.ts;
  *  - Animation: turntable motion, size, GIF / WebP / MP4 options, its own Export button
  *    and a progress indicator with Cancel while the animation is rendered; see animation.ts.
  */

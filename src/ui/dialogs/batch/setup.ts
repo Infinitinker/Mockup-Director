@@ -2,22 +2,22 @@
  * The batch dialog's setup phase: the mode switch, the files or views to export and the output line, and the
  * Close and Start buttons.
  */
-import type { ExportSettings } from '../../core/types/export';
-import { IMAGE_ACCEPT } from '../../core/images';
-import { getModel } from '../../models/registry';
-import { VIEW_PRESETS } from '../../scene/views';
-import { IMAGE_FORMAT_LABEL, supportsWebpEncoding } from '../../export/formats';
-import type { BatchMode } from '../../export/batch/items';
-import { PROJECT_EXT } from '../../project/format';
-import { pickFiles } from '../../platform/files';
-import type { AppContext } from '../context';
-import { h, nextId, type Child } from '../dom';
-import { errorMessage, logShownError } from '../errors';
-import { ICONS } from '../icons';
-import { textButton } from '../controls/buttons';
-import { segmentedControl } from '../controls/segmented';
-import { selectControl } from '../controls/select';
-import { notify } from '../toast';
+import type { ExportSettings } from '../../../core/types/export';
+import { IMAGE_ACCEPT } from '../../../core/images';
+import { getModel } from '../../../models/registry';
+import { VIEW_PRESETS } from '../../../scene/views';
+import { IMAGE_FORMAT_LABEL, supportsWebpEncoding } from '../../../export/formats';
+import type { BatchMode } from '../../../export/batch/items';
+import { PROJECT_EXT } from '../../../project/format';
+import { pickFiles } from '../../../platform/files';
+import type { AppContext } from '../../context';
+import { h, nextId, type Child } from '../../dom';
+import { errorMessage, logShownError } from '../../errors';
+import { ICONS } from '../../icons';
+import { textButton } from '../../controls/buttons';
+import { segmentedControl } from '../../controls/segmented';
+import { selectControl } from '../../controls/select';
+import { notify } from '../../toast';
 import { addUnique, defaultSlot, isArtworkFile, isProjectFile, selection, storeMode } from './selection';
 
 /** The mode and the slot that varies, which the setup phase and the dialog both change. */

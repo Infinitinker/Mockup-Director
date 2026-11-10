@@ -4,7 +4,7 @@
  */
 import type { AnimationFormat, AnimationSettings } from '../../../core/types/export';
 import { switchAnimationFormat } from '../../../export/animation/settings';
-import { MP4_UNSUPPORTED, WEBP_ANIMATION_UNSUPPORTED } from '../../../export/animation';
+import { MP4_UNSUPPORTED, WEBP_ANIMATION_UNSUPPORTED } from '../../../export/animation/errors';
 import type { AppContext } from '../../context';
 import type { AddControl } from '../../controls';
 import { section } from '../../controls/section';

@@ -2,16 +2,16 @@
  * The artwork actions: loading artwork files into the model's slots (empty slots first), choosing a file for one
  * slot, removing artwork, and downloading a slot's print template.
  */
-import type { ArtworkMap } from '../../core/types/project';
-import { disposeArtwork, loadImageFile } from '../../core/images';
-import { getModel } from '../../models/registry';
-import { completeParams } from '../../models/params';
-import { renderTemplateDetailed } from '../../export/templates';
-import { templateFileName } from '../../export/fileNames';
-import { pickFiles, saveBlob } from '../../platform/files';
-import type { ActionContext, Actions } from '../context';
-import { errorMessage, logShownError } from '../errors';
-import { notify } from '../toast';
+import type { ArtworkMap } from '../../../core/types/project';
+import { disposeArtwork, loadImageFile } from '../../../core/images';
+import { getModel } from '../../../models/registry';
+import { completeParams } from '../../../models/params';
+import { renderTemplateDetailed } from '../../../export/templates';
+import { templateFileName } from '../../../export/fileNames';
+import { pickFiles, saveBlob } from '../../../platform/files';
+import type { ActionContext, Actions } from '../../context';
+import { errorMessage, logShownError } from '../../errors';
+import { notify } from '../../toast';
 
 type ArtworkActions = Pick<Actions, 'assignArtwork' | 'pickArtworkFor' | 'removeArtwork' | 'downloadTemplate'>;
 

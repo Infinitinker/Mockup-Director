@@ -1,5 +1,5 @@
 /**
- * Non-blocking notifications (bottom-center stack). Errors stay longer and repeated identical
+ * Non-blocking notifications (a stack centered below the toolbar). Errors stay longer and repeated identical
  * messages are de-duplicated (e.g. a model failing on every slider step).
  */
 import { h } from './dom';

@@ -1,13 +1,12 @@
 /**
  * Shared context passed to every UI component: the store, the stage and the app-level actions, and what the
- * actions work on.
+ * actions work on, among them the contract of the 3D preview.
  */
 import type { StageAPI } from '../core/types/scene';
-import type { Signal } from './dom';
+import type { Coalescer, Signal } from './dom';
 import type { Store } from '../documents/store';
 import type { Documents } from '../documents/tabs';
 import type { AnimationProgress } from '../export/animation';
-import type { Preview } from './preview';
 
 export type TabId = 'artwork' | 'model' | 'scene' | 'export' | 'looks';
 
@@ -53,6 +52,30 @@ export interface AppContext {
   animationProgress: Signal<AnimationProgress | null>;
   /** "modelId/slotId" keys of slots whose artwork is being decoded */
   loadingSlots: Signal<ReadonlySet<string>>;
+}
+
+/** The 3D preview the actions flush and hold; `createPreview` in app/preview.ts makes it. */
+export interface Preview {
+  /** The stage, or the stand-in that refuses to render when WebGL does not work. */
+  readonly stage: StageAPI;
+  /** Rebuilds the active document's model; while the model is locked, the rebuild waits. */
+  readonly rebuild: Coalescer;
+  /** Applies the document's scene settings; skipped while a batch export drives the stage. */
+  readonly applyScene: Coalescer;
+  /** True while an animation or a batch export renders from the stage. */
+  readonly modelLocked: boolean;
+  /** True while a batch export drives the stage. */
+  readonly batchActive: boolean;
+  /** Locks the model for an animation export: rebuilds asked for meanwhile wait. */
+  lockModel(): void;
+  /** Unlocks it and schedules a rebuild that was asked for meanwhile. */
+  unlockModel(): void;
+  /** Hands the stage to a batch export: the model is locked and the scene settings are not applied. */
+  beginBatch(): void;
+  /** Puts the document back on the stage after a batch export: its scene settings and a rebuild of its model. */
+  endBatch(): void;
+  /** Keeps the renderer sized to the host. */
+  followSize(): void;
 }
 
 /**

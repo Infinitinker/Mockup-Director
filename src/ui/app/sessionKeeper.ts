@@ -3,17 +3,17 @@
  * them at start, and offers the stored copies that could not be opened in the recovery dialog. Autosave stays off
  * until the restore has read the stored tabs.
  */
-import type { DocumentState } from '../core/types/project';
-import { SessionSaver } from '../documents/session';
-import { indexedDbSessionStore, loadSession } from '../documents/sessionDb';
-import { SESSION_DAMAGED, type UnopenedTab } from '../documents/sessionRecords';
-import type { Documents } from '../documents/tabs';
-import { hydrateProject, projectWarning } from '../project/format';
-import { onWindowClose } from '../platform/window';
-import { openRecoveryDialog } from './recovery';
-import { errorMessage, logShownError } from './errors';
-import { notify } from './toast';
-import { log } from '../platform/log';
+import type { DocumentState } from '../../core/types/project';
+import { SessionSaver } from '../../documents/session';
+import { indexedDbSessionStore, loadSession } from '../../documents/sessionDb';
+import { SESSION_DAMAGED, type UnopenedTab } from '../../documents/sessionRecords';
+import type { Documents } from '../../documents/tabs';
+import { hydrateProject, projectWarning } from '../../project/format';
+import { onWindowClose } from '../../platform/window';
+import { openRecoveryDialog } from '../dialogs/recovery';
+import { errorMessage, logShownError } from '../errors';
+import { notify } from '../toast';
+import { log } from '../../platform/log';
 
 const AUTOSAVE_MS = 1500;
 

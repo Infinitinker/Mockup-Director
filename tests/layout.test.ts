@@ -1,7 +1,7 @@
 /**
  * Repository layout: no banner comments that split a file into sections, every module opens with its header comment
  * (`/** *\/` in TypeScript and JavaScript, `//!` in Rust, `/* *\/` in CSS), and imports in src/ run one way through
- * the layers.
+ * the layers, and inside ui/ through its parts.
  */
 import { describe, expect, it } from 'vitest';
 
@@ -37,7 +37,7 @@ const SOURCES = new Map(FILES.map((path) => [path, readFileSync(new URL(path, RO
  * Files with banner comments today. The list shrinks as their stage splits them and must never grow: a file that
  * needs a section comment is split instead.
  */
-const BANNER_ALLOWED = ['src/styles.css', 'src/ui/viewport.ts'];
+const BANNER_ALLOWED = ['src/styles.css'];
 
 /** Files without a header comment today. The list shrinks as their stage adds one and must never grow. */
 const HEADER_ALLOWED: string[] = [];
@@ -68,7 +68,7 @@ function hasHeader(path: string, text: string): boolean {
 /**
  * The layers of src/ from the bottom up, by their folder, or by file for the styles (which import nothing) and the
  * entry point. A module may import its own folder and the layers below it, never a layer above it or a peer on the
- * same level.
+ * same level. Inside ui/ the same holds for its parts (UI_PARTS).
  */
 const LAYERS: Record<string, number> = {
   'styles.css': 0,
@@ -102,10 +102,23 @@ function resolveImport(from: string, specifier: string): string {
 /** The layer of a path under src/: its first folder, or the file itself at the top. */
 const layerOf = (path: string): string => path.split('/')[1];
 
+/** The parts of ui/ from the bottom up: the modules directly in ui/, which every part uses, then its folders. */
+const UI_PARTS: Record<string, number> = { '': 0, controls: 1, dialogs: 2, panels: 3, app: 4 };
+
+/** The part of ui/ a path under src/ui/ lies in: its folder there, or '' for a module directly in ui/. */
+function uiPartOf(path: string): string {
+  const folder = path.split('/')[2];
+  return folder in UI_PARTS ? folder : '';
+}
+
 /** Whether `from` importing the module at `to` (as resolveImport gives it) runs against the layer order. */
 function breaksLayers(from: string, to: string): boolean {
   if (!to.startsWith('src/')) return false;
   const [source, target] = [layerOf(from), layerOf(to)];
+  if (source === 'ui' && target === 'ui') {
+    const [sourcePart, targetPart] = [uiPartOf(from), uiPartOf(to)];
+    return sourcePart !== targetPart && UI_PARTS[targetPart] >= UI_PARTS[sourcePart];
+  }
   if (source === target || to === LOG_MODULE) return false;
   if (target === 'platform') return !PLATFORM_USERS.includes(source);
   return LAYERS[target] >= LAYERS[source];
@@ -212,11 +225,11 @@ describe('the import order', () => {
   it('resolves relative imports to paths from the repository root', () => {
     expect(resolveImport('src/ui/panels/looks.ts', '../../project/looks')).toBe('src/project/looks');
     expect(resolveImport('src/main.ts', './ui/app')).toBe('src/ui/app');
-    expect(resolveImport('src/ui/toolbar.ts', '../../package.json')).toBe('package.json');
+    expect(resolveImport('src/ui/app/toolbar.ts', '../../../package.json')).toBe('package.json');
   });
 
   it('knows which imports run against the layers', () => {
-    expect(breaksLayers('src/ui/app.ts', 'src/export/exporter')).toBe(false);
+    expect(breaksLayers('src/ui/app/index.ts', 'src/export/exporter')).toBe(false);
     expect(breaksLayers('src/export/exporter.ts', 'src/ui/app')).toBe(true);
     expect(breaksLayers('src/project/format.ts', 'src/documents/store')).toBe(true);
     expect(breaksLayers('src/scene/stage/index.ts', 'src/models/params')).toBe(true);
@@ -224,10 +237,23 @@ describe('the import order', () => {
     expect(breaksLayers('src/models/box/slim.ts', 'src/models/geometry')).toBe(false);
     expect(breaksLayers('src/models/slots.ts', 'src/platform/log')).toBe(false);
     expect(breaksLayers('src/export/exporter.ts', 'src/platform/files')).toBe(true);
-    expect(breaksLayers('src/ui/app.ts', 'src/platform/files')).toBe(false);
+    expect(breaksLayers('src/ui/app/index.ts', 'src/platform/files')).toBe(false);
     expect(breaksLayers('src/main.ts', 'src/platform/uncaught')).toBe(false);
     expect(breaksLayers('src/platform/storage.ts', 'src/core/types/project')).toBe(false);
     expect(breaksLayers('src/platform/files.ts', 'src/ui/dom')).toBe(true);
+  });
+
+  it('knows which imports run against the parts of ui/', () => {
+    expect(breaksLayers('src/ui/panels/looks.ts', 'src/ui/dialogs/modal')).toBe(false);
+    expect(breaksLayers('src/ui/dialogs/modal.ts', 'src/ui/panels/looks')).toBe(true);
+    expect(breaksLayers('src/ui/context.ts', 'src/ui/app/preview')).toBe(true);
+    expect(breaksLayers('src/ui/controls/progress.ts', 'src/ui/dom')).toBe(false);
+    expect(breaksLayers('src/ui/dom.ts', 'src/ui/controls/progress')).toBe(true);
+    expect(breaksLayers('src/ui/panels/scene/light.ts', 'src/ui/panels/model')).toBe(false);
+    expect(breaksLayers('src/ui/app/actions/projects.ts', 'src/ui/app/tabbar')).toBe(false);
+    expect(breaksLayers('src/ui/dialogs/batch/index.ts', 'src/ui/controls/progress')).toBe(false);
+    expect(breaksLayers('src/ui/app/actions/exporting.ts', 'src/ui/dialogs/batch')).toBe(false);
+    expect(breaksLayers('src/ui/panels/export/index.ts', 'src/ui/app')).toBe(true);
   });
 
   it('finds static, multi-line, re-exported and dynamic imports', () => {
@@ -251,6 +277,11 @@ describe('the import order', () => {
 
   it('puts every module under src/ in a layer', () => {
     expect(modules.map(([path]) => path).filter((path) => !(layerOf(path) in LAYERS))).toEqual([]);
+  });
+
+  it('puts every module in ui/ directly in ui/ or in one of its parts', () => {
+    const inFolders = modules.map(([path]) => path.split('/')).filter((parts) => parts[1] === 'ui' && parts.length > 3);
+    expect(inFolders.filter((parts) => !(parts[2] in UI_PARTS)).map((parts) => parts.join('/'))).toEqual([]);
   });
 
   it('holds in every module', () => {

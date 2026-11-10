@@ -3,11 +3,11 @@
  * kinds of change the store reports.
  */
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_SCENE } from '../../../src/core/defaults';
-import { getModel } from '../../../src/models/registry';
-import { Store, type ChangeEvent } from '../../../src/documents/store';
-import { createModelActions } from '../../../src/ui/actions/model';
-import { documentState, fakeImage } from '../../fixtures';
+import { DEFAULT_SCENE } from '../../../../src/core/defaults';
+import { getModel } from '../../../../src/models/registry';
+import { Store, type ChangeEvent } from '../../../../src/documents/store';
+import { createModelActions } from '../../../../src/ui/app/actions/model';
+import { documentState, fakeImage } from '../../../fixtures';
 
 const FROM = getModel('dvd-case');
 const TO = getModel('dvd-case-disc');

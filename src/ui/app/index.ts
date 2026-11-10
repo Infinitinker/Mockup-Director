@@ -1,31 +1,31 @@
 /**
  * Starts the app: creates the store and the open tabs, the 3D preview, the session keeper and the actions, builds
- * the layout and wires them together. Every open project is a tab (../documents/tabs); the store works on the
+ * the layout and wires them together. Every open project is a tab (../../documents/tabs); the store works on the
  * active one, and the whole set of tabs is autosaved as a session (./sessionKeeper).
  */
-import { MODELS } from '../models/registry';
-import { Store, hasAny } from '../documents/store';
-import { Documents, freshDocument } from '../documents/tabs';
-import type { AnimationProgress } from '../export/animation';
-import { inDesktopApp } from '../platform/files';
-import { handleOpenedFiles } from '../platform/launch';
-import { isMac } from '../platform/os';
-import { setWindowTitle } from '../platform/window';
+import { MODELS } from '../../models/registry';
+import { Store, hasAny } from '../../documents/store';
+import { Documents, freshDocument } from '../../documents/tabs';
+import type { AnimationProgress } from '../../export/animation';
+import { inDesktopApp } from '../../platform/files';
+import { handleOpenedFiles } from '../../platform/launch';
+import { isMac } from '../../platform/os';
+import { setWindowTitle } from '../../platform/window';
 import { createArtworkActions } from './actions/artwork';
 import { createExportingActions } from './actions/exporting';
 import { createModelActions } from './actions/model';
 import { createProjectActions } from './actions/projects';
 import { createViewActions } from './actions/view';
-import type { Actions, AppContext, TabId } from './context';
-import { Signal, h } from './dom';
-import { errorMessage, logShownError } from './errors';
+import type { Actions, AppContext, TabId } from '../context';
+import { Signal, h } from '../dom';
+import { errorMessage, logShownError } from '../errors';
 import { createGallery } from './gallery';
 import { createInspector } from './inspector';
 import { createPreview } from './preview';
 import { keepSession } from './sessionKeeper';
 import { installShortcuts } from './shortcuts';
 import { createTabBar, tabLabel } from './tabbar';
-import { mountToasts, notify } from './toast';
+import { mountToasts, notify } from '../toast';
 import { createToolbar } from './toolbar';
 import { createViewportShell } from './viewport';
 

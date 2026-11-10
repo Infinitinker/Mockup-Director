@@ -1,10 +1,10 @@
 /**
  * Top toolbar (unified macOS-style title bar). The background is a Tauri drag region.
  */
-import { h, shortcutLabel } from './dom';
-import { ICONS, LOGO_SVG } from './icons';
-import type { AppContext } from './context';
-import { version } from '../../package.json';
+import { h, shortcutLabel } from '../dom';
+import { ICONS, LOGO_SVG } from '../icons';
+import type { AppContext } from '../context';
+import { version } from '../../../package.json';
 
 export function createToolbar(ctx: AppContext): { el: HTMLElement } {
   // "deep": with current Tauri 2.x the whole header (incl. children such as the logo, separators and
