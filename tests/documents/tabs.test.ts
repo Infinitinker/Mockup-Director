@@ -1,9 +1,11 @@
 /**
- * Tests the open tabs: adding, switching and closing them, when a tab is dirty, and the snapshot the session saver
- * reads.
+ * Tests the open tabs: adding, switching and closing them, when a tab is dirty, the snapshot the session saver
+ * reads, and the state of a new project.
  */
 import { describe, expect, it, vi } from 'vitest';
-import { Documents } from '../../src/documents/tabs';
+import { DEFAULT_EXPORT, DEFAULT_SCENE } from '../../src/core/defaults';
+import { MODELS, getModel } from '../../src/models/registry';
+import { Documents, freshDocument } from '../../src/documents/tabs';
 import { Store } from '../../src/documents/store';
 import { documentState, fakeImage } from '../fixtures';
 
@@ -225,5 +227,32 @@ describe('Documents', () => {
     expect(docs.activeIsPristine()).toBe(false);
     docs.add(documentState());
     expect(docs.activeIsPristine()).toBe(true);
+  });
+});
+
+describe('freshDocument', () => {
+  it("starts from the defaults with the model's camera over the default one", () => {
+    const box = getModel('box');
+    expect(freshDocument('box')).toEqual({
+      modelId: 'box',
+      params: {},
+      artwork: {},
+      scene: { ...DEFAULT_SCENE, camera: { ...DEFAULT_SCENE.camera, ...box.defaultCamera } },
+      export: DEFAULT_EXPORT,
+    });
+  });
+
+  it('takes the first model for an unknown id', () => {
+    expect(freshDocument('no-such-model').modelId).toBe(MODELS[0].id);
+  });
+
+  it('gives a copy: changing it leaves the defaults alone', () => {
+    const doc = freshDocument('box');
+    doc.scene.camera.yaw = 123;
+    doc.scene.background.color = '#123456';
+    doc.export.width = 7;
+    expect(DEFAULT_SCENE.camera.yaw).not.toBe(123);
+    expect(DEFAULT_SCENE.background.color).toBe('#f4f5f7');
+    expect(DEFAULT_EXPORT.width).not.toBe(7);
   });
 });

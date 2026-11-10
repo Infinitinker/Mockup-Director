@@ -80,11 +80,17 @@ export function nextFrame(): Promise<void> {
   });
 }
 
+/** Work coalesced to one run per animation frame: `schedule` asks for a run, `flush` runs a pending one now. */
+export interface Coalescer {
+  schedule(): void;
+  flush(): void;
+}
+
 /**
  * Coalesce many calls into one per animation frame. Uses rAF with a timeout fallback because
  * rAF is paused in hidden windows (the work must still happen eventually).
  */
-export function frameCoalescer(fn: () => void): { schedule(): void; flush(): void } {
+export function frameCoalescer(fn: () => void): Coalescer {
   let queued = false;
   let raf = 0;
   let timer = 0;

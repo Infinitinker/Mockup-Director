@@ -45,7 +45,6 @@ const BANNER_ALLOWED = [
   'src/platform/files.ts',
   'src/scene/shadows.ts',
   'src/styles.css',
-  'src/ui/app.ts',
   'src/ui/batch.ts',
   'src/ui/controls.ts',
   'src/ui/panels/exportPanel.ts',

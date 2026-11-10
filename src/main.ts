@@ -13,7 +13,7 @@ if (root) {
   try {
     startApp(root);
   } catch (e) {
-    // Last-resort error screen – the app shell itself failed to start.
+    // Last-resort error screen – the app itself failed to start.
     log.error('Mockup Director failed to start', e);
     root.textContent = '';
     const box = document.createElement('div');

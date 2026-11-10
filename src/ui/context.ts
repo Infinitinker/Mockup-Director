@@ -1,10 +1,13 @@
 /**
- * Shared context passed to every UI component: the store, the stage and the app-level actions.
+ * Shared context passed to every UI component: the store, the stage and the app-level actions, and what the
+ * actions work on.
  */
 import type { StageAPI } from '../core/types/scene';
 import type { Signal } from './dom';
 import type { Store } from '../documents/store';
+import type { Documents } from '../documents/tabs';
 import type { AnimationProgress } from '../export/animation';
+import type { Preview } from './preview';
 
 export type TabId = 'artwork' | 'model' | 'scene' | 'export' | 'looks';
 
@@ -50,4 +53,13 @@ export interface AppContext {
   animationProgress: Signal<AnimationProgress | null>;
   /** "modelId/slotId" keys of slots whose artwork is being decoded */
   loadingSlots: Signal<ReadonlySet<string>>;
+}
+
+/**
+ * What the actions work on: the app context without the actions themselves, the open tabs, and the 3D preview
+ * they flush and hold. Each action module takes only the parts it names.
+ */
+export interface ActionContext extends Omit<AppContext, 'actions'> {
+  docs: Documents;
+  preview: Preview;
 }

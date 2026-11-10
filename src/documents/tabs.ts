@@ -1,11 +1,15 @@
 /**
  * The open projects, one per tab. The store works on the active one; the others wait here as
- * StoreDocuments (state, undo history, artwork). There is always at least one tab.
+ * StoreDocuments (state, undo history, artwork). There is always at least one tab, and a new tab
+ * starts from freshDocument.
  *
  * A tab is "dirty" (changed since it was opened, created or saved) when its revision differs from
  * the one it was saved at; undoing back to that point makes it clean again.
  */
 import type { DocumentState } from '../core/types/project';
+import { DEFAULT_EXPORT, DEFAULT_SCENE, cloneScene } from '../core/defaults';
+import { getModel } from '../models/registry';
+import { supportsWebpEncoding } from '../export/formats';
 import { Store, type StoreDocument } from './store';
 import { log } from '../platform/log';
 
@@ -225,4 +229,14 @@ export class Documents {
       }
     }
   }
+}
+
+/** Fresh document for a model: defaults + the model's suggested camera. */
+export function freshDocument(modelId: string): DocumentState {
+  const model = getModel(modelId);
+  const scene = cloneScene(DEFAULT_SCENE);
+  scene.camera = { ...scene.camera, ...(model.defaultCamera ?? {}) };
+  const exp = { ...DEFAULT_EXPORT };
+  if (exp.format === 'webp' && !supportsWebpEncoding()) exp.format = 'png';
+  return { modelId: model.id, params: {}, artwork: {}, scene, export: exp };
 }

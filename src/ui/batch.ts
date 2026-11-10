@@ -12,8 +12,9 @@
  *  - the batch NEVER touches the store (no undo entries, the document stays unchanged): every item is
  *    rendered from a TEMPORARY model built with the model's build() and temporary scene settings
  *    pushed straight to the stage;
- *  - the host (app.ts) freezes the document on the stage while the batch runs and restores the exact
- *    previous model, scene settings and camera afterwards (BatchHost.end() in a finally block);
+ *  - the host (ui/actions/exporting.ts) freezes the document on the stage while the batch runs and
+ *    restores the exact previous model, scene settings and camera afterwards (BatchHost.end() in a
+ *    finally block);
  *  - temporary artwork textures / models are disposed once the stage no longer shows them;
  *  - one failing item (e.g. an image that cannot be decoded) is reported and skipped – the batch goes on;
  *  - Cancel stops after the current item; what is done can still be saved.
@@ -46,7 +47,7 @@ import { PROJECT_EXT, hydrateProject, isProjectFileName, projectWarning, readPro
 import { disposeArtworkMap } from '../documents/store';
 import { notify } from './toast';
 
-/** Implemented by app.ts: exclusive access to the stage for the duration of a batch. */
+/** Implemented by ui/actions/exporting.ts: exclusive access to the stage for the duration of a batch. */
 export interface BatchHost {
   /**
    * Make the stage show the latest document, then freeze it (document rebuilds / scene updates are
@@ -276,7 +277,7 @@ function defaultSlot(modelId: string): string {
 type Phase = 'setup' | 'running' | 'result' | 'saved';
 
 /** Open the batch export dialog (no-op while it is already open). */
-export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
+export function openBatchDialog(ctx: Pick<AppContext, 'store' | 'stage'>, host: BatchHost): void {
   if (dialogOpen) return;
   dialogOpen = true;
 
