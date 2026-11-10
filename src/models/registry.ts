@@ -7,7 +7,8 @@ import { blurayDiscModel, boxDiscModel, cdDiscModel, dvdDiscModel } from './comp
 import { discModel } from './disc';
 import { cdCaseModel } from './disc/jewelCase';
 import { blurayModel, dvdModel } from './disc/keepCase';
-import { bookModels } from './books';
+import { hardcoverModel, paperbackModel } from './book/bound';
+import { spiralNotebookModel } from './book/notebook';
 import { brochureModel } from './print/flat/brochure';
 import { businessCardModel } from './print/flat/businessCard';
 import { flyerModel } from './print/flat/flyer';
@@ -36,7 +37,9 @@ export const MODELS: ModelDefinition[] = [
   cdCaseModel,
   cdDiscModel,
   discModel,
-  ...bookModels,
+  hardcoverModel,
+  paperbackModel,
+  spiralNotebookModel,
   businessCardModel,
   flyerModel,
   postcardModel,

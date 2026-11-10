@@ -82,7 +82,10 @@ src/
                   parts), disc/ (the disc model in index.ts, the disc's label and its build; keepCase/:
                   DVD and Blu-ray cases; jewelCase/: CD case), composites/ (the "… with disc" models
                   in index.ts, putting them together in compose.ts, the disc's placement),
-                  books.ts, print/ (templates, finishes and shared parameters; flat/: business card,
+                  book/ (hardcover and paperback in bound.ts, with their cover's measurements and
+                  cross-section, the cross-section mesh and their build; the spiral notebook in
+                  notebook.ts, with its measurements and wire; the cover finish, page edges and print
+                  templates they share), print/ (templates, finishes and shared parameters; flat/: business card,
                   flyer, postcard, plastic card and brochure, with the sheet, its arrangement on the
                   floor and the two-sided slots; folded/: leaflet, greeting card and bi-fold brochure,
                   with the hinged sheet, its pose and their build), handheld.ts (phone, tablet),

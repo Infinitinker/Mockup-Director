@@ -9,7 +9,7 @@ A model is one kind of product the app can show: a box, a keep case, a book, a p
 | `disc/jewelCase/` | `cd-case` |
 | `disc/` | `disc` |
 | `composites/` | `box-disc`, `dvd-case-disc`, `bluray-case-disc`, `cd-case-disc` |
-| `books.ts` | `book-hardcover`, `book-paperback`, `notebook-spiral` |
+| `book/` | `book-hardcover`, `book-paperback`, `notebook-spiral` |
 | `print/flat/` | `print-business-card`, `print-flyer`, `print-postcard`, `print-plastic-card`, `print-brochure` |
 | `print/folded/` | `print-trifold`, `print-greeting-card`, `print-bifold` |
 | `handheld.ts` | `device-phone`, `device-tablet` |
@@ -233,7 +233,7 @@ To add a composite, export the base model's build function from its module, defi
 
 ## Testing
 
-Every model in `MODELS` is checked by `tests/models/registry.test.ts`, so a new model is covered as soon as it is registered. Like every test (`vitest.config.ts`), it runs in Node: no WebGL and no DOM. `build` needs neither, since it only creates three.js objects. `tests/models/fakeContext.ts` holds the fakes: a context whose artwork is plain `THREE.Texture` objects shaped like each slot's aspect, with or without artwork in the slots, and a `document` whose canvases have no 2D context, which the models that draw on a 2D canvas (`books.ts`, `print/flat/postcard.ts`, `print/flat/brochure.ts`, `screen.ts`) already handle by leaving the drawing out. Tests for what one model does beyond the contract go in `tests/models/` too, mirroring `src/models/`.
+Every model in `MODELS` is checked by `tests/models/registry.test.ts`, so a new model is covered as soon as it is registered. Like every test (`vitest.config.ts`), it runs in Node: no WebGL and no DOM. `build` needs neither, since it only creates three.js objects. `tests/models/fakeContext.ts` holds the fakes: a context whose artwork is plain `THREE.Texture` objects shaped like each slot's aspect, with or without artwork in the slots, and a `document` whose canvases have no 2D context, which the models that draw on a 2D canvas (`book/pageEdges.ts`, `print/flat/postcard.ts`, `print/flat/brochure.ts`, `screen.ts`) already handle by leaving the drawing out. Tests for what one model does beyond the contract go in `tests/models/` too, mirroring `src/models/`.
 
 The registry test checks:
 

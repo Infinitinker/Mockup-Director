@@ -42,7 +42,6 @@ const BANNER_ALLOWED = [
   'src/export/animation/index.ts',
   'src/export/exporter.ts',
   'src/export/templates.ts',
-  'src/models/books.ts',
   'src/models/computer.ts',
   'src/models/handheld.ts',
   'src/models/screen.ts',
