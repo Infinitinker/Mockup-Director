@@ -1,0 +1,69 @@
+/* Element defaults and page-wide states: box sizing, the page, form fields, the hidden attribute, the focus ring,
+   icons, the busy cursor, and no motion when the system asks for reduced motion. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html,
+body,
+#app {
+  margin: 0;
+  height: 100%;
+}
+html {
+  background: var(--bg-window);
+}
+body {
+  font-family: var(--font);
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--text);
+  background: var(--bg-window);
+  -webkit-font-smoothing: antialiased;
+  -webkit-user-select: none;
+  user-select: none;
+  overflow: hidden;
+  cursor: default;
+}
+[hidden] {
+  /* biome-ignore lint/complexity/noImportantStyles: the hidden attribute must win over any display rule. */
+  display: none !important;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+input[type="text"],
+textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
+:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus);
+}
+.icon {
+  display: block;
+  flex: none;
+}
+p {
+  margin: 0;
+}
+body.is-busy,
+body.is-busy * {
+  /* biome-ignore lint/complexity/noImportantStyles: the busy cursor must win over every element's own cursor. */
+  cursor: progress !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    /* biome-ignore lint/complexity/noImportantStyles: reduced motion must win over every transition. */
+    transition: none !important;
+    /* biome-ignore lint/complexity/noImportantStyles: reduced motion must win over every animation. */
+    animation-duration: 0.01ms !important;
+  }
+}

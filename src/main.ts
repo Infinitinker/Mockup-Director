@@ -4,7 +4,7 @@
  * modules are evaluated are logged too.
  */
 import './platform/uncaught';
-import './styles.css';
+import './styles/index.css';
 import { startApp } from './ui/app';
 import { log } from './platform/log';
 

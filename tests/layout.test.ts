@@ -1,7 +1,7 @@
 /**
  * Repository layout: no banner comments that split a file into sections, every module opens with its header comment
- * (`/** *\/` in TypeScript and JavaScript, `//!` in Rust, `/* *\/` in CSS), and imports in src/ run one way through
- * the layers, and inside ui/ through its parts.
+ * (`/** *\/` in TypeScript and JavaScript, `//!` in Rust, `/* *\/` in CSS), imports in src/ run one way through the
+ * layers, and inside ui/ through its parts, and the styles' entry imports each style file once.
  */
 import { describe, expect, it } from 'vitest';
 
@@ -33,15 +33,6 @@ const FILES = execFileSync('git', ['ls-files', '-z', '--cached', '--others', '--
 /** Scanned source files by path, with forward slashes. */
 const SOURCES = new Map(FILES.map((path) => [path, readFileSync(new URL(path, ROOT), 'utf8')]));
 
-/**
- * Files with banner comments today. The list shrinks as their stage splits them and must never grow: a file that
- * needs a section comment is split instead.
- */
-const BANNER_ALLOWED = ['src/styles.css'];
-
-/** Files without a header comment today. The list shrinks as their stage adds one and must never grow. */
-const HEADER_ALLOWED: string[] = [];
-
 const COMMENT_LINE = /^\s*(?:\/\/[/!]?|\/\*+|\*(?!\/))(.*?)(?:\*\/)?\s*$/;
 const SEPARATOR_RUN = /^[-=\u2500-\u257F]{3,}|[-=\u2500-\u257F]{3,}$/;
 
@@ -66,12 +57,12 @@ function hasHeader(path: string, text: string): boolean {
 }
 
 /**
- * The layers of src/ from the bottom up, by their folder, or by file for the styles (which import nothing) and the
+ * The layers of src/ from the bottom up, by their folder (the styles too, which import nothing), or by file for the
  * entry point. A module may import its own folder and the layers below it, never a layer above it or a peer on the
  * same level. Inside ui/ the same holds for its parts (UI_PARTS).
  */
 const LAYERS: Record<string, number> = {
-  'styles.css': 0,
+  styles: 0,
   core: 0,
   models: 1,
   scene: 1,
@@ -131,20 +122,12 @@ function layerBreaches(path: string, text: string): string[] {
     .map((match) => `${path} imports ${match[1]}`);
 }
 
-const sorted = (list: string[]): string[] => [...list].sort();
-
-const offenders = (offends: (path: string, text: string) => boolean): string[] =>
-  sorted([...SOURCES].filter(([path, text]) => offends(path, text)).map(([path]) => path));
-
-const hasBanner = (_path: string, text: string): boolean => bannerLines(text).length > 0;
-const lacksHeader = (path: string, text: string): boolean => !hasHeader(path, text);
-
 describe('the scan', () => {
   it('reads files from every scanned folder, with paths relative to the repository root', () => {
     for (const folder of ['src/', 'tests/', 'tools/', 'src-tauri/src/', 'src-tauri/tests/'])
       expect([...SOURCES.keys()].some((path) => path.startsWith(folder))).toBe(true);
     expect(SOURCES.has('tests/layout.test.ts')).toBe(true);
-    expect(SOURCES.has('src/styles.css')).toBe(true);
+    expect(SOURCES.has('src/styles/index.css')).toBe(true);
     expect(SOURCES.has('src-tauri/src/main.rs')).toBe(true);
     expect(SOURCES.has('tools/draw-icon.mjs')).toBe(true);
   });
@@ -201,21 +184,14 @@ describe('the scan', () => {
   });
 });
 
-describe.each([
-  { rule: 'banner comments', allowed: BANNER_ALLOWED, offends: hasBanner },
-  { rule: 'missing header comments', allowed: HEADER_ALLOWED, offends: lacksHeader },
-])('$rule', ({ allowed, offends }) => {
-  it('keeps the allow-list sorted and without duplicates', () => {
-    expect(allowed).toEqual([...new Set(sorted(allowed))]);
+describe('the comments', () => {
+  it('include no banner comments', () => {
+    const banners = [...SOURCES].flatMap(([path, text]) => bannerLines(text).map((line) => `${path}:${line}`));
+    expect(banners).toEqual([]);
   });
 
-  it('occur in no file outside the allow-list', () => {
-    expect(offenders(offends).filter((path) => !allowed.includes(path))).toEqual([]);
-  });
-
-  it('allow-list only files that exist and still offend', () => {
-    expect(allowed.filter((path) => !SOURCES.has(path))).toEqual([]);
-    expect(allowed.filter((path) => !offends(path, SOURCES.get(path) ?? ''))).toEqual([]);
+  it('open every file with its header comment', () => {
+    expect([...SOURCES].filter(([path, text]) => !hasHeader(path, text)).map(([path]) => path)).toEqual([]);
   });
 });
 
@@ -279,6 +255,11 @@ describe('the import order', () => {
     expect(modules.map(([path]) => path).filter((path) => !(layerOf(path) in LAYERS))).toEqual([]);
   });
 
+  it('names only folders and files of src/ as layers', () => {
+    const entries = new Set([...SOURCES.keys()].filter((path) => path.startsWith('src/')).map(layerOf));
+    expect(Object.keys(LAYERS).filter((layer) => !entries.has(layer))).toEqual([]);
+  });
+
   it('puts every module in ui/ directly in ui/ or in one of its parts', () => {
     const inFolders = modules.map(([path]) => path.split('/')).filter((parts) => parts[1] === 'ui' && parts.length > 3);
     expect(inFolders.filter((parts) => !(parts[2] in UI_PARTS)).map((parts) => parts.join('/'))).toEqual([]);
@@ -286,5 +267,25 @@ describe('the import order', () => {
 
   it('holds in every module', () => {
     expect(modules.flatMap(([path, text]) => layerBreaches(path, text))).toEqual([]);
+  });
+});
+
+describe('the styles', () => {
+  const STYLES = 'src/styles/';
+  const ENTRY = `${STYLES}index.css`;
+  const CSS_IMPORT = /@import\s+["']\.\/([^"']+)["']/g;
+
+  it('import every style file from index.css exactly once, and nothing else', () => {
+    const imported = [...(SOURCES.get(ENTRY) ?? '').matchAll(CSS_IMPORT)].map((match) => `${STYLES}${match[1]}`);
+    const files = [...SOURCES.keys()].filter((path) => path.startsWith(STYLES) && path !== ENTRY);
+    expect(imported.sort()).toEqual(files.sort());
+  });
+
+  it('are imported only by main.ts, through index.css', () => {
+    const cssImports = [...SOURCES]
+      .filter(([path]) => path.endsWith('.ts'))
+      .flatMap(([path, text]) => [...text.matchAll(RELATIVE_IMPORT)].map((match) => `${path} imports ${match[1]}`))
+      .filter((line) => line.endsWith('.css'));
+    expect(cssImports).toEqual(['src/main.ts imports ./styles/index.css']);
   });
 });

@@ -31,7 +31,7 @@ Code written before these rules is being brought in line with them, stage by sta
 The goal is clean code, modularity, portability, and that anyone can make a convincing mockup without help.
 
 ### Clean code
-- Small modules with one job each. Every module opens with a doc comment saying what that job is (`/** */` in TypeScript and JavaScript, `//!` in Rust). If a file needs a section comment to separate unrelated parts, split it.
+- Small modules with one job each. Every module opens with a doc comment saying what that job is (`/** */` in TypeScript and JavaScript, `//!` in Rust, `/* */` in CSS). If a file needs a section comment to separate unrelated parts, split it.
 - Strict TypeScript. Data and contracts are named types, not loose objects passed around; the contracts between modules live in `src/core/`.
 - No dead code, commented-out code or speculative abstractions. Build shared code from the cases that exist; don't design for imagined ones.
 - Errors are explicit and never swallowed. Every error a user sees is a `UserError` whose message says what happened, then what to do, in user terms.

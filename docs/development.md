@@ -71,7 +71,7 @@ npm test
 
 `npx vitest` runs them in watch mode while you work.
 
-`tests/layout.test.ts` checks the repository's source files: every module opens with its header comment, no banner comment splits a file into sections, and imports in `src/` follow the layer order in [architecture.md](architecture.md#code-map), and those in `src/ui/` the order of its parts (a new folder under `src/` needs a place in its `LAYERS` list, and a new folder under `src/ui/` in `UI_PARTS`). Its allow-lists name the files that do not follow the first two rules yet; they may only shrink. `tests/tauriConfig.test.ts` checks that `tauri.conf.json` reads its version from `package.json` and has LICENSE's copyright line. `tests/models/ids.test.ts` pins the IDs saved in project files in a snapshot; [models.md](models.md#testing) says when it may be updated.
+`tests/layout.test.ts` checks the repository's source files: every module opens with its header comment, no banner comment splits a file into sections, imports in `src/` follow the layer order in [architecture.md](architecture.md#code-map), and those in `src/ui/` the order of its parts (a new folder under `src/` needs a place in its `LAYERS` list, and a new folder under `src/ui/` in `UI_PARTS`), and `src/styles/index.css` imports every style file once (a new CSS file goes into its list, at its place in the cascade) while only `src/main.ts` imports CSS. `tests/tauriConfig.test.ts` checks that `tauri.conf.json` reads its version from `package.json` and has LICENSE's copyright line. `tests/models/ids.test.ts` pins the IDs saved in project files in a snapshot; [models.md](models.md#testing) says when it may be updated.
 
 The licenses of the npm dependencies, and the third-party notices (see [licenses.md](licenses.md)):
 

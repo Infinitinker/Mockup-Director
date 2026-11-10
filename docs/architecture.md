@@ -68,7 +68,11 @@ The page also uses Tauri's own APIs, allowed in `src-tauri/capabilities/default.
 ```
 src/
   main.ts       entry point; shows a plain error screen when the app cannot start
-  styles.css    all of the interface's CSS
+  styles/       the interface's CSS, split along the parts of the window; index.css imports it in cascade
+                order: the design tokens (tokens.css), element defaults (base.css), the window's frame: its
+                columns, the toolbar and the tab strip (frame.css), buttons (buttons.css), the gallery, the
+                viewport and the inspector (workspace.css), the controls (controls.css), the panels
+                (panels.css), toasts (toasts.css) and dialogs (dialogs.css)
   core/         the shared contract, and helpers the layers above share:
                   types/ (the contract as types: model.ts, the model contract with the 3D conventions;
                   scene.ts, the scene settings and the stage; export.ts, the export settings; project.ts,
@@ -130,8 +134,8 @@ src/
                 through calls that never throw (storage.ts), the operating system (os.ts: isMac),
                 the window: its title and a last save before it closes (window.ts), and the log
                 (log.ts; uncaught.ts logs the errors no code catches)
-  ui/           the interface (vanilla TypeScript + CSS), in four parts, each importing only the parts
-                before it and what they all use, directly in ui/: the shared context, the actions,
+  ui/           the interface (vanilla TypeScript; its CSS is in styles/), in four parts, each importing
+                only the parts before it and what they all use, directly in ui/: the shared context, the actions,
                 what they work on and the 3D preview's contract (context.ts), DOM helpers (dom.ts),
                 the message and log entry for an error it shows (errors.ts), icons and the toolbar
                 logo (icons.ts, app-logo.svg), number formatting and parsing and the decimals a step
@@ -161,8 +165,9 @@ src/
                 (shortcuts.ts)
 tests/          unit tests (Vitest, config in vitest.config.ts); their folders mirror src/ and tools/;
                 shared test data in fixtures.ts, a seeded random generator in random.ts, the checks
-                of header and banner comments and of the import order in layout.test.ts, and the
-                checks of tauri.conf.json against package.json and LICENSE in tauriConfig.test.ts
+                of header and banner comments, of the import order and of the styles' imports in
+                layout.test.ts, and the checks of tauri.conf.json against package.json and LICENSE in
+                tauriConfig.test.ts
 src-tauri/      the Tauri v2 shell (Rust): main.rs starts lib.rs, which sets up the window, the dialogs,
                 a single app process and the commands; the commands' error (error.rs), writing files
                 (files.rs), opened project files (opened.rs), closing the window if the page never
@@ -228,6 +233,7 @@ How the folders are organized:
 
 - **A model, panel or subsystem is one module until it needs several files; then it becomes a folder.** A file never sits next to a folder of the same name.
 - **A folder that grows past about a dozen modules is split into subfolders by role**, each answering one question, with imports running one way between them. Tests mirror the subfolders.
+- **The styles are split along the parts of the window, not one file per module** (`src/styles/`). `index.css` imports them in cascade order, which is part of the styles: at equal specificity the later rule wins, so a section never moves to another file without checking the rules it passes.
 - **Imports run one way:** `core` ← `models` and `scene` ← `export` ← `project` ← `documents` ← `ui`. A module imports its own folder and the layers below it; `models` and `scene` sit side by side and never import each other. Only `ui` and the entry point `main.ts` use `platform`, except the log (`platform/log.ts`), which every module may use; `platform` itself imports only `core`. `core` holds the contracts the others share (`src/core/types/`). `project` sits above `export` because reading a project checks which formats this engine can export, and `documents` above `project` because the session stores project files. Inside `ui/` its parts run one way too: the modules directly in `ui/` ← `controls` ← `dialogs` ← `panels` ← `app`. `tests/layout.test.ts` fails on an import against either order.
 - **A module's name does not repeat its folder** (`panels/looks.ts`, not `panels/looksPanel.ts`), as long as the shorter name still says what the module is.
 - **File names are camelCase** in `src/` and `tests/` (`plasticCard.ts`) and **kebab-case** in `tools/` (`draw-icon.mjs`).

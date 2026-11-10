@@ -1,0 +1,12 @@
+/* The interface's styles, imported in cascade order. At equal specificity the later rule wins, so this order is part
+   of the styles. Styled like a macOS app: the system font, a 13 px base, translucent panels and 8 px controls, in
+   light and dark. */
+@import "./tokens.css";
+@import "./base.css";
+@import "./frame.css";
+@import "./buttons.css";
+@import "./workspace.css";
+@import "./controls.css";
+@import "./panels.css";
+@import "./toasts.css";
+@import "./dialogs.css";

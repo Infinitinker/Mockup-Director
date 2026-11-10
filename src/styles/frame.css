@@ -1,0 +1,295 @@
+/* The window's frame: the layout of its columns, the toolbar with room for the macOS traffic lights, and the tab
+   strip. */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+}
+.workspace {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: var(--left-w) minmax(0, 1fr) var(--right-w);
+}
+/* The middle column: the project tabs above the viewport, which takes the rest of the height. */
+.workspace-center {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+.workspace-center > .viewport {
+  flex: 1;
+}
+.sidebar {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+}
+
+.toolbar {
+  height: var(--toolbar-h);
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  background: var(--bg-toolbar);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 0.5px solid var(--border-strong);
+  position: relative;
+  z-index: 5;
+}
+.tb-traffic {
+  width: 0;
+  align-self: stretch;
+  flex: none;
+}
+/* macOS traffic lights (Tauri titleBarStyle "Overlay"). Their vertical position comes from
+   trafficLightPosition.y in src-tauri/tauri.conf.json: Tauri grows the system title bar to
+   (button height + y). y = 28 was tuned on a real Mac so the buttons line up with the toolbar
+   items (52 px toolbar, --toolbar-h); the plain math says 26 but the buttons then sit ~2 pt high. */
+.has-traffic-lights .toolbar {
+  padding-left: 0;
+}
+.has-traffic-lights .tb-traffic {
+  /* Space for the three buttons (they end at ~77 pt) plus a gap to the logo a bit wider than the
+     gap between the buttons themselves. */
+  width: 88px;
+}
+.tb-brand {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding-right: 6px;
+}
+.tb-logo svg {
+  display: block;
+  /* Let clicks reach the drag-region span (Tauri matches the exact event target). */
+  pointer-events: none;
+}
+.tb-name {
+  font-weight: 650;
+  font-size: 14px;
+  letter-spacing: -0.01em;
+}
+.tb-sep {
+  width: 0.5px;
+  height: 22px;
+  background: var(--border-strong);
+  margin: 0 4px;
+  flex: none;
+}
+.tb-group {
+  display: flex;
+  gap: 2px;
+}
+.tb-flex {
+  flex: 1;
+  align-self: stretch;
+}
+.tb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tb-btn .btn-icon {
+  color: var(--text-2);
+}
+.tb-btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+}
+.tb-btn:active:not(:disabled) {
+  background: var(--bg-active);
+}
+.tb-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.tb-export {
+  margin-left: 6px;
+  height: 28px;
+  padding: 0 14px;
+}
+.tb-export.busy {
+  opacity: 0.7;
+}
+@media (max-width: 1100px) {
+  .tb-btn .tb-text {
+    display: none;
+  }
+  .tb-btn {
+    padding: 0 7px;
+  }
+}
+
+.doctabs {
+  flex: none;
+  height: 34px;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 6px 0 3px;
+  background: var(--bg-toolbar);
+  border-bottom: 0.5px solid var(--border-strong);
+}
+.doctabs-list {
+  /* offsetLeft of the tabs is measured from here (scrolling the active tab into view). */
+  position: relative;
+  flex: 0 1 auto;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 3px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+.doctabs-list::-webkit-scrollbar {
+  display: none;
+}
+.doctab {
+  /* A fixed width (not a flex-basis) so the strip asks for it; tabs shrink when space runs out. */
+  flex: 0 1 auto;
+  width: 168px;
+  min-width: 96px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  border-radius: var(--radius-sm);
+}
+.doctab:hover:not(.active) {
+  background: var(--bg-hover);
+}
+.doctab:active:not(.active) {
+  background: var(--bg-active);
+}
+.doctab.active {
+  background: var(--bg-control);
+  box-shadow: var(--shadow-control);
+}
+.doctab-main {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0 2px 0 10px;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.doctab.active .doctab-main {
+  color: var(--text);
+  font-weight: 550;
+}
+.doctab-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* The close button and the unsaved-changes dot share one slot: the dot shows until the pointer
+   is over the tab. */
+.doctab-end {
+  position: relative;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin-right: 3px;
+}
+.doctab-dirty {
+  display: none;
+  position: absolute;
+  inset: 0;
+  text-align: center;
+  font-size: 15px;
+  line-height: 20px;
+  color: var(--text-2);
+  pointer-events: none;
+}
+.doctab.dirty .doctab-dirty {
+  display: block;
+}
+.doctab.dirty:hover .doctab-dirty {
+  visibility: hidden;
+}
+.doctab-close {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  opacity: 0;
+}
+.doctab-close .icon {
+  width: 12px;
+  height: 12px;
+}
+.doctab.active .doctab-close,
+.doctab:hover .doctab-close {
+  opacity: 1;
+}
+.doctab.dirty:not(:hover) .doctab-close {
+  opacity: 0;
+}
+.doctab-close:hover:not(:disabled) {
+  background: var(--bg-active);
+  color: var(--text);
+}
+.doctab-close:disabled {
+  visibility: hidden;
+}
+.doctabs.busy .doctab:not(.active) {
+  opacity: 0.45;
+  background: transparent;
+}
+.doctabs.busy .doctab-main {
+  cursor: default;
+}
+.doctabs-new {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+}
+.doctabs-new:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+.doctabs-new:active:not(:disabled) {
+  background: var(--bg-active);
+}
+.doctabs-new:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
