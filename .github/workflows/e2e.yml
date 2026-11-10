@@ -1,0 +1,187 @@
+# Trial: the end-to-end smoke test of the desktop app (tests/e2e, docs/development.md) with WebdriverIO
+# and the embedded WebDriver server, on Windows, Linux and macOS. Not a required check: it runs on
+# pushes to the e2e-trial branch, and by hand once the file is on the default branch.
+name: E2E
+
+on:
+  push:
+    branches: [e2e-trial]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A newer push to the same branch cancels the run still going for the older one.
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # The test plugins are behind the Cargo feature e2e and the web bridge behind Vite's e2e mode: proves
+  # that the builds a release makes contain neither, and that each check can see them when they are on.
+  release-free:
+    name: Release builds carry no test code
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          # wdio needs Node 22.23.4 or later; a 22.x cached on the runner image can be older.
+          check-latest: true
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install
+        run: npm ci
+      - name: Build the web UI
+        run: npm run build
+      - name: No test code in the release builds
+        run: |
+          # The web build of a release has no WebdriverIO code ...
+          if grep -rIl wdio dist; then echo "::error::dist contains WebdriverIO code"; exit 1; fi
+          # ... while the e2e build has it, so the grep can see the bridge at all.
+          npm run build -- --mode e2e
+          grep -rIlq wdioTauri dist-e2e || { echo "::error::dist-e2e has no WebdriverIO bridge"; exit 1; }
+          # The shell's dependency graph without features has no test plugin; with e2e it has both
+          # (so the check can see them).
+          deps() { cargo tree --manifest-path src-tauri/Cargo.toml --locked --target all -e normal,build --prefix none "$@"; }
+          test "$(deps | grep -c '^tauri-plugin-wdio')" = 0 || { echo "::error::a release build would contain a test plugin"; exit 1; }
+          test "$(deps --features e2e | grep -c '^tauri-plugin-wdio')" -ge 2 || { echo "::error::cargo tree no longer shows the test plugins"; exit 1; }
+          # No capability file or the main config names a test permission (a release build would
+          # fail on it anyway).
+          if grep -rn wdio src-tauri/capabilities src-tauri/tauri.conf.json; then echo "::error::a release capability names a test permission"; exit 1; fi
+      # The same tools and versions as the Licenses check (.github/actions/notices).
+      - name: Install cargo-deny and cargo-about
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-deny@0.20.2,cargo-about@0.9.3
+      # The test crates are license-checked too, although they never ship.
+      - name: Rust licenses with the test plugins
+        run: cargo deny --manifest-path src-tauri/Cargo.toml --config src-tauri/deny.toml --features e2e check licenses
+      # The test tools change nothing in the notices of the app.
+      - name: Third-party notices unchanged
+        run: node tools/notices.mjs --check
+
+  e2e:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows
+            os: windows-latest
+          - name: Linux
+            os: ubuntu-24.04
+          - name: macOS
+            os: macos-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          # wdio needs Node 22.23.4 or later; a 22.x cached on the runner image can be older.
+          check-latest: true
+      # The report, the WebdriverIO logs, the screenshot and the app log (tests/e2e/folders.ts). The
+      # runner context cannot be used in a job-level env.
+      - name: Output folder
+        run: echo "E2E_OUTPUT=$RUNNER_TEMP/e2e" >> "$GITHUB_ENV"
+      # The Tauri v2 prerequisites (see build-linux.yml), plus Xvfb and Mesa's software OpenGL for the
+      # window and WebGL.
+      - name: Install system libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev libxdo-dev libssl-dev librsvg2-dev \
+            xvfb libegl-mesa0 libgl1-mesa-dri mesa-utils
+      # The same MSYS2 and GNU toolchain as build-windows.yml, where the reasons are explained.
+      - id: msys2
+        uses: msys2/setup-msys2@v2
+        if: runner.os == 'Windows'
+        with:
+          msystem: MINGW64
+          install: mingw-w64-x86_64-gcc
+      - name: Put MINGW64 on the PATH
+        if: runner.os == 'Windows'
+        run: echo "${{ steps.msys2.outputs.msys2-location }}/mingw64/bin" >> "$GITHUB_PATH"
+      - name: Install the GNU toolchain
+        if: runner.os == 'Windows'
+        run: |
+          rustup toolchain install stable-x86_64-pc-windows-gnu --profile minimal --component clippy --no-self-update
+          rustup default stable-x86_64-pc-windows-gnu
+      - uses: dtolnay/rust-toolchain@stable
+        if: runner.os != 'Windows'
+        with:
+          components: clippy
+      # The feature changes the build, so this cache stays apart from the Checks one. It holds the e2e
+      # build's own target folder (src-tauri/target/e2e) too.
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+          key: e2e
+      - name: Install
+        run: npm ci
+      # Logged only: what the app renders with.
+      - name: Graphics environment (Windows)
+        if: runner.os == 'Windows'
+        # Git Bash would turn the /v switch into a path.
+        shell: pwsh
+        run: |
+          reg query 'HKLM\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}' /v pv
+          exit 0
+      - name: Graphics environment (Linux)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a -s "-screen 0 1920x1080x24" glxinfo -B || true
+      - name: Graphics environment (macOS)
+        if: runner.os == 'macOS'
+        run: sw_vers; system_profiler SPDisplaysDataType || true
+      # The shell embeds the web UI from dist/ when it is compiled, so the UI is built first.
+      - name: Build the web UI
+        run: npm run build
+      # The code behind #[cfg(feature = "e2e")], which the Checks never compile.
+      - name: Clippy with the e2e feature
+        run: cargo clippy --manifest-path src-tauri/Cargo.toml --features e2e --locked -- -D warnings
+      - name: Build the e2e app
+        run: |
+          npm run e2e:build
+          if [ "$RUNNER_OS" = Windows ]; then ls src-tauri/target/e2e/debug/WebView2Loader.dll; fi
+      - name: Run the smoke test
+        if: runner.os != 'Linux'
+        run: npm run e2e
+      # Never set WEBKIT_DISABLE_COMPOSITING_MODE: it turns WebGL off.
+      - name: Run the smoke test (Linux)
+        if: runner.os == 'Linux'
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: xvfb-run -a -s "-screen 0 1920x1080x24" npm run e2e
+      - name: Collect the app log
+        if: always()
+        run: |
+          id=io.github.infinitinker.mockupdirector.e2e
+          case "$RUNNER_OS" in
+            Windows) log="$LOCALAPPDATA/$id/logs/mockup-director.log" ;;
+            Linux) log="$HOME/.local/share/$id/logs/mockup-director.log" ;;
+            macOS) log="$HOME/Library/Logs/$id/mockup-director.log" ;;
+          esac
+          mkdir -p "$E2E_OUTPUT"
+          if [ -f "$log" ]; then cp "$log" "$E2E_OUTPUT/" || true; else echo "No app log at $log"; fi
+      - name: Job summary
+        if: always()
+        run: |
+          { echo "### ${{ matrix.name }}"; echo '```json'; cat "$E2E_OUTPUT/report.json" || echo '{"report":"missing"}'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: e2e-${{ matrix.name }}
+          path: ${{ runner.temp }}/e2e
+          retention-days: 14
