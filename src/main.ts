@@ -1,5 +1,12 @@
+/**
+ * The entry point: starts logging uncaught errors, then starts the app, and shows a plain error screen
+ * when that fails. `./platform/uncaught` stays the first import, so that errors thrown while the other
+ * modules are evaluated are logged too.
+ */
+import './platform/uncaught';
 import './styles.css';
 import { startApp } from './ui/app';
+import { log } from './platform/log';
 
 const root = document.getElementById('app');
 if (root) {
@@ -7,7 +14,7 @@ if (root) {
     startApp(root);
   } catch (e) {
     // Last-resort error screen – the app shell itself failed to start.
-    console.error('[mockup-director] startup failed', e);
+    log.error('Mockup Director failed to start', e);
     root.textContent = '';
     const box = document.createElement('div');
     box.setAttribute('role', 'alert');

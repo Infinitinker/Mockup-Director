@@ -6,6 +6,7 @@
  * the one it was saved at; undoing back to that point makes it clean again.
  */
 import { Store, type DocumentState, type StoreDocument } from './state';
+import { log } from '../platform/log';
 
 export interface TabInfo {
   readonly id: string;
@@ -221,7 +222,7 @@ export class Documents {
       try {
         l();
       } catch (e) {
-        console.error('[mockup-director] tabs listener failed', e);
+        log.error('A tabs listener failed', e);
       }
     }
   }

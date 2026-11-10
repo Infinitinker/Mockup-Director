@@ -5,12 +5,13 @@
 import type { Look } from '../../core/types';
 import { UserError } from '../../core/errors';
 import type { AppContext } from '../context';
-import { errorMessage, h, nextId } from '../dom';
+import { errorMessage, h, logShownError, nextId } from '../dom';
 import { ICONS } from '../icons';
 import { iconButton, section } from '../controls';
 import { confirmDialog, promptDialog } from '../dialog';
 import { notify } from '../toast';
 import { saveBlob, pickFiles } from '../../platform/files';
+import { log } from '../../platform/log';
 import {
   BUILTIN_LOOKS,
   LOOKS_FILE_NAME,
@@ -68,6 +69,7 @@ export function createLooksPanel(ctx: AppContext): { el: HTMLElement } {
   // One warning while saving keeps failing, not one per change.
   const persist = () => {
     if (saver.save().warn) {
+      log.warn('Could not save looks');
       notify.warning(
         'Could not save looks',
         'The storage for looks is full or blocked. Delete looks you no longer need, or export your looks to a file to keep them.',
@@ -85,6 +87,7 @@ export function createLooksPanel(ctx: AppContext): { el: HTMLElement } {
     if (!ok) return;
     // An explicit command: its failure is always reported, not only the first time.
     if (saver.replaceDamaged() === 'failed') {
+      log.error('Could not delete the saved looks');
       notify.error(
         'Could not delete the saved looks',
         'The storage for looks is full or blocked. Export your looks to a file to keep them.',
@@ -278,6 +281,7 @@ export function createLooksPanel(ctx: AppContext): { el: HTMLElement } {
             imported.push({ ...look, name: uniqueName(look.name, [...looks, ...imported]) });
           }
         } catch (e) {
+          logShownError(`Could not import looks from ${f.name}`, e);
           notify.error('Could not import looks', `${f.name}: ${errorMessage(e)}`);
           return;
         }
@@ -291,6 +295,7 @@ export function createLooksPanel(ctx: AppContext): { el: HTMLElement } {
       render();
       notify.success(`Imported looks: ${imported.length}`);
     } catch (e) {
+      logShownError('Could not import looks', e);
       notify.error('Could not import looks', errorMessage(e));
     }
   };
@@ -305,6 +310,7 @@ export function createLooksPanel(ctx: AppContext): { el: HTMLElement } {
       const saved = await saveBlob(blob, LOOKS_FILE_NAME, [{ name: 'JSON', extensions: ['json'] }]);
       if (saved) notify.success('Saved', saved);
     } catch (e) {
+      logShownError('Could not export looks', e);
       notify.error('Could not export looks', errorMessage(e));
     }
   };

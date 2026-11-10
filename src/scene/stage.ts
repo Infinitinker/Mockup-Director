@@ -34,6 +34,7 @@ import { UnionFit, fitCamera, type FitResult } from './framing';
 import { GroundShadow, computeShadowLayout, type ShadowLayout } from './shadows';
 import { Reflection, REFLECTION_LAYER } from './reflection';
 import { applyCssBackground, paintBackground } from './background';
+import { log } from '../platform/log';
 
 const DEG = Math.PI / 180;
 
@@ -459,7 +460,7 @@ export function createStage(container: HTMLElement): StageAPI {
         try {
           cb({ ...c });
         } catch (err) {
-          console.error(err);
+          log.error('A camera listener failed', err);
         }
       }
     }

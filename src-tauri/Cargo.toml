@@ -36,6 +36,16 @@ tauri-plugin-dialog = "~2.8"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
+# The native message when the app cannot start or cannot open its window (the dialog plugin needs a
+# running app): rfd on Windows and macOS, with the version and features tauri-plugin-dialog uses;
+# on Linux GTK itself, which tao already started on the main thread (rfd would run GTK on a thread of
+# its own). Neither adds crates.
+[target.'cfg(not(target_os = "linux"))'.dependencies]
+rfd = { version = "0.17", default-features = false, features = ["common-controls-v6"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+gtk = "0.18"
+
 # One app process on Windows and Linux: a second launch (double-clicking another project file) hands
 # its files to the running app, which opens them in tabs. Rust only; it has no npm package. Not on
 # macOS: there the system itself sends files to the running app (RunEvent::Opened), and the plugin

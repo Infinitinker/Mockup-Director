@@ -16,6 +16,7 @@
  */
 import { UserError } from '../core/errors';
 import { isPlain, NewerProjectError, type ParsedProject, PROJECT_EXT, parseProjectFile } from './project';
+import { log } from '../platform/log';
 
 /** The version of the index; raised when a change would be lost by an older app re-saving the session. */
 export const SESSION_VERSION = 1;
@@ -151,7 +152,7 @@ export function readTabRecord(raw: unknown): TabRecord {
     return { project: parseProjectFile(raw.file) };
   } catch (e) {
     if (!(e instanceof UserError)) throw e;
-    console.warn('[mockup-director] autosaved tab skipped', e);
+    log.warn('An autosaved tab cannot be opened', e);
     return { skipped: e instanceof NewerProjectError ? 'newer' : 'damaged' };
   }
 }

@@ -5,7 +5,7 @@
  */
 import { saveBlob } from '../platform/files';
 import { panelDialog } from './dialog';
-import { append, clear, errorMessage, h } from './dom';
+import { append, clear, errorMessage, h, logShownError } from './dom';
 import { PROJECT_FILE_FILTER } from './project';
 import { type UnopenedTab, unopenedFileName, unopenedFileText } from './sessionRecords';
 
@@ -108,6 +108,7 @@ function copyRow(copy: UnopenedTab, forget: ForgetCopy): HTMLLIElement {
       saved = await saveBlob(blob, unopenedFileName(copy.name), [PROJECT_FILE_FILTER], { confirmed: true });
     } catch (e) {
       setBusy(false);
+      logShownError('Could not save the copy', e);
       showStatus('Could not save the copy', errorMessage(e), true);
       return;
     }
@@ -119,6 +120,7 @@ function copyRow(copy: UnopenedTab, forget: ForgetCopy): HTMLLIElement {
       await forget(copy.id);
     } catch (e) {
       setBusy(false);
+      logShownError('Saved a copy, but could not remove it', e);
       showStatus(`Saved as “${saved}”, but the copy could not be removed`, errorMessage(e), true);
       return;
     }
@@ -131,6 +133,7 @@ function copyRow(copy: UnopenedTab, forget: ForgetCopy): HTMLLIElement {
       await forget(copy.id);
     } catch (e) {
       showChoices('delete');
+      logShownError('Could not delete the copy', e);
       showStatus('Could not delete the copy', errorMessage(e), true);
       return;
     }

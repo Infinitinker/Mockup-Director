@@ -204,8 +204,11 @@ Yes. The images you export are yours, and the app contains no third-party templa
 **Where are my settings and open tabs?**
 Your looks, the open tabs and a few interface choices are kept in your user profile, in a folder named after the app's identifier, `io.github.infinitinker.mockupdirector`: on Windows in `%LOCALAPPDATA%`, on Linux in `~/.local/share`, on macOS in `~/Library/WebKit`. Your projects are wherever you saved the `.mdproj` files.
 
+**Something went wrong. Is there a log?**
+Yes: `mockup-director.log`, on Windows in `%LOCALAPPDATA%\io.github.infinitinker.mockupdirector\logs`, on macOS in `~/Library/Logs/io.github.infinitinker.mockupdirector`, on Linux in `~/.local/share/io.github.infinitinker.mockupdirector/logs`. It records errors, never your artwork or the contents of your files, but it can name your files and folders: read it before you attach it to a bug report. It keeps about 3 MB and deletes the oldest entries.
+
 **How do I update or remove it?**
-To update, install the newer version over the old one: run the new installer on Windows, drag the new app to **Applications** on macOS, or install the new package or replace the AppImage on Linux; with the portable ZIP, replace its folder. Your looks and open tabs stay. To remove it, uninstall it like any other app (on Windows in Settings → Apps). Uninstalling keeps the settings folder above; delete it yourself to remove everything. On Windows, if you installed Mockup Director for you alone, the uninstaller asks whether to delete it too.
+To update, install the newer version over the old one: run the new installer on Windows, drag the new app to **Applications** on macOS, or install the new package or replace the AppImage on Linux; with the portable ZIP, replace its folder. Your looks and open tabs stay. To remove it, uninstall it like any other app (on Windows in Settings → Apps). Uninstalling keeps the settings folder and the log folder above; delete them yourself to remove everything. On Windows, if you installed Mockup Director for you alone, the uninstaller asks whether to delete them too.
 
 **Which version do I have?**
 Hold the pointer over **Mockup Director** at the left of the toolbar.

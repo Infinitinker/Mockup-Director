@@ -2,7 +2,7 @@
 ; (ISCC.exe) from the app that `npm run tauri build` leaves in src-tauri/target/release. It installs
 ; for the current user, with no administrator rights, into %LOCALAPPDATA%\Programs\Mockup Director,
 ; or, if the user chooses and is an administrator, for all users into Program Files. Either way each
-; user's looks, settings and open tabs stay in their own %LOCALAPPDATA%\<identifier>.
+; user's looks, settings, open tabs and log stay in their own %LOCALAPPDATA%\<identifier>.
 ;
 ; installer.mjs passes:
 ;   AppVersion      the release, e.g. 0.2.0 or 0.3.0-beta.1
@@ -72,7 +72,7 @@ Name: "en"; MessagesFile: "compiler:Default.isl"
 [CustomMessages]
 ; FmtMessage fills in %1; %n is a line break.
 ProjectFile=Mockup Director project
-DeleteData=Also delete your Mockup Director looks, settings and open tabs? Your projects stay where you saved them.%n%n%1
+DeleteData=Also delete your Mockup Director looks, settings, open tabs and log? Your projects stay where you saved them.%n%n%1
 DataNotDeleted=Some files in %1 could not be deleted. Delete the folder yourself.
 WebView2Title=Microsoft Edge WebView2
 WebView2Text=Mockup Director needs Microsoft Edge WebView2, which this computer does not have yet. Setup downloads and installs it.

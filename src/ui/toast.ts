@@ -4,6 +4,7 @@
  */
 import { h } from './dom';
 import { ICONS } from './icons';
+import { log } from '../platform/log';
 
 type ToastKind = 'info' | 'success' | 'error' | 'warning';
 
@@ -25,7 +26,7 @@ function toast(kind: ToastKind, title: string, detail?: string): void {
 
   if (!container) {
     // UI not mounted yet – at least log it.
-    (kind === 'error' ? console.error : console.info)(`[mockup-director] ${title}${detail ? `: ${detail}` : ''}`);
+    log[kind === 'error' ? 'error' : kind === 'warning' ? 'warn' : 'info'](`${title}${detail ? `: ${detail}` : ''}`);
     return;
   }
   const icon = kind === 'success' ? ICONS.check : kind === 'error' || kind === 'warning' ? ICONS.warn : ICONS.info;

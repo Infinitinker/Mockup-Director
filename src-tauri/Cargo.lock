@@ -2021,6 +2021,8 @@ dependencies = [
 name = "mockup-director"
 version = "0.0.0"
 dependencies = [
+ "gtk",
+ "rfd",
  "serde",
  "serde_json",
  "tauri",

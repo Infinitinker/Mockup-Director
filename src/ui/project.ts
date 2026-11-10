@@ -12,6 +12,7 @@ import { sanitizeParam } from './modelUtils';
 import { clamp } from './dom';
 import { animationFormatSupport, webpEncodingSupported } from './exportBridge';
 import { normalizeAnimationSettings } from '../export/animation/settings';
+import { log } from '../platform/log';
 
 /** The extension of project files, the only one the app saves and opens. */
 export const PROJECT_EXT = 'mdproj';
@@ -368,7 +369,7 @@ export async function hydrateProject(file: ProjectFile): Promise<{ state: Docume
           })
           .catch((e: unknown) => {
             failed += 1;
-            console.warn('[mockup-director] artwork failed to load', sid, e);
+            log.warn(`Artwork for the slot ${sid} failed to load`, e);
           }),
       );
     }

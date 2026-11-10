@@ -13,7 +13,7 @@ import { createStage } from '../scene/stage';
 import { inDesktopApp, pickFiles, saveBlob } from '../platform/files';
 import { handleOpenedFiles } from '../platform/launch';
 import { onWindowClose, setWindowTitle } from '../platform/window';
-import { Signal, errorMessage, frameCoalescer, h, isMac, nextFrame } from './dom';
+import { Signal, errorMessage, frameCoalescer, h, isMac, logShownError, nextFrame } from './dom';
 
 import { Store, hasAny, type DocumentState, type ArtworkMap } from './state';
 import { Documents } from './documents';
@@ -53,6 +53,7 @@ import { createGallery } from './gallery';
 import { createViewportShell } from './viewport';
 import { createInspector } from './inspector';
 import { installShortcuts } from './shortcuts';
+import { log } from '../platform/log';
 
 const AUTOSAVE_MS = 1500;
 
@@ -143,7 +144,7 @@ export function startApp(root: HTMLElement): void {
   try {
     stage = createStage(viewport.host);
   } catch (e) {
-    console.error('[mockup-director] stage init failed', e);
+    log.error('Cannot create the 3D view', e);
     stage = createNullStage();
     viewport.showError(
       'The 3D preview is not available: WebGL does not work on this computer. Update the graphics drivers, then restart Mockup Director.',
@@ -167,7 +168,7 @@ export function startApp(root: HTMLElement): void {
     try {
       stage.setModel(model.build(ctx));
     } catch (e) {
-      console.error('[mockup-director] model build failed', e);
+      logShownError(`Could not build model “${model.name}”`, e);
       notify.error(`Could not build model “${model.name}”`, errorMessage(e));
     }
   });
@@ -176,7 +177,7 @@ export function startApp(root: HTMLElement): void {
     try {
       stage.applySettings(store.state.scene);
     } catch (e) {
-      console.error('[mockup-director] applySettings failed', e);
+      logShownError('Could not apply the scene settings', e);
       notify.error('Could not apply the scene settings', errorMessage(e));
     }
   });
@@ -194,23 +195,35 @@ export function startApp(root: HTMLElement): void {
   let autosaveTimer = 0;
   let autosaveDirty = false;
   let autosaveFailureShown = false;
+  /** The message of the failure last logged while autosave keeps failing; null while it works. */
+  let autosaveFailure: string | null = null;
   /** The save in progress (or the last one); the close flush waits for it. Never rejects. */
   let saving: Promise<void> = Promise.resolve();
   const autosaveNow = (): Promise<void> => {
     clearTimeout(autosaveTimer);
     if (!autosaveDirty || restoring || !sessionReadable) return saving;
     autosaveDirty = false;
-    saving = session.save(docs.snapshot(), docs.activeId).catch((e: unknown) => {
-      console.error('[mockup-director] autosave failed', e);
-      // Once per run: the work is still open, but would not come back after a restart.
-      if (!autosaveFailureShown) {
-        autosaveFailureShown = true;
-        notify.error(
-          'Your open projects could not be saved for the next start. They are still open: save them to files to keep them.',
-          errorMessage(e),
-        );
-      }
-    });
+    saving = session.save(docs.snapshot(), docs.activeId).then(
+      () => {
+        if (autosaveFailure === null) return;
+        autosaveFailure = null;
+        log.info('Autosave works again');
+      },
+      (e: unknown) => {
+        // A lasting failure is logged once, not at every pause in editing; a different one again.
+        const message = errorMessage(e);
+        if (message !== autosaveFailure) logShownError('Autosave failed', e);
+        autosaveFailure = message;
+        // Once per run: the work is still open, but would not come back after a restart.
+        if (!autosaveFailureShown) {
+          autosaveFailureShown = true;
+          notify.error(
+            'Your open projects could not be saved for the next start. They are still open: save them to files to keep them.',
+            message,
+          );
+        }
+      },
+    );
     return saving;
   };
   const scheduleAutosave = () => {
@@ -301,6 +314,7 @@ export function startApp(root: HTMLElement): void {
           const warning = projectWarning(report, failed, 'file');
           if (warning) notify.warning(warning, f.name);
         } catch (e) {
+          logShownError(`Could not open the project ${f.name}`, e);
           notify.error('Could not open the project', `${f.name}: ${errorMessage(e)}`);
         }
       }
@@ -350,6 +364,7 @@ export function startApp(root: HTMLElement): void {
         const files = file ? [file] : await pickFiles(`.${PROJECT_EXT}`, true);
         await openProjectFiles(files);
       } catch (e) {
+        logShownError('Could not open the project', e);
         notify.error('Could not open the project', errorMessage(e));
       }
     },
@@ -370,6 +385,7 @@ export function startApp(root: HTMLElement): void {
         notify.success('Project saved', saved);
         return true;
       } catch (e) {
+        logShownError('Could not save the project', e);
         notify.error('Could not save the project', errorMessage(e));
         return false;
       }
@@ -427,7 +443,7 @@ export function startApp(root: HTMLElement): void {
         const saved = await saveBlob(blob, name, [{ name: IMAGE_FORMAT_LABEL[settings.format], extensions: [ext] }]);
         if (saved) notify.success('Saved', saved);
       } catch (e) {
-        console.error('[mockup-director] export failed', e);
+        logShownError('Export failed', e);
         notify.error('Export failed', errorMessage(e));
       } finally {
         exportBusy.set(false);
@@ -473,7 +489,7 @@ export function startApp(root: HTMLElement): void {
         if (isAnimationCanceled(e)) {
           notify.info('Animation export canceled');
         } else {
-          console.error('[mockup-director] animation export failed', e);
+          logShownError('Animation export failed', e);
           notify.error('Animation export failed', errorMessage(e));
         }
       } finally {
@@ -553,7 +569,10 @@ export function startApp(root: HTMLElement): void {
         const loaded: Record<string, ArtworkMap[string][string]> = {};
         results.forEach((r, i) => {
           if (r.status === 'fulfilled') loaded[pairs[i].slotId] = r.value;
-          else notify.error(`Could not load “${pairs[i].file.name}”`, errorMessage(r.reason));
+          else {
+            logShownError(`Could not load “${pairs[i].file.name}”`, r.reason);
+            notify.error(`Could not load “${pairs[i].file.name}”`, errorMessage(r.reason));
+          }
         });
         if (Object.keys(loaded).length && !docs.tab(tabId)) {
           // The tab was closed meanwhile.
@@ -577,6 +596,7 @@ export function startApp(root: HTMLElement): void {
         const files = await pickFiles('image/*', false);
         if (files.length) await actions.assignArtwork(files.slice(0, 1), [slotId]);
       } catch (e) {
+        logShownError('Could not pick the file', e);
         notify.error('Could not pick the file', errorMessage(e));
       }
     },
@@ -607,6 +627,7 @@ export function startApp(root: HTMLElement): void {
         const saved = await saveBlob(blob, name, [{ name: 'PNG', extensions: ['png'] }]);
         if (saved) notify.success('Saved', saved);
       } catch (e) {
+        logShownError('Could not create the print template', e);
         notify.error('Could not create the print template', errorMessage(e));
       }
     },
@@ -642,7 +663,7 @@ export function startApp(root: HTMLElement): void {
       try {
         stage.applySettings(store.state.scene);
       } catch (e) {
-        console.error('[mockup-director] applySettings failed', e);
+        log.error('Cannot apply the scene settings', e);
       }
       // Rebuild the document's model right away (replaces – and disposes – the last temporary model).
       rebuild.schedule();
@@ -690,7 +711,6 @@ export function startApp(root: HTMLElement): void {
   window.addEventListener('dragover', (e) => e.preventDefault());
   window.addEventListener('drop', (e) => e.preventDefault());
   window.addEventListener('unhandledrejection', (e) => {
-    console.error('[mockup-director] unhandled rejection', e.reason);
     notify.error('An action could not be finished', errorMessage(e.reason));
   });
 
@@ -715,7 +735,7 @@ export function startApp(root: HTMLElement): void {
   let unopened: UnopenedTab[] = [];
   restoreSession()
     .catch((e) => {
-      console.error('[mockup-director] session restore failed', e);
+      logShownError('Session restore failed', e);
       notify.error(
         'The projects that were open last time could not be reopened, and open projects are not saved automatically. Save them to files to keep them.',
         errorMessage(e),
@@ -731,7 +751,10 @@ export function startApp(root: HTMLElement): void {
       // Projects the operating system asked to open (a double-clicked .mdproj), each in a tab.
       void handleOpenedFiles(
         (files) => void openProjectFiles(files),
-        (e) => notify.error('Could not open the project', errorMessage(e)),
+        (e) => {
+          logShownError('Could not open the project', e);
+          notify.error('Could not open the project', errorMessage(e));
+        },
       );
     });
 

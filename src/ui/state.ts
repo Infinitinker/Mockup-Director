@@ -16,6 +16,7 @@
  */
 import type { ExportSettings, Artwork, ParamValues, SceneSettings } from '../core/types';
 import { disposeArtwork } from '../core/images';
+import { log } from '../platform/log';
 
 type ChangeKind = 'model' | 'params' | 'artwork' | 'scene' | 'camera' | 'export';
 type ChangeSource = 'ui' | 'stage' | 'history' | 'project' | 'init' | 'document';
@@ -312,7 +313,7 @@ export class Store {
       try {
         l(ev);
       } catch (e) {
-        console.error('[mockup-director] state listener failed', e);
+        log.error('A state listener failed', e);
       }
     }
   }
@@ -322,7 +323,7 @@ export class Store {
       try {
         l();
       } catch (e) {
-        console.error('[mockup-director] history listener failed', e);
+        log.error('A history listener failed', e);
       }
     }
   }

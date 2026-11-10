@@ -2,6 +2,7 @@
  * Tiny DOM helpers – the UI is vanilla TS, so this keeps element creation readable.
  */
 import { UserError } from '../core/errors';
+import { log } from '../platform/log';
 
 export type Child = Node | string | number | null | undefined | false;
 
@@ -144,6 +145,15 @@ export function errorMessage(e: unknown): string {
   }
   const detail = raw.trim().replace(/\.+$/, '');
   return `Something unexpected went wrong${detail ? `: ${detail}` : ''}. If it keeps happening, report it at github.com/Infinitinker/Mockup-Director/issues.`;
+}
+
+/**
+ * Logs an error the interface shows, under a short title naming what failed (usually the title it is
+ * shown with): a UserError as a warning (the user was told what to do), anything else as an error.
+ */
+export function logShownError(title: string, e: unknown): void {
+  if (e instanceof UserError) log.warn(title, e);
+  else log.error(title, e);
 }
 
 export const isMac: boolean = /Mac|iPhone|iPad|iPod/i.test(

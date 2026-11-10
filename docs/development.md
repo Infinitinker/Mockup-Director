@@ -43,6 +43,8 @@ npm run app:dev
 
 This is `tauri dev` with `src-tauri/tauri.dev.conf.json` merged in, which gives the app run from source its own identifier, `io.github.infinitinker.mockupdirector.dev`. Only one copy of the app runs at a time, and the lock that ensures this is named after the identifier, so without it an installed Mockup Director that is already running would take over: the build from source would hand its files to the installed app and quit. The separate identifier also gives it its own data folder, so its open tabs and looks never mix with those of an installed app. Plain `npm run tauri dev` uses the installed app's identifier.
 
+Diagnostics go through `log` in `src/platform/log.ts` (`log::info`, `warn` and `error` in `src-tauri/src/log.rs`), never `console.*` or `eprintln!`; Biome's `noConsole` rule enforces it in `src/`. In the browser they show in the console. The desktop app run from source writes them to the log file in `io.github.infinitinker.mockupdirector.dev`'s log folder, and also to the terminal (every entry, the page's too) and the devtools console (the page's). Where the log folder is: [Log](architecture.md#log).
+
 ## Checks
 
 Formatting and lint of the TypeScript code, the tool scripts, the CSS and every JSON file, with [Biome](https://biomejs.dev/) (configured in `biome.json`):

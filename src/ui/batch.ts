@@ -37,7 +37,7 @@ import { pickFiles, saveBlob } from '../platform/files';
 import { slugify } from '../export/exporter';
 import { ZipLimitError, ZipWriter } from '../export/zip';
 import { VIEW_PRESETS, type AppContext } from './context';
-import { append, errorMessage, h, nextFrame, nextId, type Child } from './dom';
+import { append, errorMessage, h, logShownError, nextFrame, nextId, type Child } from './dom';
 import { safeStorage } from '../platform/storage';
 import { ICONS } from './icons';
 import { segmentedControl, selectControl } from './controls';
@@ -205,12 +205,12 @@ async function runBatch(
         res.done += 1;
         if (out.warning) res.warnings.push({ label: item.label, message: out.warning });
       } catch (e) {
+        logShownError(`Batch item ${item.label} failed`, e);
         if (e instanceof ZipLimitError) {
           res.limitHit = true;
           res.errors.push({ label: item.label, message: e.message });
           break;
         }
-        console.warn('[mockup-director] batch item failed', item.label, e);
         res.errors.push({ label: item.label, message: errorMessage(e) });
       }
     }
@@ -379,6 +379,7 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
       else memory.projectFiles = addUnique(memory.projectFiles, files);
       render();
     } catch (e) {
+      logShownError('Could not pick the file', e);
       notify.error('Could not pick the file', errorMessage(e));
     }
   };
@@ -717,7 +718,7 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
       );
     } catch (e) {
       // runBatch() reports item errors itself; this is an unexpected failure of the batch as a whole.
-      console.error('[mockup-director] batch export failed', e);
+      logShownError('Batch export failed', e);
       host.end(); // idempotent – runBatch() normally ends the session itself
       notify.error('Batch export failed', errorMessage(e));
       result = null;
@@ -744,6 +745,7 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
       render();
       actions.querySelector<HTMLButtonElement>('.btn-primary')?.focus();
     } catch (e) {
+      logShownError('Could not save the ZIP file', e);
       notify.error('Could not save the ZIP file', errorMessage(e));
     } finally {
       btn.disabled = false;

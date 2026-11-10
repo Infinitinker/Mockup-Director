@@ -8,18 +8,19 @@
 //!  - a single app process: on Windows and Linux, launching the app again hands the new launch's
 //!    project files to the running app (which opens them in tabs) and brings its window forward;
 //!    on macOS the system itself sends them to the running app, as an event,
-//!  - a close watchdog (`closing.rs`): the window closes even when the page does not answer.
+//!  - a close watchdog (`closing.rs`): the window closes even when the page does not answer,
+//!  - the log (`log.rs`), with `write_log` for the page's entries, and a native message when the
+//!    app cannot start.
 
 pub mod closing;
 pub mod error;
 pub mod files;
+pub mod log;
 pub mod opened;
 
-#[cfg(not(target_os = "macos"))]
-use std::path::Path;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
-use tauri::{AppHandle, Emitter, Manager, WindowEvent};
+use tauri::{AppHandle, Emitter, Manager, WebviewWindowBuilder, WindowEvent};
 
 use error::CommandError;
 use files::{percent_decode, validate_target, write_atomically};
@@ -69,7 +70,9 @@ fn hand_over(app: &AppHandle, paths: Vec<PathBuf>) {
     }
     app.state::<opened::OpenedFiles>().push(paths);
     if let Err(e) = app.emit(opened::FILES_OPENED_EVENT, ()) {
-        eprintln!("Cannot tell the window that project files were opened: {e}");
+        log::error(format_args!(
+            "Cannot tell the window that project files were opened: {e}"
+        ));
     }
 }
 
@@ -81,7 +84,7 @@ fn on_second_launch(app: &AppHandle, args: Vec<String>, cwd: String) {
     let paths = opened::project_paths(args.into_iter().skip(1), Path::new(&cwd));
     hand_over(app, paths);
     let Some(window) = app.get_webview_window("main") else {
-        eprintln!("Cannot bring the window forward: the main window does not exist");
+        log::error("Cannot bring the window forward: the main window does not exist");
         return;
     };
     let shown = window
@@ -89,12 +92,18 @@ fn on_second_launch(app: &AppHandle, args: Vec<String>, cwd: String) {
         .and_then(|()| window.show())
         .and_then(|()| window.set_focus());
     if let Err(e) = shown {
-        eprintln!("Cannot bring the window forward: {e}");
+        log::error(format_args!("Cannot bring the window forward: {e}"));
     }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let context = tauri::generate_context!();
+    let version = context.package_info().version.to_string();
+    let log_dir = log::start(log::log_dir(&context.config().identifier, |name| {
+        std::env::var_os(name)
+    }));
+
     // Windows and Linux pass double-clicked project files as arguments. If the working directory
     // cannot be read, relative paths stay relative (and fail with a clear error when read).
     let opened = opened::OpenedFiles::default();
@@ -107,7 +116,8 @@ pub fn run() {
     // First, so that a second launch hands over and exits before anything else starts.
     #[cfg(not(target_os = "macos"))]
     let builder = builder.plugin(tauri_plugin_single_instance::init(on_second_launch));
-    builder
+    let (setup_version, setup_log_dir) = (version.clone(), log_dir.clone());
+    let app = builder
         .manage(opened)
         .manage(closing::CloseWatchdog::default())
         .plugin(tauri_plugin_dialog::init())
@@ -118,20 +128,98 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             save_file,
-            opened::take_opened_files
+            opened::take_opened_files,
+            log::write_log
         ])
-        .build(tauri::generate_context!())
-        .expect("error while starting Mockup Director")
-        .run(|_app, _event| {
-            // macOS sends opened files as an event, at start-up and while the app runs.
-            #[cfg(target_os = "macos")]
-            if let tauri::RunEvent::Opened { urls } = _event {
-                let paths = urls
-                    .into_iter()
-                    .filter_map(|url| url.to_file_path().ok())
-                    .filter(|path| opened::is_project_path(path))
-                    .collect();
-                hand_over(_app, paths);
+        // The window is made here rather than by Tauri (`"create": false` in tauri.conf.json), so
+        // that a window or web engine that cannot be created is reported, not a panic.
+        .setup(move |app| {
+            let made = app
+                .config()
+                .app
+                .windows
+                .iter()
+                .find(|window| window.label == "main")
+                .ok_or_else(|| tauri::Error::WindowNotFound)
+                .and_then(|config| WebviewWindowBuilder::from_config(app, config)?.build());
+            if let Err(e) = made {
+                fail_to_start(
+                    "Mockup Director could not open its window.",
+                    &e,
+                    &setup_version,
+                    setup_log_dir.as_deref(),
+                );
             }
+            Ok(())
+        })
+        .build(context)
+        .unwrap_or_else(|e| {
+            fail_to_start(
+                "Mockup Director could not start.",
+                &e,
+                &version,
+                log_dir.as_deref(),
+            )
         });
+    // After build(): a second launch on Windows and Linux has handed its files over and exited there.
+    log::info(format_args!(
+        "Mockup Director {version} started on {} {}",
+        std::env::consts::OS,
+        std::env::consts::ARCH
+    ));
+    app.run(|_app, _event| {
+        // macOS sends opened files as an event, at start-up and while the app runs.
+        #[cfg(target_os = "macos")]
+        if let tauri::RunEvent::Opened { urls } = _event {
+            let paths = urls
+                .into_iter()
+                .filter_map(|url| url.to_file_path().ok())
+                .filter(|path| opened::is_project_path(path))
+                .collect();
+            hand_over(_app, paths);
+        }
+    });
+}
+
+/// Logs why the app cannot start, says so in a native message (`what` happened, then what to do and
+/// the error), and ends the process.
+fn fail_to_start(what: &str, error: &tauri::Error, version: &str, log_dir: Option<&Path>) -> ! {
+    log::error(format_args!("{what} Version {version}: {error}"));
+    let log = match log_dir {
+        Some(dir) => format!(" and attach {} from {}", log::FILE_NAME, dir.display()),
+        None => String::new(),
+    };
+    show_start_failure(&format!(
+        "{what} Start it again. If it still does not start, report the problem at github.com/Infinitinker/Mockup-Director/issues{log}.\n\nDetails: {error}"
+    ));
+    std::process::exit(1)
+}
+
+const START_FAILURE_TITLE: &str = "Mockup Director cannot start";
+
+#[cfg(not(target_os = "linux"))]
+fn show_start_failure(text: &str) {
+    rfd::MessageDialog::new()
+        .set_level(rfd::MessageLevel::Error)
+        .set_title(START_FAILURE_TITLE)
+        .set_description(text)
+        .set_buttons(rfd::MessageButtons::Ok)
+        .show();
+}
+
+/// On the main thread, where tao has already started GTK: both failures come after it did.
+#[cfg(target_os = "linux")]
+fn show_start_failure(text: &str) {
+    use gtk::prelude::*;
+    let dialog = gtk::MessageDialog::new(
+        None::<&gtk::Window>,
+        gtk::DialogFlags::MODAL,
+        gtk::MessageType::Error,
+        gtk::ButtonsType::Ok,
+        START_FAILURE_TITLE,
+    );
+    dialog.set_title(START_FAILURE_TITLE);
+    dialog.set_secondary_text(Some(text));
+    dialog.run();
+    dialog.close();
 }

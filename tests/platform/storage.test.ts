@@ -1,6 +1,6 @@
 /**
  * Tests safeStorage in src/platform/storage.ts with a fake localStorage: it reads and writes
- * values, never throws, and reports a value that could not be written.
+ * values, never throws, reports a value that could not be written, and logs the first failure per key.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { safeStorage } from '../../src/platform/storage';
@@ -44,5 +44,19 @@ describe('safeStorage', () => {
     vi.stubGlobal('window', {});
     expect(safeStorage.get('mockup-director.test')).toBeNull();
     expect(safeStorage.set('mockup-director.test', 'value')).toBe(false);
+  });
+
+  it('logs the first failure for each key, without the value', () => {
+    const fake = fakeLocalStorage();
+    fake.full = true;
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    safeStorage.set('mockup-director.logged', 'private value');
+    safeStorage.set('mockup-director.logged', 'private value');
+    expect(warn).toHaveBeenCalledTimes(1);
+    const entry = String(warn.mock.calls[0][0]);
+    expect(entry).toContain('Cannot write the stored value mockup-director.logged');
+    expect(entry).toContain('QuotaExceededError');
+    expect(entry).not.toContain('private value');
+    warn.mockRestore();
   });
 });

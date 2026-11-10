@@ -46,6 +46,18 @@ body:
       description: The model in use, if the problem is about one.
       placeholder: "DVD case"
   - type: textarea
+    id: log
+    attributes:
+      label: Log
+      description: >
+        The end of mockup-director.log, from around when the problem happened. It is on Windows in
+        %LOCALAPPDATA%\io.github.infinitinker.mockupdirector\logs, on macOS in
+        ~/Library/Logs/io.github.infinitinker.mockupdirector, on Linux in
+        ~/.local/share/io.github.infinitinker.mockupdirector/logs. For the app run from source
+        (npm run app:dev), the folder is named io.github.infinitinker.mockupdirector.dev instead. It can name
+        your files and folders: check it for anything you’d rather not share first.
+      render: text
+  - type: textarea
     id: files
     attributes:
       label: Files
