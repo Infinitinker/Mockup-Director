@@ -1,16 +1,21 @@
 /**
- * File I/O that works both in the Tauri v2 desktop shell (WKWebView on macOS) and in a browser
- * (dev mode / web preview).
+ * File I/O that works both in the Tauri v2 desktop shell and in a browser (dev mode / web preview).
  *
- * Desktop save contract (the `save_file` command in src-tauri/src/lib.rs):
- *   invoke('save_file', <raw bytes as Uint8Array>, { headers: { 'x-path': encodeURIComponent(path) } })
- * The raw body avoids the JSON-encoding overhead of large PNGs (a 4000×4000 PNG can be 30+ MB).
- * A failed write rejects with a `CommandError`, which `fromCommandError` turns into a `UserError` naming
- * the file (a malformed call, `invalid-request`, becomes a plain `Error`).
+ * Desktop save contract (the save commands in src-tauri/src/saves.rs):
+ *   const id = await invoke('save_open', { path });
+ *   await invoke('save_write', <raw bytes>, { headers: { 'x-save-id': String(id) } }); // once per chunk, in order
+ *   await invoke('save_commit', { id, size }); // or, after a failure, invoke('save_abort', { id })
+ * The file is sent in chunks of SAVE_CHUNK_BYTES, so a batch ZIP of several gigabytes is never one
+ * message or one buffer; the raw bodies avoid JSON-encoding the bytes. The shell writes a temporary
+ * file and puts it in place on commit, so a failed save leaves an existing file as it was; it
+ * refuses an empty chunk, and a commit whose `size` (the blob's) is not what it received.
+ * A failed command rejects with a `CommandError`, which `fromCommandError` turns into a `UserError`
+ * naming the file (a malformed call, `invalid-request`, becomes a plain `Error`).
  */
 import { isTauri, invoke } from '@tauri-apps/api/core';
 import { UserError } from '../core/errors';
 import { fromCommandError } from './commandErrors';
+import { log } from './log';
 
 interface FileFilter {
   name: string;
@@ -95,6 +100,19 @@ export function pickFiles(accept: string, multiple = false): Promise<File[]> {
   });
 }
 
+/** The largest chunk of a file sent to the desktop shell at once (8 MiB). */
+export const SAVE_CHUNK_BYTES = 8 * 1024 * 1024;
+
+/** The request header that names the save a chunk belongs to (`SAVE_ID_HEADER` in src-tauri/src/saves.rs). */
+const SAVE_ID_HEADER = 'x-save-id';
+
+/** The `[start, end)` byte ranges that split a file of `size` bytes into chunks, in order; none for an empty file. */
+export function chunkRanges(size: number, chunkBytes = SAVE_CHUNK_BYTES): [number, number][] {
+  const ranges: [number, number][] = [];
+  for (let start = 0; start < size; start += chunkBytes) ranges.push([start, Math.min(start + chunkBytes, size)]);
+  return ranges;
+}
+
 async function saveInDesktopApp(blob: Blob, suggestedName: string, filters: FileFilter[]): Promise<string | null> {
   const { save } = await import('@tauri-apps/plugin-dialog');
   const picked = await save({
@@ -103,13 +121,47 @@ async function saveInDesktopApp(blob: Blob, suggestedName: string, filters: File
   });
   if (!picked) return null; // canceled
   const path = ensureExtension(picked, filters, suggestedName);
-  const bytes = new Uint8Array(await blob.arrayBuffer());
+  const name = path.split(/[\\/]/).pop() || suggestedName;
   try {
-    await invoke('save_file', bytes, { headers: { 'x-path': encodeURIComponent(path) } });
+    await writeInDesktopApp(blob, path, name);
   } catch (e) {
     throw fromCommandError(e, 'save');
   }
-  return path.split(/[\\/]/).pop() || suggestedName;
+  return name;
+}
+
+/**
+ * Writes the blob to `path` through the shell's save commands, one chunk at a time, so at most one
+ * chunk is in memory besides the blob. When a chunk cannot be read or written, the save is aborted.
+ */
+async function writeInDesktopApp(blob: Blob, path: string, name: string): Promise<void> {
+  const id = await invoke<number>('save_open', { path });
+  try {
+    for (const [start, end] of chunkRanges(blob.size)) {
+      const bytes = await readChunk(blob, start, end, name);
+      await invoke('save_write', bytes, { headers: { [SAVE_ID_HEADER]: String(id) } });
+    }
+  } catch (e) {
+    try {
+      await invoke('save_abort', { id });
+    } catch (abortError) {
+      log.warn(`Cannot abort the save of “${name}”`, abortError);
+    }
+    throw e;
+  }
+  // The save ends with the commit, also when it fails: nothing to abort then.
+  await invoke('save_commit', { id, size: blob.size });
+}
+
+async function readChunk(blob: Blob, start: number, end: number, name: string): Promise<ArrayBuffer> {
+  try {
+    return await blob.slice(start, end).arrayBuffer();
+  } catch (e) {
+    throw new UserError(
+      `“${name}” could not be saved: Mockup Director could not read what it was saving. Try again; if it fails again, restart Mockup Director.`,
+      { cause: e },
+    );
+  }
 }
 
 /**

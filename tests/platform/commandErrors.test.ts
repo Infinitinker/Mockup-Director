@@ -49,6 +49,12 @@ describe('commandErrorMessage', () => {
     }
   });
 
+  it('says that a file being replaced may be open elsewhere or read-only', () => {
+    expect(commandErrorMessage(error('permission-denied'), 'save')).toBe(
+      '“Okładka.mdproj” could not be saved: the system does not allow writing it there. If a file of that name is open in another program, close it there; if it is read-only, choose another name. Otherwise choose another folder.',
+    );
+  });
+
   it('tells the reasons apart', () => {
     for (const action of ['save', 'open'] as const) {
       const messages = new Set(USER_KINDS.map((kind) => commandErrorMessage(error(kind), action)));
@@ -68,17 +74,17 @@ describe('fromCommandError', () => {
   });
 
   it('turns a malformed call into a plain Error, as the bug it is', () => {
-    const result = fromCommandError({ kind: 'invalid-request', path: '', detail: 'missing x-path header' }, 'save');
+    const result = fromCommandError({ kind: 'invalid-request', path: '', detail: 'missing x-save-id header' }, 'save');
     expect(result).toBeInstanceOf(Error);
     expect(result).not.toBeInstanceOf(UserError);
-    expect((result as Error).message).not.toContain('missing x-path header');
-    expect((result as Error).cause).toMatchObject({ detail: 'missing x-path header' });
+    expect((result as Error).message).not.toContain('missing x-save-id header');
+    expect((result as Error).cause).toMatchObject({ detail: 'missing x-save-id header' });
   });
 
   it('passes anything else through unchanged', () => {
     const failure = new Error('IPC is not available');
     expect(fromCommandError(failure, 'open')).toBe(failure);
-    expect(fromCommandError('save_file not allowed', 'save')).toBe('save_file not allowed');
+    expect(fromCommandError('save_open not allowed', 'save')).toBe('save_open not allowed');
     const unknownKind = { kind: 'on-fire', path: '/a.png' };
     expect(fromCommandError(unknownKind, 'save')).toBe(unknownKind);
   });

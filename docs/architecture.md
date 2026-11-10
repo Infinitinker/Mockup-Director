@@ -36,7 +36,7 @@ The page and the shell talk through these commands and events. Only `src/platfor
 
 | Command or event | Direction | What it does |
 |---|---|---|
-| `save_file` (`src-tauri/src/lib.rs`) | page → shell | Writes the raw request body to the path in the `x-path` header (percent-encoded). The path must be absolute and not a folder; the file is written atomically (`src-tauri/src/files.rs`). Fails with `{ kind, path, detail? }` (`CommandError` in `src-tauri/src/error.rs`). Called by `saveBlob` in `src/platform/files.ts`, after the native save dialog. |
+| `save_open`, `save_write`, `save_commit`, `save_abort` (`src-tauri/src/saves.rs`) | page → shell | Save one file, in chunks. `save_open` takes `{ path }`, checks that it is absolute and not a folder, starts the write and returns the save's id. `save_write` appends its raw request body (not JSON) to the save named in the `x-save-id` header; `saveBlob` sends 8 MiB at a time, one chunk after another, so a file of several gigabytes (a batch ZIP) is never one message or one buffer in memory. `save_commit` takes `{ id, size }` and puts the file in place, once exactly `size` bytes arrived (an empty chunk or a different size is an `invalid-request`, so a chunk lost on the way never replaces a file); `save_abort` takes `{ id }` and drops it. The bytes go to a temporary file next to the target, which the commit renames over it, so an existing file keeps its bytes until the commit, and a failed or aborted save leaves it as it was, with no temporary file behind (`AtomicWrite` in `src-tauri/src/files.rs`); on Linux and macOS the new file keeps the permissions of the one it replaces. Saves still open when the app exits are dropped the same way. Only when the folder does not let the app make a new file (but lets it change the existing one) is the target written in place, which is not atomic. A failed `save_write` keeps the save open, for `save_abort`; a commit ends the save even when it fails. An id that is not open is an `invalid-request`. The commands are async, so the writes run off the main thread. Fail with `{ kind, path, detail? }` (`CommandError` in `src-tauri/src/error.rs`). Called by `saveBlob` in `src/platform/files.ts`, after the native save dialog. |
 | `take_opened_files` (`src-tauri/src/opened.rs`) | page → shell | Hands out the queued project files the system asked the app to open, once each, as `{ files: [{ name, contents }], errors: [{ kind, path, detail? }] }`. Only queued paths can be read. Called by `src/platform/launch.ts`. |
 | `write_log` (`src-tauri/src/log.rs`) | page → shell | Appends `{ level, message }` to the log; `level` is `info`, `warn` or `error`, and a message longer than 16 KB is cut. Never fails. Called by `log` in `src/platform/log.ts`. |
 | `files-opened` event (`FILES_OPENED_EVENT` in `src-tauri/src/opened.rs`) | shell → page | Emitted with no payload when project files arrive while the app runs (a second launch on Windows and Linux, `RunEvent::Opened` on macOS). `src/platform/launch.ts` listens and calls `take_opened_files`. |
@@ -60,7 +60,7 @@ The page also uses Tauri's own APIs, allowed in `src-tauri/capabilities/default.
    - A batch: the batch export dialog (`src/ui/dialogs/batch/`) asks for the items of the chosen mode (`src/export/batch/items.ts`) and runs them (`runBatch` in `src/export/batch/index.ts`), which drives the stage with temporary models (built with the model's `build()`) and scene settings, never touches the store, and packs the stills into one ZIP file (`src/export/zip.ts`). When it ends, the project's scene and model are put back on the stage.
    - A print template: `src/export/templates/` draws the slot's `template` as a 300 dpi PNG with trim, bleed and fold guides.
 
-   Every file is saved with `saveBlob` (`src/platform/files.ts`): in the desktop app through the native save dialog and `save_file`, in a browser through the save picker or a download. A download cannot report whether the file was saved, so a save that must be sure of it (`confirmed`, used by the recovery dialog) never falls back to one: it fails with a `UserError` instead.
+   Every file is saved with `saveBlob` (`src/platform/files.ts`): in the desktop app through the native save dialog and the save commands, in a browser through the save picker or a download. A download cannot report whether the file was saved, so a save that must be sure of it (`confirmed`, used by the recovery dialog) never falls back to one: it fails with a `UserError` instead.
 9. **The user saves the project.** `toProjectFile` (`src/project/format.ts`) writes the tab's project as a `.mdproj` file (see [Files and data](#files-and-data)).
 
 ## Code map
@@ -169,10 +169,11 @@ tests/          unit tests (Vitest, config in vitest.config.ts); their folders m
                 layout.test.ts, the check of the README's number of models in readme.test.ts, and the
                 checks of tauri.conf.json against package.json and LICENSE in tauriConfig.test.ts
 src-tauri/      the Tauri v2 shell (Rust): main.rs starts lib.rs, which sets up the window, the dialogs,
-                a single app process and the commands; the commands' error (error.rs), writing files
-                (files.rs), opened project files (opened.rs), closing the window if the page never
-                answers (closing.rs), the log (log.rs); build.rs generates the Tauri context; tests
-                in src-tauri/tests/
+                a single app process and the commands; the commands' error (error.rs), saving files:
+                the open saves and their commands (saves.rs) and writing a file atomically (files.rs),
+                opened project files (opened.rs), closing the window if the page never answers
+                (closing.rs), the log (log.rs); build.rs generates the Tauri context; tests in
+                src-tauri/tests/ (common/ holds the helpers the saving tests share)
   Cargo.toml                the crate (library mockup_director_lib) and its dependencies; no version
                             (the one in package.json is the app's)
   tauri.conf.json           shared configuration
@@ -290,7 +291,7 @@ Each concept has one name, used everywhere. Where the interface or today's code 
 - Every open project is a tab: `src/documents/tabs.ts` keeps the tabs, and the store (`src/documents/store.ts`) works on the active one, whose state, undo history and artwork it swaps in and out (`Store.swap`). A tab is dirty while its revision differs from the one it was saved at; undo brings the earlier revision back.
 - The session autosave (`src/documents/session.ts`, which writes through `src/documents/sessionDb.ts`) keeps every open tab in the web engine's IndexedDB, unsaved changes included, a moment (1.5 seconds) after each change and when the window closes, and the app reopens them at start-up. It never overwrites a session written by a newer version of the app. If the stored session comes from a newer version or cannot be restored, autosave stays off for the rest of the run, so the stored tabs are kept. Nothing stored is deleted unless the user chooses to: tabs whose stored copy cannot be opened are offered in a recovery dialog, to save to a file or delete (see [Session](#session)). On macOS, quitting the app (⌘Q, Quit in the Dock, logging out) skips the window's close event, so changes made since editing last paused for 1.5 seconds may not be saved.
 - User looks and a few interface choices are kept in the web engine's localStorage (see the table below). In the desktop app the web engine keeps its localStorage and IndexedDB in a folder of its own for the app identifier; on Windows that is `%LOCALAPPDATA%\io.github.infinitinker.mockupdirector`, which the uninstaller of a per-user install offers to delete (`tools/installer.iss`); an all-users uninstall leaves it alone.
-- On the desktop, files are written by the Rust `save_file` command (`src-tauri/src/lib.rs`), atomically, to a path the user chose in the native save dialog.
+- On the desktop, files are written by the Rust save commands (`src-tauri/src/saves.rs`), in chunks and atomically, to a path the user chose in the native save dialog.
 - Diagnostics go to the log (see [Log](#log)).
 
 ### Project file (`.mdproj`)

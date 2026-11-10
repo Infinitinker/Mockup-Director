@@ -9,7 +9,7 @@ Please do not open a public issue. Report it privately through GitHub instead: o
 ## What is in scope
 
 - Files from other people: anything a crafted `.mdproj` project, looks file or artwork image (SVG included) can make the app do, beyond showing a wrong or broken mockup.
-- The desktop shell (`src-tauri/`): what the web interface can make it do, such as which files `save_file` writes, and the files handed over when a project is opened from the system or by a second launch.
+- The desktop shell (`src-tauri/`): what the web interface can make it do, such as which files the save commands write, and the files handed over when a project is opened from the system or by a second launch.
 - The web interface's content security policy (`src-tauri/tauri.conf.json`), which keeps the app offline and stops scripts that are not the app's own.
 - The release files and how they are built (`.github/workflows/`).
 

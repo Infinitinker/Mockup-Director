@@ -81,8 +81,8 @@ fn names_every_kind_in_kebab_case() {
 
 #[test]
 fn an_invalid_request_names_no_path() {
-    let error = CommandError::invalid_request("missing x-path header");
+    let error = CommandError::invalid_request("missing x-save-id header");
     assert_eq!(error.kind, ErrorKind::InvalidRequest);
     assert_eq!(error.path, "");
-    assert_eq!(error.detail.as_deref(), Some("missing x-path header"));
+    assert_eq!(error.detail.as_deref(), Some("missing x-save-id header"));
 }

@@ -2,8 +2,8 @@
 //!
 //! The whole app is the web UI in `../src`; the Rust side only provides:
 //!  - the native dialog plugin (save / open panels),
-//!  - `save_file`: writes bytes produced by the web UI (PNG exports, project files) to a path
-//!    chosen by the user in the native save panel,
+//!  - saving (`saves.rs`, `files.rs`): writes files made by the web UI (exports, project files) to
+//!    a path the user chose in the native save panel, in chunks and atomically,
 //!  - `take_opened_files`: the project files the operating system asked the app to open,
 //!  - a single app process: on Windows and Linux, launching the app again hands the new launch's
 //!    project files to the running app (which opens them in tabs) and brings its window forward;
@@ -17,51 +17,11 @@ pub mod error;
 pub mod files;
 pub mod log;
 pub mod opened;
+pub mod saves;
 
 use std::path::{Path, PathBuf};
 
 use tauri::{AppHandle, Emitter, Manager, WebviewWindowBuilder, WindowEvent};
-
-use error::CommandError;
-use files::{percent_decode, validate_target, write_atomically};
-
-/// Writes the raw request body to the path given in the `x-path` header.
-///
-/// Frontend contract (see `src/platform/files.ts`):
-/// ```js
-/// invoke('save_file', bytes /* Uint8Array */, { headers: { 'x-path': encodeURIComponent(path) } })
-/// ```
-/// The body is sent raw (not JSON) because a 4000 × 4000 PNG can be tens of megabytes.
-/// The path is percent-encoded because HTTP header values must be visible ASCII, while macOS
-/// paths are UTF-8 (Polish characters, spaces, …).
-///
-/// Paths only ever come from the native save panel, i.e. the user explicitly chose them; we still
-/// reject empty / relative paths and directories as a sanity check.
-///
-/// Fails with a `CommandError` (`error.rs`): a malformed call is `invalid-request`, a failed write
-/// has the kind of the system's error.
-///
-/// This is a synchronous command, so it runs on the main thread: writing even a 30 MB file to an
-/// SSD takes only a few tens of milliseconds, and it keeps the borrowed `Request` simple.
-#[tauri::command]
-fn save_file(request: tauri::ipc::Request) -> Result<(), CommandError> {
-    let tauri::ipc::InvokeBody::Raw(bytes) = request.body() else {
-        return Err(CommandError::invalid_request(
-            "expected a raw binary body (Uint8Array / ArrayBuffer)",
-        ));
-    };
-
-    let encoded = request
-        .headers()
-        .get("x-path")
-        .ok_or_else(|| CommandError::invalid_request("missing x-path header"))?
-        .to_str()
-        .map_err(|_| CommandError::invalid_request("x-path header is not valid ASCII"))?;
-
-    let path = PathBuf::from(percent_decode(encoded)?);
-    validate_target(&path)?;
-    write_atomically(&path, bytes).map_err(|e| CommandError::io(&path, &e))
-}
 
 /// Queues project files for the web UI and tells it they arrived.
 fn hand_over(app: &AppHandle, paths: Vec<PathBuf>) {
@@ -120,6 +80,7 @@ pub fn run() {
     let app = builder
         .manage(opened)
         .manage(closing::CloseWatchdog::default())
+        .manage(saves::OpenSaves::default())
         .plugin(tauri_plugin_dialog::init())
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { .. } = event {
@@ -127,7 +88,10 @@ pub fn run() {
             }
         })
         .invoke_handler(tauri::generate_handler![
-            save_file,
+            saves::save_open,
+            saves::save_write,
+            saves::save_commit,
+            saves::save_abort,
             opened::take_opened_files,
             log::write_log
         ])
@@ -167,16 +131,21 @@ pub fn run() {
         std::env::consts::OS,
         std::env::consts::ARCH
     ));
-    app.run(|_app, _event| {
+    app.run(|app_handle, event| {
+        // The process ends without dropping the app's state, so the temporary files of saves that
+        // are still open are removed here.
+        if let tauri::RunEvent::Exit = event {
+            app_handle.state::<saves::OpenSaves>().abort_all();
+        }
         // macOS sends opened files as an event, at start-up and while the app runs.
         #[cfg(target_os = "macos")]
-        if let tauri::RunEvent::Opened { urls } = _event {
+        if let tauri::RunEvent::Opened { urls } = event {
             let paths = urls
                 .into_iter()
                 .filter_map(|url| url.to_file_path().ok())
                 .filter(|path| opened::is_project_path(path))
                 .collect();
-            hand_over(_app, paths);
+            hand_over(app_handle, paths);
         }
     });
 }

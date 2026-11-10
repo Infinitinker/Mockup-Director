@@ -64,7 +64,7 @@ export function commandErrorMessage(error: CommandError, action: FileAction): st
       case 'not-found':
         return `${name} could not be saved: its folder no longer exists. Choose another folder.`;
       case 'permission-denied':
-        return `${name} could not be saved: the system does not allow writing there. Choose another folder.`;
+        return `${name} could not be saved: the system does not allow writing it there. If a file of that name is open in another program, close it there; if it is read-only, choose another name. Otherwise choose another folder.`;
       case 'not-a-file':
         return `${name} could not be saved: a folder of that name is already there. Choose another name.`;
       case 'too-large':
