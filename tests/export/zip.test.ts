@@ -4,6 +4,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { crc32 } from '../../src/export/png';
+import { UserError } from '../../src/core/errors';
 import { sanitizeZipName, ZipLimitError, ZipWriter } from '../../src/export/zip';
 import { randomBytes, randomInt, seededRandom } from '../random';
 import { type ZipArchive, readZip } from './zipReader';
@@ -196,9 +197,9 @@ describe('ZipWriter limits', () => {
     }
   }
 
-  it('names its error', () => {
+  it('names its error, a UserError', () => {
     const error = new ZipLimitError();
-    expect(error).toBeInstanceOf(Error);
+    expect(error).toBeInstanceOf(UserError);
     expect(error.name).toBe('ZipLimitError');
   });
 

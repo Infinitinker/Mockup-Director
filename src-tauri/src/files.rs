@@ -5,9 +5,12 @@ use std::fs;
 use std::io;
 use std::path::Path;
 
+use crate::error::{CommandError, ErrorKind};
+
 /// Decodes `%XX` escapes (as produced by JavaScript's `encodeURIComponent`) into a UTF-8 string.
-/// `+` is kept literally (encodeURIComponent encodes a real plus sign as `%2B`).
-pub fn percent_decode(input: &str) -> Result<String, String> {
+/// `+` is kept literally (encodeURIComponent encodes a real plus sign as `%2B`). Malformed input is
+/// an `invalid-request` error: the web UI always encodes the path.
+pub fn percent_decode(input: &str) -> Result<String, CommandError> {
     let src = input.as_bytes();
     let mut out = Vec::with_capacity(src.len());
     let mut i = 0;
@@ -20,14 +23,19 @@ pub fn percent_decode(input: &str) -> Result<String, String> {
                     out.push(hi << 4 | lo);
                     i += 3;
                 }
-                _ => return Err("save_file: malformed percent-encoding in x-path".into()),
+                _ => {
+                    return Err(CommandError::invalid_request(format!(
+                        "malformed percent-encoding in x-path: {input}"
+                    )))
+                }
             }
         } else {
             out.push(src[i]);
             i += 1;
         }
     }
-    String::from_utf8(out).map_err(|_| "save_file: x-path is not valid UTF-8".to_string())
+    String::from_utf8(out)
+        .map_err(|_| CommandError::invalid_request(format!("x-path is not valid UTF-8: {input}")))
 }
 
 fn hex_value(b: u8) -> Option<u8> {
@@ -39,19 +47,26 @@ fn hex_value(b: u8) -> Option<u8> {
     }
 }
 
-/// Rejects paths that cannot be a file the user chose: empty, relative, or a directory.
-pub fn validate_target(path: &Path) -> Result<(), String> {
+/// Rejects paths that cannot be a file the user chose: an empty, relative or file-less path is an
+/// `invalid-request` error (the save dialog never returns one), a folder is `not-a-file`.
+pub fn validate_target(path: &Path) -> Result<(), CommandError> {
     if path.as_os_str().is_empty() {
-        return Err("save_file: empty path".into());
+        return Err(CommandError::invalid_request("empty path"));
     }
     if !path.is_absolute() {
-        return Err(format!(
-            "save_file: path must be absolute: {}",
+        return Err(CommandError::invalid_request(format!(
+            "path must be absolute: {}",
             path.display()
-        ));
+        )));
     }
-    if path.file_name().is_none() || path.is_dir() {
-        return Err(format!("save_file: not a file path: {}", path.display()));
+    if path.file_name().is_none() {
+        return Err(CommandError::invalid_request(format!(
+            "path names no file: {}",
+            path.display()
+        )));
+    }
+    if path.is_dir() {
+        return Err(CommandError::new(ErrorKind::NotAFile, path));
     }
     Ok(())
 }

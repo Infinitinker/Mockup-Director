@@ -15,21 +15,13 @@
  *  - GPU copies are downscaled so the longest side is ≤ 4096 px (high-quality step-down).
  */
 import * as THREE from 'three';
+import { UserError } from './errors';
 import type { Artwork } from './types';
 
 /** Longest side of the GPU texture. Originals stay untouched in the data URL. */
 const MAX_TEXTURE_SIZE = 4096;
 /** SVGs are rasterized so their longest side is this many px (unless that exceeds the texture cap). */
 const SVG_RASTER_SIZE = 3072;
-
-/** Error with a message that can be shown to the user. */
-class ImageLoadError extends Error {
-  constructor(message: string, cause?: unknown) {
-    super(message);
-    this.name = 'ImageLoadError';
-    if (cause !== undefined) (this as { cause?: unknown }).cause = cause;
-  }
-}
 
 /** File extensions / MIME types we try to decode (the engine decides what actually works). */
 export const IMAGE_ACCEPT = 'image/*,.png,.jpg,.jpeg,.webp,.gif,.svg,.avif,.heic,.heif,.bmp,.tif,.tiff';
@@ -44,9 +36,9 @@ export async function loadImageFile(file: File): Promise<Artwork> {
   try {
     bytes = new Uint8Array(await file.arrayBuffer());
   } catch (err) {
-    throw new ImageLoadError(
+    throw new UserError(
       `The file “${file.name}” could not be read. Check that it still exists and can be opened, then add it again.`,
-      err,
+      { cause: err },
     );
   }
   const mime = sniffMime(bytes, file.type, file.name);
@@ -60,7 +52,7 @@ export async function loadImageDataUrl(dataUrl: string, name: string): Promise<A
   // Decoded manually instead of fetch(dataUrl): a strict CSP (connect-src) may block fetching data: URLs.
   const parsed = parseDataUrl(dataUrl);
   if (!parsed) {
-    throw new ImageLoadError(`The artwork “${name}” in the project is damaged. Add the artwork again.`);
+    throw new UserError(`The artwork “${name}” in the project is damaged. Add the artwork again.`);
   }
   const mime = sniffMime(parsed.bytes, parsed.mime, name);
   const blob = new Blob([parsed.bytes], { type: mime });
@@ -87,10 +79,10 @@ async function decodeToAsset(blob: Blob, mime: string, dataUrl: string, name: st
     if (mime === 'image/svg+xml') canvas = await rasterizeSvg(blob);
     else canvas = await decodeRaster(blob, mime);
   } catch (err) {
-    if (err instanceof ImageLoadError) throw err;
-    throw new ImageLoadError(
+    if (err instanceof UserError) throw err;
+    throw new UserError(
       `The file “${name}” could not be read as an image. Choose a PNG, JPEG, WebP, GIF or SVG file.`,
-      err,
+      { cause: err },
     );
   }
   return {
@@ -231,7 +223,7 @@ function createCanvas(w: number, h: number): HTMLCanvasElement {
 function get2d(c: HTMLCanvasElement): CanvasRenderingContext2D {
   const g = c.getContext('2d');
   if (!g) {
-    throw new ImageLoadError('Not enough memory to load an image this large. Choose a smaller image.');
+    throw new UserError('Not enough memory to load an image this large. Choose a smaller image.');
   }
   return g;
 }

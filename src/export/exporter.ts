@@ -14,6 +14,7 @@
  */
 import type { BackgroundSettings, ExportFormat, ExportSettings, StageAPI } from '../core/types';
 import { DEFAULT_EXPORT, MAX_EXPORT_SIZE } from '../core/defaults';
+import { UserError } from '../core/errors';
 import { clampInt, findAlphaBounds, fitInside, supersampleSize, type PixelRect } from './layout';
 import { isJpeg, isPng, setJpegDensity, setPngPhys } from './png';
 import { paintBackground as paintSceneBackground } from '../scene/background';
@@ -33,24 +34,13 @@ const MAX_RENDER_PIXELS = 48_000_000;
  */
 const ALPHA_THRESHOLD = 5;
 
-type ExportErrorCode = 'webp-unsupported' | 'encode-failed' | 'render-failed';
-
-/** Export failure with a message that can be shown to the user. */
-class ExportError extends Error {
-  readonly code: ExportErrorCode;
-  constructor(code: ExportErrorCode, message: string) {
-    super(message);
-    this.name = 'ExportError';
-    this.code = code;
-  }
-}
-
 /**
  * Render the current stage according to the export settings and encode it.
  *
  * @param background The scene's preview background (SceneSettings.background), painted when
  *   settings.background === 'scene'.
- * @throws ExportError ('webp-unsupported' when WebP can't be encoded – see supportsWebpEncoding()).
+ * @throws UserError when the image cannot be rendered or encoded, WebP included where this engine cannot
+ *   encode it (see supportsWebpEncoding()).
  */
 export async function exportImage(
   stage: StageAPI,
@@ -70,8 +60,7 @@ export async function exportImage(
   const rw = src.width;
   const rh = src.height;
   if (!rw || !rh) {
-    throw new ExportError(
-      'render-failed',
+    throw new UserError(
       'The image could not be rendered: there may not be enough graphics memory. Reduce the export size.',
     );
   }
@@ -107,10 +96,7 @@ export async function exportImage(
   if (blob.type && blob.type !== mime) {
     // Engines fall back to PNG silently for unsupported types (Safari + WebP).
     if (format === 'webp') throw webpError();
-    throw new ExportError(
-      'encode-failed',
-      `The image could not be encoded as ${format.toUpperCase()}. Choose another format.`,
-    );
+    throw new UserError(`The image could not be encoded as ${format.toUpperCase()}. Choose another format.`);
   }
   if (format === 'png') blob = await setPngDpi(blob, EXPORT_DPI);
   else if (format === 'jpeg') blob = await setJpegDpi(blob, EXPORT_DPI);
@@ -231,8 +217,8 @@ function normalizeSettings(s: ExportSettings): ExportSettings {
   };
 }
 
-function webpError(): ExportError {
-  return new ExportError('webp-unsupported', WEBP_IMAGE_UNSUPPORTED);
+function webpError(): UserError {
+  return new UserError(WEBP_IMAGE_UNSUPPORTED);
 }
 
 function measureContent(src: HTMLCanvasElement): PixelRect | null {
@@ -287,10 +273,7 @@ function canvasToBlob(c: HTMLCanvasElement, mime: string, quality?: number): Pro
         if (b) resolve(b);
         else {
           reject(
-            new ExportError(
-              'encode-failed',
-              'The image could not be encoded: there may not be enough memory. Reduce the export size.',
-            ),
+            new UserError('The image could not be encoded: there may not be enough memory. Reduce the export size.'),
           );
         }
       },
@@ -310,7 +293,7 @@ function createCanvas(w: number, h: number): HTMLCanvasElement {
 function get2d(c: HTMLCanvasElement): CanvasRenderingContext2D {
   const g = c.getContext('2d');
   if (!g) {
-    throw new ExportError('render-failed', 'Not enough memory for an image this large. Reduce the export size.');
+    throw new UserError('Not enough memory for an image this large. Reduce the export size.');
   }
   return g;
 }

@@ -107,7 +107,7 @@ The **Checks** workflow (`.github/workflows/checks.yml`) runs all of these for e
 
 ## Interface texts
 
-The interface's texts are plain English strings, written in the code where they are used: in the interface modules, in the errors a user sees, and in the labels and hints of models and looks. Every new or changed text follows these rules:
+The interface's texts are plain English strings, written in the code where they are used: in the interface modules, in the errors a user sees (a `UserError` from `src/core/errors.ts`, whose message the interface shows as it is; `errorMessage` in `src/ui/dom.ts` turns any other error into a general message with the raw text as detail; the Rust shell sends a kind code instead of a text, and the texts for its file errors are in `src/platform/commandErrors.ts`), and in the labels and hints of models and looks. Every new or changed text follows these rules:
 
 | Rule | Write | Not |
 | --- | --- | --- |
@@ -115,7 +115,7 @@ The interface's texts are plain English strings, written in the code where they 
 | Sentence case for labels, buttons, menu items, tab names and headings. | Save current look, Restore defaults, Batch export | Save Current Look |
 | The ellipsis character `…`, never three dots, and only on a command that asks for more before it acts, and on a progress text. A command that acts at once has none. | Open project…, Save project…, Export image…, Choose…, Loading…, Exporting… | Loading..., Restore defaults… |
 | Hints and descriptions are full sentences ending with a period. Labels have no period. | This model has no settings. (hint); Lock aspect ratio (label) | Small = flat telephoto look, large = strong perspective (hint) |
-| Clauses are joined with a colon. The en dash `–` is only for ranges and as a separator in names and labels. | They are still open: save them to keep them. Ø 22–119.5 mm, A5 – 148 × 210 mm, Inside – left | Drop artwork – it fills the empty slots of the model |
+| Clauses are joined with a colon. The en dash `–` is only for ranges and as a separator in names and labels. | The project file could not be read: it is damaged. Ø 22–119.5 mm, A5 – 148 × 210 mm, Inside – left | Drop artwork – it fills the empty slots of the model |
 | Curly quotes “ ” and the apostrophe ’. | Save changes to “${name}”?, Don’t save | Could not decode the image "${name}", Don't save |
 | No "Please". | Choose PNG or JPEG. | Please choose PNG or JPEG. |
 | A count is written as "Label: ${n}". | Files chosen: ${n}, Imported looks: ${n} | ${n} files chosen, Errors (${n}) |

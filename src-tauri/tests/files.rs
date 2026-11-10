@@ -3,6 +3,7 @@
 use std::fs;
 use std::path::PathBuf;
 
+use mockup_director_lib::error::ErrorKind;
 use mockup_director_lib::files::{percent_decode, validate_target, write_atomically};
 
 #[test]
@@ -24,11 +25,15 @@ fn keeps_unescaped_characters() {
 }
 
 #[test]
-fn rejects_malformed_escapes() {
-    assert!(percent_decode("%").is_err());
-    assert!(percent_decode("%2").is_err());
-    assert!(percent_decode("%zz").is_err());
-    assert!(percent_decode("%C5").is_err()); // truncated UTF-8 sequence
+fn rejects_malformed_escapes_as_an_invalid_request() {
+    // "%C5" is a truncated UTF-8 sequence.
+    for input in ["%", "%2", "%zz", "%C5"] {
+        assert_eq!(
+            percent_decode(input).unwrap_err().kind,
+            ErrorKind::InvalidRequest,
+            "{input}"
+        );
+    }
 }
 
 /// A fresh folder for one test, removed when the test ends.
@@ -59,11 +64,23 @@ fn accepts_an_absolute_file_path() {
 }
 
 #[test]
-fn rejects_empty_relative_and_directory_paths() {
+fn rejects_empty_and_relative_paths_as_an_invalid_request() {
+    for path in [PathBuf::new(), PathBuf::from("export.png")] {
+        assert_eq!(
+            validate_target(&path).unwrap_err().kind,
+            ErrorKind::InvalidRequest,
+            "{}",
+            path.display()
+        );
+    }
+}
+
+#[test]
+fn rejects_a_folder_as_not_a_file() {
     let dir = TempDir::new("invalid");
-    assert!(validate_target(&PathBuf::new()).is_err());
-    assert!(validate_target(&PathBuf::from("export.png")).is_err());
-    assert!(validate_target(&dir.0).is_err());
+    let error = validate_target(&dir.0).unwrap_err();
+    assert_eq!(error.kind, ErrorKind::NotAFile);
+    assert_eq!(error.path, dir.0.to_string_lossy());
 }
 
 #[test]

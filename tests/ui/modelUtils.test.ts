@@ -1,6 +1,6 @@
 /**
  * Tests the model helpers in src/ui/modelUtils.ts: validating and completing parameter values,
- * slot lookup, print template resolution, the acceptable artwork aspect ratios and the mismatch
+ * the params carried over to another model, slot lookup, print template resolution, the acceptable artwork aspect ratios and the mismatch
  * check, and snapping values to a parameter's step.
  */
 import { describe, expect, it } from 'vitest';
@@ -15,12 +15,15 @@ import type {
   PrintTemplate,
   SelectParamDef,
 } from '../../src/core/types';
-import { MODELS } from '../../src/models/registry';
+import { MODELS, getModel } from '../../src/models/registry';
+import { parseProjectFile, toProjectFile } from '../../src/ui/project';
+import { documentState } from '../fixtures';
 import {
   ASPECT_TOLERANCE,
   aspectMismatch,
   completeParams,
   expectedAspects,
+  inheritedParams,
   resolveTemplate,
   sanitizeParam,
   slotFor,
@@ -322,5 +325,30 @@ describe('snapToStep', () => {
       expect(Math.abs(stepsFromMin - Math.round(stepsFromMin))).toBeLessThan(1e-6);
       if (v >= min && v <= max) expect(Math.abs(snapped - v)).toBeLessThanOrEqual(step / 2 + 1e-9);
     }
+  });
+});
+
+describe('inheritedParams', () => {
+  it('carries over only the values the new model accepts', () => {
+    const laptop = getModel('device-laptop');
+    const monitor = getModel('device-monitor');
+    const prev = defaultParams(laptop);
+    const inherited = inheritedParams(monitor, prev);
+    expect(prev.size).toBeDefined();
+    expect(inherited).not.toHaveProperty('size');
+    for (const [id, v] of Object.entries(inherited)) {
+      const def = monitor.params.find((p) => p.id === id);
+      expect(def && sanitizeParam(def, v)).toBe(v);
+    }
+
+    const state = documentState(monitor.id);
+    state.params = { [laptop.id]: prev, [monitor.id]: inherited };
+    const { report } = parseProjectFile(JSON.parse(JSON.stringify(toProjectFile(state))));
+    expect(report).toEqual({ settings: 0, artwork: 0 });
+  });
+
+  it('leaves out the params the new model does not have', () => {
+    const model = getModel('box');
+    expect(inheritedParams(model, { notAParam: 1 })).toEqual({});
   });
 });

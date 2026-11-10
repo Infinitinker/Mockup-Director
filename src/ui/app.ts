@@ -5,10 +5,10 @@
  */
 import type { CameraSettings, Artwork, ModelContext, ParamValues, StageAPI } from '../core/types';
 import { DEFAULT_ANIMATION, DEFAULT_EXPORT, DEFAULT_SCENE, cloneScene } from '../core/defaults';
+import { UserError } from '../core/errors';
 import { getPlaceholderTexture } from '../core/placeholder';
 import { disposeArtwork, loadImageFile } from '../core/images';
 import { MODELS, getModel } from '../models/registry';
-import { StageError } from '../scene/errors';
 import { createStage } from '../scene/stage';
 import { inDesktopApp, pickFiles, saveBlob } from '../platform/files';
 import { handleOpenedFiles } from '../platform/launch';
@@ -17,10 +17,11 @@ import { Signal, errorMessage, frameCoalescer, h, isMac, nextFrame } from './dom
 
 import { Store, hasAny, type DocumentState, type ArtworkMap } from './state';
 import { Documents } from './documents';
-import { loadSession, SessionSaver } from './session';
+import { indexedDbSessionStore, loadSession, SessionSaver } from './session';
+import { SESSION_DAMAGED } from './sessionRecords';
 import { createTabBar, tabLabel } from './tabbar';
 import { VIEW_PRESETS, type Actions, type AppContext, type TabId } from './context';
-import { completeParams, slotFor } from './modelUtils';
+import { completeParams, inheritedParams, slotFor } from './modelUtils';
 import {
   animationFileFilter,
   animationFileName,
@@ -34,15 +35,7 @@ import {
   webpEncodingSupported,
   type AnimationProgress,
 } from './exportBridge';
-import {
-  NOT_A_PROJECT,
-  PROJECT_EXT,
-  ProjectError,
-  hydrateProject,
-  parseProjectFile,
-  projectNameOf,
-  toProjectFile,
-} from './project';
+import { PROJECT_EXT, hydrateProject, projectNameOf, projectWarning, readProjectFile, toProjectFile } from './project';
 import { mountToasts, notify } from './toast';
 import { choiceDialog } from './dialog';
 import { openBatchDialog, type BatchHost } from './batch';
@@ -94,7 +87,7 @@ function createNullStage(): StageAPI {
       return () => undefined;
     },
     renderToCanvas() {
-      throw new StageError(
+      throw new UserError(
         'Export needs the 3D preview, but WebGL does not work on this computer. Update the graphics drivers, then restart Mockup Director.',
       );
     },
@@ -144,7 +137,7 @@ export function startApp(root: HTMLElement): void {
     console.error('[mockup-director] stage init failed', e);
     stage = createNullStage();
     viewport.showError(
-      `The 3D preview is not available: WebGL does not work on this computer (${errorMessage(e)}). Update the graphics drivers, then restart Mockup Director.`,
+      'The 3D preview is not available: WebGL does not work on this computer. Update the graphics drivers, then restart Mockup Director.',
     );
   }
 
@@ -180,11 +173,12 @@ export function startApp(root: HTMLElement): void {
   });
 
   /* Session autosave: every open tab, restored on the next start ---------- */
-  const session = new SessionSaver();
+  const session = new SessionSaver(indexedDbSessionStore);
   let restoring = true;
   /**
-   * False when the last session could not be read: autosave then stays off for this run, so the
-   * stored tabs are kept for the next start instead of being overwritten.
+   * False until the last session is restored, and for the whole run when it could not be: autosave
+   * then stays off, so the stored tabs are kept for the next start instead of being overwritten. A
+   * damaged index is no such failure: it is restored as an empty session, which the next save replaces.
    */
   let sessionReadable = false;
   let autosaveTimer = 0;
@@ -202,7 +196,7 @@ export function startApp(root: HTMLElement): void {
       if (!autosaveFailureShown) {
         autosaveFailureShown = true;
         notify.error(
-          'Your open projects could not be saved for the next start. They are still open: save them to keep them.',
+          'Your open projects could not be saved for the next start. They are still open: save them to files to keep them.',
           errorMessage(e),
         );
       }
@@ -256,10 +250,6 @@ export function startApp(root: HTMLElement): void {
     loadingSlots.set(next);
   };
 
-  /**
-   * Opens project files, each in its own tab; the first may take the place of an untouched new tab.
-   * A file that cannot be opened is reported and skipped.
-   */
   /** Project files that arrived while an export ran; they open when it ends. */
   let waitingFiles: File[] = [];
   exportBusy.subscribe((busy) => {
@@ -269,6 +259,11 @@ export function startApp(root: HTMLElement): void {
     void openProjectFiles(files);
   });
 
+  /**
+   * Opens project files, each in its own tab; the first may take the place of an untouched new tab.
+   * A file that cannot be opened is reported and skipped; one whose parts were left out opens with a
+   * warning.
+   */
   const openProjectFiles = async (files: File[]): Promise<void> => {
     if (!files.length) return;
     if (exportBusy.value) {
@@ -280,13 +275,8 @@ export function startApp(root: HTMLElement): void {
     try {
       for (const f of files) {
         try {
-          let json: unknown;
-          try {
-            json = JSON.parse(await f.text());
-          } catch {
-            throw new ProjectError(NOT_A_PROJECT);
-          }
-          const { state, failed } = await hydrateProject(parseProjectFile(json));
+          const { file, report } = await readProjectFile(f);
+          const { state, failed } = await hydrateProject(file);
           const name = projectNameOf(f.name);
           // An export may have started while the file was read: the stage must keep its project.
           if (exportBusy.value) {
@@ -298,7 +288,8 @@ export function startApp(root: HTMLElement): void {
             docs.add(state, { name });
           }
           notify.success('Project opened', f.name);
-          if (failed) notify.warning(`Slots whose artwork could not be loaded: ${failed}. Add the artwork again.`);
+          const warning = projectWarning(report, failed, 'file');
+          if (warning) notify.warning(warning, f.name);
         } catch (e) {
           notify.error('Could not open the project', `${f.name}: ${errorMessage(e)}`);
         }
@@ -325,10 +316,8 @@ export function startApp(root: HTMLElement): void {
         }
       }
       const prevParams = store.state.params[prevId] ?? {};
-      const inheritParams: ParamValues = {};
-      if (Object.keys(store.state.params[model.id] ?? {}).length === 0) {
-        for (const p of model.params) if (p.id in prevParams) inheritParams[p.id] = prevParams[p.id];
-      }
+      const inheritParams: ParamValues =
+        Object.keys(store.state.params[model.id] ?? {}).length === 0 ? inheritedParams(model, prevParams) : {};
       const kinds: ('model' | 'camera' | 'artwork' | 'params')[] = ['model'];
       if (model.defaultCamera) kinds.push('camera');
       if (Object.keys(inheritedArtwork).length) kinds.push('artwork');
@@ -422,7 +411,7 @@ export function startApp(root: HTMLElement): void {
         if (settings.format === 'webp' && !webpEncodingSupported()) settings.format = 'png';
         const blob = await exportBlob(stage, settings, { ...s.scene.background });
         if (!blob || blob.size === 0)
-          throw new Error('The rendered image is empty. Export it again, or reduce the export size.');
+          throw new UserError('The rendered image is empty. Export it again, or reduce the export size.');
         const name = fileNameFor(s.modelId, settings.format);
         const ext = extensionFor(settings.format);
         const saved = await saveBlob(blob, name, [{ name: IMAGE_FORMAT_LABEL[settings.format], extensions: [ext] }]);
@@ -692,7 +681,7 @@ export function startApp(root: HTMLElement): void {
   window.addEventListener('drop', (e) => e.preventDefault());
   window.addEventListener('unhandledrejection', (e) => {
     console.error('[mockup-director] unhandled rejection', e.reason);
-    notify.error('An unexpected error occurred', errorMessage(e.reason));
+    notify.error('An action could not be finished', errorMessage(e.reason));
   });
 
   // Keep the renderer sized to its container.
@@ -716,14 +705,15 @@ export function startApp(root: HTMLElement): void {
     .catch((e) => {
       console.error('[mockup-director] session restore failed', e);
       notify.error(
-        'The projects that were open last time could not be reopened. Open projects are not saved automatically for now: save them to files.',
+        'The projects that were open last time could not be reopened, and open projects are not saved automatically. Save them to files to keep them.',
         errorMessage(e),
       );
     })
     .finally(() => {
       restoring = false;
-      // Edits made during the restore window were only marked dirty – save them now.
-      if (autosaveDirty) scheduleAutosave();
+      // The restore marked the session for a save (to replace a damaged index or delete dropped
+      // records), or edits made meanwhile were only marked dirty: save them now.
+      if (autosaveDirty) void autosaveNow();
       // Projects the operating system asked to open (a double-clicked .mdproj), each in a tab.
       void handleOpenedFiles(
         (files) => void openProjectFiles(files),
@@ -734,15 +724,20 @@ export function startApp(root: HTMLElement): void {
   /** Reopens the tabs of the last session (their unsaved changes included). */
   async function restoreSession(): Promise<void> {
     const loaded = await loadSession();
-    // Read without an error (also when nothing was stored): autosave may write from now on.
-    sessionReadable = true;
-    if (!loaded) return;
-    const { session: stored, skipped } = loaded;
+    if (!loaded) {
+      // Nothing was stored: autosave may write from now on.
+      sessionReadable = true;
+      return;
+    }
+    const { session: stored, kept, dropped, skipped, indexDamaged } = loaded;
     const restored: { id: string; name: string; dirty: boolean; state: DocumentState }[] = [];
     let failedArtwork = 0;
+    const leftOut = { settings: 0, artwork: 0 };
     for (const tab of stored.tabs) {
       const { state, failed } = await hydrateProject(tab.file);
       failedArtwork += failed;
+      leftOut.settings += tab.report.settings;
+      leftOut.artwork += tab.report.artwork;
       restored.push({ id: tab.id, name: tab.name, dirty: tab.dirty, state });
     }
     // The user may already have started working in the first tab while we were loading: keep it.
@@ -750,15 +745,26 @@ export function startApp(root: HTMLElement): void {
     const replaceInitial = docs.activeIsPristine() && restored.length > 0;
     for (const r of restored)
       docs.add(r.state, { id: r.id, name: r.name, dirty: r.dirty, activate: false, position: 'end' });
-    // Tab records that were not restored (damaged ones) are not the saver's to delete.
-    session.adopt(restored.map((r) => r.id));
+    // The kept entries stay in the index, and their records are not the saver's to delete. The damaged
+    // records are the saver's: the next save leaves them out of the index and deletes them.
+    session.adopt([...restored.map((r) => r.id), ...dropped], kept);
+    // Nothing else may change: mark the session for the save that runs right after the restore, so the
+    // index is rewritten and the dropped records deleted.
+    if (dropped.length || skipped || indexDamaged) autosaveDirty = true;
+    // Restored without an error: autosave may write from now on.
+    sessionReadable = true;
     if (replaceInitial) {
       docs.activate(restored.some((r) => r.id === stored.activeId) ? stored.activeId : restored[0].id);
       docs.close(initial);
     }
+    if (indexDamaged) notify.warning(SESSION_DAMAGED);
     if (restored.length) notify.info(`Restored the projects that were open: ${restored.length}`);
+    if (kept.length)
+      notify.warning(
+        `Projects that were open come from a newer Mockup Director: ${kept.length}. Update Mockup Director to get them back.`,
+      );
     if (skipped) notify.warning(`Projects that could not be reopened: ${skipped}. Open them again from their files.`);
-    if (failedArtwork)
-      notify.warning(`Slots whose artwork could not be loaded: ${failedArtwork}. Add the artwork again.`);
+    const warning = projectWarning(leftOut, failedArtwork, 'session');
+    if (warning) notify.warning(warning);
   }
 }

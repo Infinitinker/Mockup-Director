@@ -7,6 +7,7 @@
  * small legend. The PNG carries a pHYs chunk, so the document opens at the right print size.
  */
 import type { ImageSlotDef, ParamValues, PrintTemplate, TemplateRegion } from '../core/types';
+import { UserError } from '../core/errors';
 import { setPngDpi, slugify } from './exporter';
 
 /** Safe-area inset inside the trim line, mm. */
@@ -91,7 +92,7 @@ export async function renderTemplateDetailed(
     }
     eff = Math.max(30, Math.floor(eff * 0.7));
   }
-  throw new Error(T.tooLarge);
+  throw new UserError(T.tooLarge);
 }
 
 /** Resolve slot.template (object or function of params). Null if none / invalid. */

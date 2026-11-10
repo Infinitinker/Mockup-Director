@@ -13,6 +13,8 @@ use std::sync::Mutex;
 
 use tauri::Manager;
 
+use crate::error::{CommandError, ErrorKind};
+
 /// The extension of project files (`PROJECT_EXT` in `src/ui/project.ts`).
 pub const PROJECT_EXTENSION: &str = "mdproj";
 
@@ -59,7 +61,7 @@ impl OpenedFiles {
     }
 }
 
-#[derive(serde::Serialize)]
+#[derive(Debug, serde::Serialize)]
 pub struct OpenedFile {
     /// The file name, e.g. "Box.mdproj".
     pub name: String,
@@ -73,30 +75,25 @@ pub struct OpenedFile {
 pub struct OpenedBatch {
     /// The files that could be read.
     pub files: Vec<OpenedFile>,
-    /// One message for each path that could not be read, naming the path.
-    pub errors: Vec<String>,
+    /// One error for each path that could not be read.
+    pub errors: Vec<CommandError>,
 }
 
 /// Reads one queued file. Anything that is not a regular file (a folder, a device, a pipe) is
-/// reported instead of read, so a pipe named `*.mdproj` cannot block the reader.
-pub fn read_opened(path: &Path) -> Result<OpenedFile, String> {
-    let cannot_read = |e: std::io::Error| {
-        format!(
-            "{} could not be read: {e}. Check that the file still exists, then open it again.",
-            path.display()
-        )
-    };
+/// reported as `not-a-file` instead of read, so a pipe named `*.mdproj` cannot block the reader; a
+/// file that is not UTF-8 text is `not-text`.
+pub fn read_opened(path: &Path) -> Result<OpenedFile, CommandError> {
+    let cannot_read = |e: std::io::Error| CommandError::io(path, &e);
     if !fs::metadata(path).map_err(cannot_read)?.is_file() {
-        return Err(format!(
-            "{} could not be opened: it is a folder or another item, not a file. Open a .mdproj project file.",
-            path.display()
-        ));
+        return Err(CommandError::new(ErrorKind::NotAFile, path));
     }
     let name = path
         .file_name()
         .map(|n| n.to_string_lossy().into_owned())
         .unwrap_or_default();
-    let contents = fs::read_to_string(path).map_err(cannot_read)?;
+    let bytes = fs::read(path).map_err(cannot_read)?;
+    let contents =
+        String::from_utf8(bytes).map_err(|_| CommandError::new(ErrorKind::NotText, path))?;
     Ok(OpenedFile { name, contents })
 }
 

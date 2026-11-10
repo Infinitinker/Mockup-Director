@@ -32,7 +32,7 @@ Texts (`name`, labels, hints) are plain English strings, written where they are 
 | `defaultCamera` | `Partial<CameraSettings>` | no | The starting view, laid over the default camera (`DEFAULT_SCENE` in `src/core/defaults.ts`) when the model is picked and on Reset view. Usually `{ yaw, pitch }`, sometimes `fov`. |
 | `build` | `(ctx: ModelContext) => THREE.Object3D` | yes | Makes a new object tree. See [Building](#building). |
 
-`MODELS` is the gallery's order within each category. `getModel(id)` returns the model with that ID, or the first model for an unknown one; a project file whose model no longer exists opens with the first model (`src/ui/project.ts`).
+`MODELS` is the gallery's order within each category. `getModel(id)` returns the model with that ID, or the first model for an unknown one; a project file whose active model this build does not have is refused with a message to update Mockup Director (`parseProjectFile` in `src/ui/project.ts`), and such a tab of the autosaved session is kept for a newer version (see [Session](architecture.md#session)).
 
 ## Parameters
 
@@ -123,7 +123,7 @@ build(ctx: ModelContext): THREE.Object3D;
 - Materials are `MeshStandardMaterial` or `MeshPhysicalMaterial`. The stage adds the lights, the environment for reflections, the shadow and the floor reflection; a model adds none of them. Meshes that cast a shadow set `castShadow` (`castShadows` sets it on the whole tree).
 - The stage owns what `build` returns. When it shows the next object, it frees the previous one with `disposeObject`: every geometry and material in the tree, and textures flagged `disposeWithModel`. So create geometries and materials in each build rather than keeping them between builds. A texture a model caches at module level is not flagged and is never freed (the data-side texture in `disc.ts`).
 - `ctx.params` is complete, but read values with `num`, `bool` and `str` and a fallback: they also cover a composite that builds its base with changed parameters.
-- An exception from `build` is shown to the user as "Could not build model “…”" with its message, and the previous object stays on screen. Throw with a message the user understands.
+- An exception from `build` is shown to the user as "Could not build model “…”", and the previous object stays on screen. For a problem the user can fix, throw a `UserError` (`src/core/errors.ts`) whose message says what happened, then what to do: it is shown as it is. Any other error is shown as an unexpected error, with its message as detail (`errorMessage` in `src/ui/dom.ts`).
 - Transparent parts (clear plastic, which writes no depth) are drawn in `renderOrder`, then by depth. The stage draws the floor reflection at -3 and -2 and the shadow at -1 (`src/scene/reflection.ts`, `src/scene/shadows.ts`), so a model's transparent parts stay above -1.
 
 Helpers in `src/models/shared.ts`:
@@ -158,7 +158,7 @@ To add a composite, export the base model's build function from its file, define
 
 ## Naming
 
-- **IDs** of models are kebab-case (`print-business-card`); IDs of slots and parameters are camelCase (`lidSides`, `discPlacement`). IDs, and the values of select options, are saved in project files and in the autosaved session. **They are never renamed**: a project with an unknown model ID opens the first model, and unknown slots, parameters and option values are dropped.
+- **IDs** of models are kebab-case (`print-business-card`); IDs of slots and parameters are camelCase (`lidSides`, `discPlacement`). IDs, and the values of select options, are saved in project files and in the autosaved session. **They are never renamed**: a project whose active model ID is unknown is refused with a message to update Mockup Director, and unknown models, slots, parameters and option values elsewhere in it are left out and reported in one warning (see [Project file](architecture.md#project-file-mdproj)); a session tab that names an unknown model is kept for a newer version.
 - Related models share a prefix (`box-`, `print-`, `device-`); a composite adds `-disc` to its base model's ID.
 - **Labels**, names and option labels are in sentence case ("Label inner diameter", "DVD case with disc"), with no unit (the parameter's `unit` shows it). Hints are full sentences.
 - Format names are allowed (DVD, Blu-ray, CD, A4, ID-1). No brands, product names, logos or shapes that copy a real product: device models stay generic.

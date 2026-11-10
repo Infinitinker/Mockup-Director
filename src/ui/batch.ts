@@ -29,6 +29,7 @@ import type {
   StageAPI,
 } from '../core/types';
 import { cloneScene } from '../core/defaults';
+import { UserError } from '../core/errors';
 import { getPlaceholderTexture } from '../core/placeholder';
 import { IMAGE_ACCEPT, disposeArtwork, loadImageFile } from '../core/images';
 import { getModel } from '../models/registry';
@@ -36,19 +37,13 @@ import { pickFiles, saveBlob } from '../platform/files';
 import { slugify } from '../export/exporter';
 import { ZipLimitError, ZipWriter } from '../export/zip';
 import { VIEW_PRESETS, type AppContext } from './context';
-import { append, errorMessage, h, nextFrame, nextId, safeStorage, type Child } from './dom';
+import { append, errorMessage, h, nextFrame, nextId, type Child } from './dom';
+import { safeStorage } from '../platform/storage';
 import { ICONS } from './icons';
 import { segmentedControl, selectControl } from './controls';
 import { completeParams, slotFor } from './modelUtils';
 import { exportBlob, extensionFor, IMAGE_FORMAT_LABEL, webpEncodingSupported } from './exportBridge';
-import {
-  NOT_A_PROJECT,
-  PROJECT_EXT,
-  ProjectError,
-  hydrateProject,
-  isProjectFileName,
-  parseProjectFile,
-} from './project';
+import { PROJECT_EXT, hydrateProject, isProjectFileName, projectWarning, readProjectFile } from './project';
 import { disposeArtworkMap } from './state';
 import { notify } from './toast';
 
@@ -133,7 +128,7 @@ async function renderStill(stage: StageAPI, settings: ExportSettings, scene: Sce
   if (s.format === 'webp' && !webpEncodingSupported()) s.format = 'png';
   const blob = await exportBlob(stage, s, { ...scene.background });
   if (!blob || blob.size === 0)
-    throw new Error('The rendered image is empty. Export it again, or reduce the export size.');
+    throw new UserError('The rendered image is empty. Export it again, or reduce the export size.');
   return { blob, format: s.format };
 }
 
@@ -212,11 +207,7 @@ async function runBatch(
       } catch (e) {
         if (e instanceof ZipLimitError) {
           res.limitHit = true;
-          res.errors.push({
-            label: item.label,
-            message:
-              'The ZIP file reached its limit of 4 GB or 65,534 files: the remaining items were skipped. Choose fewer items or a smaller size.',
-          });
+          res.errors.push({ label: item.label, message: e.message });
           break;
         }
         console.warn('[mockup-director] batch item failed', item.label, e);
@@ -677,13 +668,7 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
           label: file.name,
           slug: slugOf(file.name),
           async render(r: Runner): Promise<RenderedItem> {
-            let json: unknown;
-            try {
-              json = JSON.parse(await file.text());
-            } catch {
-              throw new ProjectError(NOT_A_PROJECT);
-            }
-            const parsed = parseProjectFile(json);
+            const { file: parsed, report } = await readProjectFile(file);
             // Only the shown model's artwork is needed: don't decode artwork of other models.
             const own = parsed.artwork[parsed.modelId];
             const { state, failed } = await hydrateProject({
@@ -699,7 +684,8 @@ export function openBatchDialog(ctx: AppContext, host: BatchHost): void {
             }
             r.showModel(object, () => disposeArtworkMap(state.artwork));
             const out = await renderStill(r.stage, ownExport ? state.export : settings, state.scene);
-            if (failed) out.warning = `Slots whose artwork could not be loaded: ${failed}. Add the artwork again.`;
+            const warning = projectWarning(report, failed, 'file');
+            if (warning) out.warning = warning;
             return out;
           },
         }));

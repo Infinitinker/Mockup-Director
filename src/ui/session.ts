@@ -3,79 +3,46 @@
  * after it was closed (or crashed).
  *
  * Records in the object store 'autosave' of the database 'mockup-director':
- *   'session'   the index, { version: 1, activeId, tabs: [{ id, name, dirty }] } in tab order
+ *   'session'   the index, { version: 1, activeId, tabs: [{ id, name, dirty }] }: the open tabs in tab
+ *               order, then the kept tabs, whose record a newer version of the app may open (./sessionRecords)
  *   'tab:<id>'  one per tab, { savedAt, file: ProjectFile }
  * The index and the tab records are written in one transaction, so they always match. A session
  * written by a newer version of the app is never overwritten (the user gets it back by updating).
  */
+import { UserError } from '../core/errors';
 import type { ProjectFile } from '../core/types';
 import type { TabSnapshot } from './documents';
-import { ProjectError, isPlain, parseProjectFile, toProjectFile } from './project';
-
-/** A session that cannot be read or written, with a message for the user (see ImageLoadError). */
-class SessionError extends Error {
-  constructor(message: string, cause?: unknown) {
-    super(message);
-    this.name = 'SessionError';
-    if (cause !== undefined) (this as { cause?: unknown }).cause = cause;
-  }
-}
-
-interface SessionTab {
-  id: string;
-  /** The project's name; '' for a project never saved. */
-  name: string;
-  /** The tab had unsaved changes. */
-  dirty: boolean;
-  file: ProjectFile;
-}
-
-interface Session {
-  /** The id of the tab to show; the first tab's id when the stored one was not restored, '' when there are no tabs. */
-  activeId: string;
-  /** In tab order. */
-  tabs: SessionTab[];
-}
-
-/**
- * A session read back. Tabs whose record is missing or damaged are left out of `session.tabs`
- * (which may then be empty) and counted in `skipped`, so the caller can tell the user.
- */
-interface LoadedSession {
-  session: Session;
-  skipped: number;
-}
+import { toProjectFile } from './project';
+import {
+  buildIndex,
+  damagedSession,
+  type IndexRecord,
+  type IndexTab,
+  isNewerIndex,
+  type LoadedSession,
+  type ReadIndex,
+  readIndex,
+  readSession,
+  SESSION_NEWER,
+  tabKey,
+} from './sessionRecords';
 
 const DB_NAME = 'mockup-director';
 const DB_STORE = 'autosave';
 const INDEX_KEY = 'session';
-const TAB_PREFIX = 'tab:';
-const SESSION_VERSION = 1;
 
 const STORAGE_UNAVAILABLE =
-  'This system does not let Mockup Director keep data between starts, so open projects are not reopened after a restart.';
-const SESSION_NEWER =
-  'The projects that were open were saved by a newer version of Mockup Director. Update Mockup Director to get them back.';
+  'This system does not let Mockup Director keep data between starts: save your projects to files to keep them.';
 
-const tabKey = (id: string): string => TAB_PREFIX + id;
+const STORAGE_FULL = 'The storage for the projects that are open is full. Save your projects to files to keep them.';
+
 const noop = (): void => undefined;
 
-interface IndexTab {
-  id: string;
-  name: string;
-  dirty: boolean;
-}
-
-interface IndexRecord {
-  version: number;
-  activeId: string;
-  tabs: IndexTab[];
-}
-
-function openDb(): Promise<IDBDatabase> {
+/** Opens the database; `onLost` is called when the engine closes the connection or another version needs it. */
+function openDb(onLost: () => void): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     if (typeof indexedDB === 'undefined') {
-      reject(new SessionError(STORAGE_UNAVAILABLE));
+      reject(new UserError(STORAGE_UNAVAILABLE));
       return;
     }
     const req = indexedDB.open(DB_NAME, 1);
@@ -83,85 +50,79 @@ function openDb(): Promise<IDBDatabase> {
       const db = req.result;
       if (!db.objectStoreNames.contains(DB_STORE)) db.createObjectStore(DB_STORE);
     };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(new SessionError(STORAGE_UNAVAILABLE, req.error));
-    req.onblocked = () => reject(new SessionError(STORAGE_UNAVAILABLE));
+    req.onsuccess = () => {
+      const d = req.result;
+      d.onclose = onLost;
+      d.onversionchange = () => {
+        d.close();
+        onLost();
+      };
+      resolve(d);
+    };
+    req.onerror = () => reject(new UserError(STORAGE_UNAVAILABLE, { cause: req.error }));
+    req.onblocked = () => reject(new UserError(STORAGE_UNAVAILABLE));
   });
 }
 
+/** The open connection; cleared when it fails or is lost, so the next call opens a new one. */
 let dbPromise: Promise<IDBDatabase> | null = null;
 function db(): Promise<IDBDatabase> {
   if (!dbPromise) {
-    dbPromise = openDb().catch((e) => {
-      dbPromise = null;
+    const forget = () => {
+      if (dbPromise === opening) dbPromise = null;
+    };
+    const opening: Promise<IDBDatabase> = openDb(forget).catch((e) => {
+      forget();
       throw e;
     });
+    dbPromise = opening;
   }
   return dbPromise;
 }
 
-/** Resolves when the transaction commits, rejects when it fails or is aborted. */
+/** Starts a transaction on the store; a connection the engine has closed is forgotten, and refused. */
+function begin(d: IDBDatabase, mode: IDBTransactionMode): IDBTransaction {
+  try {
+    return d.transaction(DB_STORE, mode);
+  } catch (e) {
+    dbPromise = null;
+    throw new UserError(STORAGE_UNAVAILABLE, { cause: e });
+  }
+}
+
+/** The UserError for a failed transaction, with the engine's error as its cause. */
+function transactionError(tx: IDBTransaction, what: string): UserError {
+  const cause = tx.error ?? new Error(`${what} failed`);
+  return new UserError(cause.name === 'QuotaExceededError' ? STORAGE_FULL : STORAGE_UNAVAILABLE, { cause });
+}
+
+/** Resolves when the transaction commits, rejects with a UserError when it fails or is aborted. */
 function finish(tx: IDBTransaction, what: string): Promise<void> {
   return new Promise((resolve, reject) => {
     tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error ?? new Error(`${what} failed`));
-    tx.onabort = () => reject(tx.error ?? new Error(`${what} aborted`));
+    tx.onerror = () => reject(transactionError(tx, what));
+    tx.onabort = () => reject(transactionError(tx, what));
   });
-}
-
-/** Validates the index record; entries that are not usable are counted in `malformed`. */
-function readIndex(raw: unknown): { index: IndexRecord; malformed: number } {
-  if (!isPlain(raw) || typeof raw.version !== 'number' || !Array.isArray(raw.tabs)) {
-    throw new SessionError(
-      'The record of the projects that were open is damaged: changes that were not saved to a file cannot be recovered. Open your projects again from their files.',
-    );
-  }
-  if (raw.version > SESSION_VERSION) throw new SessionError(SESSION_NEWER);
-  const tabs: IndexTab[] = [];
-  const seen = new Set<string>();
-  let malformed = 0;
-  for (const entry of raw.tabs) {
-    if (!isPlain(entry) || typeof entry.id !== 'string' || entry.id === '' || seen.has(entry.id)) {
-      malformed += 1;
-      continue;
-    }
-    seen.add(entry.id);
-    tabs.push({
-      id: entry.id,
-      name: typeof entry.name === 'string' ? entry.name : '',
-      dirty: typeof entry.dirty === 'boolean' ? entry.dirty : true,
-    });
-  }
-  const activeId = typeof raw.activeId === 'string' ? raw.activeId : '';
-  return { index: { version: raw.version, activeId, tabs }, malformed };
-}
-
-/** The project of a tab record; null when the record is missing or its project is damaged. */
-function readTabRecord(raw: unknown): ProjectFile | null {
-  if (!isPlain(raw)) return null;
-  try {
-    return parseProjectFile(raw.file);
-  } catch (e) {
-    if (!(e instanceof ProjectError)) throw e;
-    console.warn('[mockup-director] autosaved tab skipped', e);
-    return null;
-  }
 }
 
 /** Reads the autosaved session; null when nothing is stored. */
 export async function loadSession(): Promise<LoadedSession | null> {
   const d = await db();
-  const tx = d.transaction(DB_STORE, 'readonly');
+  const tx = begin(d, 'readonly');
   const store = tx.objectStore(DB_STORE);
   // Filled in by the request callbacks.
-  const read: { parsed: ReturnType<typeof readIndex> | null; failure: unknown } = { parsed: null, failure: null };
+  const read: { parsed: ReadIndex | 'damaged' | null; failure: unknown; keys: unknown[] } = {
+    parsed: null,
+    failure: null,
+    keys: [],
+  };
   const records = new Map<string, unknown>();
 
   const indexReq = store.get(INDEX_KEY);
   indexReq.onsuccess = () => {
     if (indexReq.result === undefined) return;
     // Throwing here would abort the transaction and lose the reason; keep it for after.
-    let parsed: ReturnType<typeof readIndex>;
+    let parsed: ReadIndex | 'damaged';
     try {
       parsed = readIndex(indexReq.result);
     } catch (e) {
@@ -169,6 +130,14 @@ export async function loadSession(): Promise<LoadedSession | null> {
       return;
     }
     read.parsed = parsed;
+    if (parsed === 'damaged') {
+      // Every tab record is dropped: the next save deletes them.
+      const keysReq = store.getAllKeys();
+      keysReq.onsuccess = () => {
+        read.keys = keysReq.result;
+      };
+      return;
+    }
     for (const tab of parsed.index.tabs) {
       const tabReq = store.get(tabKey(tab.id));
       tabReq.onsuccess = () => records.set(tab.id, tabReq.result);
@@ -177,63 +146,108 @@ export async function loadSession(): Promise<LoadedSession | null> {
   await finish(tx, 'session read');
   if (read.failure) throw read.failure;
 
-  if (!read.parsed) return null;
-
-  const { index, malformed } = read.parsed;
-  const tabs: SessionTab[] = [];
-  let skipped = malformed;
-  for (const tab of index.tabs) {
-    const file = readTabRecord(records.get(tab.id));
-    if (file) tabs.push({ ...tab, file });
-    else skipped += 1;
-  }
-  const activeId = tabs.some((t) => t.id === index.activeId) ? index.activeId : (tabs[0]?.id ?? '');
-  return { session: { activeId, tabs }, skipped };
+  if (read.parsed === 'damaged') return damagedSession(read.keys);
+  return read.parsed ? readSession(read.parsed, records) : null;
 }
 
-interface PreparedTab {
+/** A tab record a save writes. */
+export interface TabPut {
   id: string;
-  revision: number;
   file: ProjectFile;
+}
+
+/** Where the saver writes the session: IndexedDB in the app (`indexedDbSessionStore`). */
+export interface SessionStore {
+  /**
+   * Writes the index and the tab records of `puts`, and deletes the tab records of `deletes`, all
+   * or nothing. Rejects with a UserError when it cannot: SESSION_NEWER when the stored index comes
+   * from a newer version, which is then left alone.
+   */
+  write(index: IndexRecord, puts: readonly TabPut[], deletes: readonly string[]): Promise<void>;
+}
+
+/** The session in IndexedDB. */
+export const indexedDbSessionStore: SessionStore = {
+  async write(index, puts, deletes) {
+    const d = await db();
+    const tx = begin(d, 'readwrite');
+    const store = tx.objectStore(DB_STORE);
+    // The stored index is read first, in the same transaction: a session written by a newer version
+    // of the app is left alone (writing ours would delete its tabs), and the save is refused.
+    let refused: UserError | null = null;
+    const existing = store.get(INDEX_KEY);
+    existing.onsuccess = () => {
+      if (isNewerIndex(existing.result)) {
+        refused = new UserError(SESSION_NEWER);
+        tx.abort();
+        return;
+      }
+      const savedAt = Date.now();
+      for (const p of puts) store.put({ savedAt, file: p.file }, tabKey(p.id));
+      store.put(index, INDEX_KEY);
+      for (const id of deletes) store.delete(tabKey(id));
+    };
+    try {
+      await finish(tx, 'session save');
+    } catch (e) {
+      throw refused ?? e;
+    }
+  },
+};
+
+interface PreparedTab extends TabPut {
+  revision: number;
 }
 
 interface SaveRequest {
   index: IndexRecord;
-  /** Tabs whose revision differed from the last written one when the save was requested. */
+  /** Tabs whose revision differed from the last written one when the save was requested, or that were being written. */
   changed: PreparedTab[];
 }
 
 /**
  * Writes the session. A tab's record is written only when its revision changed since this saver
  * last wrote it. Records of closed tabs are deleted, but only those this saver owns: written by it
- * or adopted from the restored session. A record the restore could not read stays for a later try.
+ * or adopted from the restored session (its tabs and its damaged records). The entries the restore
+ * kept are written into every index, after the open tabs, and their records are never touched.
  * Saves never overlap: a save requested while one runs waits for it, and several such requests are
  * merged into one that writes the latest tabs (their promises settle together).
  */
 export class SessionSaver {
   /** Tab id -> the revision of the record this saver last wrote for it. */
   private written = new Map<string, number>();
+  /**
+   * Tab id -> the revision the running save writes. A save requested meanwhile serializes these
+   * tabs too: an undo may bring back the revision that was written before.
+   */
+  private writing = new Map<string, number>();
   /** Ids of the tab records this saver may delete when their tab is closed. */
   private owned = new Set<string>();
 
-  /** Takes ownership of the records of restored tabs. */
-  adopt(ids: readonly string[]): void {
-    ids.forEach((id) => {
-      this.owned.add(id);
-    });
-  }
+  /** Entries of the restored session whose record a newer version may open: in every index, never deleted. */
+  private kept: readonly IndexTab[] = [];
   /** Settles when the running save (if any) has ended. Never rejects. */
   private tail: Promise<void> = Promise.resolve();
   private queued: SaveRequest | null = null;
   private queuedDone: Promise<void> | null = null;
 
+  constructor(private readonly store: SessionStore) {}
+
+  /** Takes ownership of the records of restored tabs and of damaged ones, and keeps the entries a newer version may open. */
+  adopt(ids: readonly string[], kept: readonly IndexTab[]): void {
+    ids.forEach((id) => {
+      this.owned.add(id);
+    });
+    this.kept = kept;
+  }
+
   save(tabs: readonly TabSnapshot[], activeId: string): Promise<void> {
     // Projects are serialized now: the store edits the active state in place, so a snapshot read
     // later could hold newer content than its revision says.
     this.queued = {
-      index: { version: SESSION_VERSION, activeId, tabs: tabs.map(({ id, name, dirty }) => ({ id, name, dirty })) },
+      index: buildIndex(tabs, activeId, this.kept),
       changed: tabs
-        .filter((t) => this.written.get(t.id) !== t.revision)
+        .filter((t) => this.written.get(t.id) !== t.revision || this.writing.has(t.id))
         .map((t) => ({ id: t.id, revision: t.revision, file: toProjectFile(t.state) })),
     };
     if (!this.queuedDone) {
@@ -251,32 +265,20 @@ export class SessionSaver {
     if (!request) return;
     // The save that ran before this one may have written some of them already.
     const changed = request.changed.filter((p) => this.written.get(p.id) !== p.revision);
+    // The index lists the kept entries too, so their records are never deleted.
     const openIds = new Set(request.index.tabs.map((t) => t.id));
     const closedIds = [...this.owned].filter((id) => !openIds.has(id));
 
-    const d = await db();
-    const tx = d.transaction(DB_STORE, 'readwrite');
-    const store = tx.objectStore(DB_STORE);
-    // The stored index is read first, in the same transaction: a session written by a newer version
-    // of the app is left alone (writing ours would delete its tabs), and the save is refused.
-    let refused: SessionError | null = null;
-    const existing = store.get(INDEX_KEY);
-    existing.onsuccess = () => {
-      const stored: unknown = existing.result;
-      if (isPlain(stored) && typeof stored.version === 'number' && stored.version > SESSION_VERSION) {
-        refused = new SessionError(SESSION_NEWER);
-        tx.abort();
-        return;
-      }
-      const savedAt = Date.now();
-      for (const p of changed) store.put({ savedAt, file: p.file }, tabKey(p.id));
-      store.put(request.index, INDEX_KEY);
-      for (const id of closedIds) store.delete(tabKey(id));
-    };
+    // Before the first await, so that a save requested during the write sees it.
+    for (const p of changed) this.writing.set(p.id, p.revision);
     try {
-      await finish(tx, 'session save');
-    } catch (e) {
-      throw refused ?? e;
+      await this.store.write(
+        request.index,
+        changed.map(({ id, file }) => ({ id, file })),
+        closedIds,
+      );
+    } finally {
+      this.writing.clear();
     }
 
     const next = new Map<string, number>();

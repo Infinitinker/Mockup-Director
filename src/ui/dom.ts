@@ -1,6 +1,7 @@
 /**
  * Tiny DOM helpers – the UI is vanilla TS, so this keeps element creation readable.
  */
+import { UserError } from '../core/errors';
 
 export type Child = Node | string | number | null | undefined | false;
 
@@ -124,33 +125,26 @@ export class Signal<T> {
   }
 }
 
+/**
+ * What the interface says about an error: a UserError's own message; for anything else (a bug, a
+ * failure of the web engine, a value that is not an Error) a general message with the raw text as
+ * detail. Written to follow the title of an error toast.
+ */
 export function errorMessage(e: unknown): string {
-  if (e instanceof Error) return e.message;
-  if (typeof e === 'string') return e;
-  try {
-    return JSON.stringify(e);
-  } catch {
-    return String(e);
+  if (e instanceof UserError) return e.message;
+  let raw: string;
+  if (e instanceof Error) raw = e.message || e.name;
+  else if (typeof e === 'string') raw = e;
+  else {
+    try {
+      raw = JSON.stringify(e) ?? String(e);
+    } catch {
+      raw = String(e);
+    }
   }
+  const detail = raw.trim().replace(/\.+$/, '');
+  return `Something unexpected went wrong${detail ? `: ${detail}` : ''}. If it keeps happening, report it at github.com/Infinitinker/Mockup-Director/issues.`;
 }
-
-/** localStorage access that never throws (private mode, blocked storage ...). */
-export const safeStorage = {
-  get(key: string): string | null {
-    try {
-      return window.localStorage.getItem(key);
-    } catch {
-      return null;
-    }
-  },
-  set(key: string, value: string): void {
-    try {
-      window.localStorage.setItem(key, value);
-    } catch {
-      /* ignore */
-    }
-  },
-};
 
 export const isMac: boolean = /Mac|iPhone|iPad|iPod/i.test(
   (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData?.platform ||

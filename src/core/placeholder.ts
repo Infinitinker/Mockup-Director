@@ -1,4 +1,9 @@
+/**
+ * Placeholder artwork for empty slots: a gradient with a frame (round for a disc) and the slot's
+ * label, drawn once per slot id, aspect and shape, and cached as shared textures.
+ */
 import * as THREE from 'three';
+import { UserError } from './errors';
 import type { ImageSlotDef } from './types';
 
 const cache = new Map<string, THREE.Texture>();
@@ -22,7 +27,7 @@ export function getPlaceholderTexture(slot: ImageSlotDef): THREE.Texture {
   canvas.height = Math.max(8, h);
   const g = canvas.getContext('2d');
   if (!g)
-    throw new Error('Not enough memory to draw the placeholder of an empty slot. Close other tabs and try again.');
+    throw new UserError('Not enough memory to draw the placeholder of an empty slot. Close other tabs and try again.');
 
   const grad = g.createLinearGradient(0, 0, canvas.width, canvas.height);
   grad.addColorStop(0, '#eef0f4');

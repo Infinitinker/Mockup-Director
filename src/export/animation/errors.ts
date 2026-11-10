@@ -1,6 +1,6 @@
 /**
- * Errors of the animation export. Their `message` can be shown to the user (as with ExportError in
- * ../exporter.ts).
+ * What the animation export tells the user when this engine cannot encode a format, and the error that
+ * ends an export the user canceled.
  */
 
 /** What the user sees when this engine cannot encode a WebP animation. */
@@ -14,18 +14,6 @@ export const MP4_UNSUPPORTED =
 export const MP4_SIZE_UNSUPPORTED =
   'This system cannot encode MP4 video at this size and frame rate. Choose a smaller size, fewer frames per second, or GIF.';
 
-type AnimationErrorCode = 'unsupported' | 'webp-unsupported' | 'mp4-unsupported' | 'render-failed' | 'encode-failed';
-
-export class AnimationError extends Error {
-  readonly code: AnimationErrorCode;
-  constructor(code: AnimationErrorCode, message: string, cause?: unknown) {
-    super(message);
-    this.name = 'AnimationError';
-    this.code = code;
-    if (cause !== undefined) (this as { cause?: unknown }).cause = cause;
-  }
-}
-
 /** Thrown when the user cancels a running export (AbortSignal). Not an error for the UI. */
 export class AnimationCanceled extends Error {
   constructor() {
@@ -34,6 +22,7 @@ export class AnimationCanceled extends Error {
   }
 }
 
+/** Whether `e` ended the export because the user canceled it. */
 export function isAnimationCanceled(e: unknown): boolean {
-  return e instanceof AnimationCanceled || (e instanceof DOMException && e.name === 'AbortError');
+  return e instanceof AnimationCanceled;
 }

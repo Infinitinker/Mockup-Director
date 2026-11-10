@@ -5,8 +5,11 @@
  * Desktop save contract (the `save_file` command in src-tauri/src/lib.rs):
  *   invoke('save_file', <raw bytes as Uint8Array>, { headers: { 'x-path': encodeURIComponent(path) } })
  * The raw body avoids the JSON-encoding overhead of large PNGs (a 4000×4000 PNG can be 30+ MB).
+ * A failed write rejects with a `CommandError`, which `fromCommandError` turns into a `UserError` naming
+ * the file (a malformed call, `invalid-request`, becomes a plain `Error`).
  */
 import { isTauri, invoke } from '@tauri-apps/api/core';
+import { fromCommandError } from './commandErrors';
 
 interface FileFilter {
   name: string;
@@ -26,6 +29,7 @@ export function inDesktopApp(): boolean {
  * Asks where to save and writes the blob. Resolves with the name of the saved file (without its
  * folder), which the user may have changed in the save dialog, or null if the user canceled.
  * A classic browser download cannot report either, so it resolves with the suggested name.
+ * A file the desktop app cannot write rejects with a `UserError` naming the file.
  */
 export async function saveBlob(blob: Blob, suggestedName: string, filters: FileFilter[]): Promise<string | null> {
   if (inDesktopApp()) return saveInDesktopApp(blob, suggestedName, filters);
@@ -88,7 +92,11 @@ async function saveInDesktopApp(blob: Blob, suggestedName: string, filters: File
   if (!picked) return null; // canceled
   const path = ensureExtension(picked, filters, suggestedName);
   const bytes = new Uint8Array(await blob.arrayBuffer());
-  await invoke('save_file', bytes, { headers: { 'x-path': encodeURIComponent(path) } });
+  try {
+    await invoke('save_file', bytes, { headers: { 'x-path': encodeURIComponent(path) } });
+  } catch (e) {
+    throw fromCommandError(e, 'save');
+  }
   return path.split(/[\\/]/).pop() || suggestedName;
 }
 

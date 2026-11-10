@@ -11,6 +11,7 @@
 //!  - a close watchdog (`closing.rs`): the window closes even when the page does not answer.
 
 pub mod closing;
+pub mod error;
 pub mod files;
 pub mod opened;
 
@@ -20,6 +21,7 @@ use std::path::PathBuf;
 
 use tauri::{AppHandle, Emitter, Manager, WindowEvent};
 
+use error::CommandError;
 use files::{percent_decode, validate_target, write_atomically};
 
 /// Writes the raw request body to the path given in the `x-path` header.
@@ -35,29 +37,29 @@ use files::{percent_decode, validate_target, write_atomically};
 /// Paths only ever come from the native save panel, i.e. the user explicitly chose them; we still
 /// reject empty / relative paths and directories as a sanity check.
 ///
+/// Fails with a `CommandError` (`error.rs`): a malformed call is `invalid-request`, a failed write
+/// has the kind of the system's error.
+///
 /// This is a synchronous command, so it runs on the main thread: writing even a 30 MB file to an
 /// SSD takes only a few tens of milliseconds, and it keeps the borrowed `Request` simple.
 #[tauri::command]
-fn save_file(request: tauri::ipc::Request) -> Result<(), String> {
+fn save_file(request: tauri::ipc::Request) -> Result<(), CommandError> {
     let tauri::ipc::InvokeBody::Raw(bytes) = request.body() else {
-        return Err("save_file: expected a raw binary body (Uint8Array / ArrayBuffer)".into());
+        return Err(CommandError::invalid_request(
+            "expected a raw binary body (Uint8Array / ArrayBuffer)",
+        ));
     };
 
     let encoded = request
         .headers()
         .get("x-path")
-        .ok_or_else(|| "save_file: missing x-path header".to_string())?
+        .ok_or_else(|| CommandError::invalid_request("missing x-path header"))?
         .to_str()
-        .map_err(|_| "save_file: x-path header is not valid ASCII".to_string())?;
+        .map_err(|_| CommandError::invalid_request("x-path header is not valid ASCII"))?;
 
     let path = PathBuf::from(percent_decode(encoded)?);
     validate_target(&path)?;
-    write_atomically(&path, bytes).map_err(|e| {
-        format!(
-            "{} could not be written: {e}. Choose another folder or free some disk space, then try again.",
-            path.display()
-        )
-    })
+    write_atomically(&path, bytes).map_err(|e| CommandError::io(&path, &e))
 }
 
 /// Queues project files for the web UI and tells it they arrived.

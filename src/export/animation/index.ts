@@ -12,15 +12,9 @@
  * The stage is always restored (try/finally), also on errors and cancellation.
  */
 import type { AnimationFormat, AnimationSettings, BackgroundSettings, StageAPI } from '../../core/types';
+import { UserError } from '../../core/errors';
 import { paintBackground } from '../exporter';
-import { StageError } from '../../scene/errors';
-import {
-  AnimationCanceled,
-  AnimationError,
-  MP4_SIZE_UNSUPPORTED,
-  MP4_UNSUPPORTED,
-  WEBP_ANIMATION_UNSUPPORTED,
-} from './errors';
+import { AnimationCanceled, MP4_SIZE_UNSUPPORTED, MP4_UNSUPPORTED, WEBP_ANIMATION_UNSUPPORTED } from './errors';
 import { GifAnimationEncoder } from './gif';
 import { AnimatedWebpWriter } from './webp';
 import { Mp4Writer, mp4EncodingAvailable } from './mp4';
@@ -78,13 +72,10 @@ export async function exportAnimation(
 ): Promise<AnimationResult> {
   const s = normalizeAnimationSettings(raw, { webp: opts.webpSupported, mp4: mp4EncodingAvailable() });
   if (s.format !== raw.format) {
-    throw raw.format === 'webp'
-      ? new AnimationError('webp-unsupported', WEBP_ANIMATION_UNSUPPORTED)
-      : new AnimationError('mp4-unsupported', MP4_UNSUPPORTED);
+    throw raw.format === 'webp' ? new UserError(WEBP_ANIMATION_UNSUPPORTED) : new UserError(MP4_UNSUPPORTED);
   }
   if (!stage.beginAnimation) {
-    throw new AnimationError(
-      'unsupported',
+    throw new UserError(
       'Animation export needs the 3D preview, but WebGL does not work on this computer. Update the graphics drivers, then restart Mockup Director.',
     );
   }
@@ -154,9 +145,9 @@ export async function exportAnimation(
       try {
         mp4 = await Mp4Writer.create(W, H, fps, s.quality);
       } catch (e) {
-        throw new AnimationError('mp4-unsupported', MP4_SIZE_UNSUPPORTED, e);
+        throw new UserError(MP4_SIZE_UNSUPPORTED, { cause: e });
       }
-      if (!mp4) throw new AnimationError('mp4-unsupported', MP4_SIZE_UNSUPPORTED);
+      if (!mp4) throw new UserError(MP4_SIZE_UNSUPPORTED);
     }
 
     const renderCanvas = createCanvas(rw, rh);
@@ -195,8 +186,7 @@ export async function exportAnimation(
         gif.addFrame(og.getImageData(0, 0, W, H).data, delaysCs[i]);
       } else if (webp) {
         const blob = await canvasToBlob(outCanvas, 'image/webp', QUALITY_WEBP[s.quality]);
-        if (blob.type && blob.type !== 'image/webp')
-          throw new AnimationError('webp-unsupported', WEBP_ANIMATION_UNSUPPORTED);
+        if (blob.type && blob.type !== 'image/webp') throw new UserError(WEBP_ANIMATION_UNSUPPORTED);
         webp.addFrame(new Uint8Array(await blob.arrayBuffer()), delaysMs[i]);
       } else if (mp4) {
         await mp4.addFrame(outCanvas);
@@ -222,15 +212,6 @@ export async function exportAnimation(
     progress('finalize', 1, 1);
     if (!blob.size) throw encodeFailed();
     return { blob, format: s.format, width: W, height: H, frames: n };
-  } catch (e) {
-    if (e instanceof AnimationError || e instanceof AnimationCanceled) throw e;
-    if (e instanceof StageError) throw e; // its message is meant for the user
-    console.error('[mockup-director] animation export failed', e);
-    throw new AnimationError(
-      'encode-failed',
-      `The animation could not be created (${errorText(e)}). Try a smaller size or another format.`,
-      e,
-    );
   } finally {
     session?.end();
     if (mp4 && !finished) void mp4.cancel();
@@ -287,7 +268,7 @@ function createCanvas(w: number, h: number): HTMLCanvasElement {
 function get2d(c: HTMLCanvasElement, willReadFrequently = false): CanvasRenderingContext2D {
   const g = c.getContext('2d', willReadFrequently ? { willReadFrequently: true } : undefined);
   if (!g) {
-    throw new AnimationError('render-failed', 'Not enough memory for an animation this large. Reduce the size.');
+    throw new UserError('Not enough memory for an animation this large. Reduce the size.');
   }
   return g;
 }
@@ -303,14 +284,6 @@ function canvasToBlob(c: HTMLCanvasElement, mime: string, quality: number): Prom
   });
 }
 
-function errorText(e: unknown): string {
-  if (e instanceof Error) return e.message;
-  return String(e);
-}
-
-function encodeFailed(): AnimationError {
-  return new AnimationError(
-    'encode-failed',
-    'The animation could not be encoded: there may not be enough memory. Reduce the size.',
-  );
+function encodeFailed(): UserError {
+  return new UserError('The animation could not be encoded: there may not be enough memory. Reduce the size.');
 }

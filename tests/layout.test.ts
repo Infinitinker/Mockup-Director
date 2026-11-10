@@ -76,7 +76,6 @@ const BANNER_ALLOWED = [
 const HEADER_ALLOWED = [
   'src-tauri/src/main.rs',
   'src/core/defaults.ts',
-  'src/core/placeholder.ts',
   'src/main.ts',
   'src/models/registry.ts',
   'tests/tools/installer.test.ts',

@@ -28,7 +28,7 @@ import type {
   StageAPI,
 } from '../core/types';
 import { DEFAULT_SCENE, cloneScene } from '../core/defaults';
-import { StageError } from './errors';
+import { UserError } from '../core/errors';
 import { disposeObject } from '../models/shared';
 import { UnionFit, fitCamera, type FitResult } from './framing';
 import { GroundShadow, computeShadowLayout, type ShadowLayout } from './shadows';
@@ -715,7 +715,7 @@ export function createStage(container: HTMLElement): StageAPI {
    */
   function startAnimation(o: AnimationFramingOptions): AnimationRenderSession {
     if (disposed || contextLost)
-      throw new StageError('The 3D preview is not available right now. Try again in a moment.');
+      throw new UserError('The 3D preview is not available right now. Try again in a moment.');
     anim?.end();
 
     const angles = (Array.isArray(o.angles) ? o.angles : []).map((a) => finite(a, 0));
@@ -828,7 +828,7 @@ export function createStage(container: HTMLElement): StageAPI {
       renderFrame(index: number, target: HTMLCanvasElement) {
         if (ended) throw new Error('The animation session has ended.');
         if (disposed || contextLost || model !== startModel) {
-          throw new StageError(
+          throw new UserError(
             'The model changed or the 3D preview was reset while the animation was being rendered. Export the animation again.',
           );
         }
@@ -838,7 +838,7 @@ export function createStage(container: HTMLElement): StageAPI {
         if (target.height !== H) target.height = H;
         const outCtx = target.getContext('2d');
         if (!outCtx) {
-          throw new StageError('Not enough memory for an animation this large. Reduce the size.');
+          throw new UserError('Not enough memory for an animation this large. Reduce the size.');
         }
         outCtx.clearRect(0, 0, W, H);
         let ctx = outCtx;
@@ -849,7 +849,7 @@ export function createStage(container: HTMLElement): StageAPI {
             low.height = RH;
           }
           const lowCtx = low.getContext('2d');
-          if (!lowCtx) throw new StageError('Not enough memory for an animation this large. Reduce the size.');
+          if (!lowCtx) throw new UserError('Not enough memory for an animation this large. Reduce the size.');
           ctx = lowCtx;
           ctx.clearRect(0, 0, RW, RH);
         }
@@ -927,13 +927,13 @@ export function createStage(container: HTMLElement): StageAPI {
       const W = Math.max(1, Math.round(finite(o.width, 1)));
       const H = Math.max(1, Math.round(finite(o.height, 1)));
       if (disposed || contextLost)
-        throw new StageError('The 3D preview is not available right now. Try again in a moment.');
+        throw new UserError('The 3D preview is not available right now. Try again in a moment.');
       const out = document.createElement('canvas');
       out.width = W;
       out.height = H;
       const outCtx = out.getContext('2d');
       if (!outCtx) {
-        throw new StageError(
+        throw new UserError(
           'The image could not be rendered: there may not be enough graphics memory. Reduce the export size.',
         );
       }
@@ -951,7 +951,7 @@ export function createStage(container: HTMLElement): StageAPI {
         target.width = RW;
         target.height = RH;
         const targetCtx = target.getContext('2d');
-        if (!targetCtx) throw new StageError('Not enough memory for an image this large. Reduce the export size.');
+        if (!targetCtx) throw new UserError('Not enough memory for an image this large. Reduce the export size.');
         ctx = targetCtx;
       }
       const prevRatio = renderer.getPixelRatio();

@@ -16,7 +16,8 @@ import {
 } from '../../core/defaults';
 import type { AppContext } from '../context';
 import { formatNumber } from '../numbers';
-import { clamp, h, nextId, safeStorage, shortcutLabel } from '../dom';
+import { clamp, h, nextId, shortcutLabel } from '../dom';
+import { safeStorage } from '../../platform/storage';
 import { ICONS } from '../icons';
 import { numberControl, section, segmentedControl, selectControl, switchControl, type Control } from '../controls';
 import { hasAny } from '../state';

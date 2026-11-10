@@ -34,6 +34,20 @@ export function completeParams(model: ModelDefinition, stored: ParamValues | und
   return out;
 }
 
+/**
+ * The values of `prev` (another model's params) that are valid for `model`, by param id: a value
+ * the model's definition does not accept (a select option it lacks, say) is not carried over.
+ */
+export function inheritedParams(model: ModelDefinition, prev: ParamValues): ParamValues {
+  const out: ParamValues = {};
+  for (const p of model.params) {
+    if (!(p.id in prev)) continue;
+    const v = sanitizeParam(p, prev[p.id]);
+    if (v !== undefined) out[p.id] = v;
+  }
+  return out;
+}
+
 /** The slot definition, or a neutral fallback for an unknown id (models may ask for any id). */
 export function slotFor(model: ModelDefinition, slotId: string): ImageSlotDef {
   // The id stands in for the label.

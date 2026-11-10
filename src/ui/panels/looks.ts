@@ -1,7 +1,9 @@
 /**
- * "Looks" tab: named looks – built-in and the user's own, imported and exported as JSON.
+ * "Looks" tab: named looks – built-in and the user's own, imported and exported as JSON, with a
+ * note when the stored looks could not be read and a warning when they cannot be saved.
  */
 import type { Look } from '../../core/types';
+import { UserError } from '../../core/errors';
 import type { AppContext } from '../context';
 import { errorMessage, h, nextId } from '../dom';
 import { ICONS } from '../icons';
@@ -15,14 +17,36 @@ import {
   LooksError,
   MAX_LOOK_NAME,
   NOT_A_LOOKS_FILE,
+  STORED_LOOKS_DAMAGED,
+  STORED_LOOKS_NEWER,
   applyLook,
+  createLooksSaver,
   loadLooks,
   lookFromScene,
   parseLooksFile,
-  saveLooks,
   toLooksFile,
   uniqueName,
 } from '../looks';
+
+/** The valid looks of a chosen looks file. Throws a UserError when the file cannot be read. */
+async function readLooksFile(f: File): Promise<Look[]> {
+  let text: string;
+  try {
+    text = await f.text();
+  } catch (e) {
+    throw new UserError(
+      'The file could not be read: it may have been moved, deleted or locked. Check that it still exists and can be opened, then import it again.',
+      { cause: e },
+    );
+  }
+  let json: unknown;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    throw new LooksError(NOT_A_LOOKS_FILE);
+  }
+  return parseLooksFile(json);
+}
 
 function swatch(look: Look['scene']): HTMLElement {
   const b = look.background;
@@ -37,12 +61,61 @@ function swatch(look: Look['scene']): HTMLElement {
 
 export function createLooksPanel(ctx: AppContext): { el: HTMLElement } {
   const el = h('div', { class: 'panel panel-looks' });
-  let stored = loadLooks();
-  let looks = stored.looks;
+  const user = loadLooks();
+  const looks = user.looks;
 
-  // Looks from a newer version are never overwritten.
+  const saver = createLooksSaver(user);
+  // One warning while saving keeps failing, not one per change.
   const persist = () => {
-    if (!stored.locked) saveLooks(looks);
+    if (saver.save().warn) {
+      notify.warning(
+        'Could not save looks',
+        'The storage for looks is full or blocked. Delete looks you no longer need, or export your looks to a file to keep them.',
+      );
+    }
+  };
+
+  const deleteStoredLooks = async () => {
+    const ok = await confirmDialog({
+      title: 'Delete the saved looks?',
+      message: 'This cannot be undone. From then on, your looks are kept after Mockup Director closes.',
+      okLabel: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
+    // An explicit command: its failure is always reported, not only the first time.
+    if (saver.replaceDamaged() === 'failed') {
+      notify.error(
+        'Could not delete the saved looks',
+        'The storage for looks is full or blocked. Export your looks to a file to keep them.',
+      );
+    } else {
+      notify.success('Deleted the saved looks');
+    }
+    render();
+  };
+
+  // What the user is told when the stored looks could not be read; only damaged ones can be deleted.
+  const storedNote = (): HTMLElement | null => {
+    if (user.stored === 'ok') return null;
+    const note = h('p', {
+      class: 'ctl-note warn-note',
+      text: user.stored === 'newer' ? STORED_LOOKS_NEWER : STORED_LOOKS_DAMAGED,
+    });
+    if (user.stored === 'newer') return note;
+    return h(
+      'div',
+      {},
+      note,
+      h(
+        'div',
+        { class: 'ctl-actions' },
+        iconButton(ICONS.trash, 'Delete saved looks', () => void deleteStoredLooks(), {
+          cls: 'btn-small',
+          text: 'Delete saved looks',
+        }),
+      ),
+    );
   };
 
   const apply = (look: Look['scene'], name: string) => {
@@ -110,8 +183,6 @@ export function createLooksPanel(ctx: AppContext): { el: HTMLElement } {
 
   const render = () => {
     el.replaceChildren();
-    stored = loadLooks();
-    looks = stored.looks;
 
     // Save current look.
     const nameId = nextId('pn');
@@ -128,7 +199,6 @@ export function createLooksPanel(ctx: AppContext): { el: HTMLElement } {
     });
     const camInput = h('input', { attrs: { id: camId, type: 'checkbox' } });
     const save = () => {
-      if (stored.locked) return;
       const raw = nameInput.value.trim() || 'My look';
       const name = uniqueName(raw, looks);
       looks.push(lookFromScene(name, ctx.store.state.scene, camInput.checked));
@@ -148,7 +218,6 @@ export function createLooksPanel(ctx: AppContext): { el: HTMLElement } {
       h('span', { class: 'btn-icon', html: ICONS.plus }),
       h('span', { class: 'btn-text', text: 'Save look' }),
     );
-    saveButton.disabled = stored.locked;
     const saveSection = section('looks.save', 'Save current look', [
       h(
         'div',
@@ -165,21 +234,20 @@ export function createLooksPanel(ctx: AppContext): { el: HTMLElement } {
     looks.forEach((look, i) => {
       userList.appendChild(row(look.name, look.scene, i));
     });
-    const importButton = iconButton(ICONS.upload, 'Import looks from a JSON file…', () => void importLooks(), {
-      cls: 'btn-small',
-      text: 'Import…',
-    });
-    importButton.disabled = stored.locked;
+    const note = storedNote();
     const userSection = section('looks.user', 'My looks', [
-      stored.error
-        ? h('p', { class: 'ctl-note warn-note', text: stored.error })
-        : looks.length
-          ? userList
+      looks.length
+        ? userList
+        : note
+          ? null
           : h('p', { class: 'empty-state small', text: 'You have no saved looks yet.' }),
       h(
         'div',
         { class: 'ctl-actions' },
-        importButton,
+        iconButton(ICONS.upload, 'Import looks from a JSON file…', () => void importLooks(), {
+          cls: 'btn-small',
+          text: 'Import…',
+        }),
         iconButton(ICONS.download, 'Export my looks to a JSON file…', () => void exportLooks(), {
           cls: 'btn-small',
           text: 'Export…',
@@ -194,26 +262,24 @@ export function createLooksPanel(ctx: AppContext): { el: HTMLElement } {
     });
     const builtinSection = section('looks.builtin', 'Built-in looks', [builtinList]);
 
-    el.append(saveSection, userSection, builtinSection);
+    // Above every section, so a collapsed section never hides it.
+    el.append(...(note ? [note] : []), saveSection, userSection, builtinSection);
   };
 
   const importLooks = async () => {
-    if (stored.locked) return;
     try {
       const files = await pickFiles('.json,application/json', true);
       if (!files.length) return;
       // Read every file before adding any look, so a file that fails leaves the list as it was.
       const imported: Look[] = [];
       for (const f of files) {
-        const text = await f.text();
-        let json: unknown;
         try {
-          json = JSON.parse(text);
-        } catch {
-          throw new LooksError(NOT_A_LOOKS_FILE);
-        }
-        for (const look of parseLooksFile(json)) {
-          imported.push({ ...look, name: uniqueName(look.name, [...looks, ...imported]) });
+          for (const look of await readLooksFile(f)) {
+            imported.push({ ...look, name: uniqueName(look.name, [...looks, ...imported]) });
+          }
+        } catch (e) {
+          notify.error('Could not import looks', `${f.name}: ${errorMessage(e)}`);
+          return;
         }
       }
       if (!imported.length) {

@@ -1,7 +1,8 @@
 /**
  * Right sidebar: tabbed inspector (Artwork / Model / Scene / Export / Looks).
  */
-import { h, safeStorage } from './dom';
+import { h } from './dom';
+import { safeStorage } from '../platform/storage';
 import type { AppContext, TabId } from './context';
 import { createArtworkPanel } from './panels/artwork';
 import { createModelPanel } from './panels/modelPanel';
