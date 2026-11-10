@@ -43,14 +43,8 @@ const BANNER_ALLOWED = [
   'src/export/exporter.ts',
   'src/export/templates.ts',
   'src/models/books.ts',
-  'src/models/box/common.ts',
-  'src/models/box/slim.ts',
-  'src/models/composites.ts',
   'src/models/computer.ts',
-  'src/models/disc.ts',
   'src/models/handheld.ts',
-  'src/models/jewelCase.ts',
-  'src/models/keepCase.ts',
   'src/models/printFlat.ts',
   'src/models/printFolded.ts',
   'src/models/screen.ts',
@@ -70,7 +64,6 @@ const BANNER_ALLOWED = [
 /** Files without a header comment today. The list shrinks as their stage adds one and must never grow. */
 const HEADER_ALLOWED = [
   'src-tauri/src/main.rs',
-  'src/models/registry.ts',
   'tests/tools/installer.test.ts',
   'tests/tools/licenses.test.ts',
   'tests/tools/notices.test.ts',

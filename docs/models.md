@@ -1,14 +1,14 @@
 # Writing models
 
-A model is one kind of product the app can show: a box, a keep case, a book, a phone. Each is a `ModelDefinition` (`src/core/types/model.ts`) in a file in `src/models/`, listed in `MODELS` in `src/models/registry.ts`. The definition says what the user can change (parameters), which artwork the model takes (slots), and how to make the 3D object (`build`). The gallery, the Model tab and the Artwork tab are built from it, so adding a model never needs UI code. Every model follows the [3D conventions](architecture.md#3d-conventions); the full list is at the top of `src/core/types/model.ts`. The built-in models are the examples:
+A model is one kind of product the app can show: a box, a keep case, a book, a phone. Each is a `ModelDefinition` (`src/core/types/model.ts`) in a module or folder in `src/models/`, listed in `MODELS` in `src/models/registry.ts`. The definition says what the user can change (parameters), which artwork the model takes (slots), and how to make the 3D object (`build`). The gallery, the Model tab and the Artwork tab are built from it, so adding a model never needs UI code. Every model follows the [3D conventions](architecture.md#3d-conventions); the full list is at the top of `src/core/types/model.ts`. The built-in models are the examples:
 
 | File | Models |
 |---|---|
-| `box.ts`, `box/` | `box`, `box-dieline`, `box-slim` |
-| `keepCase.ts` | `dvd-case`, `bluray-case` |
-| `jewelCase.ts` | `cd-case` |
-| `disc.ts` | `disc` |
-| `composites.ts`, `composites/` | `box-disc`, `dvd-case-disc`, `bluray-case-disc`, `cd-case-disc` |
+| `box/` | `box`, `box-dieline`, `box-slim` |
+| `disc/keepCase/` | `dvd-case`, `bluray-case` |
+| `disc/jewelCase/` | `cd-case` |
+| `disc/` | `disc` |
+| `composites/` | `box-disc`, `dvd-case-disc`, `bluray-case-disc`, `cd-case-disc` |
 | `books.ts` | `book-hardcover`, `book-paperback`, `notebook-spiral` |
 | `printFlat.ts` | `print-business-card`, `print-flyer`, `print-postcard`, `print-plastic-card`, `print-brochure` |
 | `printFolded.ts` | `print-trifold`, `print-greeting-card`, `print-bifold` |
@@ -26,7 +26,7 @@ Texts (`name`, labels, hints) are plain English strings, written where they are 
 | `category` | `ModelCategory` | yes | Gallery group: `box`, `disc`, `book`, `print` or `device`. The gallery shows the groups in that order (`src/ui/gallery.ts`); a new category needs a change to `ModelCategory`, and to `CATEGORY_ORDER` and `CATEGORY_LABEL` (its heading) in `src/ui/gallery.ts`. |
 | `name` | `string` | yes | Shown in the gallery and as the Model tab's title. |
 | `description` | `string` | no | One sentence: the gallery's tooltip (instead of the name) and the line under the Model tab's title. |
-| `icon` | `string` | yes | Inline SVG markup for the gallery: `viewBox="0 0 64 64"`, line art in `currentColor`. |
+| `icon` | `string` | yes | Inline SVG markup for the gallery: `viewBox="0 0 64 64"`, line art in `currentColor`. `icon(body, strokeWidth = 2.75)` in `src/models/icon.ts` wraps the paths in that frame. |
 | `slots` | `ImageSlotDef[]` | yes | The artwork the model takes, in the order of the Artwork tab. May be empty. See [Slots and artwork](#slots-and-artwork). |
 | `params` | `ParamDef[]` | yes | What the user can change, in the order of the Model tab. May be empty. See [Parameters](#parameters). |
 | `defaultCamera` | `Partial<CameraSettings>` | no | The starting view, laid over the default camera (`DEFAULT_SCENE` in `src/core/defaults.ts`) when the model is picked and on Reset view. Usually `{ yaw, pitch }`, sometimes `fov`. |
@@ -53,7 +53,7 @@ A parameter is one setting in the Model tab. Every kind has these fields:
 | `select` | `options: { value: string; label: string }[]` | one of the `value`s | Segmented buttons when there are at most 3 options whose labels together have at most 26 characters; otherwise a menu. |
 | `color` | – | `'#rrggbb'` | A color picker. |
 
-- Lengths are in millimeters, angles in degrees, percentages from 0 to 100 (the model divides by 100 itself, as `discOffset` in `composites.ts` does).
+- Lengths are in millimeters, angles in degrees, percentages from 0 to 100 (the model divides by 100 itself, as `discOffset` in `composites/compose.ts` does).
 - Parameters are grouped by `group`, in the order each group first appears; parameters without a group go into a General section. Groups match by their text, so define a group once (`const G_DIM = 'Dimensions'`) and reuse it.
 - Values are checked wherever they come from (`sanitizeParam` in `src/models/params.ts`): a number outside `min`..`max` is clamped, a select value that is not an option, a color that is not `#rrggbb`, or a value of the wrong type is dropped and the default used instead.
 - When the user switches to a model they have not changed yet, artwork and parameter values carry over from the previous model wherever the slot or parameter ID is the same (`selectModel` in `src/ui/app.ts`). Use the same ID for the same meaning: `width`, `front`, `finish`.
@@ -65,7 +65,7 @@ Helpers that create parameters:
 | `mmParam(id, label, default, min, max, step = 1, group?)` | `src/models/params.ts` | A number parameter in millimeters. |
 | `widthParam`, `heightParam`, `depthParam` | `src/models/box/common.ts` | `width`, `height` and `depth` in millimeters, in the Dimensions group. |
 | `bevelParam`, `finishParam`, `sideColorParam`, `bleedParam`, `colorParam(id, label, default, group?)` | `src/models/box/common.ts` | Edge rounding, print finish, the color of faces without artwork, the switch for artwork with bleed, and any color, shared by the boxes. |
-| `discParams` | `src/models/disc.ts` | The disc's parameters, all prefixed `disc`, reused by the composites. |
+| `discParams` | `src/models/disc/label.ts` | The disc's parameters, all prefixed `disc`, reused by the composites. |
 
 Other parameters are written as object literals (`NumberParamDef`, `SelectParamDef` and so on).
 
@@ -104,7 +104,7 @@ A print template is a PNG the user downloads with the Template… button on a sl
 | `regions` | `TemplateRegion[]` | no | Labeled rectangles (front, spine, back): `xMm`, `yMm`, `wMm`, `hMm` from the top-left corner, bleed included, and `label`. Each is tinted and labeled with its size after trimming; the safe area is drawn inside each one. Without regions, the whole trim area is labeled with the slot's label. |
 | `circle` | `{ outerMm, innerMm, printOuterMm?, printInnerMm? }` | no | Makes the template round (disc labels): outer and hole diameter. `printInnerMm` sets the inner edge of the printable ring; without it the template uses 0.15 × the outer diameter for discs of 60 mm or more. `printOuterMm` is not drawn; the disc model marks the outer print edge with guides. |
 
-The safe area is 3 mm inside the trim line (`SAFE_MARGIN_MM`). Models with artwork that includes bleed use 3 mm of bleed and map the trim area of the image onto the faces (`trimRect` in `printFlat.ts`). `panelTemplate` in `printFlat.ts` is a short example: one panel with bleed, four trim guides and one region; `discSlot` in `disc.ts` is a round one.
+The safe area is 3 mm inside the trim line (`SAFE_MARGIN_MM`). Models with artwork that includes bleed use 3 mm of bleed and map the trim area of the image onto the faces (`trimRect` in `printFlat.ts`). `panelTemplate` in `printFlat.ts` is a short example: one panel with bleed, four trim guides and one region; `discSlot` in `disc/label.ts` is a round one.
 
 ## Building
 
@@ -121,7 +121,7 @@ build(ctx: ModelContext): THREE.Object3D;
 - `build` returns a new object tree on every call. The app calls it whenever a parameter or the artwork changes (at most once per frame) and for every item of a batch export (`src/ui/app.ts`, `src/ui/batch.ts`).
 - The returned object follows the [3D conventions](architecture.md#3d-conventions): millimeters, lowest point at `y = 0`, centered on `x = 0` and `z = 0`, front facing `+Z`, top facing `+Y`. Build in whatever frame is convenient, then call `placeOnGround`.
 - Materials are `MeshStandardMaterial` or `MeshPhysicalMaterial`. The stage adds the lights, the environment for reflections, the shadow and the floor reflection; a model adds none of them. Meshes that cast a shadow set `castShadow` (`castShadows` sets it on the whole tree).
-- The stage owns what `build` returns. When it shows the next object, it frees the previous one with `disposeObject` (`src/scene/dispose.ts`): every geometry and material in the tree, and textures flagged `disposeWithModel`. So create geometries and materials in each build rather than keeping them between builds. A texture a model caches at module level is not flagged and is never freed (the data-side texture in `disc.ts`).
+- The stage owns what `build` returns. When it shows the next object, it frees the previous one with `disposeObject` (`src/scene/dispose.ts`): every geometry and material in the tree, and textures flagged `disposeWithModel`. So create geometries and materials in each build rather than keeping them between builds. A texture a model caches at module level is not flagged and is never freed (the data-side texture in `disc/build.ts`).
 - `ctx.params` is complete, but read values with `num`, `bool` and `str` and a fallback: they also cover a composite that builds its base with changed parameters.
 - An exception from `build` is shown to the user as "Could not build model “…”", and the previous object stays on screen. For a problem the user can fix, throw a `UserError` (`src/core/errors.ts`) whose message says what happened, then what to do: it is shown as it is. Any other error is shown as an unexpected error, with its message as detail (`errorMessage` in `src/ui/errors.ts`).
 - Transparent parts (clear plastic, which writes no depth) are drawn in `renderOrder`, then by depth. The stage draws the floor reflection at -3 and -2 and the shadow at -1 (`src/scene/reflection.ts`, `src/scene/shadows.ts`), so a model's transparent parts stay above -1.
@@ -130,7 +130,7 @@ Helpers in `src/models/geometry.ts`:
 
 | Helper | What it does |
 |---|---|
-| `placeOnGround(root)` | Moves the object so its lowest point is at `y = 0` and it is centered on `x` and `z`. Uses bounding boxes of the geometry, which can be too big for rotated parts; `composites.ts` measures vertices instead. |
+| `placeOnGround(root)` | Moves the object so its lowest point is at `y = 0` and it is centered on `x` and `z`. Uses bounding boxes of the geometry, which can be too big for rotated parts; `composites/compose.ts` measures vertices instead. |
 | `castShadows(root)` | Sets `castShadow` on every mesh in the tree. |
 | `roundedRectShape(w, h, r)` | A rounded rectangle centered on the origin, for extrusions. |
 | `remapUVs(geo, u0, v0, u1, v1)` | Maps a geometry's 0–1 UVs into a rectangle of the image. |
@@ -149,6 +149,7 @@ Helpers in `src/models/params.ts`:
 | Helper | What it does |
 |---|---|
 | `num`, `bool`, `str` | Read a parameter value, with a fallback for a missing or wrong one. |
+| `colorOf(params, id, fallback)` | Reads a `#rrggbb` color parameter; any other value gives the fallback. |
 | `mmParam(...)` | A number parameter in millimeters. |
 
 Number helpers in `src/core/math.ts`:
@@ -162,14 +163,14 @@ The app's side of the contract is in `src/models/params.ts` (`completeParams`, `
 
 ## Composite models
 
-A composite shows one model together with another object. Today's composites, in `src/models/composites.ts`, put a loose 120 mm disc next to a box, a DVD or Blu-ray keep case, or a CD jewel case:
+A composite shows one model together with another object. Today's composites, in `src/models/composites/`, put a loose 120 mm disc next to a box, a DVD or Blu-ray keep case, or a CD jewel case:
 
 - **Slots:** the base model's slots and the disc's `disc` slot (`compositeSlots`); a `disc` slot of the base is replaced, not repeated.
 - **Parameters:** the base model's parameters, then three for the composition (`discPlacement`: behind, front or flat; `discOffset`; `discAngle`), then `discParams` (`compositeParams`). Base parameters that would clash are left out (the jewel case's `showDisc` and the base's own disc parameters), and of two parameters with one ID the first wins.
 - **IDs:** every slot and parameter keeps the base model's ID, so artwork and settings carry over between, say, `dvd-case` and `dvd-case-disc`.
-- **Build:** the base is built by the same function as the stand-alone model (`buildBox`, `buildKeepCase`, `buildJewelCase`, exported by their files), with the same context or one with changed parameters (`baseContext`). The composite measures the base's exact bounds from its vertices and places the disc against them with closed-form math (`discPose` in `composites/placement.ts`), so the disc never cuts into the case for any parameter value. It then reorders the disc's transparent parts against the case's, and puts the whole group on the floor, centered.
+- **Build:** the base is built by the same function as the stand-alone model (`buildBox` in `box/index.ts`, `buildKeepCase` and `buildJewelCase` in the `build.ts` of `disc/keepCase/` and `disc/jewelCase/`), with the same context or one with changed parameters (`baseContext`). The composite (`compose` in `composites/compose.ts`) measures the base's exact bounds from its vertices and places the disc against them with closed-form math (`discPose` in `composites/placement.ts`), so the disc never cuts into the case for any parameter value. It then reorders the disc's transparent parts against the case's, and puts the whole group on the floor, centered.
 
-To add a composite, export the base model's build function from its file, define the composite in `composites.ts` with `compositeSlots`, `compositeParams` and `compose`, add it to `compositeModels`, and list it in `MODELS` right after its base model. A composite missing from `MODELS` is added at the end, so it never disappears from the gallery.
+To add a composite, export the base model's build function from its module, define the composite in `composites/index.ts` with `compositeSlots`, `compositeParams` and `compose`, and list it in `MODELS` right after its base model.
 
 ## Naming
 

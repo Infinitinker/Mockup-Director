@@ -11,6 +11,7 @@
  */
 import * as THREE from 'three';
 import type { ModelContext, ModelDefinition, ParamValues, PrintTemplate, TemplateRegion } from '../../core/types/model';
+import { icon } from '../icon';
 import {
   aspectOf,
   bevelParam,
@@ -23,7 +24,6 @@ import {
   finishParam,
   FOLD,
   heightParam,
-  icon,
   regionMapper,
   surfaceMaterial,
   widthParam,

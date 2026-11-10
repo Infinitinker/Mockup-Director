@@ -1,5 +1,6 @@
 /**
- * Optical disc (CD / DVD / Blu-ray – all share the 120 mm / 1.2 mm outer format).
+ * buildDisc: an optical disc (CD / DVD / Blu-ray – all share the 120 mm / 1.2 mm outer format)
+ * lying flat, used by the Disc model, the CD jewel case and the composites.
  *
  * Anatomy modeled (diameters, after ECMA-130 / ECMA-267 and replicator print specs):
  *   Ø 15     center hole
@@ -8,7 +9,7 @@
  *   Ø 38–46  mirror band (metal layer, no grooves → plain mirror on the data side)
  *   Ø 46–117 data area (grooves → rainbow diffraction on the data side)
  *   Ø 117–120 clear outer rim
- *   Label print: Ø 118 outer, inner Ø configurable (typ. 36 / 38 / 46; hub-printable 22).
+ *   Label print: see src/models/disc/label.ts.
  *
  * Construction (all meshes are fresh per build):
  *   - a clear polycarbonate shell (lathe, alpha-blended, depthWrite off),
@@ -16,133 +17,22 @@
  *   - optional white ink base + the printed label (texture alpha blended over silver/clear).
  */
 import * as THREE from 'three';
-import type { ImageSlotDef, ModelContext, ModelDefinition, ParamDef, ParamValues } from '../core/types/model';
-import { round1 } from '../core/math';
-import { castShadows } from './geometry';
-import { clearPlastic } from './materials';
-import { bool, num, str } from './params';
+import type { ModelContext } from '../../core/types/model';
+import { castShadows } from '../geometry';
+import { clearPlastic } from '../materials';
+import { str } from '../params';
+import { DISC_DIAMETER, R_HOLE, discPrintArea } from './label';
 
-/* ------------------------------------------------------------------ */
-/* Dimensions (mm)                                                     */
-/* ------------------------------------------------------------------ */
-
-export const DISC_DIAMETER = 120;
 const DISC_THICKNESS = 1.2;
 const R = DISC_DIAMETER / 2;
 const T = DISC_THICKNESS;
-const R_HOLE = 7.5;
 const R_STACK = 33.5 / 2;
 const R_METAL_IN = 38 / 2;
 const R_MIRROR_OUT = 46 / 2;
 const R_METAL_OUT = 117 / 2;
-/** Standard printable outer diameter (the outer 1 mm rim stays clear). */
-const PRINT_OUTER = 118;
-/** "Full-face" printable discs: hub-printable from Ø 22 almost to the edge. */
-const FULL_FACE_INNER = 22;
-const FULL_FACE_OUTER = 119.5;
 
 /** Angular segments for all round parts – smooth even in a 4000 px export. */
 const SEG = 160;
-
-/* ------------------------------------------------------------------ */
-/* Slot + params                                                       */
-/* ------------------------------------------------------------------ */
-
-/** The disc-label image slot (id 'disc'), reused by composite "... with disc" models. */
-export const discSlot: ImageSlotDef = {
-  id: 'disc',
-  label: 'Disc label',
-  hint: 'A 120 × 120 mm square whose center is the disc’s center. The print covers Ø 118 mm, from the label inner diameter (36 mm by default) outward. Extend the background to the 120 mm edge: it acts as bleed. Transparent PNG areas show the silver disc, or white when “Transparent label areas” is set to White base coat.',
-  aspect: 1,
-  // A function of the params, so the downloaded template follows 'discInner' / 'discFullFace'
-  // exactly like the 3D label does (placeholder.ts resolves it with defaults for the round
-  // placeholder).
-  template: (params: ParamValues) => {
-    const { inner, outer } = discPrintArea(params);
-    const label = `Print Ø ${round1(outer)} mm`;
-    const lo = (DISC_DIAMETER - outer) / 2;
-    const hi = (DISC_DIAMETER + outer) / 2;
-    return {
-      widthMm: DISC_DIAMETER,
-      heightMm: DISC_DIAMETER,
-      bleedMm: 0,
-      circle: { outerMm: DISC_DIAMETER, innerMm: R_HOLE * 2, printOuterMm: outer, printInnerMm: inner },
-      // Tangent lines of the printable area (the template draws the circles itself).
-      guides: [
-        { orientation: 'v', posMm: lo, label },
-        { orientation: 'v', posMm: hi, label },
-        { orientation: 'h', posMm: lo, label },
-        { orientation: 'h', posMm: hi, label },
-      ],
-    };
-  },
-};
-
-const G_DISC = 'Disc';
-
-/**
- * Disc params, all prefixed 'disc' so composite models can merge them with their own params.
- * buildDisc() falls back to these defaults when a param is missing.
- */
-export const discParams: ParamDef[] = [
-  {
-    id: 'discFinish',
-    type: 'select',
-    label: 'Label finish',
-    group: G_DISC,
-    options: [
-      { value: 'matte', label: 'Matte' },
-      { value: 'glossy', label: 'Glossy' },
-    ],
-    default: 'matte',
-  },
-  {
-    id: 'discInner',
-    type: 'number',
-    label: 'Label inner diameter',
-    group: G_DISC,
-    min: 15,
-    max: 46,
-    step: 0.5,
-    default: 36,
-    unit: 'mm',
-  },
-  {
-    id: 'discFullFace',
-    type: 'boolean',
-    label: 'Full-face print (Ø 22–119.5 mm)',
-    group: G_DISC,
-    default: false,
-  },
-  {
-    id: 'discLabelBase',
-    type: 'select',
-    label: 'Transparent label areas',
-    group: G_DISC,
-    options: [
-      { value: 'silver', label: 'Silver (no base)' },
-      { value: 'white', label: 'White base coat' },
-    ],
-    default: 'silver',
-  },
-  {
-    id: 'discDataSide',
-    type: 'select',
-    label: 'Data side',
-    group: G_DISC,
-    options: [
-      { value: 'silver', label: 'Silver (pressed CD/DVD)' },
-      { value: 'gold', label: 'Gold (CD-R)' },
-      { value: 'violet', label: 'Violet (DVD±R)' },
-      { value: 'dark', label: 'Dark (BD-R)' },
-    ],
-    default: 'silver',
-  },
-];
-
-/* ------------------------------------------------------------------ */
-/* Geometry helpers                                                    */
-/* ------------------------------------------------------------------ */
 
 type RingUV = 'label' | 'polar';
 
@@ -234,10 +124,6 @@ function shellGeometry(): THREE.BufferGeometry {
   return new THREE.LatheGeometry(pts, SEG);
 }
 
-/* ------------------------------------------------------------------ */
-/* Materials                                                           */
-/* ------------------------------------------------------------------ */
-
 const DATA_SIDE: Record<string, { color: string; metalness: number; roughness: number; irid: [number, number] }> = {
   silver: { color: '#dfe1e6', metalness: 1, roughness: 0.13, irid: [280, 520] },
   gold: { color: '#e2bf72', metalness: 1, roughness: 0.14, irid: [300, 520] },
@@ -291,17 +177,6 @@ function labelMaterial(map: THREE.Texture, glossy: boolean): THREE.MeshPhysicalM
     polygonOffsetFactor: -2,
     polygonOffsetUnits: -4,
   });
-}
-
-/* ------------------------------------------------------------------ */
-/* Build                                                               */
-/* ------------------------------------------------------------------ */
-
-/** Printable annulus (inner / outer DIAMETER, mm) for the current params. */
-function discPrintArea(params: ParamValues): { inner: number; outer: number } {
-  if (bool(params, 'discFullFace', false)) return { inner: FULL_FACE_INNER, outer: FULL_FACE_OUTER };
-  const inner = Math.max(R_HOLE * 2, Math.min(46, num(params, 'discInner', 36)));
-  return { inner, outer: PRINT_OUTER };
 }
 
 /**
@@ -406,85 +281,3 @@ export function buildDisc(ctx: ModelContext, slotId: string = 'disc'): THREE.Obj
   castShadows(group);
   return group;
 }
-
-/* ------------------------------------------------------------------ */
-/* Stand-alone model                                                   */
-/* ------------------------------------------------------------------ */
-
-/** Tilt of the label normal from vertical (deg) per pose: 0 = lying flat, 90 = standing upright. */
-const POSE_TILT: Record<string, number> = { tilted: 72, upright: 90, flat: 0, leaning: 50 };
-
-/** Ground placement using exact vertex bounds (a spun disc's bbox corners would float it). */
-function placeOnGroundPrecise(obj: THREE.Object3D): void {
-  obj.updateMatrixWorld(true);
-  const box = new THREE.Box3().setFromObject(obj, true);
-  if (box.isEmpty()) return;
-  const c = box.getCenter(new THREE.Vector3());
-  obj.position.x -= c.x;
-  obj.position.z -= c.z;
-  obj.position.y -= box.min.y;
-}
-
-function buildDiscModel(ctx: ModelContext): THREE.Object3D {
-  const p = ctx.params;
-  const tilt = POSE_TILT[str(p, 'pose', 'tilted')] ?? POSE_TILT.tilted;
-
-  const spin = new THREE.Group();
-  spin.rotation.y = THREE.MathUtils.degToRad(num(p, 'spin', 0));
-  spin.add(buildDisc(ctx, 'disc'));
-
-  // rotateX(+θ) tips the label normal from +Y toward +Z (the camera) and keeps the artwork's
-  // top edge pointing up (image top lies toward -Z when flat, which rotates to +Y).
-  const pose = new THREE.Group();
-  pose.rotation.x = THREE.MathUtils.degToRad(tilt);
-  pose.add(spin);
-
-  const root = new THREE.Group();
-  root.name = 'disc-model';
-  root.add(pose);
-  placeOnGroundPrecise(pose);
-  return root;
-}
-
-const G_POSE = 'Pose';
-
-export const discModel: ModelDefinition = {
-  id: 'disc',
-  category: 'disc',
-  name: 'Disc',
-  description: '120 mm disc with printed label, clear hub and rainbow data side.',
-  icon:
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">' +
-    '<circle cx="32" cy="32" r="25"/><circle cx="32" cy="32" r="9"/><circle cx="32" cy="32" r="3.5"/>' +
-    '<path d="M32 14.5A17.5 17.5 0 0 1 49.5 32"/></svg>',
-  slots: [discSlot],
-  params: [
-    {
-      id: 'pose',
-      type: 'select',
-      label: 'Disc pose',
-      group: G_POSE,
-      options: [
-        { value: 'tilted', label: 'Standing, slightly tilted' },
-        { value: 'upright', label: 'Standing upright' },
-        { value: 'leaning', label: 'Leaning at an angle' },
-        { value: 'flat', label: 'Lying flat' },
-      ],
-      default: 'tilted',
-    },
-    {
-      id: 'spin',
-      type: 'number',
-      label: 'Label rotation',
-      group: G_POSE,
-      min: -180,
-      max: 180,
-      step: 1,
-      default: 0,
-      unit: 'deg',
-    },
-    ...discParams,
-  ],
-  defaultCamera: { yaw: -15, pitch: 16, fov: 24 },
-  build: buildDiscModel,
-};

@@ -29,7 +29,7 @@ import type {
 import { clamp, round1 } from '../core/math';
 import { castShadows, placeOnGround, planarUVs, roundedRectShape } from './geometry';
 import { printMaterial } from './materials';
-import { bool, mmParam, num, str } from './params';
+import { bool, colorOf, mmParam, num, str } from './params';
 
 /* ------------------------------------------------------------------ */
 /* Common constants / helpers                                          */
@@ -46,11 +46,6 @@ const G_ART = 'Artwork';
 const TRIM = 'Trim line';
 const FOLD = 'Spine fold';
 const GROOVE = 'Hinge groove';
-
-function colorOf(params: ParamValues, id: string, fallback: string): string {
-  const c = str(params, id, fallback);
-  return /^#[0-9a-f]{6}$/i.test(c) ? c : fallback;
-}
 
 type Finish = 'matte' | 'satin' | 'gloss';
 

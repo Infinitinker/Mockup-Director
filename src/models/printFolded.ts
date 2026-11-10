@@ -21,7 +21,7 @@
  *  - The finished sheet is then oriented as a whole (standing or lying, see orientSheet()), which
  *    is a proper rotation – faces are never mirrored by it.
  *
- * Artwork convention (same as keepCase.ts / printFlat.ts): every slot expects the FULL template
+ * Artwork convention (same as disc/keepCase/insert.ts / printFlat.ts): every slot expects the FULL template
  * including the 3 mm bleed; the trim area maps to the inner rectangle of the image.
  *
  * Model ids: 'print-trifold', 'print-greeting-card', 'print-bifold'.

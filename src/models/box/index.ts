@@ -1,38 +1,33 @@
 /**
- * Cardboard / software product boxes.
- *
- *  - boxModel ('box')            – cuboid carton, separate artwork per face.
- *  - 'box-dieline'               – the same carton printed from ONE cross-shaped net image.
- *  - 'box-slim'                  – two-piece telescoping box (lid over a base), lying or standing.
+ * The Box model ('box'): a cuboid cardboard carton with separate artwork for every face, and
+ * buildBox, which the "Box with disc" composite reuses.
  *
  * Geometry: src/models/box/roundedBox.ts (beveled cuboid with exact planar UVs per face).
  * Templates / params / materials: src/models/box/common.ts.
  */
 import * as THREE from 'three';
-import type { ImageSlotDef, ModelContext, ModelDefinition, ParamValues, PrintTemplate } from '../core/types/model';
+import type { ImageSlotDef, ModelContext, ModelDefinition, ParamValues, PrintTemplate } from '../../core/types/model';
+import { icon } from '../icon';
+import { colorOf } from '../params';
 import {
   aspectOf,
   bevelParam,
   bleedOf,
   bleedParam,
   boxDims,
-  colorOf,
   depthParam,
   edgeRadius,
   faceTemplate,
   finishOf,
   finishParam,
   heightParam,
-  icon,
   regionMapper,
   sideColorParam,
   surfaceMaterial,
   widthParam,
   BLEED_MM,
-} from './box/common';
-import { FACE_INDEX, roundedBoxGeometry, type FaceId, type FaceUVMapper } from './box/roundedBox';
-import { dielineBoxModel } from './box/dieline';
-import { slimBoxModel } from './box/slim';
+} from './common';
+import { FACE_INDEX, roundedBoxGeometry, type FaceId, type FaceUVMapper } from './roundedBox';
 
 /** Default retail software / product box, mm. */
 const BOX_DEFAULTS = { w: 135, h: 190, d: 40 } as const;
@@ -169,6 +164,3 @@ export const boxModel: ModelDefinition = {
   defaultCamera: { yaw: 30, pitch: 12 },
   build: buildBox,
 };
-
-/** Additional box variants. */
-export const extraBoxModels: ModelDefinition[] = [dielineBoxModel, slimBoxModel];

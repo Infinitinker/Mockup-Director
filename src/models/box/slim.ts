@@ -24,14 +24,14 @@ import type {
   SelectParamDef,
 } from '../../core/types/model';
 import { placeOnGround } from '../geometry';
-import { num, str } from '../params';
+import { icon } from '../icon';
+import { colorOf, num, str } from '../params';
 import {
   aspectOf,
   bandTemplate,
   bevelParam,
   bleedOf,
   bleedParam,
-  colorOf,
   colorParam,
   depthParam,
   edgeRadius,
@@ -40,7 +40,6 @@ import {
   finishParam,
   G_DIM,
   heightParam,
-  icon,
   regionMapper,
   sideColorParam,
   surfaceMaterial,
@@ -51,10 +50,6 @@ import {
 import { FACE_INDEX, roundedBoxGeometry, type FaceId, type FaceUVMapper } from './roundedBox';
 
 const DEFAULTS = { w: 180, h: 240, d: 40, cover: 67 } as const;
-
-/* ------------------------------------------------------------------ */
-/* Params                                                              */
-/* ------------------------------------------------------------------ */
 
 const lidCoverParam: NumberParamDef = {
   id: 'lidCover',
@@ -81,10 +76,6 @@ const orientationParam: SelectParamDef = {
 };
 
 const baseColorParam = colorParam('baseColor', 'Base color (no artwork)', '#d8d4cc');
-
-/* ------------------------------------------------------------------ */
-/* Dimensions & templates                                              */
-/* ------------------------------------------------------------------ */
 
 interface SlimDims {
   W: number;
@@ -136,10 +127,6 @@ function baseTemplate(params: ParamValues): PrintTemplate {
   return bandTemplate(wallPanels(W - 2 * t, H - 2 * t), Math.max(1, baseVis), bleedOf(params));
 }
 
-/* ------------------------------------------------------------------ */
-/* Build                                                               */
-/* ------------------------------------------------------------------ */
-
 /** Lazily created solid material, shared by every face that uses it within one build. */
 function solid(finish: Finish, color: string): () => THREE.Material {
   let m: THREE.Material | null = null;
@@ -158,7 +145,7 @@ function buildSlimBox(ctx: ModelContext): THREE.Object3D {
   const inner = new THREE.Group(); // lying flat, bottom on y = 0
   inner.name = 'box-slim';
 
-  /* ---- Lid ---- */
+  // Lid
   const lidUV: Partial<Record<FaceId, FaceUVMapper>> = {};
   const lidMats: THREE.Material[] = new Array<THREE.Material>(6);
   const lidTpl = lidTemplate(p);
@@ -183,7 +170,7 @@ function buildSlimBox(ctx: ModelContext): THREE.Object3D {
   lid.castShadow = true;
   inner.add(lid);
 
-  /* ---- Base (only the part below the lid plus a small hidden overlap) ---- */
+  // Base (only the part below the lid plus a small hidden overlap)
   if (hasBase) {
     const overlap = Math.min(2, lidH * 0.5);
     const hb = baseVis + overlap;
@@ -234,10 +221,6 @@ function buildSlimBox(ctx: ModelContext): THREE.Object3D {
   }
   return root;
 }
-
-/* ------------------------------------------------------------------ */
-/* Definition                                                          */
-/* ------------------------------------------------------------------ */
 
 const DEF_DIMS = slimDims({});
 

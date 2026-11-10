@@ -1,7 +1,7 @@
 /**
  * Model parameters: defining them (`mmParam`), reading their values in a build (`num`, `bool`,
- * `str`), and the app's side of the contract that validates and completes stored values and snaps
- * numbers to a parameter's step.
+ * `str`, `colorOf`), and the app's side of the contract that validates and completes stored values
+ * and snaps numbers to a parameter's step.
  */
 import type { ModelDefinition, NumberParamDef, ParamDef, ParamValue, ParamValues } from '../core/types/model';
 import { defaultParams } from '../core/defaults';
@@ -20,6 +20,12 @@ export function bool(params: ParamValues, id: string, fallback: boolean): boolea
 export function str(params: ParamValues, id: string, fallback: string): string {
   const v = params[id];
   return typeof v === 'string' ? v : fallback;
+}
+
+/** Read a '#rrggbb' color param; any other value gives the fallback. */
+export function colorOf(params: ParamValues, id: string, fallback: string): string {
+  const c = str(params, id, fallback);
+  return HEX.test(c) ? c : fallback;
 }
 
 export function mmParam(

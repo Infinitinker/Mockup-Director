@@ -17,10 +17,6 @@ import type {
 import { bool, mmParam, num, str } from '../params';
 import { rectMapper, type FaceUVMapper } from './roundedBox';
 
-/* ------------------------------------------------------------------ */
-/* Parameters                                                          */
-/* ------------------------------------------------------------------ */
-
 export const G_DIM = 'Dimensions';
 const G_MAT = 'Material';
 const G_ART = 'Artwork';
@@ -96,11 +92,6 @@ export function finishOf(params: ParamValues): Finish {
   return f === 'matte' || f === 'glossy' ? f : 'satin';
 }
 
-export function colorOf(params: ParamValues, id: string, fallback: string): string {
-  const c = str(params, id, fallback);
-  return /^#[0-9a-f]{6}$/i.test(c) ? c : fallback;
-}
-
 /** Box outer dimensions (mm) from the standard width/height/depth params. */
 export function boxDims(
   params: ParamValues,
@@ -112,10 +103,6 @@ export function boxDims(
     D: Math.max(1, num(params, 'depth', def.d)),
   };
 }
-
-/* ------------------------------------------------------------------ */
-/* Materials                                                           */
-/* ------------------------------------------------------------------ */
 
 /**
  * Printed carton surface. Matte = uncoated/matte-laminated board, satin = coated board with a soft
@@ -136,10 +123,6 @@ export function surfaceMaterial(
   else mat.color.set(src.color);
   return mat;
 }
-
-/* ------------------------------------------------------------------ */
-/* Print templates                                                     */
-/* ------------------------------------------------------------------ */
 
 export const FOLD = 'Fold';
 
@@ -186,18 +169,4 @@ export function regionMapper(tpl: PrintTemplate, index: number): FaceUVMapper {
 /** Aspect ratio (w / h) of a template – used for ImageSlotDef.aspect. */
 export function aspectOf(tpl: PrintTemplate): number {
   return tpl.widthMm / tpl.heightMm;
-}
-
-/* ------------------------------------------------------------------ */
-/* Icons                                                               */
-/* ------------------------------------------------------------------ */
-
-/** Wrap icon paths in the common SVG frame (64x64, line art, currentColor). */
-export function icon(body: string): string {
-  return (
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" ' +
-    'stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round">' +
-    body +
-    '</svg>'
-  );
 }

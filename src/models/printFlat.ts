@@ -8,7 +8,7 @@
  * the front faces up and the artwork's top points away from the camera, leaning, stack, pair).
  * The result is put on the ground with placeOnGround().
  *
- * Artwork convention (same as keepCase.ts): every image slot expects the FULL template
+ * Artwork convention (same as disc/keepCase/insert.ts): every image slot expects the FULL template
  * including the 3 mm bleed, so the trim area of a face maps to the inner rectangle of the image
  * (`trimRect`). The BACK of a sheet is "turned over like a book page" (around the vertical
  * axis): seen from behind, it reads normally, top still at the top.

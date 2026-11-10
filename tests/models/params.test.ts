@@ -1,6 +1,6 @@
 /**
- * Tests the model parameter helpers in src/models/params.ts: reading values in a build, the
- * millimeter parameter, validating and completing parameter values, the params carried over to
+ * Tests the model parameter helpers in src/models/params.ts: reading values (and colors) in a build,
+ * the millimeter parameter, validating and completing parameter values, the params carried over to
  * another model, and snapping values to a parameter's step.
  */
 import { describe, expect, it } from 'vitest';
@@ -16,6 +16,7 @@ import type {
 import { MODELS, getModel } from '../../src/models/registry';
 import {
   bool,
+  colorOf,
   completeParams,
   inheritedParams,
   mmParam,
@@ -84,6 +85,17 @@ describe('num, bool and str', () => {
     expect(num(params, 'nan', 7)).toBe(7);
     expect(bool(params, 'width', true)).toBe(true);
     expect(str(params, 'gloss', 'glossy')).toBe('glossy');
+  });
+});
+
+describe('colorOf', () => {
+  it('reads a #rrggbb color in either case', () => {
+    expect(colorOf({ tint: '#a1B2c3' }, 'tint', '#000000')).toBe('#a1B2c3');
+  });
+
+  it('gives the fallback for a missing value, another type or a color that is not #rrggbb', () => {
+    for (const tint of [undefined, 12, true, 'red', '#fff', '#12345g', '#1234567', ' #123456', '123456'])
+      expect(colorOf(tint === undefined ? {} : { tint }, 'tint', '#000000'), String(tint)).toBe('#000000');
   });
 });
 

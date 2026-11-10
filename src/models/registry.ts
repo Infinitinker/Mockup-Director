@@ -1,9 +1,12 @@
+/** The models the gallery shows, in display order, and finding one by id. */
 import type { ModelDefinition } from '../core/types/model';
-import { boxModel, extraBoxModels } from './box';
-import { dvdModel, blurayModel } from './keepCase';
-import { cdCaseModel } from './jewelCase';
+import { boxModel } from './box';
+import { dielineBoxModel } from './box/dieline';
+import { slimBoxModel } from './box/slim';
+import { blurayDiscModel, boxDiscModel, cdDiscModel, dvdDiscModel } from './composites';
 import { discModel } from './disc';
-import { boxDiscModel, dvdDiscModel, blurayDiscModel, cdDiscModel, compositeModels } from './composites';
+import { cdCaseModel } from './disc/jewelCase';
+import { blurayModel, dvdModel } from './disc/keepCase';
 import { bookModels } from './books';
 import { flatPrintModels } from './printFlat';
 import { foldedPrintModels } from './printFolded';
@@ -17,7 +20,8 @@ import { screenModels } from './screen';
  */
 export const MODELS: ModelDefinition[] = [
   boxModel,
-  ...extraBoxModels,
+  dielineBoxModel,
+  slimBoxModel,
   boxDiscModel,
   dvdModel,
   dvdDiscModel,
@@ -33,9 +37,6 @@ export const MODELS: ModelDefinition[] = [
   ...computerModels,
   ...screenModels,
 ];
-
-// Safety net: any composite added later but not placed above is still listed.
-for (const m of compositeModels) if (!MODELS.includes(m)) MODELS.push(m);
 
 export function getModel(id: string): ModelDefinition {
   return MODELS.find((m) => m.id === id) ?? MODELS[0];

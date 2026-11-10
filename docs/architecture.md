@@ -78,16 +78,17 @@ src/
                   some bytes are and the bytes in a data URL (mime.ts), sizing SVG artwork (svg.ts),
                   placeholder textures for empty slots (placeholder.ts)
   models/       the 3D models and registry.ts, the list shown in the gallery:
-                  box.ts and box/ (cuboid box, dieline, two-piece box; rounded geometry, shared parts),
-                  keepCase.ts (DVD and Blu-ray cases), jewelCase.ts (CD case), disc.ts,
-                  composites.ts and composites/ (the "… with disc" models and the disc's placement),
+                  box/ (the cuboid box in index.ts, dieline, two-piece box; rounded geometry, shared
+                  parts), disc/ (the disc model in index.ts, the disc's label and its build; keepCase/:
+                  DVD and Blu-ray cases; jewelCase/: CD case), composites/ (the "… with disc" models
+                  in index.ts, putting them together in compose.ts, the disc's placement),
                   books.ts, printFlat.ts (business card, flyer, postcard, plastic card, brochure),
                   printFolded.ts (leaflet, greeting card, bi-fold brochure), handheld.ts (phone,
                   tablet), computer.ts (laptop, monitor), screen.ts (screenshot panel, browser window);
                 the helpers for every model: parameters (params.ts, which also validates and completes
                 stored values), materials (materials.ts), shapes, UVs and placing on the floor
-                (geometry.ts); and the app's side of the slots (slots.ts: slot lookup, print
-                templates, expected aspect ratios)
+                (geometry.ts), the frame of the gallery icons (icon.ts); and the app's side of the
+                slots (slots.ts: slot lookup, print templates, expected aspect ratios)
   scene/        the three.js scene: the stage (stage.ts), freeing a model it stops showing (dispose.ts),
                 light presets (lightPresets.ts), ground shadow (shadows.ts), floor reflection
                 (reflection.ts), background (background.ts), camera framing (framing.ts) and the
@@ -183,8 +184,8 @@ docs/images/                the README's screenshots (the app at 1440 × 900, wi
 
 How the folders are organized:
 
-- **A model, panel or subsystem is one module until it needs several files; then it becomes a folder.** A file never sits next to a folder of the same name. (Today `models/box.ts` and `models/composites.ts` still sit next to `models/box/` and `models/composites/`.)
-- **A folder that grows past about a dozen modules is split into subfolders by role**, each answering one question, with imports running one way between them. Tests mirror the subfolders. (Today `ui/` holds seventeen modules directly and `models/` sixteen.)
+- **A model, panel or subsystem is one module until it needs several files; then it becomes a folder.** A file never sits next to a folder of the same name.
+- **A folder that grows past about a dozen modules is split into subfolders by role**, each answering one question, with imports running one way between them. Tests mirror the subfolders. (Today `ui/` holds seventeen modules directly.)
 - **Imports run one way:** `core` ← `models` and `scene` ← `export` ← `project` ← `documents` ← `ui`. A module imports its own folder and the layers below it; `models` and `scene` sit side by side and never import each other. Only `ui` and the entry point `main.ts` use `platform`, except the log (`platform/log.ts`), which every module may use; `platform` itself imports only `core`. `core` holds the contracts the others share (`src/core/types/`). `project` sits above `export` because reading a project checks which formats this engine can export, and `documents` above `project` because the session stores project files. `tests/layout.test.ts` fails on an import against this order.
 - **A module's name does not repeat its folder** (`panels/looks.ts`, not `panels/looksPanel.ts`), as long as the shorter name still says what the module is. (Today `modelPanel.ts`, `scenePanel.ts` and `exportPanel.ts` in `ui/panels/` still end in `Panel`.)
 - **File names are camelCase** in `src/` and `tests/` (`printFlat.ts`) and **kebab-case** in `tools/` (`draw-icon.mjs`).
@@ -209,7 +210,7 @@ Each concept has one name, used everywhere. Where the interface or today's code 
 |---|---|---|
 | Model | One kind of mockup the user can pick: a DVD case, a paperback, a phone. Defined by a `ModelDefinition`. | `src/models/`, `registry.ts` |
 | Category | A group of models in the gallery: Boxes, Discs & disc cases, Books & notebooks, Print, Devices & screens. | `ModelCategory` in `src/core/types/model.ts`; labels in `src/ui/gallery.ts` |
-| Composite model | A model made of another model plus a disc ("DVD case with disc"); it keeps the base model's slot and parameter ids. | `src/models/composites.ts` |
+| Composite model | A model made of another model plus a disc ("DVD case with disc"); it keeps the base model's slot and parameter ids. | `src/models/composites/` |
 | Gallery | The list of models on the left, grouped under the category headings; screen readers announce it as Models. | `src/ui/gallery.ts` |
 | Slot | One place on a model that takes artwork: a cover, a spine, a disc label, a screen. | `ImageSlotDef` (image in the code) |
 | Artwork | The user's image in a slot. | `Artwork`, `artwork` in the state and the project file, `src/ui/panels/artwork.ts`; image in `loadImageFile`, `loadImageDataUrl` and `IMAGE_ACCEPT` (`src/core/images.ts`) |

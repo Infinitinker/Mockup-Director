@@ -13,7 +13,7 @@
  * geometry lies inside that box, so keeping the disc out of the box keeps it out of the case.
  */
 import * as THREE from 'three';
-import { DISC_DIAMETER } from '../disc';
+import { DISC_DIAMETER } from '../disc/label';
 
 export type DiscPlacement = 'behind' | 'front' | 'flat';
 
