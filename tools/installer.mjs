@@ -56,7 +56,11 @@ export function findCompiler(env, exists) {
   return null;
 }
 
-/** @param {string} message */
+/**
+ * Prints the message and exits with code 1.
+ * @param {string} message
+ * @returns {never}
+ */
 function fail(message) {
   console.error(message);
   process.exit(1);

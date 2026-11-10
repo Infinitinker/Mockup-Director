@@ -55,13 +55,15 @@ npm run lint
 
 Warnings fail it too, as in CI. `npm run format` rewrites the files the way Biome formats them and applies its safe fixes. When a lint rule is wrong for one line, keep the code and say why in a comment above it: `// biome-ignore lint/<group>/<rule>: <reason>` (`/* … */` in CSS).
 
-Type-check and production build of the web part:
+Type-check of the web part and the tools, and production build of the web part:
 
 ```bash
 npm run build
 ```
 
 The type-check is stricter than `strict` alone (`tsconfig.json`): it also rejects unused variables and parameters, a function that returns a value on some paths only, a method that overrides another without `override`, and `undefined` given to an optional property whose type does not include it (`exactOptionalPropertyTypes`). Its `lib` lists only the parts of ES2022 that Safari 15.0 supports, so it fails on newer APIs such as `Array.prototype.at` or `Object.hasOwn`; APIs that only some engines have, such as WebCodecs, are detected at run time. Biome reports a non-null assertion (`value!`) as a warning, and `npm run lint` fails on warnings: check the value instead, and where it can never be missing, throw an `Error` that says what was missing.
+
+The same command then type-checks the command-line tools in `tools/` and `vite.config.ts`, which run in Node, with `tools/tsconfig.json`: `strict`, ES2024 and the Node 22 APIs (`@types/node`). The tools are JavaScript with JSDoc types: `@param` and `@returns` on the functions, `@typedef` for the shapes they pass around, and a cast where the checker cannot know a type, such as parsed JSON (`/** @type {Manifest} */ (readJson(file))`). To run only this check: `node node_modules/typescript/bin/tsc -p tools`.
 
 The unit tests, in `tests/` (their folders mirror `src/` and `tools/`, e.g. `tests/documents/store.test.ts` tests `src/documents/store.ts` and `tests/tools/release.test.ts` tests `tools/release.mjs`). They use [Vitest](https://vitest.dev/) and run in Node without a browser, so they cover code that needs no DOM or WebGL:
 
@@ -71,7 +73,7 @@ npm test
 
 `npx vitest` runs them in watch mode while you work.
 
-`tests/layout.test.ts` checks the repository's source files: every module opens with its header comment, no banner comment splits a file into sections, imports in `src/` follow the layer order in [architecture.md](architecture.md#code-map), and those in `src/ui/` the order of its parts (a new folder under `src/` needs a place in its `LAYERS` list, and a new folder under `src/ui/` in `UI_PARTS`), and `src/styles/index.css` imports every style file once (a new CSS file goes into its list, at its place in the cascade) while only `src/main.ts` imports CSS. `tests/tauriConfig.test.ts` checks that `tauri.conf.json` reads its version from `package.json` and has LICENSE's copyright line. `tests/models/ids.test.ts` pins the IDs saved in project files in a snapshot; [models.md](models.md#testing) says when it may be updated.
+`tests/layout.test.ts` checks the repository's source files: every module opens with its header comment, no banner comment splits a file into sections, imports in `src/` follow the layer order in [architecture.md](architecture.md#code-map), and those in `src/ui/` the order of its parts (a new folder under `src/` needs a place in its `LAYERS` list, and a new folder under `src/ui/` in `UI_PARTS`), and `src/styles/index.css` imports every style file once (a new CSS file goes into its list, at its place in the cascade) while only `src/main.ts` imports CSS. `tests/readme.test.ts` checks that the number of models in the README ("Shows your artwork on N models") equals the number in `MODELS`, so a new model updates the README too. `tests/tauriConfig.test.ts` checks that `tauri.conf.json` reads its version from `package.json` and has LICENSE's copyright line. `tests/models/ids.test.ts` pins the IDs saved in project files in a snapshot; [models.md](models.md#testing) says when it may be updated.
 
 The licenses of the npm dependencies, and the third-party notices (see [licenses.md](licenses.md)):
 

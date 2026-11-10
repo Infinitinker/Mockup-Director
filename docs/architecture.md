@@ -166,8 +166,8 @@ src/
 tests/          unit tests (Vitest, config in vitest.config.ts); their folders mirror src/ and tools/;
                 shared test data in fixtures.ts, a seeded random generator in random.ts, the checks
                 of header and banner comments, of the import order and of the styles' imports in
-                layout.test.ts, and the checks of tauri.conf.json against package.json and LICENSE in
-                tauriConfig.test.ts
+                layout.test.ts, the check of the README's number of models in readme.test.ts, and the
+                checks of tauri.conf.json against package.json and LICENSE in tauriConfig.test.ts
 src-tauri/      the Tauri v2 shell (Rust): main.rs starts lib.rs, which sets up the window, the dialogs,
                 a single app process and the commands; the commands' error (error.rs), writing files
                 (files.rs), opened project files (opened.rs), closing the window if the page never
@@ -206,6 +206,7 @@ index.html                  the page Vite builds the app from
 package.json                the npm package, its scripts and dependencies, and the app's version
 vite.config.ts              the build: port 1420 for development, Safari 15 as the target
 tsconfig.json, biome.json   TypeScript settings, and the linter and formatter (Biome)
+tools/tsconfig.json         TypeScript settings for what runs in Node: the tools and vite.config.ts
 LICENSE                     the MIT license; every package of the app contains it as LICENSE.txt
 THIRD-PARTY-NOTICES.md      the licenses of the app's dependencies, written by tools/notices.mjs;
                             every package contains it as THIRD-PARTY-NOTICES.txt

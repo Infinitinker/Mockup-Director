@@ -216,7 +216,7 @@ To add a composite, export the base model's build function from its module, defi
    };
    ```
 
-2. Add it to the `MODELS` array in `src/models/registry.ts`, at its place in the gallery. It then appears in its category, with its Model and Artwork tabs.
+2. Add it to the `MODELS` array in `src/models/registry.ts`, at its place in the gallery. It then appears in its category, with its Model and Artwork tabs. Raise the number of models in README.md ("Shows your artwork on N models"): `tests/readme.test.ts` checks it against `MODELS`.
 3. Where it helps, give a slot a `template` and a `hint`, and the model a `description` and a `defaultCamera`.
 4. Its new IDs and slots change the snapshots of the model tests (see [Testing](#testing)): update them with `npx vitest run -u tests/models`, and check in the diff that they only add. Add tests for what the model does beyond the contract, then run the checks:
 

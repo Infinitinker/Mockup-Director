@@ -24,7 +24,10 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
-/** The files of a release by the job that makes them (the three builds and the notices), in the order the notes list them. */
+/**
+ * The files of a release by the job that makes them (the three builds and the notices), in the order the notes list them.
+ * @type {Record<string, string[]>}
+ */
 export const PARTS = {
   windows: ['windows-x64-setup.exe', 'windows-x64-portable.zip'],
   macos: ['macos-universal.dmg'],
@@ -45,8 +48,36 @@ export function releaseFiles(version, part) {
 }
 
 /**
+ * The outcome of checking the version: what is wrong, and when nothing is, the version, its tag and
+ * whether it is a pre-release.
+ * @typedef {object} VersionCheck
+ * @property {string[]} errors
+ * @property {string} [version]
+ * @property {string} [tag]
+ * @property {boolean} [prerelease]
+ */
+
+/**
+ * The SHA-256 checksum of one release file, in hex.
+ * @typedef {object} Checksum
+ * @property {string} name
+ * @property {string} sha256
+ */
+
+/**
+ * The values the release notes template can use.
+ * @typedef {object} NotesValues
+ * @property {string} version
+ * @property {string} tag
+ * @property {string} repository the GitHub repository, as owner/name
+ * @property {Checksum[]} checksums
+ */
+
+/**
  * Checks the version in package.json (and the tag, if there is one). Returns the version, the tag
  * and whether it is a pre-release, or the list of what is wrong.
+ * @param {{ version: string | undefined, tag: string | undefined }} release
+ * @returns {VersionCheck}
  */
 export function checkVersion({ version, tag }) {
   if (!version) return { errors: ['package.json has no version.'] };
@@ -59,7 +90,13 @@ export function checkVersion({ version, tag }) {
   return { errors, version, tag: `v${version}`, prerelease: version.includes('-') };
 }
 
-/** Checks that the folder holds exactly the files of the release, or of one part of it. */
+/**
+ * Checks that the folder holds exactly the files of the release, or of one part of it.
+ * @param {string[]} names the names in the folder
+ * @param {string} version
+ * @param {string} [part] a key of PARTS
+ * @returns {string[]} what is wrong
+ */
 export function checkFiles(names, version, part) {
   const expected = releaseFiles(version, part);
   const errors = expected.filter((f) => !names.includes(f)).map((f) => `${f} is missing.`);
@@ -68,8 +105,14 @@ export function checkFiles(names, version, part) {
   return errors;
 }
 
-/** The release notes: the template with its {placeholders} filled in. */
+/**
+ * The release notes: the template with its {placeholders} filled in.
+ * @param {string} template
+ * @param {NotesValues} notesValues
+ * @returns {string}
+ */
 export function renderNotes(template, { version, tag, repository, checksums }) {
+  /** @type {Record<string, string>} */
   const values = {
     version,
     tag,
@@ -84,26 +127,51 @@ export function renderNotes(template, { version, tag, repository, checksums }) {
   });
 }
 
+/**
+ * The SHA-256 checksum of a file, in hex.
+ * @param {string} path
+ * @returns {string}
+ */
 function sha256(path) {
   return createHash('sha256').update(readFileSync(path)).digest('hex');
 }
 
+/**
+ * Prints the errors and exits with code 1.
+ * @param {string[]} errors
+ * @returns {never}
+ */
 function fail(errors) {
   for (const e of errors) console.error(process.env.GITHUB_ACTIONS ? `::error::${e}` : `error: ${e}`);
   process.exit(1);
 }
 
+/**
+ * Checks the version in package.json, and the tag if there is one.
+ * @param {string | undefined} tag
+ * @returns {VersionCheck}
+ */
 function readVersion(tag) {
-  const { version } = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
+  const { version } = /** @type {{ version?: string }} */ (
+    JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'))
+  );
   return checkVersion({ version, tag });
 }
 
-/** The names in a folder of downloaded release files. */
+/**
+ * The names in a folder of downloaded release files.
+ * @param {string} folder
+ * @returns {string[]}
+ */
 function listFolder(folder) {
   if (!existsSync(folder)) fail([`${folder} does not exist: download the release files into it first.`]);
   return readdirSync(folder);
 }
 
+/**
+ * Runs the command named by the first argument.
+ * @param {string[]} argv the arguments after the script
+ */
 function main([command, ...args]) {
   if (command === 'check') {
     const result = readVersion(args[0]);
@@ -116,7 +184,7 @@ function main([command, ...args]) {
     const result = readVersion(undefined);
     if (result.errors.length) fail(result.errors);
     const names = listFolder(folder);
-    const errors = checkFiles(names, result.version, part);
+    const errors = checkFiles(names, /** @type {string} */ (result.version), part);
     for (const name of names)
       if (!statSync(join(folder, name)).isFile()) errors.push(`${name} did not arrive as a file.`);
     if (errors.length) fail(errors);
@@ -126,12 +194,23 @@ function main([command, ...args]) {
     const result = readVersion(undefined);
     if (result.errors.length) fail(result.errors);
     const names = listFolder(folder);
-    const errors = checkFiles(names, result.version);
+    const errors = checkFiles(names, /** @type {string} */ (result.version));
     if (errors.length) fail(errors);
-    const checksums = releaseFiles(result.version).map((name) => ({ name, sha256: sha256(join(folder, name)) }));
+    const checksums = releaseFiles(/** @type {string} */ (result.version)).map((name) => ({
+      name,
+      sha256: sha256(join(folder, name)),
+    }));
     const template = readFileSync(join(ROOT, 'tools', 'release-notes.md'), 'utf8');
     const repository = process.env.GITHUB_REPOSITORY || 'Infinitinker/Mockup-Director';
-    writeFileSync(out, renderNotes(template, { version: result.version, tag: result.tag, repository, checksums }));
+    writeFileSync(
+      out,
+      renderNotes(template, {
+        version: /** @type {string} */ (result.version),
+        tag: /** @type {string} */ (result.tag),
+        repository,
+        checksums,
+      }),
+    );
     console.log(`release notes written to ${out}`);
   } else {
     fail([

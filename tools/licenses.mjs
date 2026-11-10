@@ -8,6 +8,33 @@ import { readFileSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+/**
+ * An entry of package-lock.json's `packages`, keyed by its folder: the fields this check reads, and
+ * the root entry's `name` (unread: the name comes from the folder), so a lock with it type-checks.
+ * @typedef {{ name?: string, version?: string, license?: string, dev?: boolean }} LockEntry
+ */
+
+/**
+ * The parts of package-lock.json this check reads.
+ * @typedef {{ packages?: Record<string, LockEntry> }} PackageLock
+ */
+
+/**
+ * The parts of an installed package's package.json this check reads.
+ * @typedef {{ license?: string | { type?: string }, repository?: string | { url?: string } }} Manifest
+ */
+
+/**
+ * An npm package as npmPackages lists it.
+ * @typedef {object} NpmPackage
+ * @property {string} path The folder, relative to the project.
+ * @property {string} name
+ * @property {string | undefined} version
+ * @property {string | null} license An SPDX expression, or null when the package names none.
+ * @property {string | null} repository
+ * @property {boolean} shipped Whether it is a production dependency, bundled into the app.
+ */
+
 /** Permissive licenses (plus MPL-2.0: weak, file-level copyleft that never extends to our code). */
 export const ALLOWED = new Set([
   'MIT',
@@ -26,7 +53,11 @@ export const ALLOWED = new Set([
   'MPL-2.0',
 ]);
 
-/** Accepts SPDX expressions like "MIT", "(MIT OR Apache-2.0)", "MIT AND Zlib". */
+/**
+ * Accepts SPDX expressions like "MIT", "(MIT OR Apache-2.0)", "MIT AND Zlib".
+ * @param {string | null} expr
+ * @returns {boolean}
+ */
 export function isAllowed(expr) {
   if (!expr || typeof expr !== 'string') return false;
   const clean = expr.replace(/[()]/g, ' ').trim();
@@ -34,19 +65,34 @@ export function isAllowed(expr) {
   return clean.split(/\s+OR\s+/).some((id) => ALLOWED.has(id.trim()));
 }
 
+/**
+ * A JSON file, parsed but not checked.
+ * @param {string} path
+ * @returns {unknown}
+ */
 function readJson(path) {
   return JSON.parse(readFileSync(path, 'utf8'));
 }
 
-/** The package.json of an installed package, or null when it is not installed (an optional platform binary). */
+/**
+ * The package.json of an installed package, or null when it is not installed (an optional platform binary).
+ * @param {string} path
+ * @returns {Manifest | null}
+ */
 function manifestOf(path) {
   try {
-    return readJson(join(path, 'package.json'));
+    return /** @type {Manifest} */ (readJson(join(path, 'package.json')));
   } catch {
     return null;
   }
 }
 
+/**
+ * A package's license: from package-lock.json, else from its package.json.
+ * @param {LockEntry} entry
+ * @param {Manifest | null} manifest
+ * @returns {string | null}
+ */
 function licenseOf(entry, manifest) {
   if (typeof entry.license === 'string') return entry.license;
   if (typeof manifest?.license === 'string') return manifest.license;
@@ -54,6 +100,11 @@ function licenseOf(entry, manifest) {
   return null;
 }
 
+/**
+ * A package's repository URL, without `git+` and `.git`.
+ * @param {Manifest | null} manifest
+ * @returns {string | null}
+ */
 function repositoryOf(manifest) {
   const repo = manifest?.repository;
   const url = typeof repo === 'string' ? repo : repo?.url;
@@ -63,8 +114,11 @@ function repositoryOf(manifest) {
 /**
  * Every package in package-lock.json, sorted by name: its folder, version, license and repository.
  * `shipped` marks the production dependencies, which are bundled into the app.
+ * @param {PackageLock} [lock]
+ * @returns {NpmPackage[]}
  */
-export function npmPackages(lock = readJson('package-lock.json')) {
+export function npmPackages(lock = /** @type {PackageLock} */ (readJson('package-lock.json'))) {
+  /** @type {NpmPackage[]} */
   const packages = [];
   for (const [path, entry] of Object.entries(lock.packages ?? {})) {
     if (!path) continue; // the root project itself
