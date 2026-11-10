@@ -25,6 +25,12 @@ doctest = false
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
+# Test-only: the WebdriverIO plugins the end-to-end tests drive the app with (tests/e2e,
+# docs/development.md). Built only by `npm run e2e:build`; release builds pass no features, so the
+# plugins are never in them.
+[features]
+e2e = ["dep:tauri-plugin-wdio", "dep:tauri-plugin-wdio-webdriver"]
+
 [dependencies]
 # No extra tauri features are needed: no tray icon, no asset protocol, no private macOS APIs.
 # (tauri-build verifies that these features match tauri.conf.json.)
@@ -35,6 +41,10 @@ tauri = { version = "~2.12", features = [] }
 tauri-plugin-dialog = "~2.8"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+# The end-to-end test plugins (feature e2e): a WebDriver server inside the app, and the bridge that
+# lets the tests mock commands. Exact versions: they must match @wdio/tauri-service in package.json.
+tauri-plugin-wdio = { version = "=2.0.0-next.0", optional = true }
+tauri-plugin-wdio-webdriver = { version = "=2.0.0-next.0", optional = true }
 
 # The native message when the app cannot start or cannot open its window (the dialog plugin needs a
 # running app): rfd on Windows and macOS, with the version and features tauri-plugin-dialog uses;

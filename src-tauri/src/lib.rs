@@ -76,6 +76,11 @@ pub fn run() {
     // First, so that a second launch hands over and exits before anything else starts.
     #[cfg(not(target_os = "macos"))]
     let builder = builder.plugin(tauri_plugin_single_instance::init(on_second_launch));
+    // The end-to-end test plugins, only in the build `npm run e2e:build` makes (feature e2e).
+    #[cfg(feature = "e2e")]
+    let builder = builder
+        .plugin(tauri_plugin_wdio::init())
+        .plugin(tauri_plugin_wdio_webdriver::init());
     let (setup_version, setup_log_dir) = (version.clone(), log_dir.clone());
     let app = builder
         .manage(opened)

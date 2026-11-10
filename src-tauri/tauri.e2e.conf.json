@@ -1,0 +1,22 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "identifier": "io.github.infinitinker.mockupdirector.e2e",
+  "build": {
+    "beforeBuildCommand": "npm run build -- --mode e2e",
+    "frontendDist": "../dist-e2e"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "security": {
+      "capabilities": [
+        "default",
+        {
+          "identifier": "e2e",
+          "description": "The end-to-end tests: running scripts in the window and the WebDriver server (tests/e2e).",
+          "windows": ["main"],
+          "permissions": ["wdio:default", "wdio-webdriver:default"]
+        }
+      ]
+    }
+  }
+}
