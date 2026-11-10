@@ -2,7 +2,7 @@
  * Flat printed matter: business card, flyer, postcard, plastic (ID-1) card and a closed
  * saddle-stitched brochure.
  *
- * Coordinate frame (see CONVENTIONS in core/types.ts): millimeters. Every item is first built
+ * Coordinate frame (see CONVENTIONS in core/types/model.ts): millimeters. Every item is first built
  * "standing" in its own frame – artwork in the XY plane, FRONT facing +Z, thickness along Z,
  * centered on the origin – and then arranged by `arrange()` (lying flat = rotated -90° about X so
  * the front faces up and the artwork's top points away from the camera, leaning, stack, pair).
@@ -27,7 +27,7 @@ import type {
   ParamValues,
   PrintTemplate,
   SelectParamDef,
-} from '../core/types';
+} from '../core/types/model';
 import { clamp } from '../core/math';
 import { castShadows, placeOnGround, planarUVs, roundedRectShape } from './geometry';
 import { printMaterial } from './materials';

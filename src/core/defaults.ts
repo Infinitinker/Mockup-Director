@@ -1,4 +1,10 @@
-import type { AnimationSettings, ExportSettings, ModelDefinition, ParamValues, SceneSettings } from './types';
+/**
+ * Default values and limits of the scene, the export and the turntable animation, a model's default parameters,
+ * and copying scene settings.
+ */
+import type { AnimationSettings, ExportSettings } from './types/export';
+import type { ModelDefinition, ParamValues } from './types/model';
+import type { SceneSettings } from './types/scene';
 
 export const DEFAULT_SCENE: SceneSettings = {
   camera: {

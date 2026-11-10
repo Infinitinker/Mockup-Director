@@ -1,7 +1,7 @@
 /**
  * Computers: a generic modern laptop and a generic thin-bezel desktop monitor.
  *
- * Coordinate frame (see CONVENTIONS in core/types.ts): millimeters, model standing on y = 0,
+ * Coordinate frame (see CONVENTIONS in core/types/model.ts): millimeters, model standing on y = 0,
  * centered on x/z, the SCREEN faces +Z (front), up = +Y.
  *
  * Screens: one image slot 'screen' per model. The screen is a separate mesh whose material uses
@@ -21,7 +21,7 @@
  */
 import * as THREE from 'three';
 import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
-import type { ModelContext, ModelDefinition, ParamDef, ParamValues } from '../core/types';
+import type { ModelContext, ModelDefinition, ParamDef, ParamValues } from '../core/types/model';
 import { clamp } from '../core/math';
 import { castShadows, placeOnGround, remapUVs } from './geometry';
 import { bool, num, str } from './params';

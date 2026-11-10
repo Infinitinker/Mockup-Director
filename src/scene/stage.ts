@@ -26,7 +26,7 @@ import type {
   RenderOptions,
   SceneSettings,
   StageAPI,
-} from '../core/types';
+} from '../core/types/scene';
 import { DEFAULT_SCENE, cloneScene } from '../core/defaults';
 import { UserError } from '../core/errors';
 import { disposeObject } from './dispose';

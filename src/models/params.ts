@@ -3,7 +3,7 @@
  * `str`), and the app's side of the contract that validates and completes stored values and snaps
  * numbers to a parameter's step.
  */
-import type { ModelDefinition, NumberParamDef, ParamDef, ParamValue, ParamValues } from '../core/types';
+import type { ModelDefinition, NumberParamDef, ParamDef, ParamValue, ParamValues } from '../core/types/model';
 import { defaultParams } from '../core/defaults';
 
 const HEX = /^#[0-9a-f]{6}$/i;

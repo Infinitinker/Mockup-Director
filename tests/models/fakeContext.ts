@@ -5,7 +5,7 @@
  */
 import * as THREE from 'three';
 import { vi } from 'vitest';
-import type { ModelContext, ModelDefinition, ParamValues } from '../../src/core/types';
+import type { ModelContext, ModelDefinition, ParamValues } from '../../src/core/types/model';
 
 /** A canvas element that only remembers its size and offers no 2D context. */
 export interface FakeCanvas {

@@ -8,7 +8,7 @@
  * projection (lens zoom + view offset), so they never change the perspective.
  */
 import * as THREE from 'three';
-import type { CameraSettings } from '../core/types';
+import type { CameraSettings } from '../core/types/scene';
 
 const DEG = Math.PI / 180;
 let scratch = new Float64Array(0);

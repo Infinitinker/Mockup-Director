@@ -3,7 +3,7 @@
  * ZIP and the print template names stay exactly as they are, and slugs are plain ASCII.
  */
 import { describe, expect, it } from 'vitest';
-import type { ImageSlotDef } from '../../src/core/types';
+import type { ImageSlotDef } from '../../src/core/types/model';
 import { animationFileName, slugify, suggestFileName, templateFileName, zipFileName } from '../../src/export/fileNames';
 
 /** 4 November 2026, 15:30 local time. */

@@ -14,7 +14,10 @@
  * listeners see that as a change of everything (source 'document'). A document's `revision` changes
  * with every edit and comes back with undo, so "changed since saved" is a revision comparison.
  */
-import type { ExportSettings, Artwork, ArtworkMap, DocumentState, ParamValues, SceneSettings } from '../core/types';
+import type { ExportSettings } from '../core/types/export';
+import type { ParamValues } from '../core/types/model';
+import type { Artwork, ArtworkMap, DocumentState } from '../core/types/project';
+import type { SceneSettings } from '../core/types/scene';
 import { disposeArtwork } from '../core/images';
 import { log } from '../platform/log';
 

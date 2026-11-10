@@ -21,7 +21,7 @@
  * Slot ids: 'booklet' (primary), 'inlay', 'disc'.
  */
 import * as THREE from 'three';
-import type { ImageSlotDef, ModelContext, ModelDefinition, ParamDef, PrintTemplate } from '../core/types';
+import type { ImageSlotDef, ModelContext, ModelDefinition, ParamDef, PrintTemplate } from '../core/types/model';
 import { castShadows, roundedRectShape } from './geometry';
 import { clearPlastic, printMaterial, solidPlastic } from './materials';
 import { bool, str } from './params';

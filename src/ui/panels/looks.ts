@@ -2,7 +2,7 @@
  * "Looks" tab: named looks – built-in and the user's own, imported and exported as JSON, with a
  * note when the stored looks could not be read and a warning when they cannot be saved.
  */
-import type { Look } from '../../core/types';
+import type { Look } from '../../core/types/project';
 import { UserError } from '../../core/errors';
 import type { AppContext } from '../context';
 import { h, nextId } from '../dom';

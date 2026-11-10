@@ -5,7 +5,7 @@
  * A tab is "dirty" (changed since it was opened, created or saved) when its revision differs from
  * the one it was saved at; undoing back to that point makes it clean again.
  */
-import type { DocumentState } from '../core/types';
+import type { DocumentState } from '../core/types/project';
 import { Store, type StoreDocument } from './store';
 import { log } from '../platform/log';
 

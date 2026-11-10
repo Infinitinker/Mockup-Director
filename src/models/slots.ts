@@ -2,7 +2,7 @@
  * The app's side of a model's artwork slots: finding a slot by id, resolving its print template
  * from the parameters, and the artwork aspect ratios a slot expects.
  */
-import type { ImageSlotDef, ModelDefinition, ParamValues, PrintTemplate } from '../core/types';
+import type { ImageSlotDef, ModelDefinition, ParamValues, PrintTemplate } from '../core/types/model';
 import { log } from '../platform/log';
 
 /** The slot definition, or a neutral fallback for an unknown id (models may ask for any id). */

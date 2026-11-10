@@ -10,7 +10,7 @@
  *            +-------+
  */
 import * as THREE from 'three';
-import type { ModelContext, ModelDefinition, ParamValues, PrintTemplate, TemplateRegion } from '../../core/types';
+import type { ModelContext, ModelDefinition, ParamValues, PrintTemplate, TemplateRegion } from '../../core/types/model';
 import {
   aspectOf,
   bevelParam,

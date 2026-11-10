@@ -47,7 +47,7 @@ The goal is clean code, modularity, portability, and that anyone can make a conv
 ### Portability
 - The web UI runs on three engines: WebView2, WKWebView (Safari 15+) and WebKitGTK 4.1. Use only what all of them support, or detect the feature at run time and explain in the interface when it is missing.
 - Platform-specific code lives in `src/platform/` or in the Rust shell, never in models, the scene or export.
-- Follow the 3D conventions in `src/core/types.ts`: millimeters, floor at y = 0, front facing +Z, shared textures never modified.
+- Follow the 3D conventions in `src/core/types/model.ts`: millimeters, floor at y = 0, front facing +Z, shared textures never modified.
 
 ### Ease of use
 - A new user gets from download to an exported mockup without reading docs: sensible defaults for every model, its camera and its look.

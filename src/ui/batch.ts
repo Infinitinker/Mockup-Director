@@ -19,15 +19,10 @@
  *  - Cancel stops after the current item; what is done can still be saved.
  */
 import type * as THREE from 'three';
-import type {
-  ExportFormat,
-  ExportSettings,
-  Artwork,
-  ModelContext,
-  ParamValues,
-  SceneSettings,
-  StageAPI,
-} from '../core/types';
+import type { ExportFormat, ExportSettings } from '../core/types/export';
+import type { ModelContext, ParamValues } from '../core/types/model';
+import type { Artwork } from '../core/types/project';
+import type { SceneSettings, StageAPI } from '../core/types/scene';
 import { cloneScene } from '../core/defaults';
 import { UserError } from '../core/errors';
 import { getPlaceholderTexture } from '../core/placeholder';

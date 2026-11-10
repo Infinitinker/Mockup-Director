@@ -1,7 +1,7 @@
 /**
  * Shared context passed to every UI component: the store, the stage and the app-level actions.
  */
-import type { StageAPI } from '../core/types';
+import type { StageAPI } from '../core/types/scene';
 import type { Signal } from './dom';
 import type { Store } from '../documents/store';
 import type { AnimationProgress } from '../export/animation';

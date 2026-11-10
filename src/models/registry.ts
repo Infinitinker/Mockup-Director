@@ -1,4 +1,4 @@
-import type { ModelDefinition } from '../core/types';
+import type { ModelDefinition } from '../core/types/model';
 import { boxModel, extraBoxModels } from './box';
 import { dvdModel, blurayModel } from './keepCase';
 import { cdCaseModel } from './jewelCase';

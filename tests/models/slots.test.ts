@@ -4,7 +4,7 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import { defaultParams } from '../../src/core/defaults';
-import type { ImageSlotDef, PrintTemplate } from '../../src/core/types';
+import type { ImageSlotDef, PrintTemplate } from '../../src/core/types/model';
 import { MODELS } from '../../src/models/registry';
 import { ASPECT_TOLERANCE, aspectMismatch, expectedAspects, resolveTemplate, slotFor } from '../../src/models/slots';
 

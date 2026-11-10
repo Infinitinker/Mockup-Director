@@ -6,7 +6,7 @@
  *  - browserWindowModel ('device-browser')  – the same panel with a generic window chrome bar on
  *    top (window buttons, back/forward chevrons, address pill with an optional short domain text).
  *
- * Coordinate frame (see CONVENTIONS in core/types.ts): millimeters, FRONT faces +Z. The panel is
+ * Coordinate frame (see CONVENTIONS in core/types/model.ts): millimeters, FRONT faces +Z. The panel is
  * built flat in its own frame (centered on x/y, front surface on z = 0, back on z = -thickness),
  * then optionally BENT and finally tilted back and put on the ground.
  *
@@ -22,7 +22,7 @@
  * so no print template is offered – the artwork itself defines the size.
  */
 import * as THREE from 'three';
-import type { ImageSlotDef, ModelContext, ModelDefinition, ParamDef, ParamValues } from '../core/types';
+import type { ImageSlotDef, ModelContext, ModelDefinition, ParamDef, ParamValues } from '../core/types/model';
 import { clamp } from '../core/math';
 import { castShadows, placeOnGround } from './geometry';
 import { printMaterial } from './materials';

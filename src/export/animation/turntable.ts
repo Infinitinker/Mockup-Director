@@ -9,7 +9,7 @@
  *           sine between the turning points (slow at +-A, fastest through the start view);
  *           'linear' is a triangle wave. Both start at the current view and loop seamlessly.
  */
-import type { AnimationSettings } from '../../core/types';
+import type { AnimationSettings } from '../../core/types/export';
 import { frameCountOf } from './settings';
 
 export function turntableAngles(

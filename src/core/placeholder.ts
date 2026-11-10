@@ -4,7 +4,7 @@
  */
 import * as THREE from 'three';
 import { UserError } from './errors';
-import type { ImageSlotDef } from './types';
+import type { ImageSlotDef } from './types/model';
 
 const cache = new Map<string, THREE.Texture>();
 

@@ -2,7 +2,7 @@
  * Animation settings: limits, normalization (used for persisted projects and defensively by the
  * exporter) and small derived values (frame count, effective size).
  */
-import type { AnimationFormat, AnimationSettings } from '../../core/types';
+import type { AnimationFormat, AnimationSettings } from '../../core/types/export';
 import { clamp } from '../../core/math';
 import {
   DEFAULT_ANIMATION,

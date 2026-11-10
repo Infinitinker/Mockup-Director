@@ -2,7 +2,8 @@
  * The names the app suggests for the files it exports: still images, animations, the batch ZIP and
  * print templates, all starting with `mockup-director-`.
  */
-import type { AnimationFormat, ExportFormat, ImageSlotDef, ParamValues } from '../core/types';
+import type { AnimationFormat, ExportFormat } from '../core/types/export';
+import type { ImageSlotDef, ParamValues } from '../core/types/model';
 import { round1 } from '../core/math';
 import { resolveTemplate } from '../models/slots';
 import { extensionFor } from './formats';

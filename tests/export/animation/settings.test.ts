@@ -16,7 +16,7 @@ import {
   MIN_ANIMATION_DURATION,
   MIN_ANIMATION_SIZE,
 } from '../../../src/core/defaults';
-import type { AnimationFormat, AnimationSettings } from '../../../src/core/types';
+import type { AnimationFormat, AnimationSettings } from '../../../src/core/types/export';
 import {
   defaultFpsFor,
   frameCountOf,

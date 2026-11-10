@@ -1,7 +1,8 @@
 /**
  * "Artwork" tab: one card per artwork slot of the current model.
  */
-import type { Artwork, ImageSlotDef } from '../../core/types';
+import type { ImageSlotDef } from '../../core/types/model';
+import type { Artwork } from '../../core/types/project';
 import { getModel } from '../../models/registry';
 import type { AppContext } from '../context';
 import { formatNumber } from '../numbers';

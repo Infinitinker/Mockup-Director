@@ -6,7 +6,7 @@
  *  - Animation: turntable motion, size, GIF / WebP / MP4 options, its own Export button
  *    and a progress indicator with Cancel while the animation is rendered.
  */
-import type { AnimationFormat, AnimationSettings, ExportFormat, ExportSettings } from '../../core/types';
+import type { AnimationFormat, AnimationSettings, ExportFormat, ExportSettings } from '../../core/types/export';
 import {
   DEFAULT_ANIMATION,
   MAX_ANIMATION_DURATION,

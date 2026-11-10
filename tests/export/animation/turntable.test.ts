@@ -4,7 +4,7 @@
  * per-frame delays whose rounding errors are carried over.
  */
 import { describe, expect, it } from 'vitest';
-import type { AnimationSettings } from '../../../src/core/types';
+import type { AnimationSettings } from '../../../src/core/types/export';
 import { frameCountOf, normalizeAnimationSettings } from '../../../src/export/animation/settings';
 import { frameDelays, turntableAngles } from '../../../src/export/animation/turntable';
 import { randomInt, seededRandom } from '../../random';

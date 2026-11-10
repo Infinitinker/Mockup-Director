@@ -22,7 +22,7 @@ import type {
   ParamValues,
   PrintTemplate,
   SelectParamDef,
-} from '../../core/types';
+} from '../../core/types/model';
 import { placeOnGround } from '../geometry';
 import { num, str } from '../params';
 import {

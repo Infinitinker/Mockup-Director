@@ -38,8 +38,6 @@ const SOURCES = new Map(FILES.map((path) => [path, readFileSync(new URL(path, RO
  * needs a section comment is split instead.
  */
 const BANNER_ALLOWED = [
-  'src/core/images.ts',
-  'src/core/types.ts',
   'src/export/animation/gif.ts',
   'src/export/animation/index.ts',
   'src/export/exporter.ts',
@@ -72,7 +70,6 @@ const BANNER_ALLOWED = [
 /** Files without a header comment today. The list shrinks as their stage adds one and must never grow. */
 const HEADER_ALLOWED = [
   'src-tauri/src/main.rs',
-  'src/core/defaults.ts',
   'src/models/registry.ts',
   'tests/tools/installer.test.ts',
   'tests/tools/licenses.test.ts',
@@ -264,7 +261,7 @@ describe('the import order', () => {
     expect(breaksLayers('src/export/exporter.ts', 'src/platform/files')).toBe(true);
     expect(breaksLayers('src/ui/app.ts', 'src/platform/files')).toBe(false);
     expect(breaksLayers('src/main.ts', 'src/platform/uncaught')).toBe(false);
-    expect(breaksLayers('src/platform/storage.ts', 'src/core/types')).toBe(false);
+    expect(breaksLayers('src/platform/storage.ts', 'src/core/types/project')).toBe(false);
     expect(breaksLayers('src/platform/files.ts', 'src/ui/dom')).toBe(true);
   });
 

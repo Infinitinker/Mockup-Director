@@ -2,7 +2,7 @@
  * The export file formats: which of them this engine can encode, how the interface names them, their
  * file extensions and the filters of the save dialog.
  */
-import type { AnimationFormat, ExportFormat } from '../core/types';
+import type { AnimationFormat, ExportFormat } from '../core/types/export';
 
 /** A file type of the save dialog. */
 interface FileFilter {

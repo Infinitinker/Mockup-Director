@@ -16,7 +16,7 @@
  *   - optional white ink base + the printed label (texture alpha blended over silver/clear).
  */
 import * as THREE from 'three';
-import type { ImageSlotDef, ModelContext, ModelDefinition, ParamDef, ParamValues } from '../core/types';
+import type { ImageSlotDef, ModelContext, ModelDefinition, ParamDef, ParamValues } from '../core/types/model';
 import { round1 } from '../core/math';
 import { castShadows } from './geometry';
 import { clearPlastic } from './materials';

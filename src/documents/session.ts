@@ -3,7 +3,7 @@
  * the app comes back with the same tabs after it was closed (or crashed). It works out which tab
  * records to write and delete; the records themselves are built and read in ./sessionRecords.
  */
-import type { ProjectFile } from '../core/types';
+import type { ProjectFile } from '../core/types/project';
 import type { TabSnapshot } from './tabs';
 import { toProjectFile } from '../project/format';
 import { buildIndex, type IndexRecord, type IndexTab } from './sessionRecords';

@@ -1,6 +1,6 @@
 # Writing models
 
-A model is one kind of product the app can show: a box, a keep case, a book, a phone. Each is a `ModelDefinition` (`src/core/types.ts`) in a file in `src/models/`, listed in `MODELS` in `src/models/registry.ts`. The definition says what the user can change (parameters), which artwork the model takes (slots), and how to make the 3D object (`build`). The gallery, the Model tab and the Artwork tab are built from it, so adding a model never needs UI code. Every model follows the [3D conventions](architecture.md#3d-conventions); the full list is at the top of `src/core/types.ts`. The built-in models are the examples:
+A model is one kind of product the app can show: a box, a keep case, a book, a phone. Each is a `ModelDefinition` (`src/core/types/model.ts`) in a file in `src/models/`, listed in `MODELS` in `src/models/registry.ts`. The definition says what the user can change (parameters), which artwork the model takes (slots), and how to make the 3D object (`build`). The gallery, the Model tab and the Artwork tab are built from it, so adding a model never needs UI code. Every model follows the [3D conventions](architecture.md#3d-conventions); the full list is at the top of `src/core/types/model.ts`. The built-in models are the examples:
 
 | File | Models |
 |---|---|
@@ -184,7 +184,7 @@ To add a composite, export the base model's build function from its file, define
 
    ```ts
    import * as THREE from 'three';
-   import type { ModelDefinition } from '../core/types';
+   import type { ModelDefinition } from '../core/types/model';
    import { castShadows, placeOnGround } from './geometry';
    import { printMaterial, solidPlastic } from './materials';
    import { mmParam, num } from './params';

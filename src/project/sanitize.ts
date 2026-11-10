@@ -3,7 +3,10 @@
  * and unknown keys are left out and counted, numbers are clamped into their ranges, and settings
  * this engine cannot export fall back to ones it can.
  */
-import type { ExportSettings, ParamValues, ProjectFile, SceneSettings } from '../core/types';
+import type { ExportSettings } from '../core/types/export';
+import type { ParamValues } from '../core/types/model';
+import type { ProjectFile } from '../core/types/project';
+import type { SceneSettings } from '../core/types/scene';
 import { DEFAULT_ANIMATION, DEFAULT_EXPORT, DEFAULT_SCENE, MAX_EXPORT_SIZE, cloneScene } from '../core/defaults';
 import { clamp } from '../core/math';
 import { MODELS } from '../models/registry';

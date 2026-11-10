@@ -6,7 +6,7 @@
  */
 import * as THREE from 'three';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import type { ModelDefinition, NumberParamDef, ParamDef, ParamValues, PrintTemplate } from '../../src/core/types';
+import type { ModelDefinition, NumberParamDef, ParamDef, ParamValues, PrintTemplate } from '../../src/core/types/model';
 import { MODELS, getModel } from '../../src/models/registry';
 import { disposeObject } from '../../src/scene/dispose';
 import { seededRandom } from '../random';

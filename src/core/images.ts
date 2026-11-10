@@ -16,7 +16,9 @@
  */
 import * as THREE from 'three';
 import { UserError } from './errors';
-import type { Artwork } from './types';
+import { parseDataUrl, sniffMime } from './mime';
+import { sizeSvgRoot, svgIntrinsicSize } from './svg';
+import type { Artwork } from './types/project';
 
 /** Longest side of the GPU texture. Originals stay untouched in the data URL. */
 const MAX_TEXTURE_SIZE = 4096;
@@ -25,10 +27,6 @@ const SVG_RASTER_SIZE = 3072;
 
 /** File extensions / MIME types we try to decode (the engine decides what actually works). */
 export const IMAGE_ACCEPT = 'image/*,.png,.jpg,.jpeg,.webp,.gif,.svg,.avif,.heic,.heif,.bmp,.tif,.tiff';
-
-/* ------------------------------------------------------------------ */
-/* Public API                                                          */
-/* ------------------------------------------------------------------ */
 
 /** Decode an image File into an Artwork (sRGB texture, keeps the data URL). */
 export async function loadImageFile(file: File): Promise<Artwork> {
@@ -68,10 +66,6 @@ export function disposeArtwork(asset: Artwork): void {
     img.height = 0;
   }
 }
-
-/* ------------------------------------------------------------------ */
-/* Decoding                                                            */
-/* ------------------------------------------------------------------ */
 
 async function decodeToAsset(blob: Blob, mime: string, dataUrl: string, name: string): Promise<Artwork> {
   let canvas: HTMLCanvasElement;
@@ -209,10 +203,6 @@ function loadHtmlImage(blob: Blob): Promise<HTMLImageElement> {
   });
 }
 
-/* ------------------------------------------------------------------ */
-/* Helpers                                                             */
-/* ------------------------------------------------------------------ */
-
 function createCanvas(w: number, h: number): HTMLCanvasElement {
   const c = document.createElement('canvas');
   c.width = w;
@@ -235,103 +225,4 @@ function blobToDataUrl(blob: Blob): Promise<string> {
     r.onerror = () => reject(r.error ?? new Error('FileReader failed'));
     r.readAsDataURL(blob);
   });
-}
-
-/** Parse a data: URL into bytes (base64 or percent-encoded). */
-function parseDataUrl(url: string): { mime: string; bytes: Uint8Array<ArrayBuffer> } | null {
-  const m = /^data:([^,]*?),/i.exec(url);
-  if (!m) return null;
-  const meta = m[1];
-  const body = url.slice(m[0].length);
-  const isB64 = /;base64$/i.test(meta);
-  const mime = (meta.replace(/;base64$/i, '').split(';')[0] || 'application/octet-stream').toLowerCase();
-  try {
-    if (isB64) {
-      const bin = atob(body.replace(/\s+/g, ''));
-      const bytes = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-      return { mime, bytes };
-    }
-    const enc = new TextEncoder().encode(decodeURIComponent(body));
-    const bytes = new Uint8Array(enc.length);
-    bytes.set(enc);
-    return { mime, bytes };
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Determine the real MIME type from magic bytes (file.type is often empty or wrong,
- * e.g. files without extension or from some file pickers). Falls back to the declared type.
- */
-function sniffMime(b: Uint8Array, declared: string, name = ''): string {
-  const at = (o: number, ...v: number[]) => v.every((x, i) => b[o + i] === x);
-  const ascii = (o: number, s: string) => at(o, ...Array.from(s, (c) => c.charCodeAt(0)));
-  if (at(0, 0x89, 0x50, 0x4e, 0x47)) return 'image/png';
-  if (at(0, 0xff, 0xd8, 0xff)) return 'image/jpeg';
-  if (ascii(0, 'GIF8')) return 'image/gif';
-  if (ascii(0, 'RIFF') && ascii(8, 'WEBP')) return 'image/webp';
-  if (ascii(4, 'ftyp')) {
-    const brand = String.fromCharCode(b[8], b[9], b[10], b[11]);
-    if (brand === 'avif' || brand === 'avis') return 'image/avif';
-    if (/^(heic|heix|hevc|heim|heis|mif1|msf1)$/.test(brand)) return 'image/heic';
-  }
-  if (ascii(0, 'BM')) return 'image/bmp';
-  if (at(0, 0x49, 0x49, 0x2a, 0x00) || at(0, 0x4d, 0x4d, 0x00, 0x2a)) return 'image/tiff';
-  // SVG: text starting (after optional BOM / whitespace / XML prolog / comments) with <svg
-  const head = new TextDecoder('utf-8', { fatal: false }).decode(b.subarray(0, 2048)).toLowerCase();
-  // biome-ignore lint/suspicious/noControlCharactersInRegex: control characters mark a binary file, not SVG text.
-  if (/<svg[\s>]/.test(head) && !/[\x00-\x08]/.test(head)) return 'image/svg+xml';
-  if (declared) return declared.toLowerCase();
-  if (/\.svgz?$/i.test(name)) return 'image/svg+xml';
-  return 'application/octet-stream';
-}
-
-/**
- * Rewrite the root <svg> tag with width/height = (tw, th) px. If it has no viewBox, one is added
- * from its intrinsic size (vw, vh in user units = CSS px) so the drawing scales instead of clipping.
- */
-function sizeSvgRoot(svg: string, tw: number, th: number, vw: number, vh: number): string {
-  const m = /<svg\b[^>]*>/i.exec(svg);
-  if (!m) return svg;
-  let tag = m[0];
-  const hasViewBox = /\sviewBox\s*=/i.test(tag);
-  tag = tag.replace(/\s(width|height)\s*=\s*("[^"]*"|'[^']*')/gi, '');
-  const selfClosing = /\/\s*>$/.test(tag);
-  const head = tag.replace(/\/?\s*>$/, '');
-  const extra = ` width="${tw}" height="${th}"${hasViewBox ? '' : ` viewBox="0 0 ${vw} ${vh}" preserveAspectRatio="none"`}`;
-  tag = head + extra + (selfClosing ? '/>' : '>');
-  return svg.slice(0, m.index) + tag + svg.slice(m.index + m[0].length);
-}
-
-/** Intrinsic size of an SVG document from width/height (absolute units) or the viewBox. */
-function svgIntrinsicSize(svg: string): { width: number; height: number } | null {
-  const tag = /<svg\b[^>]*>/i.exec(svg)?.[0];
-  if (!tag) return null;
-  const attr = (n: string) => new RegExp(`\\s${n}\\s*=\\s*["']([^"']*)["']`, 'i').exec(tag)?.[1];
-  const toPx = (v?: string): number | null => {
-    if (!v) return null;
-    const m = /^\s*([\d.]+)\s*(px|pt|mm|cm|in)?\s*$/i.exec(v);
-    if (!m) return null; // percentages etc. → fall back to viewBox
-    const n = parseFloat(m[1]);
-    const unit = (m[2] ?? 'px').toLowerCase();
-    const k = unit === 'pt' ? 96 / 72 : unit === 'mm' ? 96 / 25.4 : unit === 'cm' ? 96 / 2.54 : unit === 'in' ? 96 : 1;
-    return n > 0 ? n * k : null;
-  };
-  const w = toPx(attr('width'));
-  const h = toPx(attr('height'));
-  const vb = attr('viewBox')
-    ?.trim()
-    .split(/[\s,]+/)
-    .map(Number);
-  const vbOk = vb && vb.length === 4 && vb[2] > 0 && vb[3] > 0;
-  if (w && h) return { width: w, height: h };
-  if (vbOk) {
-    const ar = vb[2] / vb[3];
-    if (w) return { width: w, height: w / ar };
-    if (h) return { width: h * ar, height: h };
-    return { width: vb[2], height: vb[3] };
-  }
-  return null;
 }

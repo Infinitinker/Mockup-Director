@@ -1,7 +1,7 @@
 /**
  * Books: case-bound hardcover, perfect-bound paperback and a spiral (double loop wire / coil) notebook.
  *
- * Coordinate frame (see CONVENTIONS in core/types.ts): millimeters, the book stands upright on
+ * Coordinate frame (see CONVENTIONS in core/types/model.ts): millimeters, the book stands upright on
  * y = 0, centered on x/z, FRONT cover faces +Z. Hardcover / paperback: the SPINE is on the left
  * when looking at the front (-X side), the fore-edge on the right (+X).
  *
@@ -25,7 +25,7 @@ import type {
   ParamValues,
   PrintTemplate,
   TemplateGuide,
-} from '../core/types';
+} from '../core/types/model';
 import { clamp, round1 } from '../core/math';
 import { castShadows, placeOnGround, planarUVs, roundedRectShape } from './geometry';
 import { printMaterial } from './materials';

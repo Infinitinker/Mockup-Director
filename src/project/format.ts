@@ -2,7 +2,8 @@
  * Project files (*.mdproj, JSON): writing, reading and validating them, and decoding their artwork.
  * The session stores the open tabs in this format too.
  */
-import type { Artwork, ArtworkMap, DocumentState, ParamValues, ProjectFile } from '../core/types';
+import type { ParamValues } from '../core/types/model';
+import type { Artwork, ArtworkMap, DocumentState, ProjectFile } from '../core/types/project';
 import { cloneScene } from '../core/defaults';
 import { UserError } from '../core/errors';
 import { loadImageDataUrl } from '../core/images';

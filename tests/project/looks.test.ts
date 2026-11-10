@@ -6,7 +6,8 @@
  */
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_SCENE, cloneScene } from '../../src/core/defaults';
-import type { CameraSettings, KeyValueStorage, Look, SceneSettings } from '../../src/core/types';
+import type { KeyValueStorage, Look } from '../../src/core/types/project';
+import type { CameraSettings, SceneSettings } from '../../src/core/types/scene';
 import {
   BUILTIN_LOOKS,
   LOOKS_KEY,

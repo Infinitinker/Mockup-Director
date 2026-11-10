@@ -13,7 +13,7 @@ import type {
   SelectParamDef,
   TemplateGuide,
   TemplateRegion,
-} from '../../core/types';
+} from '../../core/types/model';
 import { bool, mmParam, num, str } from '../params';
 import { rectMapper, type FaceUVMapper } from './roundedBox';
 

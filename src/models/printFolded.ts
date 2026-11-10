@@ -1,7 +1,7 @@
 /**
  * Folded printed matter: tri-fold leaflet (roll / Z fold), greeting card and bi-fold brochure.
  *
- * Coordinate frame (see CONVENTIONS in core/types.ts): millimeters, model on y = 0, centered on
+ * Coordinate frame (see CONVENTIONS in core/types/model.ts): millimeters, model on y = 0, centered on
  * x/z, FRONT cover facing +Z (turned slightly toward the camera for open poses).
  *
  * How the sheet is built ("sheet frame"):
@@ -39,7 +39,7 @@ import type {
   SelectParamDef,
   TemplateGuide,
   TemplateRegion,
-} from '../core/types';
+} from '../core/types/model';
 import { clamp, round1 } from '../core/math';
 import { castShadows, placeOnGround } from './geometry';
 import { printMaterial } from './materials';

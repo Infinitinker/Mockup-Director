@@ -12,7 +12,7 @@ import type {
   ParamDef,
   ParamValues,
   SelectParamDef,
-} from '../../src/core/types';
+} from '../../src/core/types/model';
 import { MODELS, getModel } from '../../src/models/registry';
 import {
   bool,

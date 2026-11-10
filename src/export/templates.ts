@@ -6,7 +6,7 @@
  * labeled regions (front / spine / back …) with their sizes, fold guides, disc circles and a
  * small legend. The PNG carries a pHYs chunk, so the document opens at the right print size.
  */
-import type { ImageSlotDef, ParamValues, PrintTemplate, TemplateRegion } from '../core/types';
+import type { ImageSlotDef, ParamValues, PrintTemplate, TemplateRegion } from '../core/types/model';
 import { UserError } from '../core/errors';
 import { round1 } from '../core/math';
 import { resolveTemplate } from '../models/slots';

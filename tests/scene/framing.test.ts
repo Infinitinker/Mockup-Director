@@ -5,7 +5,7 @@
  */
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import type { CameraSettings } from '../../src/core/types';
+import type { CameraSettings } from '../../src/core/types/scene';
 import { UnionFit, cameraBasis, type FitResult, fitCamera } from '../../src/scene/framing';
 import { seededRandom } from '../random';
 

@@ -11,7 +11,8 @@
  *     frame so the UI (progress bar, Cancel button) stays responsive.
  * The stage is always restored (try/finally), also on errors and cancellation.
  */
-import type { AnimationFormat, AnimationSettings, BackgroundSettings, StageAPI } from '../../core/types';
+import type { AnimationFormat, AnimationSettings } from '../../core/types/export';
+import type { BackgroundSettings, StageAPI } from '../../core/types/scene';
 import { UserError } from '../../core/errors';
 import { paintBackground } from '../exporter';
 import { animationFormatSupport } from '../formats';

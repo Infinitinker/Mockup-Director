@@ -3,7 +3,8 @@
  * localStorage under 'mockup-director.looks', in the same shape as the looks file, and are written
  * back only while the stored value could be read; a few built-in looks ship with the app.
  */
-import type { CameraSettings, KeyValueStorage, Look, LooksFile, SceneSettings } from '../core/types';
+import type { KeyValueStorage, Look, LooksFile } from '../core/types/project';
+import type { CameraSettings, SceneSettings } from '../core/types/scene';
 import { DEFAULT_SCENE, cloneScene } from '../core/defaults';
 import { UserError } from '../core/errors';
 import { isPlain, sanitizeScene } from './sanitize';

@@ -9,7 +9,7 @@
  * Templates / params / materials: src/models/box/common.ts.
  */
 import * as THREE from 'three';
-import type { ImageSlotDef, ModelContext, ModelDefinition, ParamValues, PrintTemplate } from '../core/types';
+import type { ImageSlotDef, ModelContext, ModelDefinition, ParamValues, PrintTemplate } from '../core/types/model';
 import {
   aspectOf,
   bevelParam,

@@ -4,7 +4,7 @@
  * negative = from the left, positive = from the right, 180 = from behind); elevation is the
  * angle above the floor. See stage.ts for how the values map to the actual lights.
  */
-import type { LightSettings, ReflectionSettings, ShadowSettings } from '../core/types';
+import type { LightSettings, ReflectionSettings, ShadowSettings } from '../core/types/scene';
 
 interface LightPreset {
   id: string;

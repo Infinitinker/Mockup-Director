@@ -3,7 +3,9 @@
  * models, export and project handling together. Every open project is a tab (../documents/tabs); the
  * store works on the active one, and the whole set of tabs is autosaved as a session (../documents/session).
  */
-import type { CameraSettings, Artwork, ModelContext, ParamValues, StageAPI } from '../core/types';
+import type { ModelContext, ParamValues } from '../core/types/model';
+import type { Artwork, ArtworkMap, DocumentState } from '../core/types/project';
+import type { CameraSettings, StageAPI } from '../core/types/scene';
 import { DEFAULT_ANIMATION, DEFAULT_EXPORT, DEFAULT_SCENE, cloneScene } from '../core/defaults';
 import { UserError } from '../core/errors';
 import { getPlaceholderTexture } from '../core/placeholder';
@@ -17,7 +19,6 @@ import { Signal, frameCoalescer, h, nextFrame } from './dom';
 import { errorMessage, logShownError } from './errors';
 import { isMac } from '../platform/os';
 
-import type { ArtworkMap, DocumentState } from '../core/types';
 import { Store, hasAny } from '../documents/store';
 import { Documents } from '../documents/tabs';
 import { SessionSaver } from '../documents/session';

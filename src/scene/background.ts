@@ -2,7 +2,7 @@
  * Preview background (CSS on the viewport wrapper) and the identical 2D-canvas version used for
  * non-transparent exports. The WebGL canvas itself is always transparent.
  */
-import type { BackgroundSettings } from '../core/types';
+import type { BackgroundSettings } from '../core/types/scene';
 
 const HEX = /^#[0-9a-f]{6}$/i;
 const safe = (c: string, fallback: string) => (HEX.test(c) ? c : fallback);

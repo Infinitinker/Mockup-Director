@@ -1,7 +1,7 @@
 /**
  * "Scene" tab: camera, light, shadow, reflection and preview background.
  */
-import type { BackgroundSettings, CameraSettings, LightSettings, SceneSettings } from '../../core/types';
+import type { BackgroundSettings, CameraSettings, LightSettings, SceneSettings } from '../../core/types/scene';
 import { LIGHT_PRESETS } from '../../scene/lightPresets';
 import type { AppContext } from '../context';
 import { h } from '../dom';

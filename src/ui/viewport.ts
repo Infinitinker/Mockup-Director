@@ -7,7 +7,7 @@ import type { AppContext } from './context';
 import { VIEW_PRESETS } from '../scene/views';
 import { hasAny } from '../documents/store';
 import { isProjectFileName } from '../project/format';
-import type { BackgroundSettings, CameraSettings } from '../core/types';
+import type { BackgroundSettings, CameraSettings } from '../core/types/scene';
 import { applyCssBackground } from '../scene/background';
 import { segmentedControl, type Control } from './controls';
 

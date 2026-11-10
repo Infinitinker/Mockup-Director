@@ -1,7 +1,7 @@
 /**
  * DVD / Blu-ray keep cases (plastic case + printed paper insert under a clear sleeve film).
  *
- * Coordinate frame (see CONVENTIONS in core/types.ts): millimeters, case standing upright on
+ * Coordinate frame (see CONVENTIONS in core/types/model.ts): millimeters, case standing upright on
  * y = 0, centered on x/z, FRONT cover faces +Z, the SPINE is on the left when looking at the
  * front (-X side), the open edge on the right (+X).
  *
@@ -21,7 +21,14 @@
  */
 import * as THREE from 'three';
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
-import type { ImageSlotDef, ModelContext, ModelDefinition, ParamDef, ParamValues, PrintTemplate } from '../core/types';
+import type {
+  ImageSlotDef,
+  ModelContext,
+  ModelDefinition,
+  ParamDef,
+  ParamValues,
+  PrintTemplate,
+} from '../core/types/model';
 import { clamp, round1 } from '../core/math';
 import { clearPlastic, printMaterial } from './materials';
 import { bool, num, str } from './params';

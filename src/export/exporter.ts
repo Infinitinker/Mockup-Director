@@ -12,7 +12,8 @@
  *     composite the content over it – so the background always fills the whole output.
  *  5. Encode and embed the print resolution (PNG pHYs / JPEG JFIF density, 300 dpi).
  */
-import type { BackgroundSettings, ExportFormat, ExportSettings, StageAPI } from '../core/types';
+import type { ExportFormat, ExportSettings } from '../core/types/export';
+import type { BackgroundSettings, StageAPI } from '../core/types/scene';
 import { DEFAULT_EXPORT, MAX_EXPORT_SIZE } from '../core/defaults';
 import { UserError } from '../core/errors';
 import { clampInt, findAlphaBounds, fitInside, supersampleSize, type PixelRect } from './layout';

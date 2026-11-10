@@ -69,10 +69,14 @@ The page also uses Tauri's own APIs, allowed in `src-tauri/capabilities/default.
 src/
   main.ts       entry point; shows a plain error screen when the app cannot start
   styles.css    all of the interface's CSS
-  core/         the shared contract: types (types.ts, with the 3D conventions), defaults (defaults.ts),
-                the error whose message the user sees (errors.ts: UserError), number helpers (math.ts:
-                clamp, round1), decoding artwork (images.ts), placeholder textures for empty slots
-                (placeholder.ts)
+  core/         the shared contract, and helpers the layers above share:
+                  types/ (the contract as types: model.ts, the model contract with the 3D conventions;
+                  scene.ts, the scene settings and the stage; export.ts, the export settings; project.ts,
+                  the open project, the project file, looks and their storage),
+                  defaults (defaults.ts), the error whose message the user sees (errors.ts: UserError),
+                  number helpers (math.ts: clamp, round1), decoding artwork (images.ts), the kind of image
+                  some bytes are and the bytes in a data URL (mime.ts), sizing SVG artwork (svg.ts),
+                  placeholder textures for empty slots (placeholder.ts)
   models/       the 3D models and registry.ts, the list shown in the gallery:
                   box.ts and box/ (cuboid box, dieline, two-piece box; rounded geometry, shared parts),
                   keepCase.ts (DVD and Blu-ray cases), jewelCase.ts (CD case), disc.ts,
@@ -181,13 +185,13 @@ How the folders are organized:
 
 - **A model, panel or subsystem is one module until it needs several files; then it becomes a folder.** A file never sits next to a folder of the same name. (Today `models/box.ts` and `models/composites.ts` still sit next to `models/box/` and `models/composites/`.)
 - **A folder that grows past about a dozen modules is split into subfolders by role**, each answering one question, with imports running one way between them. Tests mirror the subfolders. (Today `ui/` holds seventeen modules directly and `models/` sixteen.)
-- **Imports run one way:** `core` ← `models` and `scene` ← `export` ← `project` ← `documents` ← `ui`. A module imports its own folder and the layers below it; `models` and `scene` sit side by side and never import each other. Only `ui` and the entry point `main.ts` use `platform`, except the log (`platform/log.ts`), which every module may use; `platform` itself imports only `core`. `core` holds the contracts the others share (`src/core/types.ts`). `project` sits above `export` because reading a project checks which formats this engine can export, and `documents` above `project` because the session stores project files. `tests/layout.test.ts` fails on an import against this order.
+- **Imports run one way:** `core` ← `models` and `scene` ← `export` ← `project` ← `documents` ← `ui`. A module imports its own folder and the layers below it; `models` and `scene` sit side by side and never import each other. Only `ui` and the entry point `main.ts` use `platform`, except the log (`platform/log.ts`), which every module may use; `platform` itself imports only `core`. `core` holds the contracts the others share (`src/core/types/`). `project` sits above `export` because reading a project checks which formats this engine can export, and `documents` above `project` because the session stores project files. `tests/layout.test.ts` fails on an import against this order.
 - **A module's name does not repeat its folder** (`panels/looks.ts`, not `panels/looksPanel.ts`), as long as the shorter name still says what the module is. (Today `modelPanel.ts`, `scenePanel.ts` and `exportPanel.ts` in `ui/panels/` still end in `Panel`.)
 - **File names are camelCase** in `src/` and `tests/` (`printFlat.ts`) and **kebab-case** in `tools/` (`draw-icon.mjs`).
 
 ## 3D conventions
 
-These are the rules every model follows (the full list is at the top of `src/core/types.ts`):
+These are the rules every model follows (the full list is at the top of `src/core/types/model.ts`):
 
 - World units are **millimeters**.
 - A model stands on the floor (its lowest point at `y = 0`), centered on `x = 0` / `z = 0`, with its front facing `+Z` and its top facing `+Y`.
@@ -204,7 +208,7 @@ Each concept has one name, used everywhere. Where the interface or today's code 
 | Term | Meaning | Where it lives (other names in the code) |
 |---|---|---|
 | Model | One kind of mockup the user can pick: a DVD case, a paperback, a phone. Defined by a `ModelDefinition`. | `src/models/`, `registry.ts` |
-| Category | A group of models in the gallery: Boxes, Discs & disc cases, Books & notebooks, Print, Devices & screens. | `ModelCategory` in `src/core/types.ts`; labels in `src/ui/gallery.ts` |
+| Category | A group of models in the gallery: Boxes, Discs & disc cases, Books & notebooks, Print, Devices & screens. | `ModelCategory` in `src/core/types/model.ts`; labels in `src/ui/gallery.ts` |
 | Composite model | A model made of another model plus a disc ("DVD case with disc"); it keeps the base model's slot and parameter ids. | `src/models/composites.ts` |
 | Gallery | The list of models on the left, grouped under the category headings; screen readers announce it as Models. | `src/ui/gallery.ts` |
 | Slot | One place on a model that takes artwork: a cover, a spine, a disc label, a screen. | `ImageSlotDef` (image in the code) |
@@ -239,7 +243,7 @@ Each concept has one name, used everywhere. Where the interface or today's code 
 
 ### Project file (`.mdproj`)
 
-JSON without indentation, written by `toProjectFile` and read by `readProjectFile`, `readProjectText` and `parseProjectFile` in `src/project/format.ts`; the type is `ProjectFile` in `src/core/types.ts`.
+JSON without indentation, written by `toProjectFile` and read by `readProjectFile`, `readProjectText` and `parseProjectFile` in `src/project/format.ts`; the type is `ProjectFile` in `src/core/types/project.ts`.
 
 | Field | Contents |
 |---|---|
@@ -257,7 +261,7 @@ JSON without indentation, written by `toProjectFile` and read by `readProjectFil
 
 ### Looks file
 
-The Looks tab exports the user's looks as `mockup-director-looks.json` (`LOOKS_FILE_NAME`, saved by `exportLooks` in `src/ui/panels/looks.ts`), indented, and imports one or more such files. The file is written by `toLooksFile` in `src/project/looks.ts`; the type is `LooksFile` in `src/core/types.ts`:
+The Looks tab exports the user's looks as `mockup-director-looks.json` (`LOOKS_FILE_NAME`, saved by `exportLooks` in `src/ui/panels/looks.ts`), indented, and imports one or more such files. The file is written by `toLooksFile` in `src/project/looks.ts`; the type is `LooksFile` in `src/core/types/project.ts`:
 
 | Field | Contents |
 |---|---|
@@ -337,4 +341,4 @@ The desktop app writes its diagnostics to `mockup-director.log` in the log folde
 | `mockup-director.ui.lockAspect` | localStorage | whether the export size keeps its aspect ratio: `1` or `0` | `src/ui/panels/exportPanel.ts` |
 | `mockup-director.ui.batchMode` | localStorage | the batch export mode last chosen: `artwork`, `views` or `projects` | `src/ui/batch.ts` |
 
-localStorage is read and written through `safeStorage` (`src/platform/storage.ts`, behind the `KeyValueStorage` interface in `src/core/types.ts`), which never throws: where storage is blocked, nothing is read, and `set` returns false when a value cannot be written. The interface choices ignore a failed write, so they are simply not kept; the looks report it (above).
+localStorage is read and written through `safeStorage` (`src/platform/storage.ts`, behind the `KeyValueStorage` interface in `src/core/types/project.ts`), which never throws: where storage is blocked, nothing is read, and `set` returns false when a value cannot be written. The interface choices ignore a failed write, so they are simply not kept; the looks report it (above).

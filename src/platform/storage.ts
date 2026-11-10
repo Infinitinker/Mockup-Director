@@ -3,7 +3,7 @@
  * (private browsing, a locked-down system) nothing is read, and a value that cannot be written
  * (storage full or blocked) is reported to the caller. The first failure for each key is logged.
  */
-import type { KeyValueStorage } from '../core/types';
+import type { KeyValueStorage } from '../core/types/project';
 import { log } from './log';
 
 /** The keys whose failure was logged in this run: interface choices are written on every click. */

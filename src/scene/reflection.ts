@@ -17,7 +17,7 @@
  *  - All objects use layer 1 (excluded from the shadow capture camera).
  */
 import * as THREE from 'three';
-import type { ReflectionSettings } from '../core/types';
+import type { ReflectionSettings } from '../core/types/scene';
 
 export const REFLECTION_LAYER = 1;
 

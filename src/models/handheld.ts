@@ -1,7 +1,7 @@
 /**
  * Handheld devices: a generic smartphone and a generic tablet showing the user's screen image.
  *
- * Coordinate frame (see CONVENTIONS in core/types.ts): millimeters. The device is built in a
+ * Coordinate frame (see CONVENTIONS in core/types/model.ts): millimeters. The device is built in a
  * PORTRAIT local frame – width along X, height along Y, thickness along Z, centered on the origin,
  * the SCREEN facing +Z. For landscape the whole device group is rotated +90° about Z
  * (counter-clockwise seen from the front: the portrait top goes to the LEFT). The screen UVs are
@@ -21,7 +21,14 @@
  * Designs are deliberately generic (no logos, no brand-specific camera layouts or notches).
  */
 import * as THREE from 'three';
-import type { ImageSlotDef, ModelContext, ModelDefinition, ParamDef, ParamValues, PrintTemplate } from '../core/types';
+import type {
+  ImageSlotDef,
+  ModelContext,
+  ModelDefinition,
+  ParamDef,
+  ParamValues,
+  PrintTemplate,
+} from '../core/types/model';
 import { clamp, round1 } from '../core/math';
 import { castShadows, placeOnGround, planarUVs } from './geometry';
 import { bool, mmParam, num, str } from './params';

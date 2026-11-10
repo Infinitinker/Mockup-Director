@@ -4,7 +4,7 @@
  * that fall outside, and the values of select options. Labels and hints are left out on purpose.
  */
 import { describe, expect, it } from 'vitest';
-import type { ModelCategory, ModelDefinition, ParamDef } from '../../src/core/types';
+import type { ModelCategory, ModelDefinition, ParamDef } from '../../src/core/types/model';
 import { MODELS } from '../../src/models/registry';
 
 type ParamIds =

@@ -1,7 +1,7 @@
 /**
  * "Model" tab: controls generated from model.params, grouped by param.group.
  */
-import type { ParamDef, ParamValue } from '../../core/types';
+import type { ParamDef, ParamValue } from '../../core/types/model';
 import { defaultParams } from '../../core/defaults';
 import { getModel } from '../../models/registry';
 import type { AppContext } from '../context';
