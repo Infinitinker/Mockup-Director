@@ -5,13 +5,14 @@
  */
 import type { ModelContext, ParamValues } from '../core/types/model';
 import type { Artwork, ArtworkMap, DocumentState } from '../core/types/project';
-import type { CameraSettings, StageAPI } from '../core/types/scene';
+import type { StageAPI } from '../core/types/scene';
 import { DEFAULT_ANIMATION, DEFAULT_EXPORT, DEFAULT_SCENE, cloneScene } from '../core/defaults';
 import { UserError } from '../core/errors';
 import { getPlaceholderTexture } from '../core/placeholder';
 import { disposeArtwork, loadImageFile } from '../core/images';
 import { MODELS, getModel } from '../models/registry';
 import { createStage } from '../scene/stage';
+import { cameraEquals, normalizeCamera } from '../scene/camera';
 import { inDesktopApp, pickFiles, saveBlob } from '../platform/files';
 import { handleOpenedFiles } from '../platform/launch';
 import { onWindowClose, setWindowTitle } from '../platform/window';
@@ -60,6 +61,8 @@ import { installShortcuts } from './shortcuts';
 import { log } from '../platform/log';
 
 const AUTOSAVE_MS = 1500;
+/** Viewport cameras closer than this to the store's are not stored again. */
+const CAMERA_CHANGE_TOLERANCE = 1e-4;
 
 /** Fresh document for a model: defaults + the model's suggested camera. */
 function freshDocument(modelId: string): DocumentState {
@@ -69,27 +72,6 @@ function freshDocument(modelId: string): DocumentState {
   const exp = { ...DEFAULT_EXPORT };
   if (exp.format === 'webp' && !supportsWebpEncoding()) exp.format = 'png';
   return { modelId: model.id, params: {}, artwork: {}, scene, export: exp };
-}
-
-/** Normalize yaw into (-180, 180] so sliders stay meaningful after orbiting around. */
-function normalizeCamera(c: CameraSettings): CameraSettings {
-  let yaw = ((((c.yaw + 180) % 360) + 360) % 360) - 180;
-  if (yaw === -180) yaw = 180;
-  return { ...c, yaw };
-}
-
-function cameraEquals(a: CameraSettings, b: CameraSettings): boolean {
-  const eps = 1e-4;
-  return (
-    a.projection === b.projection &&
-    Math.abs(a.yaw - b.yaw) < eps &&
-    Math.abs(a.pitch - b.pitch) < eps &&
-    Math.abs(a.roll - b.roll) < eps &&
-    Math.abs(a.fov - b.fov) < eps &&
-    Math.abs(a.zoom - b.zoom) < eps &&
-    Math.abs(a.panX - b.panX) < eps &&
-    Math.abs(a.panY - b.panY) < eps
-  );
 }
 
 /** Used when WebGL is unavailable – keeps the rest of the UI usable. */
@@ -255,7 +237,7 @@ export function startApp(root: HTMLElement): void {
 
   stage.onCameraChange((cam) => {
     const c = normalizeCamera(cam);
-    if (cameraEquals(c, store.state.scene.camera)) return;
+    if (cameraEquals(c, store.state.scene.camera, CAMERA_CHANGE_TOLERANCE)) return;
     store.update(
       ['camera'],
       (s) => {

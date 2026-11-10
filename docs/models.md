@@ -159,6 +159,7 @@ Number helpers in `src/core/math.ts`:
 | Helper | What it does |
 |---|---|
 | `clamp(v, lo, hi)` | Limits `v` to the range; when `lo` is greater than `hi`, the result is `hi`. `THREE.MathUtils.clamp` returns `lo` instead, so geometry with a computed upper bound uses this one. |
+| `finite(v, fallback)` | `v` when it is a finite number, otherwise `fallback`. |
 | `round1(v)` | Rounds to one decimal, for a number shown in a text. |
 
 The app's side of the contract is in `src/models/params.ts` (`completeParams`, `sanitizeParam`, `inheritedParams`, `snapToStep`), `src/models/slots.ts` (`slotFor`, `resolveTemplate`, `expectedAspects`) and `defaultParams` in `src/core/defaults.ts`; model definitions do not use them. A template function that throws is a model bug: the print template export shows the error, and the Artwork tab's aspect ratio hint logs it and leaves the template out.

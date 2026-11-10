@@ -1,6 +1,6 @@
 /**
- * Small number helpers shared by every layer: clamping a value into a range and rounding sizes for
- * texts.
+ * Small number helpers shared by every layer: clamping a value into a range, falling back from values that are not
+ * finite numbers, and rounding sizes for texts.
  */
 
 /**
@@ -10,6 +10,11 @@
  */
 export function clamp(v: number, lo: number, hi: number): number {
   return Math.min(hi, Math.max(lo, v));
+}
+
+/** `v` when it is a finite number, otherwise `fallback`. */
+export function finite(v: unknown, fallback: number): number {
+  return typeof v === 'number' && Number.isFinite(v) ? v : fallback;
 }
 
 /** Rounds to one decimal place, for sizes shown in texts (129.53 → 129.5). */

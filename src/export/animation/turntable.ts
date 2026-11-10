@@ -1,5 +1,6 @@
 /**
- * Turntable motion: product rotation angle per frame and per-frame delays.
+ * Turntable motion: product rotation angle per frame and per-frame delays. The stage renders the frames at these
+ * angles (src/scene/stage/turntable.ts).
  *
  * Angles are PRODUCT rotations in degrees around the vertical axis (+ = counter-clockwise seen
  * from above), relative to the current view – frame 0 is always exactly the current view.

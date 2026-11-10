@@ -2,7 +2,7 @@
  * Built-in light presets, picked in the Scene tab: each sets the light and may change the shadow
  * and reflection. Key light azimuth is relative to the camera (0 = from the viewer,
  * negative = from the left, positive = from the right, 180 = from behind); elevation is the
- * angle above the floor. See stage.ts for how the values map to the actual lights.
+ * angle above the floor. See stage/lighting.ts for how the values map to the actual lights.
  */
 import type { LightSettings, ReflectionSettings, ShadowSettings } from '../core/types/scene';
 

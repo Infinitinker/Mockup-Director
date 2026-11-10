@@ -77,7 +77,7 @@ export interface RenderOptions {
   transparent: boolean;
 }
 
-/** Implemented by src/scene/stage.ts */
+/** Implemented by src/scene/stage/index.ts */
 export interface StageAPI {
   /** Show a model (the stage takes ownership and disposes the previous one with disposeObject). */
   setModel(object: THREE.Object3D | null): void;

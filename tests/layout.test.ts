@@ -44,7 +44,6 @@ const BANNER_ALLOWED = [
   'src/export/templates.ts',
   'src/platform/files.ts',
   'src/scene/shadows.ts',
-  'src/scene/stage.ts',
   'src/styles.css',
   'src/ui/app.ts',
   'src/ui/batch.ts',
@@ -241,7 +240,7 @@ describe('the import order', () => {
     expect(breaksLayers('src/ui/app.ts', 'src/export/exporter')).toBe(false);
     expect(breaksLayers('src/export/exporter.ts', 'src/ui/app')).toBe(true);
     expect(breaksLayers('src/project/format.ts', 'src/documents/store')).toBe(true);
-    expect(breaksLayers('src/scene/stage.ts', 'src/models/params')).toBe(true);
+    expect(breaksLayers('src/scene/stage/index.ts', 'src/models/params')).toBe(true);
     expect(breaksLayers('src/models/params.ts', 'src/scene/dispose')).toBe(true);
     expect(breaksLayers('src/models/box/slim.ts', 'src/models/geometry')).toBe(false);
     expect(breaksLayers('src/models/slots.ts', 'src/platform/log')).toBe(false);
