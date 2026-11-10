@@ -109,6 +109,29 @@ cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 
 The **Checks** workflow (`.github/workflows/checks.yml`) runs all of these for every push to `main` and `dev` and for every pull request, in a few minutes: `Lint` (Biome and rustfmt), `Web` (type-check, build, unit tests), `Licenses`, and clippy and the Rust tests on three systems, `Windows` (with MSYS2 and the GNU toolchain), `Linux` and `macOS`. The Rust code differs per system and clippy and the tests only see the code of the system they run on, hence three runs. Once a month Dependabot opens a pull request to `dev` with new versions of the actions the workflows use (`.github/dependabot.yml`).
 
+## End-to-end tests (trial)
+
+One smoke test, in `tests/e2e/`, drives the real desktop app with [WebdriverIO](https://webdriver.io/) and `@wdio/tauri-service`: the app starts, shows the 3D view (or its message when WebGL does not work), switches to another model, and saves a project through the save dialog, which the test answers itself (a mock), then checks the file on disk. `npm test` does not run it. It needs Node.js 22.23.4, 24.22.1 or 26.12.1 or newer in that line, more than the rest of the project.
+
+First build the app for it, then run it:
+
+```bash
+npm run e2e:build
+```
+
+```bash
+npm run e2e
+```
+
+On Linux without a desktop, run the test in a virtual screen: `xvfb-run -a -s "-screen 0 1920x1080x24" npm run e2e`.
+
+- **The e2e build** (`tools/e2e-build.mjs`) is a debug build with the Cargo feature `e2e` and the overlay `src-tauri/tauri.e2e.conf.json`. The feature adds two test plugins to the shell, a WebDriver server inside the app (port 4445) and the bridge that lets the test answer commands; the overlay allows them in the window and loads a test build of the web part, `vite build --mode e2e`, whose entry `tests/e2e/app/entry.ts` installs the bridge before it starts the app, written to `dist-e2e/`. Release builds pass no features and use neither, so they never contain the plugins: the workflow checks it.
+- **Its own Cargo target folder:** the build sets `CARGO_TARGET_DIR` to `src-tauri/target/e2e`, so `npm run app:dev` and `cargo test`, which build into `src-tauri/target/debug`, never replace it. The test starts `src-tauri/target/e2e/debug/mockup-director` (`.exe` on Windows).
+- **Its own identifier**, `io.github.infinitinker.mockupdirector.e2e`: a running Mockup Director or `npm run app:dev` never takes its launch over, and it has its own data folder. Each run deletes that folder first on Windows and Linux, so the app starts with no restored tabs. On macOS it is not deleted, because the web engine's data of a binary run outside an app bundle is shared with `npm run app:dev`.
+- **The output**, in `E2E_OUTPUT` or else `mockup-director-e2e` in the temp folder: `report.json` (the steps that passed, their durations and what the WebGL check found), `app.png` (a screenshot of the window's page) and the WebdriverIO logs. The app's own log is in its data folder.
+
+The **E2E** workflow (`.github/workflows/e2e.yml`) runs the test on Windows, Linux (Xvfb with software OpenGL) and macOS for pushes to the `e2e-trial` branch, and checks that release builds carry no test code. It is a trial, not a required check.
+
 ## Interface texts
 
 The interface's texts are plain English strings, written in the code where they are used: in the interface modules, in the errors a user sees (a `UserError` from `src/core/errors.ts`, whose message the interface shows as it is; `errorMessage` in `src/ui/errors.ts` turns any other error into a general message with the raw text as detail; the Rust shell sends a kind code instead of a text, and the texts for its file errors are in `src/platform/commandErrors.ts`), and in the labels and hints of models and looks. Every new or changed text follows these rules:

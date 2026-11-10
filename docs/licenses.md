@@ -14,6 +14,8 @@ Check the npm part locally with:
 npm run licenses
 ```
 
+The end-to-end test tools (see [development.md](development.md#end-to-end-tests-trial)) never ship. The WebdriverIO npm packages are dev dependencies, so they are not in the notices, and the bridge is bundled only into the test build. The two Rust test plugins are optional dependencies behind the Cargo feature `e2e`: cargo-about and the Licenses check run without it, so the notices do not change, and the E2E workflow checks the test crates with `cargo deny --features e2e`. During the trial, three build-only npm packages that WebdriverIO brings fail `npm run licenses`: `css-value` (no license), `argparse` 3 (PSF-2.0) and `spdx-exceptions` (CC-BY-3.0); how to accept them is decided before the tests are merged.
+
 ## Third-party notices
 
 The MIT, BSD and Apache licenses require their notices to come with every copy of the app. [THIRD-PARTY-NOTICES.md](../THIRD-PARTY-NOTICES.md) holds the license texts of the app's dependencies on every system, and every package contains it next to the app's own license: the Windows installer and the portable ZIP, the macOS app, and the Linux packages, as `LICENSE.txt` and `THIRD-PARTY-NOTICES.txt` (`bundle.resources` in `src-tauri/tauri.conf.json`). Each build checks its package contains both, and every release also has a copy, `MockupDirector-<version>-third-party-notices.md`.

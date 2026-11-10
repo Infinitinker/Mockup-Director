@@ -169,7 +169,10 @@ tests/          unit tests (Vitest, config in vitest.config.ts); their folders m
                 shared test data in fixtures.ts, a seeded random generator in random.ts, the checks
                 of header and banner comments, of the import order and of the styles' imports in
                 layout.test.ts, the check of the README's number of models in readme.test.ts, and the
-                checks of tauri.conf.json against package.json and LICENSE in tauriConfig.test.ts
+                checks of tauri.conf.json against package.json and LICENSE in tauriConfig.test.ts;
+                e2e/: the end-to-end smoke test of the desktop app (WebdriverIO; not run by npm
+                test): the test in smoke.spec.ts, its config in wdio.config.ts, the folders it uses
+                in folders.ts, and the entry of the test build of the web part in app/entry.ts
 src-tauri/      the Tauri v2 shell (Rust): main.rs starts lib.rs, which sets up the window, the dialogs,
                 a single app process and the commands; the commands' error (error.rs), saving files:
                 the open saves and their commands (saves.rs) and writing a file atomically (files.rs),
@@ -183,6 +186,8 @@ src-tauri/      the Tauri v2 shell (Rust): main.rs starts lib.rs, which sets up 
                             Tauri automatically
   tauri.linux.conf.json     Linux additions (AppImage, .deb, .rpm), merged by Tauri automatically
   tauri.dev.conf.json       a separate identifier for the app run from source (npm run app:dev)
+  tauri.e2e.conf.json       the test build (npm run e2e:build): its own identifier, the test
+                            plugins' permissions and the web part from dist-e2e/
   linux/                    the .mdproj MIME definition and the .desktop template for the Linux packages
   capabilities/default.json the Tauri APIs the window may call: events, the default window queries,
                             dragging, the title, destroying the window, the save dialog and the
@@ -198,6 +203,8 @@ src-tauri/      the Tauri v2 shell (Rust): main.rs starts lib.rs, which sets up 
 .github/workflows/
   checks.yml         the Checks: Lint (Biome, rustfmt), Web (build, tests), Licenses, and clippy and the
                      Rust tests on Windows, Linux and macOS; for main, dev and pull requests
+  e2e.yml            trial: the end-to-end smoke test on Windows, Linux and macOS, and that release
+                     builds carry no test code; for pushes to e2e-trial, not a required check
   build-windows.yml  the installer (x64, Inno Setup) and a portable ZIP, built with MSYS2; then checks
                      the files
   build-macos.yml    a universal .dmg; then checks the file
@@ -207,7 +214,8 @@ src-tauri/      the Tauri v2 shell (Rust): main.rs starts lib.rs, which sets up 
 .github/actions/notices/    the license checks and the notices check, for checks.yml and release.yml
 index.html                  the page Vite builds the app from
 package.json                the npm package, its scripts and dependencies, and the app's version
-vite.config.ts              the build: port 1420 for development, Safari 15 as the target
+vite.config.ts              the build: port 1420 for development, Safari 15 as the target, and the
+                            e2e mode for the test build (written to dist-e2e/)
 tsconfig.json, biome.json   TypeScript settings, and the linter and formatter (Biome)
 tools/tsconfig.json         TypeScript settings for what runs in Node: the tools and vite.config.ts
 LICENSE                     the MIT license; every package of the app contains it as LICENSE.txt
@@ -223,6 +231,8 @@ tools/release-notes.md      the template of the release notes
 tools/installer.iss         the Windows installer (Inno Setup 7): files, the .mdproj association,
                             WebView2, uninstalling
 tools/installer.mjs         builds it (npm run installer)
+tools/e2e-build.mjs         builds the app for the end-to-end test (npm run e2e:build) into
+                            src-tauri/target/e2e
 tools/draw-icon.mjs         draws the app icon and writes the icon files in use: src-tauri/icons/,
                             src/ui/app-logo.svg and docs/images/icon.png (npm run icons)
 start.bat, start.sh         run the desktop app from source (npm run app:dev), see docs/development.md
