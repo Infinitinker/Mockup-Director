@@ -15,7 +15,7 @@ use tauri::Manager;
 
 use crate::error::{CommandError, ErrorKind};
 
-/// The extension of project files (`PROJECT_EXT` in `src/ui/project.ts`).
+/// The extension of project files (`PROJECT_EXT` in `src/project/format.ts`).
 pub const PROJECT_EXTENSION: &str = "mdproj";
 
 /// Emitted to the web UI when files arrive while the app is running: from macOS, or (on Windows and

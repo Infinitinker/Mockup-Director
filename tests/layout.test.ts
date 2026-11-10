@@ -273,11 +273,22 @@ describe('the import order', () => {
 describe('the styles', () => {
   const STYLES = 'src/styles/';
   const ENTRY = `${STYLES}index.css`;
-  const CSS_IMPORT = /@import\s+["']\.\/([^"']+)["']/g;
+  const CSS_IMPORT = /@import\s+(?:url\(\s*)?["']([^"']+)["']/g;
+  const css = [...SOURCES].filter(([path]) => path.startsWith('src/') && path.endsWith('.css'));
+  const imports = css.flatMap(([path, text]) => [...text.matchAll(CSS_IMPORT)].map((match) => [path, match[1]]));
+
+  it('sit in src/styles/', () => {
+    expect(css.map(([path]) => path).filter((path) => !path.startsWith(STYLES))).toEqual([]);
+  });
+
+  it('are imported only by index.css, each from its own folder', () => {
+    const stray = imports.filter(([path, spec]) => path !== ENTRY || !/^\.\/[^/]+\.css$/.test(spec));
+    expect(stray.map(([path, spec]) => `${path} imports ${spec}`)).toEqual([]);
+  });
 
   it('import every style file from index.css exactly once, and nothing else', () => {
-    const imported = [...(SOURCES.get(ENTRY) ?? '').matchAll(CSS_IMPORT)].map((match) => `${STYLES}${match[1]}`);
-    const files = [...SOURCES.keys()].filter((path) => path.startsWith(STYLES) && path !== ENTRY);
+    const imported = imports.map(([, spec]) => `${STYLES}${spec.replace(/^\.\//, '')}`);
+    const files = css.map(([path]) => path).filter((path) => path.startsWith(STYLES) && path !== ENTRY);
     expect(imported.sort()).toEqual(files.sort());
   });
 
