@@ -22,5 +22,8 @@
     "types": ["vite/client"],
     "noEmit": true
   },
-  "include": ["src", "tests", "vitest.config.ts"]
+  "include": ["src", "tests", "vitest.config.ts"],
+  // The end-to-end tests and their config run in Node, not in the app: tests/e2e/tsconfig.json checks
+  // them. Only the files directly in tests/e2e are left out; the test entry in tests/e2e/app is the app.
+  "exclude": ["tests/e2e/*.ts"]
 }

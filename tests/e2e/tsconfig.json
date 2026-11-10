@@ -1,0 +1,17 @@
+{
+  // Type-checks the end-to-end tests and their WebdriverIO config, which run in Node (the callbacks
+  // passed to browser.execute run in the app's page, hence DOM); npm run build runs it. The test
+  // entry in app/ belongs to the root tsconfig.json, with the app.
+  "compilerOptions": {
+    "target": "ES2024",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "lib": ["ES2024", "DOM"],
+    "types": ["node", "@wdio/globals/types", "@wdio/mocha-framework", "@wdio/tauri-service"],
+    "allowImportingTsExtensions": true,
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true
+  },
+  "include": ["*.ts"]
+}
