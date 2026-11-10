@@ -78,10 +78,9 @@ jobs:
       - name: Licenses and notices
         uses: ./.github/actions/notices
 
-  # Clippy and the Rust tests. The shell has code for each system (#[cfg(target_os)]), and clippy only
-  # sees the code of the system it runs on, so they run on each: on Windows with MSYS2 and Rust's GNU
-  # toolchain, the one the app is built with. The macOS code is compiled by the macOS build
-  # (build-macos.yml) on every push.
+  # Clippy and the Rust tests. The shell has code for each system (#[cfg(target_os)], #[cfg(unix)]),
+  # and clippy and the tests only see the code of the system they run on, so they run on each: on
+  # Windows with MSYS2 and Rust's GNU toolchain, the one the app is built with.
   system:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
@@ -94,6 +93,8 @@ jobs:
             os: windows-latest
           - name: Linux
             os: ubuntu-24.04
+          - name: macOS
+            os: macos-latest
     defaults:
       run:
         shell: bash
@@ -126,7 +127,7 @@ jobs:
           rustup toolchain install stable-x86_64-pc-windows-gnu --profile minimal --component clippy --no-self-update
           rustup default stable-x86_64-pc-windows-gnu
       - uses: dtolnay/rust-toolchain@stable
-        if: runner.os == 'Linux'
+        if: runner.os != 'Windows'
         with:
           components: clippy
       - uses: swatinem/rust-cache@v2

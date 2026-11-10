@@ -197,7 +197,7 @@ src-tauri/      the Tauri v2 shell (Rust): main.rs starts lib.rs, which sets up 
                      problem privately (GitHub's advisory form, see SECURITY.md)
 .github/workflows/
   checks.yml         the Checks: Lint (Biome, rustfmt), Web (build, tests), Licenses, and clippy and the
-                     Rust tests on Windows and Linux; for main, dev and pull requests
+                     Rust tests on Windows, Linux and macOS; for main, dev and pull requests
   build-windows.yml  the installer (x64, Inno Setup) and a portable ZIP, built with MSYS2; then checks
                      the files
   build-macos.yml    a universal .dmg; then checks the file
