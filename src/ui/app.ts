@@ -18,7 +18,8 @@ import { Signal, errorMessage, frameCoalescer, h, isMac, nextFrame } from './dom
 import { Store, hasAny, type DocumentState, type ArtworkMap } from './state';
 import { Documents } from './documents';
 import { indexedDbSessionStore, loadSession, SessionSaver } from './session';
-import { SESSION_DAMAGED } from './sessionRecords';
+import { SESSION_DAMAGED, type UnopenedTab } from './sessionRecords';
+import { openRecoveryDialog } from './recovery';
 import { createTabBar, tabLabel } from './tabbar';
 import { VIEW_PRESETS, type Actions, type AppContext, type TabId } from './context';
 import { completeParams, inheritedParams, slotFor } from './modelUtils';
@@ -35,7 +36,15 @@ import {
   webpEncodingSupported,
   type AnimationProgress,
 } from './exportBridge';
-import { PROJECT_EXT, hydrateProject, projectNameOf, projectWarning, readProjectFile, toProjectFile } from './project';
+import {
+  PROJECT_EXT,
+  PROJECT_FILE_FILTER,
+  hydrateProject,
+  projectNameOf,
+  projectWarning,
+  readProjectFile,
+  toProjectFile,
+} from './project';
 import { mountToasts, notify } from './toast';
 import { choiceDialog } from './dialog';
 import { openBatchDialog, type BatchHost } from './batch';
@@ -178,7 +187,8 @@ export function startApp(root: HTMLElement): void {
   /**
    * False until the last session is restored, and for the whole run when it could not be: autosave
    * then stays off, so the stored tabs are kept for the next start instead of being overwritten. A
-   * damaged index is no such failure: it is restored as an empty session, which the next save replaces.
+   * damaged index is no such failure: its tabs are restored from their records, and the next save
+   * writes a new index.
    */
   let sessionReadable = false;
   let autosaveTimer = 0;
@@ -354,7 +364,7 @@ export function startApp(root: HTMLElement): void {
         const file = toProjectFile(store.state);
         const blob = new Blob([JSON.stringify(file)], { type: 'application/json' });
         const suggested = `${docs.tab(tabId)?.name || 'project'}.${PROJECT_EXT}`;
-        const saved = await saveBlob(blob, suggested, [{ name: 'Mockup Director project', extensions: [PROJECT_EXT] }]);
+        const saved = await saveBlob(blob, suggested, [PROJECT_FILE_FILTER]);
         if (!saved) return false;
         docs.markSaved(tabId, revision, projectNameOf(saved));
         notify.success('Project saved', saved);
@@ -701,6 +711,8 @@ export function startApp(root: HTMLElement): void {
   rebuild.schedule();
   rebuild.flush();
 
+  /** The stored copies the restore could not open: the recovery dialog offers them once it is done. */
+  let unopened: UnopenedTab[] = [];
   restoreSession()
     .catch((e) => {
       console.error('[mockup-director] session restore failed', e);
@@ -711,15 +723,28 @@ export function startApp(root: HTMLElement): void {
     })
     .finally(() => {
       restoring = false;
-      // The restore marked the session for a save (to replace a damaged index or delete dropped
-      // records), or edits made meanwhile were only marked dirty: save them now.
+      // The restore marked the session for a save (to repair the index), or edits made meanwhile
+      // were only marked dirty: save them now.
       if (autosaveDirty) void autosaveNow();
+      if (unopened.length) void openRecoveryDialog(unopened, forgetUnopened);
+      unopened = [];
       // Projects the operating system asked to open (a double-clicked .mdproj), each in a tab.
       void handleOpenedFiles(
         (files) => void openProjectFiles(files),
         (e) => notify.error('Could not open the project', errorMessage(e)),
       );
     });
+
+  /**
+   * Removes a copy the user saved to a file or deleted in the recovery dialog from the session, with
+   * the open tabs as they are now. Rejects when it stays stored.
+   */
+  function forgetUnopened(id: string): Promise<void> {
+    const done = session.forget(id, docs.snapshot(), docs.activeId);
+    // The close flush waits for it, like for an autosave.
+    saving = done.catch(() => undefined);
+    return done;
+  }
 
   /** Reopens the tabs of the last session (their unsaved changes included). */
   async function restoreSession(): Promise<void> {
@@ -729,7 +754,7 @@ export function startApp(root: HTMLElement): void {
       sessionReadable = true;
       return;
     }
-    const { session: stored, kept, dropped, skipped, indexDamaged } = loaded;
+    const { session: stored, recovered, missing, indexDamaged, repair } = loaded;
     const restored: { id: string; name: string; dirty: boolean; state: DocumentState }[] = [];
     let failedArtwork = 0;
     const leftOut = { settings: 0, artwork: 0 };
@@ -745,25 +770,26 @@ export function startApp(root: HTMLElement): void {
     const replaceInitial = docs.activeIsPristine() && restored.length > 0;
     for (const r of restored)
       docs.add(r.state, { id: r.id, name: r.name, dirty: r.dirty, activate: false, position: 'end' });
-    // The kept entries stay in the index, and their records are not the saver's to delete. The damaged
-    // records are the saver's: the next save leaves them out of the index and deletes them.
-    session.adopt([...restored.map((r) => r.id), ...dropped], kept);
+    // The unopened entries stay in the index, and their records are deleted only when the user chooses to.
+    session.adopt(
+      restored.map((r) => r.id),
+      loaded.unopened,
+    );
+    unopened = loaded.unopened;
     // Nothing else may change: mark the session for the save that runs right after the restore, so the
-    // index is rewritten and the dropped records deleted.
-    if (dropped.length || skipped || indexDamaged) autosaveDirty = true;
+    // index is rewritten without the dropped entries and with every record it should list.
+    if (repair) autosaveDirty = true;
     // Restored without an error: autosave may write from now on.
     sessionReadable = true;
     if (replaceInitial) {
       docs.activate(restored.some((r) => r.id === stored.activeId) ? stored.activeId : restored[0].id);
       docs.close(initial);
     }
-    if (indexDamaged) notify.warning(SESSION_DAMAGED);
+    if (indexDamaged && restored.length) notify.warning(SESSION_DAMAGED);
+    else if (recovered)
+      notify.warning(`Projects reopened from their stored copies: ${recovered}. Check them and save them to files.`);
     if (restored.length) notify.info(`Restored the projects that were open: ${restored.length}`);
-    if (kept.length)
-      notify.warning(
-        `Projects that were open come from a newer Mockup Director: ${kept.length}. Update Mockup Director to get them back.`,
-      );
-    if (skipped) notify.warning(`Projects that could not be reopened: ${skipped}. Open them again from their files.`);
+    if (missing) notify.warning(`Projects that could not be reopened: ${missing}. Open them again from their files.`);
     const warning = projectWarning(leftOut, failedArtwork, 'session');
     if (warning) notify.warning(warning);
   }

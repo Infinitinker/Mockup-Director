@@ -1,6 +1,6 @@
 /**
  * Tests the bookkeeping of the session saver in src/ui/session.ts, with a fake store: which tab
- * records it writes and deletes, the kept entries, and saves requested while one runs.
+ * records it writes and deletes, the unopened entries and forgetting them, and saves requested while one runs.
  */
 import { describe, expect, it } from 'vitest';
 import type { TabSnapshot } from '../../src/ui/documents';
@@ -42,11 +42,12 @@ const tab = (id: string, revision = 1): TabSnapshot => ({
   state: documentState('box'),
 });
 const kept = { id: 'k', name: 'Kept', dirty: true };
+const other = { id: 'o', name: '', dirty: true };
 const ids = (w: Write) => w.index.tabs.map((t) => t.id);
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 describe('SessionSaver', () => {
-  it('lists the kept entries in every index, after the open tabs, and never deletes their records', async () => {
+  it('lists the unopened entries in every index, after the open tabs, and never deletes their records by itself', async () => {
     const store = new FakeStore();
     const saver = new SessionSaver(store);
     saver.adopt(['a'], [kept]);
@@ -62,10 +63,10 @@ describe('SessionSaver', () => {
   it('deletes adopted records that are not open once, at the first save', async () => {
     const store = new FakeStore();
     const saver = new SessionSaver(store);
-    saver.adopt(['a', 'damaged'], []);
+    saver.adopt(['a', 'closed'], []);
     await saver.save([tab('a')], 'a');
     await saver.save([tab('a', 2)], 'a');
-    expect(store.writes.map((w) => w.deletes)).toEqual([['damaged'], []]);
+    expect(store.writes.map((w) => w.deletes)).toEqual([['closed'], []]);
   });
 
   it('deletes the record of a restored tab when it is closed', async () => {
@@ -131,5 +132,60 @@ describe('SessionSaver', () => {
       [['a'], ['old']],
       [['a'], ['old']],
     ]);
+  });
+
+  it('forgets an unopened entry: leaves it out of the index and deletes exactly its record, once', async () => {
+    const store = new FakeStore();
+    const saver = new SessionSaver(store);
+    saver.adopt(['a'], [kept, other]);
+    await saver.save([tab('a')], 'a');
+    await saver.forget('k', [tab('a')], 'a');
+    await saver.save([tab('a', 2)], 'a');
+    expect(store.writes.map((w) => [ids(w), w.deletes])).toEqual([
+      [['a', 'k', 'o'], []],
+      [['a', 'o'], ['k']],
+      [['a', 'o'], []],
+    ]);
+  });
+
+  it('keeps an entry whose forgetting failed, in this and every later index', async () => {
+    const store = new FakeStore();
+    const saver = new SessionSaver(store);
+    saver.adopt([], [kept]);
+    store.fail = true;
+    await expect(saver.forget('k', [tab('a')], 'a')).rejects.toThrow('write failed');
+    store.fail = false;
+    await saver.save([tab('a')], 'a');
+    await saver.save([], '');
+    expect(store.writes.map((w) => [ids(w), w.deletes])).toEqual([
+      [['a'], ['k']],
+      [['a', 'k'], []],
+      [['k'], ['a']],
+    ]);
+  });
+
+  it('forgets an entry asked for during a write in the next write, and asking again waits for it', async () => {
+    const store = new FakeStore();
+    const saver = new SessionSaver(store);
+    saver.adopt([], [kept]);
+    store.hold = true;
+    const running = saver.save([tab('a')], 'a');
+    await settle();
+    const forgotten = saver.forget('k', [tab('a')], 'a');
+    expect(saver.forget('k', [tab('a')], 'a')).toBe(forgotten);
+    store.release();
+    await Promise.all([running, forgotten]);
+    expect(store.writes.map((w) => [ids(w), w.deletes])).toEqual([
+      [['a', 'k'], []],
+      [['a'], ['k']],
+    ]);
+  });
+
+  it('forgets only unopened entries', async () => {
+    const store = new FakeStore();
+    const saver = new SessionSaver(store);
+    saver.adopt(['a'], [kept]);
+    await saver.forget('a', [tab('a')], 'a');
+    expect(store.writes).toEqual([]);
   });
 });

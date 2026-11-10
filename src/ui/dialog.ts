@@ -22,7 +22,7 @@ interface DialogButton<T> {
 }
 
 function openDialog<T>(
-  content: { title: string; message?: string; body?: HTMLElement },
+  content: { title: string; message?: string; body?: HTMLElement; className?: string },
   buttons: DialogButton<T>[],
   cancelResult: T,
 ): Promise<T> {
@@ -42,7 +42,10 @@ function openDialog<T>(
     });
     const form = h(
       'form',
-      { class: 'dialog', attrs: { role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': titleId } },
+      {
+        class: content.className ? `dialog ${content.className}` : 'dialog',
+        attrs: { role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': titleId },
+      },
       h('h2', { class: 'dialog-title', text: content.title, attrs: { id: titleId } }),
       content.message ? h('p', { class: 'dialog-message', text: content.message }) : null,
       content.body,
@@ -76,7 +79,11 @@ function openDialog<T>(
         if (focusables.length === 0) return;
         const first = focusables[0];
         const last = focusables[focusables.length - 1];
-        if (e.shiftKey && document.activeElement === first) {
+        // Focus falls back to <body> when the body replaces the focused element: pull it back in.
+        if (!form.contains(document.activeElement)) {
+          e.preventDefault();
+          (e.shiftKey ? last : first).focus();
+        } else if (e.shiftKey && document.activeElement === first) {
           e.preventDefault();
           last.focus();
         } else if (!e.shiftKey && document.activeElement === last) {
@@ -172,4 +179,22 @@ export function choiceDialog(opts: {
     }),
   );
   return openDialog(opts, buttons, null);
+}
+
+/**
+ * A dialog whose body acts on its own (its buttons must have type="button" and do not close it), with
+ * one button that closes it. Resolves when it is closed: by that button, Escape or a click outside it.
+ */
+export function panelDialog(opts: {
+  title: string;
+  message?: string;
+  body: HTMLElement;
+  closeLabel: string;
+  className?: string;
+}): Promise<void> {
+  return openDialog(
+    opts,
+    [{ label: opts.closeLabel, primary: true, isDefault: true, result: () => undefined }],
+    undefined,
+  );
 }

@@ -16,6 +16,9 @@ import { normalizeAnimationSettings } from '../export/animation/settings';
 /** The extension of project files, the only one the app saves and opens. */
 export const PROJECT_EXT = 'mdproj';
 
+/** The file type of projects in the save dialog. */
+export const PROJECT_FILE_FILTER = { name: 'Mockup Director project', extensions: [PROJECT_EXT] };
+
 /** The project file version this app writes, and the newest one it reads. */
 export const PROJECT_VERSION = 1;
 

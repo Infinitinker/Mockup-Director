@@ -1,17 +1,24 @@
-/** Reading the session records and building the index a save writes, without IndexedDB. */
+/**
+ * Reading the session records, building the index a save writes and the file a kept copy is saved
+ * to, without IndexedDB.
+ */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { UserError } from '../../src/core/errors';
 import { toProjectFile } from '../../src/ui/project';
 import {
   buildIndex,
-  damagedSession,
+  COPY_UNWRITABLE,
   isNewerIndex,
+  type LoadedSession,
   readIndex,
   readSession,
   readTabRecord,
   SESSION_DAMAGED,
   SESSION_NEWER,
   SESSION_VERSION,
+  tabIdOf,
+  unopenedFileName,
+  unopenedFileText,
 } from '../../src/ui/sessionRecords';
 import { documentState } from '../fixtures';
 
@@ -107,74 +114,147 @@ describe('readTabRecord', () => {
   });
 });
 
+describe('tabIdOf', () => {
+  it('reads the tab id of a record key and nothing else', () => {
+    expect(tabIdOf('tab:a1')).toBe('a1');
+    for (const key of ['session', 'tab:', 'other:a', 7, ['tab:a']]) expect(tabIdOf(key)).toBeNull();
+  });
+});
+
 describe('readSession', () => {
   const index = (activeId: string, ...ids: string[]) => ({
-    index: { version: SESSION_VERSION, activeId, tabs: ids.map((id) => entry(id, id.toUpperCase())) },
-    malformed: 0,
+    version: SESSION_VERSION,
+    activeId,
+    tabs: ids.map((id) => entry(id, id.toUpperCase())),
+  });
+  const storedAt = (savedAt: number) => ({ savedAt, file });
+  /** Reads a session that must not be null. */
+  function read(rawIndex: unknown, records: [string, unknown][]): LoadedSession {
+    const loaded = readSession(rawIndex, new Map(records));
+    if (!loaded) throw new Error('nothing was read');
+    return loaded;
+  }
+  const ids = (loaded: LoadedSession) => loaded.session.tabs.map((t) => t.id);
+  const unopenedIds = (loaded: LoadedSession) => loaded.unopened.map((t) => [t.id, t.reason]);
+
+  it('reads nothing when nothing is stored', () => {
+    expect(readSession(undefined, new Map())).toBeNull();
   });
 
   it('restores every tab in index order with the stored active tab', () => {
-    const loaded = readSession(
-      index('b', 'a', 'b'),
-      new Map([
-        ['a', record],
-        ['b', record],
-      ]),
-    );
+    const loaded = read(index('b', 'a', 'b'), [
+      ['a', record],
+      ['b', record],
+    ]);
     expect(loaded.session.activeId).toBe('b');
     expect(loaded.session.tabs.map((t) => [t.id, t.name, t.file])).toEqual([
       ['a', 'A', file],
       ['b', 'B', file],
     ]);
-    expect(loaded.kept).toEqual([]);
-    expect(loaded.dropped).toEqual([]);
-    expect(loaded.skipped).toBe(0);
-    expect(loaded.indexDamaged).toBe(false);
+    expect(loaded).toMatchObject({ unopened: [], recovered: 0, missing: 0, indexDamaged: false, repair: false });
   });
 
-  it('keeps the entry of a newer record, drops damaged and missing ones and counts the dropped', () => {
-    const loaded = readSession(
-      { ...index('b', 'a', 'b', 'c', 'd', 'e'), malformed: 2 },
-      new Map<string, unknown>([
-        ['a', record],
-        ['b', { file: 'damaged' }],
-        ['c', undefined],
-        ['e', newerRecord],
-      ]),
-    );
-    expect(loaded.session.tabs.map((t) => t.id)).toEqual(['a']);
-    expect(loaded.kept).toEqual([entry('e', 'E')]);
-    expect(loaded.dropped).toEqual(['b']);
-    expect(loaded.skipped).toBe(5);
+  it('keeps the copies it cannot open, newer and damaged, with when they were stored', () => {
+    const damaged = { savedAt: 5, file: 'damaged' };
+    const outOfRange = { savedAt: 1e300, file: 'damaged' };
+    const loaded = read(index('a', 'a', 'b', 'c', 'd', 'e', 'f'), [
+      ['a', record],
+      ['b', damaged],
+      ['c', 'not a record'],
+      ['d', undefined],
+      ['e', newerRecord],
+      ['f', outOfRange],
+    ]);
+    expect(ids(loaded)).toEqual(['a']);
+    expect(loaded.unopened).toEqual([
+      { ...entry('b', 'B'), reason: 'damaged', savedAt: 5, record: damaged },
+      { ...entry('c', 'C'), reason: 'damaged', savedAt: null, record: 'not a record' },
+      { ...entry('d', 'D'), reason: 'damaged', savedAt: null, record: undefined },
+      { ...entry('e', 'E'), reason: 'newer', savedAt: 1, record: newerRecord },
+      { ...entry('f', 'F'), reason: 'damaged', savedAt: null, record: outOfRange },
+    ]);
+    expect(loaded.missing).toBe(0);
+    expect(loaded.repair).toBe(false);
   });
 
-  it('shows the first tab when the active one is not restored, and none when no tab is', () => {
-    expect(readSession(index('b', 'a', 'b'), new Map([['a', record]])).session.activeId).toBe('a');
-    const empty = readSession(index('a', 'a'), new Map([['a', newerRecord]]));
+  it('drops the entries whose record is missing, and repairs the index', () => {
+    const loaded = read(index('b', 'a', 'b'), [['a', record]]);
+    expect(ids(loaded)).toEqual(['a']);
+    expect(loaded.session.activeId).toBe('a');
+    expect(loaded.unopened).toEqual([]);
+    expect(loaded.missing).toBe(1);
+    expect(loaded.repair).toBe(true);
+  });
+
+  it('repairs an index with malformed entries', () => {
+    const raw = { ...index('a', 'a'), tabs: [entry('a'), null] };
+    expect(read(raw, [['a', record]]).repair).toBe(true);
+  });
+
+  it('restores the records no entry points to after the indexed tabs, oldest first, as unsaved projects', () => {
+    const loaded = read(index('a', 'a'), [
+      ['late', storedAt(30)],
+      ['a', storedAt(50)],
+      ['undated', { file }],
+      ['early', storedAt(10)],
+      ['newer', { ...newerRecord, savedAt: 20 }],
+    ]);
+    expect(loaded.session.tabs.map((t) => [t.id, t.name, t.dirty])).toEqual([
+      ['a', 'A', false],
+      ['early', '', true],
+      ['late', '', true],
+      ['undated', '', true],
+    ]);
+    expect(loaded.session.activeId).toBe('a');
+    expect(unopenedIds(loaded)).toEqual([['newer', 'newer']]);
+    expect(loaded.unopened[0]).toMatchObject({ name: '', dirty: true });
+    expect(loaded.recovered).toBe(3);
+    expect(loaded.repair).toBe(true);
+  });
+
+  it('restores every readable record of a damaged index and keeps the unreadable ones', () => {
+    const loaded = read({ version: SESSION_VERSION, tabs: 'damaged' }, [
+      ['b', storedAt(2)],
+      ['a', storedAt(1)],
+      ['x', { savedAt: 3, file: null }],
+      ['n', newerRecord],
+    ]);
+    expect(loaded.session.tabs.map((t) => [t.id, t.name, t.dirty])).toEqual([
+      ['a', '', true],
+      ['b', '', true],
+    ]);
+    expect(loaded.session.activeId).toBe('a');
+    expect(unopenedIds(loaded)).toEqual([
+      ['n', 'newer'],
+      ['x', 'damaged'],
+    ]);
+    expect(loaded).toMatchObject({ recovered: 2, missing: 0, indexDamaged: true, repair: true });
+  });
+
+  it('restores the records when no index is stored', () => {
+    const loaded = read(undefined, [['a', record]]);
+    expect(ids(loaded)).toEqual(['a']);
+    expect(loaded).toMatchObject({ recovered: 1, indexDamaged: false, repair: true });
+  });
+
+  it('refuses an index from a newer version, whatever the records hold', () => {
+    const records = new Map([['a', record]]);
+    expect(errorOf(() => readSession({ version: SESSION_VERSION + 1 }, records)).message).toBe(SESSION_NEWER);
+  });
+
+  it('shows no tab when none is restored', () => {
+    const empty = read(index('a', 'a'), [['a', newerRecord]]);
     expect(empty.session).toEqual({ activeId: '', tabs: [] });
-    expect(empty.kept).toEqual([entry('a', 'A')]);
-  });
-});
-
-describe('damagedSession', () => {
-  it('restores nothing and drops every tab record, so the next save deletes them and writes a new index', () => {
-    const loaded = damagedSession(['session', 'tab:a', 'tab:b', 7, 'other']);
-    expect(loaded).toEqual({
-      session: { activeId: '', tabs: [] },
-      kept: [],
-      dropped: ['a', 'b'],
-      skipped: 0,
-      indexDamaged: true,
-    });
+    expect(unopenedIds(empty)).toEqual([['a', 'newer']]);
   });
 
-  it('says that unsaved changes are lost and the projects must be opened again', () => {
-    expect(SESSION_DAMAGED).toMatch(/damaged.*are lost\. Open your projects again from their files\.$/);
+  it('says that a damaged list was recovered from the stored copies, and what to do', () => {
+    expect(SESSION_DAMAGED).toMatch(/damaged.*stored copies\. Check them and save them to files\.$/);
   });
 });
 
 describe('buildIndex', () => {
-  it('lists the open tabs in tab order, then the kept entries that are not open', () => {
+  it('lists the open tabs in tab order, then the unopened entries that are not open', () => {
     const open = [{ ...entry('a', 'Box', true), revision: 3 }, entry('b')];
     expect(buildIndex(open, 'a', [entry('k'), entry('b', 'Old')])).toEqual({
       version: SESSION_VERSION,
@@ -186,5 +266,34 @@ describe('buildIndex', () => {
   it('writes an index that reads back unchanged', () => {
     const written = buildIndex([entry('a', 'Box')], 'a', [entry('k', 'Kept', true)]);
     expect(readIndex(JSON.parse(JSON.stringify(written)))).toEqual({ index: written, malformed: 0 });
+  });
+});
+
+describe('unopenedFileText', () => {
+  it('writes the project as stored', () => {
+    expect(JSON.parse(unopenedFileText(newerRecord))).toEqual(newerRecord.file);
+  });
+
+  it('writes the whole record when it holds no project', () => {
+    for (const raw of [{ savedAt: 1, file: 'x' }, { savedAt: 1 }, 'text', [1, 2], null]) {
+      expect(JSON.parse(unopenedFileText(raw))).toEqual(raw);
+    }
+    expect(unopenedFileText(undefined)).toBe('null');
+  });
+
+  it('refuses a record that cannot be written as JSON, and says to delete it', () => {
+    expect(errorOf(() => unopenedFileText({ savedAt: 1, file: { size: 1n } })).message).toBe(COPY_UNWRITABLE);
+  });
+});
+
+describe('unopenedFileName', () => {
+  it('names the file after the tab, or a recovered project when the tab has no name', () => {
+    expect(unopenedFileName('Tea box')).toBe('Tea box.mdproj');
+    expect(unopenedFileName('')).toBe('Recovered project.mdproj');
+    expect(unopenedFileName(' / ')).toBe('Recovered project.mdproj');
+  });
+
+  it('leaves out characters a file name cannot hold', () => {
+    expect(unopenedFileName('a/b:c*?"<>|\u0001d')).toBe('a b c d.mdproj');
   });
 });

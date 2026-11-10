@@ -9,12 +9,22 @@
  * the file (a malformed call, `invalid-request`, becomes a plain `Error`).
  */
 import { isTauri, invoke } from '@tauri-apps/api/core';
+import { UserError } from '../core/errors';
 import { fromCommandError } from './commandErrors';
 
 interface FileFilter {
   name: string;
   extensions: string[];
 }
+
+/** How sure saveBlob must be of the write. */
+interface SaveOptions {
+  /** Only resolve with a name once the file is known to be written: never fall back to a download. */
+  confirmed?: boolean;
+}
+
+const UNCONFIRMED_SAVE =
+  'This browser cannot confirm that the file was saved, so the copy is kept. Save it from the desktop app, or from a browser that has a save dialog.';
 
 /** True when running inside the Tauri desktop shell. */
 export function inDesktopApp(): boolean {
@@ -28,12 +38,18 @@ export function inDesktopApp(): boolean {
 /**
  * Asks where to save and writes the blob. Resolves with the name of the saved file (without its
  * folder), which the user may have changed in the save dialog, or null if the user canceled.
- * A classic browser download cannot report either, so it resolves with the suggested name.
- * A file the desktop app cannot write rejects with a `UserError` naming the file.
+ * A classic browser download cannot report either, so it resolves with the suggested name; with
+ * `confirmed`, a browser that can only download, or a browser save that fails, rejects with a
+ * `UserError` instead. A file the desktop app cannot write rejects with a `UserError` naming the file.
  */
-export async function saveBlob(blob: Blob, suggestedName: string, filters: FileFilter[]): Promise<string | null> {
+export async function saveBlob(
+  blob: Blob,
+  suggestedName: string,
+  filters: FileFilter[],
+  opts: SaveOptions = {},
+): Promise<string | null> {
   if (inDesktopApp()) return saveInDesktopApp(blob, suggestedName, filters);
-  return saveInBrowser(blob, suggestedName, filters);
+  return saveInBrowser(blob, suggestedName, filters, opts);
 }
 
 /** Let the user pick file(s). `accept` like "image/*" or ".mdproj". */
@@ -149,8 +165,14 @@ const MIME_BY_EXT: Record<string, string> = {
   zip: 'application/zip',
 };
 
-async function saveInBrowser(blob: Blob, suggestedName: string, filters: FileFilter[]): Promise<string | null> {
+async function saveInBrowser(
+  blob: Blob,
+  suggestedName: string,
+  filters: FileFilter[],
+  opts: SaveOptions,
+): Promise<string | null> {
   const w = window as unknown as SavePickerWindow;
+  if (typeof w.showSaveFilePicker !== 'function' && opts.confirmed) throw new UserError(UNCONFIRMED_SAVE);
   if (typeof w.showSaveFilePicker === 'function') {
     try {
       const types = filters
@@ -167,6 +189,7 @@ async function saveInBrowser(blob: Blob, suggestedName: string, filters: FileFil
       return handle.name;
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return null; // user canceled
+      if (opts.confirmed) throw new UserError(UNCONFIRMED_SAVE, { cause: err });
       // NotAllowedError/SecurityError (e.g. user activation expired after a long render),
       // unsupported types… → fall through to a classic download.
     }

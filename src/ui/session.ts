@@ -4,7 +4,7 @@
  *
  * Records in the object store 'autosave' of the database 'mockup-director':
  *   'session'   the index, { version: 1, activeId, tabs: [{ id, name, dirty }] }: the open tabs in tab
- *               order, then the kept tabs, whose record a newer version of the app may open (./sessionRecords)
+ *               order, then the unopened entries, whose copy this app cannot open (./sessionRecords)
  *   'tab:<id>'  one per tab, { savedAt, file: ProjectFile }
  * The index and the tab records are written in one transaction, so they always match. A session
  * written by a newer version of the app is never overwritten (the user gets it back by updating).
@@ -15,15 +15,13 @@ import type { TabSnapshot } from './documents';
 import { toProjectFile } from './project';
 import {
   buildIndex,
-  damagedSession,
   type IndexRecord,
   type IndexTab,
   isNewerIndex,
   type LoadedSession,
-  type ReadIndex,
-  readIndex,
   readSession,
   SESSION_NEWER,
+  tabIdOf,
   tabKey,
 } from './sessionRecords';
 
@@ -105,49 +103,27 @@ function finish(tx: IDBTransaction, what: string): Promise<void> {
   });
 }
 
-/** Reads the autosaved session; null when nothing is stored. */
+/** Reads the autosaved session: the index and every tab record. Null when nothing is stored. */
 export async function loadSession(): Promise<LoadedSession | null> {
   const d = await db();
   const tx = begin(d, 'readonly');
   const store = tx.objectStore(DB_STORE);
-  // Filled in by the request callbacks.
-  const read: { parsed: ReadIndex | 'damaged' | null; failure: unknown; keys: unknown[] } = {
-    parsed: null,
-    failure: null,
-    keys: [],
-  };
+  // Filled in by the cursor; every record is read, to find the ones no index entry points to.
+  const read: { index: unknown } = { index: undefined };
   const records = new Map<string, unknown>();
-
-  const indexReq = store.get(INDEX_KEY);
-  indexReq.onsuccess = () => {
-    if (indexReq.result === undefined) return;
-    // Throwing here would abort the transaction and lose the reason; keep it for after.
-    let parsed: ReadIndex | 'damaged';
-    try {
-      parsed = readIndex(indexReq.result);
-    } catch (e) {
-      read.failure = e;
-      return;
+  const cursorReq = store.openCursor();
+  cursorReq.onsuccess = () => {
+    const cursor = cursorReq.result;
+    if (!cursor) return;
+    if (cursor.key === INDEX_KEY) read.index = cursor.value;
+    else {
+      const id = tabIdOf(cursor.key);
+      if (id !== null) records.set(id, cursor.value);
     }
-    read.parsed = parsed;
-    if (parsed === 'damaged') {
-      // Every tab record is dropped: the next save deletes them.
-      const keysReq = store.getAllKeys();
-      keysReq.onsuccess = () => {
-        read.keys = keysReq.result;
-      };
-      return;
-    }
-    for (const tab of parsed.index.tabs) {
-      const tabReq = store.get(tabKey(tab.id));
-      tabReq.onsuccess = () => records.set(tab.id, tabReq.result);
-    }
+    cursor.continue();
   };
   await finish(tx, 'session read');
-  if (read.failure) throw read.failure;
-
-  if (read.parsed === 'damaged') return damagedSession(read.keys);
-  return read.parsed ? readSession(read.parsed, records) : null;
+  return readSession(read.index, records);
 }
 
 /** A tab record a save writes. */
@@ -200,7 +176,9 @@ interface PreparedTab extends TabPut {
 }
 
 interface SaveRequest {
-  index: IndexRecord;
+  /** The open tabs in tab order. */
+  open: IndexTab[];
+  activeId: string;
   /** Tabs whose revision differed from the last written one when the save was requested, or that were being written. */
   changed: PreparedTab[];
 }
@@ -208,8 +186,8 @@ interface SaveRequest {
 /**
  * Writes the session. A tab's record is written only when its revision changed since this saver
  * last wrote it. Records of closed tabs are deleted, but only those this saver owns: written by it
- * or adopted from the restored session (its tabs and its damaged records). The entries the restore
- * kept are written into every index, after the open tabs, and their records are never touched.
+ * or adopted from the restored session. The unopened entries of the restore are written into every
+ * index, after the open tabs, and their records are deleted only when the user chose to (`forget`).
  * Saves never overlap: a save requested while one runs waits for it, and several such requests are
  * merged into one that writes the latest tabs (their promises settle together).
  */
@@ -224,8 +202,13 @@ export class SessionSaver {
   /** Ids of the tab records this saver may delete when their tab is closed. */
   private owned = new Set<string>();
 
-  /** Entries of the restored session whose record a newer version may open: in every index, never deleted. */
-  private kept: readonly IndexTab[] = [];
+  /** Entries of the restored session whose copy this app cannot open: in every index, their records kept. */
+  private unopened: readonly IndexTab[] = [];
+  /**
+   * Unopened entry id -> the save that leaves it out of the index and deletes its record. The ids
+   * are taken when a write starts, so a write includes every id whose promise is that write's.
+   */
+  private forgetting = new Map<string, Promise<void>>();
   /** Settles when the running save (if any) has ended. Never rejects. */
   private tail: Promise<void> = Promise.resolve();
   private queued: SaveRequest | null = null;
@@ -233,19 +216,20 @@ export class SessionSaver {
 
   constructor(private readonly store: SessionStore) {}
 
-  /** Takes ownership of the records of restored tabs and of damaged ones, and keeps the entries a newer version may open. */
-  adopt(ids: readonly string[], kept: readonly IndexTab[]): void {
+  /** Takes ownership of the records of restored tabs, and keeps the unopened entries. */
+  adopt(ids: readonly string[], unopened: readonly IndexTab[]): void {
     ids.forEach((id) => {
       this.owned.add(id);
     });
-    this.kept = kept;
+    this.unopened = unopened.map(({ id, name, dirty }) => ({ id, name, dirty }));
   }
 
   save(tabs: readonly TabSnapshot[], activeId: string): Promise<void> {
     // Projects are serialized now: the store edits the active state in place, so a snapshot read
     // later could hold newer content than its revision says.
     this.queued = {
-      index: buildIndex(tabs, activeId, this.kept),
+      open: tabs.map(({ id, name, dirty }) => ({ id, name, dirty })),
+      activeId,
       changed: tabs
         .filter((t) => this.written.get(t.id) !== t.revision || this.writing.has(t.id))
         .map((t) => ({ id: t.id, revision: t.revision, file: toProjectFile(t.state) })),
@@ -258,6 +242,21 @@ export class SessionSaver {
     return this.queuedDone;
   }
 
+  /**
+   * Forgets an unopened entry once the user saved its copy to a file or deleted it: saves the given
+   * tabs with an index that leaves the entry out, and deletes its record in the same transaction.
+   * When that write fails, the entry and its record stay, as if nothing had been asked.
+   */
+  forget(id: string, tabs: readonly TabSnapshot[], activeId: string): Promise<void> {
+    if (!this.unopened.some((t) => t.id === id)) return Promise.resolve();
+    const pending = this.forgetting.get(id);
+    if (pending) return pending;
+    const done = this.save(tabs, activeId);
+    // The write starts later, after the running one (a `then` never runs at once), and takes the id then.
+    this.forgetting.set(id, done);
+    return done;
+  }
+
   private async writeQueued(): Promise<void> {
     const request = this.queued;
     this.queued = null;
@@ -265,24 +264,33 @@ export class SessionSaver {
     if (!request) return;
     // The save that ran before this one may have written some of them already.
     const changed = request.changed.filter((p) => this.written.get(p.id) !== p.revision);
-    // The index lists the kept entries too, so their records are never deleted.
-    const openIds = new Set(request.index.tabs.map((t) => t.id));
-    const closedIds = [...this.owned].filter((id) => !openIds.has(id));
+    const forgotten = [...this.forgetting.keys()];
+    const index = buildIndex(
+      request.open,
+      request.activeId,
+      this.unopened.filter((t) => !this.forgetting.has(t.id)),
+    );
+    // The index lists the unopened entries too, so only owned records of closed tabs are deleted.
+    const listed = new Set(index.tabs.map((t) => t.id));
+    const closedIds = [...this.owned].filter((id) => !listed.has(id));
 
     // Before the first await, so that a save requested during the write sees it.
     for (const p of changed) this.writing.set(p.id, p.revision);
     try {
       await this.store.write(
-        request.index,
+        index,
         changed.map(({ id, file }) => ({ id, file })),
-        closedIds,
+        [...closedIds, ...forgotten],
       );
     } finally {
       this.writing.clear();
+      // Written or not, these are settled: a failed write kept their records, so they stay unopened.
+      for (const id of forgotten) this.forgetting.delete(id);
     }
 
+    this.unopened = this.unopened.filter((t) => !forgotten.includes(t.id));
     const next = new Map<string, number>();
-    for (const t of request.index.tabs) {
+    for (const t of index.tabs) {
       const revision = this.written.get(t.id);
       if (revision !== undefined) next.set(t.id, revision);
     }
