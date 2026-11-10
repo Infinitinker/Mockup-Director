@@ -17,7 +17,7 @@ Code written before these rules is being brought in line with them, stage by sta
   - project files: the `.mdproj` extension and only that one, the MIME type `application/x-mockup-director-project` and the type identifier `io.github.infinitinker.mockupdirector.project`.
 
   The repository is `Infinitinker/Mockup-Director`.
-- File names are camelCase in `src/` and `tests/` (`printFlat.ts`), kebab-case in `tools/` (`draw-icon.mjs`). A module's name does not repeat its folder (`panels/looks.ts`, not `panels/looksPanel.ts`), as long as the shorter name still says what it is.
+- File names are camelCase in `src/` and `tests/` (`plasticCard.ts`), kebab-case in `tools/` (`draw-icon.mjs`). A module's name does not repeat its folder (`panels/looks.ts`, not `panels/looksPanel.ts`), as long as the shorter name still says what it is.
 - Model, slot and parameter ids and the values of select options are saved in project files: never rename them for style.
 
 ## Open source

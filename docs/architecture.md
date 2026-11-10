@@ -82,12 +82,15 @@ src/
                   parts), disc/ (the disc model in index.ts, the disc's label and its build; keepCase/:
                   DVD and Blu-ray cases; jewelCase/: CD case), composites/ (the "… with disc" models
                   in index.ts, putting them together in compose.ts, the disc's placement),
-                  books.ts, printFlat.ts (business card, flyer, postcard, plastic card, brochure),
-                  printFolded.ts (leaflet, greeting card, bi-fold brochure), handheld.ts (phone,
-                  tablet), computer.ts (laptop, monitor), screen.ts (screenshot panel, browser window);
+                  books.ts, print/ (templates, finishes and shared parameters; flat/: business card,
+                  flyer, postcard, plastic card and brochure, with the sheet, its arrangement on the
+                  floor and the two-sided slots; folded/: leaflet, greeting card and bi-fold brochure,
+                  with the hinged sheet, its pose and their build), handheld.ts (phone, tablet),
+                  computer.ts (laptop, monitor), screen.ts (screenshot panel, browser window);
                 the helpers for every model: parameters (params.ts, which also validates and completes
                 stored values), materials (materials.ts), shapes, UVs and placing on the floor
-                (geometry.ts), the frame of the gallery icons (icon.ts); and the app's side of the
+                (geometry.ts), textures a model draws itself (textures.ts), the frame of the gallery icons
+                (icon.ts); and the app's side of the
                 slots (slots.ts: slot lookup, print templates, expected aspect ratios)
   scene/        the three.js scene: the stage (stage.ts), freeing a model it stops showing (dispose.ts),
                 light presets (lightPresets.ts), ground shadow (shadows.ts), floor reflection
@@ -188,7 +191,7 @@ How the folders are organized:
 - **A folder that grows past about a dozen modules is split into subfolders by role**, each answering one question, with imports running one way between them. Tests mirror the subfolders. (Today `ui/` holds seventeen modules directly.)
 - **Imports run one way:** `core` ← `models` and `scene` ← `export` ← `project` ← `documents` ← `ui`. A module imports its own folder and the layers below it; `models` and `scene` sit side by side and never import each other. Only `ui` and the entry point `main.ts` use `platform`, except the log (`platform/log.ts`), which every module may use; `platform` itself imports only `core`. `core` holds the contracts the others share (`src/core/types/`). `project` sits above `export` because reading a project checks which formats this engine can export, and `documents` above `project` because the session stores project files. `tests/layout.test.ts` fails on an import against this order.
 - **A module's name does not repeat its folder** (`panels/looks.ts`, not `panels/looksPanel.ts`), as long as the shorter name still says what the module is. (Today `modelPanel.ts`, `scenePanel.ts` and `exportPanel.ts` in `ui/panels/` still end in `Panel`.)
-- **File names are camelCase** in `src/` and `tests/` (`printFlat.ts`) and **kebab-case** in `tools/` (`draw-icon.mjs`).
+- **File names are camelCase** in `src/` and `tests/` (`plasticCard.ts`) and **kebab-case** in `tools/` (`draw-icon.mjs`).
 
 ## 3D conventions
 
@@ -216,6 +219,7 @@ Each concept has one name, used everywhere. Where the interface or today's code 
 | Artwork | The user's image in a slot. | `Artwork`, `artwork` in the state and the project file, `src/ui/panels/artwork.ts`; image in `loadImageFile`, `loadImageDataUrl` and `IMAGE_ACCEPT` (`src/core/images.ts`) |
 | Placeholder | The neutral image with the slot's name shown in a slot without artwork. | `src/core/placeholder.ts` |
 | Parameter | A setting of a model: size, material, pose. The Model tab shows them grouped (Dimensions, Material …) and calls them settings ("This model has no settings."). | `ParamDef`, `params` |
+| Arrangement | How a flat print item lies on the floor: lying flat, leaning, a small stack, or two showing the front and the back (the brochure: lying flat or standing); a parameter of the flat print models. | `src/models/print/flat/arrangement.ts`, the brochure's own parameter in `src/models/print/flat/brochure.ts`; the parameter id `layout`, the type `Layout` and the group heading Layout (`G_LAY` in `src/models/print/common.ts`) |
 | Print template | A 300 dpi PNG of a slot's artwork area with trim, bleed and fold guides, downloaded with the Template… button on the slot's card. | `PrintTemplate`, `src/export/templates.ts` |
 | Scene | The camera, light, shadow, reflection and preview background of a project; the Scene tab. | `SceneSettings` |
 | View | A preset camera direction from the view bar or the keys 1–6: Front, 3/4 left, 3/4 right, Side, Top, Back. | `VIEW_PRESETS` in `src/scene/views.ts` |

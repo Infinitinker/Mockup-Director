@@ -27,6 +27,7 @@ import { clamp } from '../core/math';
 import { castShadows, placeOnGround } from './geometry';
 import { printMaterial } from './materials';
 import { num, str } from './params';
+import { modelTexture } from './textures';
 
 /* ------------------------------------------------------------------ */
 /* Constants / small helpers                                           */
@@ -805,11 +806,7 @@ function chromeTexture(
       }
     }
   }
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 8;
-  tex.userData.disposeWithModel = true;
-  return tex;
+  return modelTexture(canvas);
 }
 
 function buildBrowser(ctx: ModelContext): THREE.Object3D {

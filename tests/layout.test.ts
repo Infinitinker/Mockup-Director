@@ -45,8 +45,6 @@ const BANNER_ALLOWED = [
   'src/models/books.ts',
   'src/models/computer.ts',
   'src/models/handheld.ts',
-  'src/models/printFlat.ts',
-  'src/models/printFolded.ts',
   'src/models/screen.ts',
   'src/platform/files.ts',
   'src/scene/shadows.ts',

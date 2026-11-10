@@ -8,8 +8,14 @@ import { discModel } from './disc';
 import { cdCaseModel } from './disc/jewelCase';
 import { blurayModel, dvdModel } from './disc/keepCase';
 import { bookModels } from './books';
-import { flatPrintModels } from './printFlat';
-import { foldedPrintModels } from './printFolded';
+import { brochureModel } from './print/flat/brochure';
+import { businessCardModel } from './print/flat/businessCard';
+import { flyerModel } from './print/flat/flyer';
+import { plasticCardModel } from './print/flat/plasticCard';
+import { postcardModel } from './print/flat/postcard';
+import { bifoldModel } from './print/folded/bifold';
+import { greetingCardModel } from './print/folded/greetingCard';
+import { trifoldModel } from './print/folded/trifold';
 import { handheldModels } from './handheld';
 import { computerModels } from './computer';
 import { screenModels } from './screen';
@@ -31,8 +37,14 @@ export const MODELS: ModelDefinition[] = [
   cdDiscModel,
   discModel,
   ...bookModels,
-  ...flatPrintModels,
-  ...foldedPrintModels,
+  businessCardModel,
+  flyerModel,
+  postcardModel,
+  plasticCardModel,
+  brochureModel,
+  trifoldModel,
+  greetingCardModel,
+  bifoldModel,
   ...handheldModels,
   ...computerModels,
   ...screenModels,

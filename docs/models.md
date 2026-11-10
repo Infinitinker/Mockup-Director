@@ -10,8 +10,8 @@ A model is one kind of product the app can show: a box, a keep case, a book, a p
 | `disc/` | `disc` |
 | `composites/` | `box-disc`, `dvd-case-disc`, `bluray-case-disc`, `cd-case-disc` |
 | `books.ts` | `book-hardcover`, `book-paperback`, `notebook-spiral` |
-| `printFlat.ts` | `print-business-card`, `print-flyer`, `print-postcard`, `print-plastic-card`, `print-brochure` |
-| `printFolded.ts` | `print-trifold`, `print-greeting-card`, `print-bifold` |
+| `print/flat/` | `print-business-card`, `print-flyer`, `print-postcard`, `print-plastic-card`, `print-brochure` |
+| `print/folded/` | `print-trifold`, `print-greeting-card`, `print-bifold` |
 | `handheld.ts` | `device-phone`, `device-tablet` |
 | `computer.ts` | `device-laptop`, `device-monitor` |
 | `screen.ts` | `device-screenshot`, `device-browser` |
@@ -65,6 +65,8 @@ Helpers that create parameters:
 | `mmParam(id, label, default, min, max, step = 1, group?)` | `src/models/params.ts` | A number parameter in millimeters. |
 | `widthParam`, `heightParam`, `depthParam` | `src/models/box/common.ts` | `width`, `height` and `depth` in millimeters, in the Dimensions group. |
 | `bevelParam`, `finishParam`, `sideColorParam`, `bleedParam`, `colorParam(id, label, default, group?)` | `src/models/box/common.ts` | Edge rounding, print finish, the color of faces without artwork, the switch for artwork with bleed, and any color, shared by the boxes. |
+| `thicknessParam`, `colorParam(id, label, default)`; `finishParam` | `src/models/print/common.ts`; `src/models/print/finishes.ts` | Paper thickness, a color and the finish, in the Material group, shared by the print models. |
+| `orientationParam`, `layoutParam`, `stackCountParam`; `poseParam`, `openAngleParam` | `src/models/print/flat/twoSided.ts`, `arrangement.ts`; `src/models/print/folded/pose.ts` | The orientation and the arrangement of the flat print models; the pose and open angle of the folded ones. |
 | `discParams` | `src/models/disc/label.ts` | The disc's parameters, all prefixed `disc`, reused by the composites. |
 
 Other parameters are written as object literals (`NumberParamDef`, `SelectParamDef` and so on).
@@ -86,9 +88,9 @@ The Artwork tab warns when the artwork's aspect ratio is more than 3 % away from
 
 `ctx.getTexture(slotId)` returns the user's artwork, or a placeholder when there is none: a gradient with the slot's label in the slot's aspect ratio, round if its template is circular (`src/core/placeholder.ts`). It never returns `null`, also not for an ID the model does not list. `ctx.hasArtwork(slotId)` says whether the user gave artwork, for models that fall back to a plain material or to another slot (a keep case uses `front`, `spine` and `back` when there is no `cover`).
 
-The textures are shared: the store's artwork and the placeholder cache own them, and the same texture is used by every build and every model that shows it. **A model never changes them**: no `repeat`, `offset`, `rotation`, `center` or `flipY`, and it never disposes them. Map a part of the image with UVs instead. A model that really needs a changed copy clones the texture and sets `texture.userData.disposeWithModel = true`, so it is freed with the model; textures a model draws itself are flagged the same way (`modelTexture` in `printFlat.ts`).
+The textures are shared: the store's artwork and the placeholder cache own them, and the same texture is used by every build and every model that shows it. **A model never changes them**: no `repeat`, `offset`, `rotation`, `center` or `flipY`, and it never disposes them. Map a part of the image with UVs instead. A model that really needs a changed copy clones the texture and sets `texture.userData.disposeWithModel = true`, so it is freed with the model; textures a model draws itself are flagged the same way (`modelTexture` in `src/models/textures.ts`).
 
-Artwork textures are `CanvasTexture`s with `flipY = true` and the sRGB color space (`src/core/images.ts`), so UV `(0, 0)` is the image's bottom-left corner and `v = 0` its bottom edge. A three.js `BoxGeometry` or `PlaneGeometry` face shows the whole image upright. To show part of an image, `remapUVs` maps a geometry's 0–1 UVs into a rectangle of the image, and `planarUVs` projects UVs along two axes, for example onto the caps of an `ExtrudeGeometry` (both in `src/models/geometry.ts`). Artwork must never come out mirrored or upside down: a back face is seen from behind, so it is mapped as a page turned around the vertical axis (see the comment at the top of `printFlat.ts`).
+Artwork textures are `CanvasTexture`s with `flipY = true` and the sRGB color space (`src/core/images.ts`), so UV `(0, 0)` is the image's bottom-left corner and `v = 0` its bottom edge. A three.js `BoxGeometry` or `PlaneGeometry` face shows the whole image upright. To show part of an image, `remapUVs` maps a geometry's 0–1 UVs into a rectangle of the image, and `planarUVs` projects UVs along two axes, for example onto the caps of an `ExtrudeGeometry` (both in `src/models/geometry.ts`). Artwork must never come out mirrored or upside down: a back face is seen from behind, so it is mapped as a page turned around the vertical axis (see the comment at the top of `print/flat/sheet.ts`).
 
 ## Print templates
 
@@ -104,7 +106,7 @@ A print template is a PNG the user downloads with the Template… button on a sl
 | `regions` | `TemplateRegion[]` | no | Labeled rectangles (front, spine, back): `xMm`, `yMm`, `wMm`, `hMm` from the top-left corner, bleed included, and `label`. Each is tinted and labeled with its size after trimming; the safe area is drawn inside each one. Without regions, the whole trim area is labeled with the slot's label. |
 | `circle` | `{ outerMm, innerMm, printOuterMm?, printInnerMm? }` | no | Makes the template round (disc labels): outer and hole diameter. `printInnerMm` sets the inner edge of the printable ring; without it the template uses 0.15 × the outer diameter for discs of 60 mm or more. `printOuterMm` is not drawn; the disc model marks the outer print edge with guides. |
 
-The safe area is 3 mm inside the trim line (`SAFE_MARGIN_MM`). Models with artwork that includes bleed use 3 mm of bleed and map the trim area of the image onto the faces (`trimRect` in `printFlat.ts`). `panelTemplate` in `printFlat.ts` is a short example: one panel with bleed, four trim guides and one region; `discSlot` in `disc/label.ts` is a round one.
+The safe area is 3 mm inside the trim line (`SAFE_MARGIN_MM`). Models with artwork that includes bleed use 3 mm of bleed and map the trim area of the image onto the faces (`trimRect` in `print/templates.ts`). `panelTemplate` in `print/templates.ts` is a short example: one panel with bleed, four trim guides and one region; `discSlot` in `disc/label.ts` is a round one.
 
 ## Building
 
@@ -231,7 +233,7 @@ To add a composite, export the base model's build function from its module, defi
 
 ## Testing
 
-Every model in `MODELS` is checked by `tests/models/registry.test.ts`, so a new model is covered as soon as it is registered. Like every test (`vitest.config.ts`), it runs in Node: no WebGL and no DOM. `build` needs neither, since it only creates three.js objects. `tests/models/fakeContext.ts` holds the fakes: a context whose artwork is plain `THREE.Texture` objects shaped like each slot's aspect, with or without artwork in the slots, and a `document` whose canvases have no 2D context, which the models that draw on a 2D canvas (`books.ts`, `printFlat.ts`, `screen.ts`) already handle by leaving the drawing out. Tests for what one model does beyond the contract go in `tests/models/` too, mirroring `src/models/`.
+Every model in `MODELS` is checked by `tests/models/registry.test.ts`, so a new model is covered as soon as it is registered. Like every test (`vitest.config.ts`), it runs in Node: no WebGL and no DOM. `build` needs neither, since it only creates three.js objects. `tests/models/fakeContext.ts` holds the fakes: a context whose artwork is plain `THREE.Texture` objects shaped like each slot's aspect, with or without artwork in the slots, and a `document` whose canvases have no 2D context, which the models that draw on a 2D canvas (`books.ts`, `print/flat/postcard.ts`, `print/flat/brochure.ts`, `screen.ts`) already handle by leaving the drawing out. Tests for what one model does beyond the contract go in `tests/models/` too, mirroring `src/models/`.
 
 The registry test checks:
 
