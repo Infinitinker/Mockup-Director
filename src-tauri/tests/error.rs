@@ -58,6 +58,7 @@ fn names_every_kind_in_kebab_case() {
         ErrorKind::TooLarge,
         ErrorKind::DiskFull,
         ErrorKind::NotText,
+        ErrorKind::AlreadyExists,
         ErrorKind::Io,
         ErrorKind::InvalidRequest,
     ]
@@ -73,6 +74,7 @@ fn names_every_kind_in_kebab_case() {
             "too-large",
             "disk-full",
             "not-text",
+            "already-exists",
             "io",
             "invalid-request"
         ]

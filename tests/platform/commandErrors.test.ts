@@ -19,6 +19,7 @@ const USER_KINDS: CommandErrorKind[] = [
   'too-large',
   'disk-full',
   'not-text',
+  'already-exists',
   'io',
 ];
 
@@ -58,8 +59,9 @@ describe('commandErrorMessage', () => {
   it('tells the reasons apart', () => {
     for (const action of ['save', 'open'] as const) {
       const messages = new Set(USER_KINDS.map((kind) => commandErrorMessage(error(kind), action)));
-      // Saving has no "not-text" message, opening none for "too-large" and "disk-full": they share the general one.
-      expect(messages.size).toBe(action === 'save' ? 6 : 5);
+      // Saving has no "not-text" message, opening none for "too-large", "disk-full" and "already-exists": they
+      // share the general one.
+      expect(messages.size).toBe(action === 'save' ? 7 : 5);
     }
   });
 });

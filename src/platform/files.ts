@@ -2,19 +2,23 @@
  * File I/O that works both in the Tauri v2 desktop shell and in a browser (dev mode / web preview).
  *
  * Desktop save contract (the save commands in src-tauri/src/saves.rs):
- *   const id = await invoke('save_open', { path });
+ *   const id = await invoke('save_open', { path, replace });
  *   await invoke('save_write', <raw bytes>, { headers: { 'x-save-id': String(id) } }); // once per chunk, in order
  *   await invoke('save_commit', { id, size }); // or, after a failure, invoke('save_abort', { id })
  * The file is sent in chunks of SAVE_CHUNK_BYTES, so a batch ZIP of several gigabytes is never one
  * message or one buffer; the raw bodies avoid JSON-encoding the bytes. The shell writes a temporary
  * file and puts it in place on commit, so a failed save leaves an existing file as it was; it
  * refuses an empty chunk, and a commit whose `size` (the blob's) is not what it received.
+ * `replace` is true for the path as the save dialog returned it, whose replacing the dialog asked
+ * about. When the dialog's path lacked the extension and `ensureExtension` added it, the dialog did
+ * not ask about that name: `replace` is false, the shell refuses a file already there
+ * (`already-exists`), and the dialog is shown again with the corrected name, so it asks itself.
  * A failed command rejects with a `CommandError`, which `fromCommandError` turns into a `UserError`
  * naming the file (a malformed call, `invalid-request`, becomes a plain `Error`).
  */
 import { isTauri, invoke } from '@tauri-apps/api/core';
 import { UserError } from '../core/errors';
-import { fromCommandError } from './commandErrors';
+import { fromCommandError, isCommandError } from './commandErrors';
 import { log } from './log';
 
 interface FileFilter {
@@ -113,29 +117,41 @@ export function chunkRanges(size: number, chunkBytes = SAVE_CHUNK_BYTES): [numbe
   return ranges;
 }
 
+/**
+ * Shows the save dialog and writes the blob where the user chose. A name the dialog returned
+ * without the extension gets it, and must not replace a file the dialog did not ask about: when a
+ * file of the corrected name is there, the dialog is shown again with that name, so it asks.
+ */
 async function saveInDesktopApp(blob: Blob, suggestedName: string, filters: FileFilter[]): Promise<string | null> {
   const { save } = await import('@tauri-apps/plugin-dialog');
-  const picked = await save({
-    defaultPath: suggestedName,
-    filters: filters.map((f) => ({ name: f.name, extensions: f.extensions.map(stripDot) })),
-  });
-  if (!picked) return null; // canceled
-  const path = ensureExtension(picked, filters, suggestedName);
-  const name = path.split(/[\\/]/).pop() || suggestedName;
-  try {
-    await writeInDesktopApp(blob, path, name);
-  } catch (e) {
-    throw fromCommandError(e, 'save');
+  const dialogFilters = filters.map((f) => ({ name: f.name, extensions: f.extensions.map(stripDot) }));
+  let defaultPath = suggestedName;
+  for (;;) {
+    const picked = await save({ defaultPath, filters: dialogFilters });
+    if (!picked) return null; // canceled
+    const path = ensureExtension(picked, filters, suggestedName);
+    const replace = path === picked;
+    const name = path.split(/[\\/]/).pop() || suggestedName;
+    try {
+      await writeInDesktopApp(blob, path, name, replace);
+      return name;
+    } catch (e) {
+      if (!replace && isCommandError(e) && e.kind === 'already-exists') {
+        defaultPath = path;
+        continue;
+      }
+      throw fromCommandError(e, 'save');
+    }
   }
-  return name;
 }
 
 /**
  * Writes the blob to `path` through the shell's save commands, one chunk at a time, so at most one
  * chunk is in memory besides the blob. When a chunk cannot be read or written, the save is aborted.
+ * Unless `replace` is set, a file already at `path` is refused (`already-exists`).
  */
-async function writeInDesktopApp(blob: Blob, path: string, name: string): Promise<void> {
-  const id = await invoke<number>('save_open', { path });
+async function writeInDesktopApp(blob: Blob, path: string, name: string, replace: boolean): Promise<void> {
+  const id = await invoke<number>('save_open', { path, replace });
   try {
     for (const [start, end] of chunkRanges(blob.size)) {
       const bytes = await readChunk(blob, start, end, name);
@@ -165,8 +181,9 @@ async function readChunk(blob: Blob, start: number, end: number, name: string): 
 }
 
 /**
- * The macOS save panel normally appends the extension, but users can delete it; make sure the file
- * keeps an extension from the filters (otherwise Finder or an image editor will not recognize it).
+ * The macOS save panel normally appends the extension, but users can delete it, and the GTK dialog
+ * on Linux adds none; make sure the file keeps an extension from the filters (otherwise a file
+ * manager or an image editor will not recognize it).
  */
 function ensureExtension(path: string, filters: FileFilter[], suggestedName: string): string {
   const exts = filters.flatMap((f) => f.extensions.map((e) => stripDot(e).toLowerCase()));

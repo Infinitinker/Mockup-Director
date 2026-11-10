@@ -13,6 +13,7 @@ export type CommandErrorKind =
   | 'too-large'
   | 'disk-full'
   | 'not-text'
+  | 'already-exists'
   | 'io'
   | 'invalid-request';
 
@@ -35,6 +36,7 @@ const KINDS: ReadonlySet<string> = new Set<CommandErrorKind>([
   'too-large',
   'disk-full',
   'not-text',
+  'already-exists',
   'io',
   'invalid-request',
 ]);
@@ -71,6 +73,8 @@ export function commandErrorMessage(error: CommandError, action: FileAction): st
         return `${name} could not be saved: the file is too large for that drive. Choose another drive.`;
       case 'disk-full':
         return `${name} could not be saved: the drive is full. Free some space or choose another drive.`;
+      case 'already-exists':
+        return `${name} could not be saved: a file of that name is already there. Save again and choose to replace it, or choose another name.`;
       default:
         return `${name} could not be saved. Try again, or choose another folder.`;
     }

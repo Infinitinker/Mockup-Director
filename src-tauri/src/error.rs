@@ -22,6 +22,9 @@ pub enum ErrorKind {
     DiskFull,
     /// The file is not text, so it cannot be a project file.
     NotText,
+    /// A file of that name is already there, and the save was not to replace one (`save_open`
+    /// with `replace: false`).
+    AlreadyExists,
     /// Any other failure of the system.
     Io,
     /// The web UI called the command wrongly: a bug, not something the user can fix.

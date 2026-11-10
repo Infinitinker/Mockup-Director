@@ -1,6 +1,7 @@
 /**
  * Tests src/platform/files.ts in the desktop app, with the shell and the save dialog faked: the file
- * goes to the shell in chunks, in order, and a save that fails is aborted and reported as a `UserError`.
+ * goes to the shell in chunks, in order, a save that fails is aborted and reported as a `UserError`,
+ * and a name that gets its extension added never replaces a file the dialog did not ask about.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { UserError } from '../../src/core/errors';
@@ -8,7 +9,7 @@ import { chunkRanges, SAVE_CHUNK_BYTES, saveBlob } from '../../src/platform/file
 
 const shell = vi.hoisted(() => ({
   invoke: vi.fn<(command: string, args?: unknown, options?: unknown) => Promise<unknown>>(),
-  save: vi.fn<() => Promise<string | null>>(),
+  save: vi.fn<(options: { defaultPath?: string }) => Promise<string | null>>(),
 }));
 
 vi.mock('@tauri-apps/api/core', () => ({ isTauri: () => true, invoke: shell.invoke }));
@@ -61,7 +62,7 @@ describe('saveBlob in the desktop app', () => {
 
     expect(commands()).toEqual(['save_open', 'save_write', 'save_write', 'save_commit']);
     const [open, first, second, commit] = shell.invoke.mock.calls;
-    expect(open[1]).toEqual({ path: PATH });
+    expect(open[1]).toEqual({ path: PATH, replace: true });
     expect(first[2]).toEqual({ headers: { 'x-save-id': '3' } });
     const firstBytes = new Uint8Array(first[1] as ArrayBuffer);
     const secondBytes = new Uint8Array(second[1] as ArrayBuffer);
@@ -155,6 +156,54 @@ describe('saveBlob in the desktop app', () => {
     });
 
     await expect(saveBlob(new Blob(['x']), 'batch.zip', FILTERS)).rejects.toThrow('its folder no longer exists');
+    expect(commands()).toEqual(['save_open']);
+  });
+});
+
+describe('saveBlob in the desktop app, for a name without its extension', () => {
+  const PNG = [{ name: 'PNG image', extensions: ['png'] }];
+  const BARE = '/home/ania/Projekty/poster';
+  const CORRECTED = '/home/ania/Projekty/poster.png';
+
+  /** The shell refuses CORRECTED when it is not to be replaced, as when a file of that name is there. */
+  function existingCorrectedFile(): void {
+    shell.invoke.mockImplementation(async (command, args) => {
+      if (command !== 'save_open') return undefined;
+      const { path, replace } = args as { path: string; replace: boolean };
+      if (path === CORRECTED && !replace) throw { kind: 'already-exists', path };
+      return 3;
+    });
+  }
+
+  it('saves at once when no file of the corrected name is there', async () => {
+    shell.save.mockResolvedValue(BARE);
+    await expect(saveBlob(new Blob(['x']), 'export.png', PNG)).resolves.toBe('poster.png');
+    expect(shell.save).toHaveBeenCalledTimes(1);
+    expect(commands()).toEqual(['save_open', 'save_write', 'save_commit']);
+    expect(shell.invoke).toHaveBeenCalledWith('save_open', { path: CORRECTED, replace: false });
+  });
+
+  it('shows the dialog again with the corrected name when a file of that name is there', async () => {
+    existingCorrectedFile();
+    shell.save.mockResolvedValueOnce(BARE).mockResolvedValueOnce(CORRECTED);
+
+    await expect(saveBlob(new Blob(['x']), 'export.png', PNG)).resolves.toBe('poster.png');
+
+    expect(shell.save.mock.calls.map(([options]) => options.defaultPath)).toEqual(['export.png', CORRECTED]);
+    // The second time the dialog asked about replacing it.
+    expect(shell.invoke.mock.calls.filter(([command]) => command === 'save_open').map(([, args]) => args)).toEqual([
+      { path: CORRECTED, replace: false },
+      { path: CORRECTED, replace: true },
+    ]);
+    expect(commands()).toEqual(['save_open', 'save_open', 'save_write', 'save_commit']);
+  });
+
+  it('cancels the save when the dialog shown again is canceled', async () => {
+    existingCorrectedFile();
+    shell.save.mockResolvedValueOnce(BARE).mockResolvedValueOnce(null);
+
+    await expect(saveBlob(new Blob(['x']), 'export.png', PNG)).resolves.toBeNull();
+    expect(shell.save).toHaveBeenCalledTimes(2);
     expect(commands()).toEqual(['save_open']);
   });
 });
