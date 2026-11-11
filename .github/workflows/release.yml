@@ -52,18 +52,18 @@ jobs:
           fi
 
   windows:
-    name: Windows
+    name: Windows app
     needs: version
     uses: ./.github/workflows/build-windows.yml
 
   macos:
-    name: macOS
+    name: macOS app
     needs: version
     uses: ./.github/workflows/build-macos.yml
     secrets: inherit # The optional Apple signing secrets (docs/releasing.md).
 
   linux:
-    name: Linux
+    name: Linux app
     needs: version
     uses: ./.github/workflows/build-linux.yml
 
