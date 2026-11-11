@@ -14,7 +14,9 @@ Check the npm part locally with:
 npm run licenses
 ```
 
-The end-to-end test tools (see [development.md](development.md#end-to-end-tests-trial)) never ship. The WebdriverIO npm packages are dev dependencies, so they are not in the notices, and the bridge is bundled only into the test build. The two Rust test plugins are optional dependencies behind the Cargo feature `e2e`: cargo-about and the Licenses check run without it, so the notices do not change, and the E2E workflow checks the test crates with `cargo deny --features e2e`. During the trial, three build-only npm packages that WebdriverIO brings fail `npm run licenses`: `css-value` (no license), `argparse` 3 (PSF-2.0) and `spdx-exceptions` (CC-BY-3.0); how to accept them is decided before the tests are merged.
+The end-to-end test tools (see [development.md](development.md#end-to-end-tests)) never ship. The WebdriverIO npm packages are dev dependencies, so they are not in the notices, and the bridge is bundled only into the test build. The two Rust test plugins are optional dependencies behind the Cargo feature `e2e`: `[graph] features` in `deny.toml` turns it on, so the Licenses check covers the test crates too, while cargo-about runs without it, so the notices do not change.
+
+A few build-only npm packages have a license outside the allow list. `BUILD_ONLY_EXCEPTIONS` in `tools/licenses.mjs` accepts each by its exact name and version, with a one-line reason: today `argparse` 3.0.4 (PSF-2.0), `css-value` 0.0.1 (no license) and `spdx-exceptions` 2.5.0 (CC-BY-3.0), which the end-to-end test tools bring. An exception applies only to a dev dependency that no shipped package depends on (`dev` in `package-lock.json`); another version of the package is checked as usual, so an update needs a new look at its license. An exception that matches no installed package fails the check: remove it. Add an exception only for a package that never ships, and only when no allowed alternative exists.
 
 ## Third-party notices
 

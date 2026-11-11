@@ -8,7 +8,8 @@ description: Fails on a dependency license outside the allow lists, or on out-of
 runs:
   using: composite
   steps:
-    # Fails on any npm package (shipped or build-only) with a license outside the allow list.
+    # Fails on any npm package (shipped or build-only) with a license outside the allow list, except
+    # the build-only packages that BUILD_ONLY_EXCEPTIONS in tools/licenses.mjs names.
     - name: Check npm licenses
       shell: bash
       run: node tools/licenses.mjs
@@ -20,8 +21,8 @@ runs:
       with:
         tool: cargo-deny@0.20.2,cargo-about@0.9.3
 
-    # Fails on any Rust crate (for the Windows, macOS and Linux targets) with a license outside the
-    # allow list in src-tauri/deny.toml.
+    # Fails on any Rust crate (for the Windows, macOS and Linux targets, the test-only crates of the
+    # e2e feature included) with a license outside the allow list in src-tauri/deny.toml.
     - name: Check Rust licenses (cargo-deny)
       shell: bash
       run: cargo deny --manifest-path src-tauri/Cargo.toml --config src-tauri/deny.toml check licenses

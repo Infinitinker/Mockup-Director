@@ -12,6 +12,10 @@ targets = [
   "aarch64-apple-darwin",
   "x86_64-unknown-linux-gnu",
 ]
+# The test-only crates of the end-to-end tests (Cargo feature e2e) are license-checked too, although
+# they never ship. cargo-about (src-tauri/about.toml) runs without the feature, so the notices list
+# only what the app contains.
+features = ["e2e"]
 
 [licenses]
 # Permissive licenses, plus MPL-2.0 (weak, file-level copyleft that never extends to our code).

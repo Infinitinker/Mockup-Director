@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
  * Checks the license of every npm package in package-lock.json against ALLOWED (npm run licenses),
- * and exits with code 1 when a package has a license outside it (e.g. GPL, AGPL, LGPL) or none.
+ * and exits with code 1 when a package has a license outside it (e.g. GPL, AGPL, LGPL) or none that
+ * BUILD_ONLY_EXCEPTIONS does not accept, or when an exception matches no installed package.
  * Rust crates are checked by cargo-deny (src-tauri/deny.toml); tools/notices.mjs writes the notices.
  */
 import { readFileSync, realpathSync } from 'node:fs';
@@ -35,6 +36,14 @@ import { fileURLToPath } from 'node:url';
  * @property {boolean} shipped Whether it is a production dependency, bundled into the app.
  */
 
+/**
+ * What checkLicenses found.
+ * @typedef {object} LicenseCheck
+ * @property {NpmPackage[]} bad The packages with a license outside ALLOWED, or none, that no exception accepts.
+ * @property {NpmPackage[]} excepted The build-only packages an exception accepts.
+ * @property {string[]} stale The exceptions (`name@version`) that match no installed package.
+ */
+
 /** Permissive licenses (plus MPL-2.0: weak, file-level copyleft that never extends to our code). */
 export const ALLOWED = new Set([
   'MIT',
@@ -51,6 +60,20 @@ export const ALLOWED = new Set([
   'Python-2.0',
   'Unlicense',
   'MPL-2.0',
+]);
+
+/**
+ * Build-only packages whose license is outside ALLOWED, accepted because they never ship: each by its
+ * exact name and version (`name@version`), with the reason. An exception applies only to a package that
+ * is a dev dependency alone (`dev` in package-lock.json, so no shipped package depends on it); another
+ * version of the package is checked as usual, and an exception that matches no installed package fails
+ * the check, so that it is removed.
+ * @type {ReadonlyMap<string, string>}
+ */
+export const BUILD_ONLY_EXCEPTIONS = new Map([
+  ['argparse@3.0.4', 'PSF-2.0, a permissive license; the end-to-end test runner (mocha, via js-yaml) uses it'],
+  ['css-value@0.0.1', 'names no license; WebdriverIO parses CSS values with it in the end-to-end tests'],
+  ['spdx-exceptions@2.5.0', 'CC-BY-3.0, a license for data; the WebdriverIO CLI checks license names with it'],
 ]);
 
 /**
@@ -136,19 +159,56 @@ export function npmPackages(lock = /** @type {PackageLock} */ (readJson('package
   return packages.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
 }
 
+/**
+ * A package's key in BUILD_ONLY_EXCEPTIONS.
+ * @param {NpmPackage} p
+ * @returns {string}
+ */
+function keyOf(p) {
+  return `${p.name}@${p.version}`;
+}
+
+/**
+ * Checks the packages' licenses: a license outside ALLOWED, or none, is accepted only for a build-only
+ * package that an exception names by its exact name and version.
+ * @param {NpmPackage[]} packages
+ * @param {ReadonlyMap<string, string>} [exceptions] The reasons, by `name@version`.
+ * @returns {LicenseCheck}
+ */
+export function checkLicenses(packages, exceptions = BUILD_ONLY_EXCEPTIONS) {
+  const outside = packages.filter((p) => !isAllowed(p.license));
+  const excepted = outside.filter((p) => !p.shipped && exceptions.has(keyOf(p)));
+  const installed = new Set(packages.map(keyOf));
+  return {
+    bad: outside.filter((p) => !excepted.includes(p)),
+    excepted,
+    stale: [...exceptions.keys()].filter((key) => !installed.has(key)),
+  };
+}
+
 function main() {
   const packages = npmPackages();
   const shipped = packages.filter((p) => p.shipped);
   console.log(`npm packages checked: ${packages.length} (${shipped.length} shipped in the app)`);
   for (const p of shipped) console.log(`  ${p.name}@${p.version}  ${p.license}`);
 
-  const bad = packages.filter((p) => !isAllowed(p.license));
+  const { bad, excepted, stale } = checkLicenses(packages);
+  if (excepted.length) {
+    console.log(`\nBuild-only exceptions (${excepted.length}):`);
+    for (const p of excepted) console.log(`  ${keyOf(p)}  ${BUILD_ONLY_EXCEPTIONS.get(keyOf(p))}`);
+  }
   if (bad.length) {
     console.error(`\nDisallowed or missing licenses (${bad.length}):`);
     for (const p of bad)
       console.error(`  ${p.name}@${p.version}  ${p.license ?? '(none)'}${p.shipped ? '  [shipped]' : ''}`);
-    process.exit(1);
   }
+  if (stale.length) {
+    console.error(
+      `\nExceptions that match no installed package, to remove from BUILD_ONLY_EXCEPTIONS (${stale.length}):`,
+    );
+    for (const key of stale) console.error(`  ${key}`);
+  }
+  if (bad.length || stale.length) process.exit(1);
   console.log('All npm licenses are allowed.');
 }
 
