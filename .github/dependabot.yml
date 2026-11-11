@@ -1,11 +1,12 @@
-# Once a month, one pull request to dev with new versions of the actions the workflows use.
+# Once a month, one pull request to dev with new versions of the actions the workflows and the shared
+# actions in .github/actions use (Dependabot looks only in the directories listed here).
 # npm packages and Rust crates are left out: their lockfiles pin them, and the Tauri packages on
 # both sides (@tauri-apps/* and the tauri crates) must move together, tested in the app
 # (docs/releasing.md).
 version: 2
 updates:
   - package-ecosystem: github-actions
-    directory: /
+    directories: ["/", "/.github/actions/*"]
     target-branch: dev
     schedule:
       interval: monthly

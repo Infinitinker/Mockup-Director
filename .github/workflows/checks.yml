@@ -141,7 +141,6 @@ jobs:
       - name: Linux libraries
         if: runner.os == 'Linux'
         uses: ./.github/actions/linux-libraries
-      # The same MSYS2 and GNU toolchain as build-windows.yml.
       - name: Windows toolchain
         if: runner.os == 'Windows'
         uses: ./.github/actions/windows-toolchain

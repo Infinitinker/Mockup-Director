@@ -196,7 +196,8 @@ src-tauri/      the Tauri v2 shell (Rust): main.rs starts lib.rs, which sets up 
   deny.toml                 allowed licenses of Rust dependencies (cargo-deny)
   about.toml, about.hbs     the Rust part of the third-party notices (cargo-about)
 .github/
-  dependabot.yml     a monthly pull request with new versions of the actions the workflows use
+  dependabot.yml     a monthly pull request with new versions of the actions the workflows and the
+                     shared actions use
   FUNDING.yml        the donation links of the Sponsor button
   ISSUE_TEMPLATE/    the issue forms: bug report, model request; a link to report a security
                      problem privately (GitHub's advisory form, see SECURITY.md)

@@ -109,7 +109,7 @@ cargo fmt --check --manifest-path src-tauri/Cargo.toml
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 ```
 
-The **Checks** workflow (`.github/workflows/checks.yml`) runs all of these for every push to `main` and `dev` and for every pull request, in a few minutes: `Lint` (Biome and rustfmt), `Web` (type-check, build, unit tests), `Licenses`, `Release safety` (release builds carry no test code, see [End-to-end tests](#end-to-end-tests)), and clippy and the Rust tests on three systems, `Windows Rust checks` (with MSYS2 and the GNU toolchain), `Linux Rust checks` and `macOS Rust checks`. The Rust code differs per system and clippy and the tests only see the code of the system they run on, hence three runs. Once a month Dependabot opens a pull request to `dev` with new versions of the actions the workflows use (`.github/dependabot.yml`).
+The **Checks** workflow (`.github/workflows/checks.yml`) runs all of these for every push to `main` and `dev` and for every pull request, in a few minutes: `Lint` (Biome and rustfmt), `Web` (type-check, build, unit tests), `Licenses`, `Release safety` (release builds carry no test code, see [End-to-end tests](#end-to-end-tests)), and clippy and the Rust tests on three systems, `Windows Rust checks` (with MSYS2 and the GNU toolchain), `Linux Rust checks` and `macOS Rust checks`. The Rust code differs per system and clippy and the tests only see the code of the system they run on, hence three runs. Once a month Dependabot opens a pull request to `dev` with new versions of the actions the workflows and the shared actions in `.github/actions/` use (`.github/dependabot.yml`).
 
 ## End-to-end tests
 
