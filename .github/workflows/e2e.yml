@@ -124,11 +124,13 @@ jobs:
         with:
           components: clippy
       # The feature changes the build, so this cache stays apart from the Checks one. It holds the e2e
-      # build's own target folder (src-tauri/target/e2e) too.
+      # build's own target folder (src-tauri/target/e2e) too. Saved also when the test fails, so that a
+      # re-run of a failing system starts from a cached build.
       - uses: swatinem/rust-cache@v2
         with:
           workspaces: src-tauri -> target
           key: e2e
+          cache-on-failure: true
       - name: Install
         run: npm ci
       # Logged only: what the app renders with.
