@@ -209,7 +209,11 @@ function main() {
     for (const key of stale) console.error(`  ${key}`);
   }
   if (bad.length || stale.length) process.exit(1);
-  console.log('All npm licenses are allowed.');
+  console.log(
+    excepted.length
+      ? `All npm licenses are allowed, apart from ${excepted.length} build-only exceptions.`
+      : 'All npm licenses are allowed.',
+  );
 }
 
 // Run as a script, not imported (by tools/notices.mjs and the tests).

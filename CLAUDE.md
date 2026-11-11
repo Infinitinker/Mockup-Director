@@ -22,7 +22,7 @@ Code written before these rules is being brought in line with them, stage by sta
 
 ## Open source
 
-- MIT license. Every dependency must have a license on the allow lists: `tools/licenses.mjs` for npm, `src-tauri/deny.toml` for Rust, with `src-tauri/about.toml` accepting the same as `deny.toml`; change them together. Allowed are permissive licenses and MPL-2.0, never GPL, AGPL or LGPL. Check the license before adding a dependency; keep dependencies few and justified.
+- MIT license. Every dependency must have a license on the allow lists: `tools/licenses.mjs` for npm, `src-tauri/deny.toml` for Rust, with `src-tauri/about.toml` accepting the same as `deny.toml`; change them together. Allowed are permissive licenses and MPL-2.0, never GPL, AGPL or LGPL; an npm package that never ships may be accepted by exact name and version in `BUILD_ONLY_EXCEPTIONS` in `tools/licenses.mjs` (see `docs/licenses.md`). Check the license before adding a dependency; keep dependencies few and justified.
 - No third-party names, templates, artwork or logos in the app or the repository, and no shapes that copy a real product: device models stay generic. Names of formats and standards (CD, DVD, Blu-ray, A4) may name what a model is.
 - Write code, docs and history as if strangers will read them: no personal paths, secrets or machine-specific settings.
 
