@@ -36,7 +36,7 @@ The goal is clean code, modularity, portability, and that anyone can make a conv
 - No dead code, commented-out code or speculative abstractions. Build shared code from the cases that exist; don't design for imagined ones.
 - Errors are explicit and never swallowed. Every error a user sees is a `UserError` whose message says what happened, then what to do, in user terms.
 - In the app, diagnostics go to the log (`src/platform/log.ts`, `log.rs` in the shell), never to `console.*` or `eprintln!`; never log artwork or file contents. The command-line tools in `tools/` print to the console.
-- Tests live in `tests/` (Vitest) and `src-tauri/tests/` (Rust), mirroring the source folders, together with their fakes; nothing test-only goes in `src/`. They run in Node without WebGL, a browser, IndexedDB or Tauri: code that needs those sits behind a small interface (like `StageAPI`) so it can be faked. Logic that can run in Node comes with its tests.
+- Tests live in `tests/` (Vitest) and `src-tauri/tests/` (Rust), mirroring the source folders, together with their fakes; nothing test-only goes in `src/`. They run in Node without WebGL, a browser, IndexedDB or Tauri: code that needs those sits behind a small interface (like `StageAPI`) so it can be faked. Logic that can run in Node comes with its tests. The exception is the end-to-end tests in `tests/e2e/`, which drive the real desktop app with WebdriverIO through the test-only Cargo feature `e2e`, never in a release.
 
 ### Modularity
 - A model is a `ModelDefinition` in `src/models/`, listed in `src/models/registry.ts`; adding one must not need UI code. See `docs/models.md`.
@@ -58,6 +58,6 @@ The goal is clean code, modularity, portability, and that anyone can make a conv
 ## Tooling
 
 - Node.js 22+ with npm, and the Rust stable toolchain for the desktop app; on Windows MSYS2 with Rust's GNU toolchain. See `docs/development.md`.
-- Before committing: `npm run lint`, `npm run build` and `npm test` (`npm run format` fixes formatting); for Rust changes `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` (in `src-tauri/`); `npm run licenses` and `npm run notices` after changing dependencies (commit the regenerated `THIRD-PARTY-NOTICES.md`).
+- Before committing: `npm run lint`, `npm run build` and `npm test` (`npm run format` fixes formatting); for Rust changes `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` (in `src-tauri/`); `npm run licenses` and `npm run notices` after changing dependencies (commit the regenerated `THIRD-PARTY-NOTICES.md`). The end-to-end tests (`npm run e2e:build`, then `npm run e2e`) are not needed before each commit: CI runs them.
 - The Windows installer is made by Inno Setup 7 from `tools/installer.iss` (`npm run installer`, after `npm run tauri build`).
 - Branches: `main` is stable, work happens on `dev`, changes reach `main` through pull requests.
