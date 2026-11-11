@@ -27,7 +27,7 @@ tauri-build = { version = "2", features = [] }
 
 # Test-only: the WebdriverIO plugins the end-to-end tests drive the app with (tests/e2e,
 # docs/development.md). Built only by `npm run e2e:build`; release builds pass no features, so the
-# plugins are never in them.
+# plugins are never in them, and a build without debug assertions refuses the feature (lib.rs).
 [features]
 e2e = ["dep:tauri-plugin-wdio", "dep:tauri-plugin-wdio-webdriver"]
 

@@ -19,6 +19,11 @@ pub mod log;
 pub mod opened;
 pub mod saves;
 
+// The test plugins run an open WebDriver server inside the app: a release build must never get them,
+// even when someone passes the feature to it. `npm run e2e:build` always makes a debug build.
+#[cfg(all(feature = "e2e", not(debug_assertions)))]
+compile_error!("The e2e feature is only for the debug test build (npm run e2e:build).");
+
 use std::path::{Path, PathBuf};
 
 use tauri::{AppHandle, Emitter, Manager, WebviewWindowBuilder, WindowEvent};
