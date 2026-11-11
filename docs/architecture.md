@@ -201,10 +201,11 @@ src-tauri/      the Tauri v2 shell (Rust): main.rs starts lib.rs, which sets up 
   ISSUE_TEMPLATE/    the issue forms: bug report, model request; a link to report a security
                      problem privately (GitHub's advisory form, see SECURITY.md)
 .github/workflows/
-  checks.yml         the Checks: Lint (Biome, rustfmt), Web (build, tests), Licenses, and clippy and the
-                     Rust tests on Windows, Linux and macOS; for main, dev and pull requests
-  e2e.yml            trial: the end-to-end smoke test on Windows, Linux and macOS, and that release
-                     builds carry no test code; for pushes to e2e-trial, not a required check
+  checks.yml         the Checks: Lint (Biome, rustfmt), Web (build, tests), Licenses, Release safety
+                     (release builds carry no test code), and clippy and the Rust tests on Windows,
+                     Linux and macOS; for main, dev and pull requests
+  e2e.yml            the end-to-end smoke test on Windows, Linux and macOS (E2E Windows, E2E Linux,
+                     E2E macOS); for main, dev and pull requests
   build-windows.yml  the installer (x64, Inno Setup) and a portable ZIP, built with MSYS2; then checks
                      the files
   build-macos.yml    a universal .dmg; then checks the file
