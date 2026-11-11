@@ -34,7 +34,8 @@ export const config: WebdriverIO.Config = {
         startTimeout: 120_000,
         captureBackendLogs: true,
         captureFrontendLogs: true,
-        clearMocks: true,
+        // Each test starts with the real commands, not the mocks of an earlier one.
+        restoreMocks: true,
       },
     ],
   ],

@@ -10,17 +10,21 @@ import { $, browser, expect } from '@wdio/globals';
 import { OUTPUT, logFile } from './folders.ts';
 
 const TOOLBAR = 'header.toolbar';
-/** The last-resort screen of src/main.ts. */
-const START_FAILED = '#app [role="alert"] h1';
+/** The last-resort screen of src/main.ts, which replaces everything in #app. */
+const START_FAILED = '#app > [role="alert"]';
 const RECOVERY = '.modal-backdrop form.dialog[role="dialog"]';
+const TAB = '.doctabs .doctab';
 const CANVAS = 'main.viewport .stage-host .mockup-director-stage > canvas';
 const NO_WEBGL = 'main.viewport .viewport-error[role="alert"]:not([hidden])';
 const NO_WEBGL_TEXT = 'The 3D preview is not available: WebGL does not work on this computer.';
-const ERROR_TOAST = '.toast.toast-error';
 const model = (id: string) => `nav.sidebar-left button.gallery-item[data-model="${id}"]`;
 const SAVE = 'header.toolbar button[aria-label^="Save project"]';
-const SAVED_TOAST = '.toasts .toast.toast-success .toast-title';
 const ACTIVE_TAB_LABEL = '.doctabs .doctab.active .doctab-label';
+/**
+ * How long the session restore, which starts after the toolbar appears, gets to open the recovery
+ * dialog or restored tabs. With a clean profile it finds nothing at once.
+ */
+const RESTORE_SETTLE_MS = 2000;
 
 /** What the page's own WebGL probe found. */
 interface Probe {
@@ -52,18 +56,52 @@ interface Report {
 const report: Report = { os: process.platform, arch: arch(), passed: [], failed: [], appLog: logFile() };
 const began = performance.now();
 
+/** The toasts on screen: the titles of the success ones, and title and detail of the error ones. */
+interface Toasts {
+  success: string[];
+  errors: string[];
+}
+
+/** Reads all toasts at once, so that one disappearing meanwhile cannot make a later query wait. */
+function toasts(): Promise<Toasts> {
+  return browser.execute((): Toasts => {
+    const text = (el: Element, selector: string) => el.querySelector(selector)?.textContent ?? '';
+    const of = (kind: string) => Array.from(document.querySelectorAll(`.toasts .toast.toast-${kind}`));
+    return {
+      success: of('success').map((el) => text(el, '.toast-title')),
+      errors: of('error').map((el) =>
+        [text(el, '.toast-title'), text(el, '.toast-detail')].filter((t) => t !== '').join(': '),
+      ),
+    };
+  });
+}
+
 /** The texts of the error toasts on screen: a model build or save failure shows one. */
-function errorToasts(): Promise<string[]> {
+async function errorToasts(): Promise<string[]> {
+  return (await toasts()).errors;
+}
+
+/** The ids of the open tabs. */
+function tabIds(): Promise<string[]> {
   return browser.execute(
-    (selector) => Array.from(document.querySelectorAll(selector), (el) => el.textContent ?? ''),
-    ERROR_TOAST,
+    (selector) => Array.from(document.querySelectorAll(selector), (el) => el.getAttribute('data-tab') ?? ''),
+    TAB,
   );
+}
+
+/** Fails unless the tab the app started with is still the only one and no recovery dialog is open. */
+async function expectCleanProfile(firstTab: string): Promise<void> {
+  const tabs = await tabIds();
+  if (await $(RECOVERY).isExisting()) throw new Error('The e2e profile was not clean: the recovery dialog opened.');
+  if (tabs.length !== 1 || tabs[0] !== firstTab)
+    throw new Error(`The e2e profile was not clean: the session restore opened tabs (now ${tabs.length}).`);
 }
 
 const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 describe('Mockup Director', () => {
   let modelId = '';
+  let firstTab = '';
 
   afterEach(function () {
     const test = this.currentTest;
@@ -83,10 +121,18 @@ describe('Mockup Director', () => {
   });
 
   it('starts', async () => {
-    await browser.waitUntil(() => $(TOOLBAR).isExisting(), { timeoutMsg: 'the toolbar never appeared' });
+    await browser.waitUntil(async () => (await $(TOOLBAR).isExisting()) || (await $(START_FAILED).isExisting()), {
+      timeoutMsg: 'neither the toolbar nor the start failure screen appeared',
+    });
+    // The failure screen holds the error and its stack.
+    if (await $(START_FAILED).isExisting())
+      throw new Error(`The app failed to start: ${await $(START_FAILED).getText()}`);
     report.startMs = Math.round(performance.now() - began);
-    await expect($(START_FAILED)).not.toExist();
-    if (await $(RECOVERY).isExisting()) throw new Error('A dialog is open at start: the e2e profile was not clean.');
+    const tabs = await tabIds();
+    expect(tabs.length).toBe(1);
+    firstTab = tabs[0] ?? '';
+    await pause(RESTORE_SETTLE_MS);
+    await expectCleanProfile(firstTab);
   });
 
   it('shows the 3D view or the no-WebGL message', async () => {
@@ -117,11 +163,16 @@ describe('Mockup Director', () => {
       report.view = 'no-webgl';
     }
     report.probeMatchesView = probe.webgl2 === (report.view === 'webgl');
+    // The app shows the same message for any failure to create the 3D view. A canvas although the
+    // probe found no WebGL 2 is only reported.
+    if (probe.webgl2 && report.view === 'no-webgl')
+      throw new Error('The 3D view failed to start although WebGL 2 works in the page: see the app log.');
     expect(await errorToasts()).toEqual([]);
   });
 
   it('switches to another model', async () => {
     const start = performance.now();
+    await expectCleanProfile(firstTab);
     modelId = (await $(model('device-phone')).getAttribute('aria-pressed')) === 'true' ? 'box' : 'device-phone';
     await $(model(modelId)).click();
     // The gallery renders its buttons again, so each check queries the button afresh.
@@ -138,20 +189,24 @@ describe('Mockup Director', () => {
   it('saves a project through the save dialog', async () => {
     const start = performance.now();
     const folder = mkdtempSync(join(tmpdir(), 'mockup-director-e2e-'));
+    let dialog: Awaited<ReturnType<typeof browser.tauri.mock>> | undefined;
     try {
       const target = join(folder, 'smoke.mdproj');
       // The path is absolute and ends in .mdproj, so the app writes it as returned (replace) and
       // never shows the dialog again.
-      const dialog = await browser.tauri.mock('plugin:dialog|save');
+      dialog = await browser.tauri.mock('plugin:dialog|save');
       await dialog.mockResolvedValue(target);
       await $(SAVE).click();
+      // Ends on the success message, or on an error toast, which says why the save failed.
+      let shown: Toasts = { success: [], errors: [] };
       await browser.waitUntil(
-        async () => (await $(SAVED_TOAST).isExisting()) && (await $(SAVED_TOAST).getText()) === 'Project saved',
-        {
-          interval: 100,
-          timeoutMsg: 'no "Project saved" message',
+        async () => {
+          shown = await toasts();
+          return shown.success.includes('Project saved') || shown.errors.length > 0;
         },
+        { interval: 100, timeoutMsg: 'neither a "Project saved" message nor an error appeared' },
       );
+      if (!shown.success.includes('Project saved')) throw new Error(`The save failed: ${shown.errors.join('; ')}`);
       await expect($(ACTIVE_TAB_LABEL)).toHaveText('smoke');
       report.saveMs = Math.round(performance.now() - start);
 
@@ -174,6 +229,8 @@ describe('Mockup Director', () => {
       // No temporary file of the save is left next to it.
       expect(listed).toEqual(['smoke.mdproj']);
     } finally {
+      // Later saves reach the real dialog again, not the folder removed here.
+      await dialog?.mockRestore();
       rmSync(folder, { recursive: true, force: true });
     }
   });
