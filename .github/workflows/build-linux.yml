@@ -55,16 +55,16 @@ jobs:
         shell: bash
     steps:
       # Before the checkout, which needs git for a real clone: the bare container has none. It runs as
-      # root, so without sudo. The libraries are the Tauri v2 prerequisites for Debian and Ubuntu (the
-      # app has no tray icon, so no libayatana-appindicator3-dev); the AppImage bundler uses `file`,
-      # the gtk-rs build scripts pkg-config.
-      - name: Install system libraries
+      # root, so without sudo. The AppImage bundler uses `file`, the gtk-rs build scripts pkg-config.
+      - name: Install the build tools
         run: |
           apt-get update
           apt-get install -y --no-install-recommends \
-            ca-certificates git curl wget file xz-utils pkg-config build-essential \
-            libwebkit2gtk-4.1-dev libxdo-dev libssl-dev librsvg2-dev
+            ca-certificates git curl wget file xz-utils pkg-config build-essential
       - uses: actions/checkout@v7
+      # After the checkout, which brings the action.
+      - name: Linux libraries
+        uses: ./.github/actions/linux-libraries
       - uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -145,23 +145,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      # What the check runs, and the action.
       - uses: actions/checkout@v7
         with:
           sparse-checkout: |
             package.json
             tools/release.mjs
+            .github/actions/release-files
           sparse-checkout-cone-mode: false
-      - uses: actions/setup-node@v7
+      - name: Release files
+        uses: ./.github/actions/release-files
         with:
-          node-version: 22
-      - uses: actions/download-artifact@v8
-        with:
-          artifact-ids: ${{ needs.build.outputs.artifacts }}
-          merge-multiple: true
-          skip-decompress: true
-          path: ${{ runner.temp }}/release
-      # Exactly the release's Linux files, under their release names.
-      - name: Check the files
-        run: |
-          ls -l "$RUNNER_TEMP/release"
-          node tools/release.mjs files linux "$RUNNER_TEMP/release"
+          system: linux
+          artifacts: ${{ needs.build.outputs.artifacts }}

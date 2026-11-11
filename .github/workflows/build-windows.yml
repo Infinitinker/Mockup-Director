@@ -16,11 +16,9 @@ name: Build Windows app
 # README).
 #
 # It is built with MSYS2 (MINGW64) and Rust's GNU toolchain, not with Microsoft's C++ tools: the
-# toolchain of a developer's machine (docs/development.md). Tauri supports only MSVC officially, so
-# the build also checks what a GNU build could get wrong. A GNU build loads WebView2Loader.dll at run
-# time instead of linking it in: the installer installs it, and the portable version is a ZIP with
-# the DLL next to the executable. To go back to MSVC, replace the MSYS2 and GNU toolchain steps with
-# dtolnay/rust-toolchain, and ship the portable .exe alone.
+# toolchain of a developer's machine (.github/actions/windows-toolchain explains why). A GNU build
+# loads WebView2Loader.dll at run time instead of linking it in: the installer installs it, and the
+# portable version is a ZIP with the DLL next to the executable.
 on:
   push:
     branches: [main, dev]
@@ -64,23 +62,8 @@ jobs:
           node-version: 22
           cache: npm
 
-      # gcc links the app, windres compiles its icon and manifest.
-      - id: msys2
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: MINGW64
-          install: mingw-w64-x86_64-gcc
-      # Ahead of other MinGW copies on the runner, such as Strawberry Perl's.
-      - name: Put MINGW64 on the PATH
-        run: echo "${{ steps.msys2.outputs.msys2-location }}/mingw64/bin" >> "$GITHUB_PATH"
-      # The GNU toolchain as the host toolchain, so the build scripts are built with it too: a GNU
-      # target on the runner's default MSVC toolchain would still use Microsoft's linker.
-      - name: Install the GNU toolchain
-        run: |
-          rustup toolchain install stable-x86_64-pc-windows-gnu --profile minimal --no-self-update
-          rustup default stable-x86_64-pc-windows-gnu
-          rustc -vV
-          which gcc windres
+      - name: Windows toolchain
+        uses: ./.github/actions/windows-toolchain
       - uses: swatinem/rust-cache@v2
         with:
           workspaces: src-tauri -> target
@@ -163,27 +146,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      # What the check runs, and the action.
       - uses: actions/checkout@v7
         with:
           sparse-checkout: |
             package.json
             tools/release.mjs
+            .github/actions/release-files
           sparse-checkout-cone-mode: false
-      - uses: actions/setup-node@v7
+      - name: Release files
+        uses: ./.github/actions/release-files
         with:
-          node-version: 22
-      # skip-decompress keeps each file as uploaded: otherwise the portable ZIP would arrive unpacked.
-      - uses: actions/download-artifact@v8
-        with:
-          artifact-ids: ${{ needs.build.outputs.artifacts }}
-          merge-multiple: true
-          skip-decompress: true
-          path: ${{ runner.temp }}/release
-      # Exactly the release's Windows files, under their release names, and a whole ZIP.
-      - name: Check the files
-        run: |
-          ls -l "$RUNNER_TEMP/release"
-          node tools/release.mjs files windows "$RUNNER_TEMP/release"
-          for zip in "$RUNNER_TEMP"/release/*.zip; do
-            unzip -tq "$zip" || { echo "::error::$zip is not a whole zip."; exit 1; }
-          done
+          system: windows
+          artifacts: ${{ needs.build.outputs.artifacts }}

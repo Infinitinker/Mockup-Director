@@ -1,0 +1,43 @@
+# Checks the release files of one system after its build: downloads exactly the files the build kept
+# on the run's page and checks that they are the release's files of that system, under their release
+# names (node tools/release.mjs files), and that every ZIP is whole. Used by the files job of
+# build-windows.yml, build-macos.yml and build-linux.yml. Needs a checkout with package.json and
+# tools/release.mjs first; a sparse one is enough.
+name: Release files
+description: Downloads a build's release files and checks them with tools/release.mjs.
+
+inputs:
+  system:
+    description: The system the files are for, as tools/release.mjs names it (windows, macos or linux).
+    required: true
+  artifacts:
+    description: The ids of the build's artifacts, comma-separated.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v7
+      with:
+        node-version: 22
+
+    # skip-decompress keeps each file as uploaded: otherwise the portable ZIP would arrive unpacked.
+    - uses: actions/download-artifact@v8
+      with:
+        artifact-ids: ${{ inputs.artifacts }}
+        merge-multiple: true
+        skip-decompress: true
+        path: ${{ runner.temp }}/release
+
+    # Exactly the release's files of the system, under their release names, and every ZIP whole.
+    - name: Check the files
+      shell: bash
+      env:
+        SYSTEM: ${{ inputs.system }}
+      run: |
+        ls -l "$RUNNER_TEMP/release"
+        node tools/release.mjs files "$SYSTEM" "$RUNNER_TEMP/release"
+        shopt -s nullglob
+        for zip in "$RUNNER_TEMP"/release/*.zip; do
+          unzip -tq "$zip" || { echo "::error::$zip is not a whole zip."; exit 1; }
+        done

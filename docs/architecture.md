@@ -212,7 +212,11 @@ src-tauri/      the Tauri v2 shell (Rust): main.rs starts lib.rs, which sets up 
   build-linux.yml    .AppImage, .deb and .rpm (x86_64); then checks the files
   release.yml        for a v* tag: checks the version, calls the three builds, drafts the release with
                      provenance attestations; by hand, the same without drafting
-.github/actions/notices/    the license checks and the notices check, for checks.yml and release.yml
+.github/actions/
+  notices/           the license checks and the notices check, for checks.yml and release.yml
+  windows-toolchain/ MSYS2 (MINGW64) and Rust's GNU toolchain, and why, for the Windows jobs
+  linux-libraries/   the Tauri system libraries for Debian and Ubuntu, for the Linux jobs
+  release-files/     downloads a build's files and checks them (tools/release.mjs), for the builds
 index.html                  the page Vite builds the app from
 package.json                the npm package, its scripts and dependencies, and the app's version
 vite.config.ts              the build: port 1420 for development, Safari 15 as the target, and the

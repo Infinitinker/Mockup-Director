@@ -128,23 +128,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      # What the check runs, and the action.
       - uses: actions/checkout@v7
         with:
           sparse-checkout: |
             package.json
             tools/release.mjs
+            .github/actions/release-files
           sparse-checkout-cone-mode: false
-      - uses: actions/setup-node@v7
+      - name: Release files
+        uses: ./.github/actions/release-files
         with:
-          node-version: 22
-      - uses: actions/download-artifact@v8
-        with:
-          artifact-ids: ${{ needs.build.outputs.artifacts }}
-          merge-multiple: true
-          skip-decompress: true
-          path: ${{ runner.temp }}/release
-      # Exactly the release's macOS file, under its release name.
-      - name: Check the files
-        run: |
-          ls -l "$RUNNER_TEMP/release"
-          node tools/release.mjs files macos "$RUNNER_TEMP/release"
+          system: macos
+          artifacts: ${{ needs.build.outputs.artifacts }}

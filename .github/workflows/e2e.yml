@@ -49,30 +49,18 @@ jobs:
       # runner context cannot be used in a job-level env.
       - name: Output folder
         run: echo "E2E_OUTPUT=$RUNNER_TEMP/e2e" >> "$GITHUB_ENV"
-      # The Tauri v2 prerequisites (see build-linux.yml), plus Xvfb and Mesa's software OpenGL for the
-      # window and WebGL.
-      - name: Install system libraries
+      # The Tauri v2 prerequisites, plus Xvfb and Mesa's software OpenGL for the window and WebGL.
+      - name: Linux libraries
         if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            libwebkit2gtk-4.1-dev libxdo-dev libssl-dev librsvg2-dev \
-            xvfb libegl-mesa0 libgl1-mesa-dri mesa-utils
-      # The same MSYS2 and GNU toolchain as build-windows.yml, where the reasons are explained.
-      - id: msys2
-        uses: msys2/setup-msys2@v2
-        if: runner.os == 'Windows'
+        uses: ./.github/actions/linux-libraries
         with:
-          msystem: MINGW64
-          install: mingw-w64-x86_64-gcc
-      - name: Put MINGW64 on the PATH
+          packages: xvfb libegl-mesa0 libgl1-mesa-dri mesa-utils
+      # The same MSYS2 and GNU toolchain as build-windows.yml.
+      - name: Windows toolchain
         if: runner.os == 'Windows'
-        run: echo "${{ steps.msys2.outputs.msys2-location }}/mingw64/bin" >> "$GITHUB_PATH"
-      - name: Install the GNU toolchain
-        if: runner.os == 'Windows'
-        run: |
-          rustup toolchain install stable-x86_64-pc-windows-gnu --profile minimal --component clippy --no-self-update
-          rustup default stable-x86_64-pc-windows-gnu
+        uses: ./.github/actions/windows-toolchain
+        with:
+          components: clippy
       - uses: dtolnay/rust-toolchain@stable
         if: runner.os != 'Windows'
         with:
