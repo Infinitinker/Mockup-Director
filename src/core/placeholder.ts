@@ -1,16 +1,20 @@
+/**
+ * Placeholder artwork for empty slots: a gradient with a frame (round for a disc) and the slot's
+ * label, drawn once per slot id, aspect and shape, and cached as shared textures.
+ */
 import * as THREE from 'three';
-import type { ImageSlotDef, Lang } from './types';
-import { ltIn } from '../i18n';
+import { UserError } from './errors';
+import type { ImageSlotDef } from './types/model';
 
 const cache = new Map<string, THREE.Texture>();
 
 /**
- * Neutral placeholder artwork for an empty image slot: soft gradient, thin frame and the slot name
- * (in `lang`). Cached per slot+lang; owned by this module (never disposed by models).
+ * Neutral placeholder artwork for an empty slot: soft gradient, thin frame and the slot name.
+ * Cached per slot; owned by this module (never disposed by models).
  */
-export function getPlaceholderTexture(slot: ImageSlotDef, lang: Lang = 'en'): THREE.Texture {
+export function getPlaceholderTexture(slot: ImageSlotDef): THREE.Texture {
   const circle = isCircularTemplate(slot);
-  const key = `${slot.id}|${slot.aspect.toFixed(3)}|${lang}|${circle ? 'c' : 'r'}`;
+  const key = `${slot.id}|${slot.aspect.toFixed(3)}|${circle ? 'c' : 'r'}`;
   const hit = cache.get(key);
   if (hit) return hit;
 
@@ -21,7 +25,9 @@ export function getPlaceholderTexture(slot: ImageSlotDef, lang: Lang = 'en'): TH
   const canvas = document.createElement('canvas');
   canvas.width = Math.max(8, w);
   canvas.height = Math.max(8, h);
-  const g = canvas.getContext('2d')!;
+  const g = canvas.getContext('2d');
+  if (!g)
+    throw new UserError('Not enough memory to draw the placeholder of an empty slot. Close other tabs and try again.');
 
   const grad = g.createLinearGradient(0, 0, canvas.width, canvas.height);
   grad.addColorStop(0, '#eef0f4');
@@ -41,7 +47,7 @@ export function getPlaceholderTexture(slot: ImageSlotDef, lang: Lang = 'en'): TH
     g.strokeRect(inset, inset, canvas.width - inset * 2, canvas.height - inset * 2);
   }
 
-  const label = ltIn(lang, slot.label) || slot.id;
+  const label = slot.label || slot.id;
   g.fillStyle = 'rgba(55,65,85,0.75)';
   g.textAlign = 'center';
   g.textBaseline = 'middle';

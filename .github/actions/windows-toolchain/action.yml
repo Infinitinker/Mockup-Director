@@ -1,0 +1,42 @@
+# Sets up the toolchain the app is built with on Windows: MSYS2 (MINGW64) and Rust's GNU toolchain,
+# not Microsoft's C++ tools. It is the toolchain of a developer's machine (docs/development.md), and
+# Tauri supports only MSVC officially, so the builds and checks also cover what a GNU build could get
+# wrong. A GNU build loads WebView2Loader.dll at run time instead of linking it in, which is why the
+# Windows build (build-windows.yml) ships the DLL with the app. Used by the Windows jobs of checks.yml,
+# e2e.yml and build-windows.yml. To go back to MSVC, replace this action with dtolnay/rust-toolchain,
+# and ship the portable .exe alone.
+name: Windows toolchain
+description: Installs MSYS2 (MINGW64) with gcc and makes Rust's stable GNU toolchain the default.
+
+inputs:
+  components:
+    description: Rust components to install with the toolchain, comma-separated (for example clippy).
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    # gcc links the app, windres compiles its icon and manifest.
+    - id: msys2
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        install: mingw-w64-x86_64-gcc
+
+    # Ahead of other MinGW copies on the runner, such as Strawberry Perl's.
+    - name: Put MINGW64 on the PATH
+      shell: bash
+      run: echo "${{ steps.msys2.outputs.msys2-location }}/mingw64/bin" >> "$GITHUB_PATH"
+
+    # The GNU toolchain as the host toolchain, so the build scripts are built with it too: a GNU
+    # target on the runner's default MSVC toolchain would still use Microsoft's linker.
+    - name: Install the GNU toolchain
+      shell: bash
+      env:
+        COMPONENTS: ${{ inputs.components }}
+      run: |
+        rustup toolchain install stable-x86_64-pc-windows-gnu --profile minimal ${COMPONENTS:+--component "$COMPONENTS"} --no-self-update
+        rustup default stable-x86_64-pc-windows-gnu
+        rustc -vV
+        which gcc windres

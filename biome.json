@@ -27,11 +27,22 @@
     "rules": {
       "preset": "recommended",
       "style": {
-        "noNonNullAssertion": "off",
         "noDescendingSpecificity": "off"
       }
     }
   },
+  "overrides": [
+    {
+      "includes": ["src/**"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsole": "error"
+          }
+        }
+      }
+    }
+  ],
   "assist": {
     "enabled": true,
     "actions": {

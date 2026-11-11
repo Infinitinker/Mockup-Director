@@ -7,41 +7,36 @@ import * as THREE from 'three';
 import type {
   BooleanParamDef,
   ColorParamDef,
-  LocalizedText,
   NumberParamDef,
   ParamValues,
   PrintTemplate,
   SelectParamDef,
   TemplateGuide,
   TemplateRegion,
-} from '../../core/types';
-import { bool, L, mmParam, num, str } from '../shared';
+} from '../../core/types/model';
+import { bool, mmParam, num, str } from '../params';
 import { rectMapper, type FaceUVMapper } from './roundedBox';
 
-/* ------------------------------------------------------------------ */
-/* Parameters                                                          */
-/* ------------------------------------------------------------------ */
-
-export const G_DIM = L('Dimensions');
-export const G_MAT = L('Material');
-export const G_ART = L('Artwork');
+export const G_DIM = 'Dimensions';
+const G_MAT = 'Material';
+const G_ART = 'Artwork';
 
 /** Standard print bleed. */
 export const BLEED_MM = 3;
 
 export function widthParam(def: number, min = 10, max = 600): NumberParamDef {
-  return mmParam('width', L('Width'), def, min, max, 1, G_DIM);
+  return mmParam('width', 'Width', def, min, max, 1, G_DIM);
 }
-export function heightParam(def: number, min = 10, max = 600, label = L('Height')): NumberParamDef {
+export function heightParam(def: number, min = 10, max = 600, label = 'Height'): NumberParamDef {
   return mmParam('height', label, def, min, max, 1, G_DIM);
 }
-export function depthParam(def: number, min = 10, max = 600, label = L('Depth')): NumberParamDef {
+export function depthParam(def: number, min = 10, max = 600, label = 'Depth'): NumberParamDef {
   return mmParam('depth', label, def, min, max, 1, G_DIM);
 }
 
 export const bevelParam: NumberParamDef = {
   id: 'bevel',
-  label: L('Edge rounding'),
+  label: 'Edge rounding',
   type: 'number',
   min: 0,
   max: 6,
@@ -62,26 +57,26 @@ export function edgeRadius(params: ParamValues, ...dims: number[]): number {
 export type Finish = 'matte' | 'satin' | 'glossy';
 export const finishParam: SelectParamDef = {
   id: 'finish',
-  label: L('Finish'),
+  label: 'Finish',
   type: 'select',
   options: [
-    { value: 'matte', label: L('Matte (paper / matte laminate)') },
-    { value: 'satin', label: L('Satin') },
-    { value: 'glossy', label: L('Gloss laminate') },
+    { value: 'matte', label: 'Matte (paper / matte laminate)' },
+    { value: 'satin', label: 'Satin' },
+    { value: 'glossy', label: 'Gloss laminate' },
   ],
   default: 'satin',
   group: G_MAT,
 };
 
-export function colorParam(id: string, label: LocalizedText, def: string, group: LocalizedText = G_MAT): ColorParamDef {
+export function colorParam(id: string, label: string, def: string, group: string = G_MAT): ColorParamDef {
   return { id, label, type: 'color', default: def, group };
 }
 
-export const sideColorParam = colorParam('sideColor', L('Colour of faces without artwork'), '#f2f1ee');
+export const sideColorParam = colorParam('sideColor', 'Color of faces without artwork', '#f2f1ee');
 
 export const bleedParam: BooleanParamDef = {
   id: 'bleed',
-  label: L('Artwork includes 3 mm bleed'),
+  label: 'Artwork includes 3 mm bleed',
   type: 'boolean',
   default: true,
   group: G_ART,
@@ -97,11 +92,6 @@ export function finishOf(params: ParamValues): Finish {
   return f === 'matte' || f === 'glossy' ? f : 'satin';
 }
 
-export function colorOf(params: ParamValues, id: string, fallback: string): string {
-  const c = str(params, id, fallback);
-  return /^#[0-9a-f]{6}$/i.test(c) ? c : fallback;
-}
-
 /** Box outer dimensions (mm) from the standard width/height/depth params. */
 export function boxDims(
   params: ParamValues,
@@ -113,10 +103,6 @@ export function boxDims(
     D: Math.max(1, num(params, 'depth', def.d)),
   };
 }
-
-/* ------------------------------------------------------------------ */
-/* Materials                                                           */
-/* ------------------------------------------------------------------ */
 
 /**
  * Printed carton surface. Matte = uncoated/matte-laminated board, satin = coated board with a soft
@@ -138,14 +124,10 @@ export function surfaceMaterial(
   return mat;
 }
 
-/* ------------------------------------------------------------------ */
-/* Print templates                                                     */
-/* ------------------------------------------------------------------ */
-
-export const FOLD = L('Fold');
+export const FOLD = 'Fold';
 
 /** Template for a single face: trim w x h plus bleed on every side. */
-export function faceTemplate(w: number, h: number, b: number, label: LocalizedText): PrintTemplate {
+export function faceTemplate(w: number, h: number, b: number, label: string): PrintTemplate {
   return {
     widthMm: w + 2 * b,
     heightMm: h + 2 * b,
@@ -156,9 +138,9 @@ export function faceTemplate(w: number, h: number, b: number, label: LocalizedTe
 
 /**
  * Horizontal band of panels side by side (e.g. the four walls of a lid), all of height h, with
- * fold guides between neighbours and bleed around the whole band.
+ * fold guides between neighbors and bleed around the whole band.
  */
-export function bandTemplate(panels: { w: number; label: LocalizedText }[], h: number, b: number): PrintTemplate {
+export function bandTemplate(panels: { w: number; label: string }[], h: number, b: number): PrintTemplate {
   const regions: TemplateRegion[] = [];
   const guides: TemplateGuide[] = [];
   let x = b;
@@ -174,7 +156,9 @@ export function bandTemplate(panels: { w: number; label: LocalizedText }[], h: n
  * UV mapper for a template region: the region's trim rectangle (measured from the template's
  * top-left, bleed included) is mapped edge-to-edge onto a face.
  */
-export function regionMapper(tpl: PrintTemplate, region: TemplateRegion): FaceUVMapper {
+export function regionMapper(tpl: PrintTemplate, index: number): FaceUVMapper {
+  const region = tpl.regions?.[index];
+  if (!region) throw new Error(`The print template has no region ${index}.`);
   const u0 = region.xMm / tpl.widthMm;
   const u1 = (region.xMm + region.wMm) / tpl.widthMm;
   const v1 = 1 - region.yMm / tpl.heightMm; // image top = v 1
@@ -185,18 +169,4 @@ export function regionMapper(tpl: PrintTemplate, region: TemplateRegion): FaceUV
 /** Aspect ratio (w / h) of a template – used for ImageSlotDef.aspect. */
 export function aspectOf(tpl: PrintTemplate): number {
   return tpl.widthMm / tpl.heightMm;
-}
-
-/* ------------------------------------------------------------------ */
-/* Icons                                                               */
-/* ------------------------------------------------------------------ */
-
-/** Wrap icon paths in the common SVG frame (64x64, line art, currentColor). */
-export function icon(body: string): string {
-  return (
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" ' +
-    'stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round">' +
-    body +
-    '</svg>'
-  );
 }

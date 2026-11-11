@@ -1,0 +1,260 @@
+/* Dialogs: the modal frame every dialog uses, the batch export dialog with the button that opens it, and the
+   recovery dialog. */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: calc(var(--toolbar-h) + 40px);
+  background: rgba(0, 0, 0, 0.22);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.modal-backdrop.show {
+  opacity: 1;
+}
+.modal-backdrop.closing {
+  pointer-events: none;
+}
+.dialog {
+  width: min(400px, calc(100vw - 32px));
+  padding: 18px 18px 14px;
+  border-radius: 12px;
+  background: var(--bg-inspector);
+  -webkit-backdrop-filter: saturate(180%) blur(30px);
+  backdrop-filter: saturate(180%) blur(30px);
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.3),
+    0 0 0 0.5px var(--border-strong);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transform: translateY(-6px) scale(0.98);
+  transition: transform 0.15s;
+}
+.modal-backdrop.show .dialog {
+  transform: none;
+}
+.dialog-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 650;
+}
+.dialog-message {
+  color: var(--text-2);
+  font-size: 12.5px;
+}
+.dialog-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
+}
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 6px;
+}
+.dialog-actions .btn {
+  min-width: 84px;
+}
+
+.batch-btn {
+  width: 100%;
+  justify-content: center;
+}
+.dialog-batch {
+  width: min(520px, calc(100vw - 32px));
+  max-height: calc(100vh - var(--toolbar-h) - 80px);
+  overflow-y: auto;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
+}
+.dialog-batch.is-drop-target {
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.3),
+    0 0 0 2px var(--accent);
+}
+.batch-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.batch-mode .seg-btn {
+  height: 28px;
+}
+.batch-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.batch-model {
+  font-size: 12px;
+  font-weight: 600;
+}
+.batch-pick {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.batch-count {
+  font-size: 11.5px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.batch-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  max-height: 168px;
+  overflow-y: auto;
+  border-radius: var(--radius-sm);
+  background: var(--bg-field);
+  box-shadow: inset 0 0 0 0.5px var(--border-strong);
+}
+.batch-list-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  padding: 0 2px 0 6px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+.batch-list-item:hover {
+  background: var(--bg-hover);
+}
+.batch-list-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.batch-views {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 12px;
+}
+.batch-own {
+  margin-top: 2px;
+}
+.batch-output {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  background: var(--bg-seg);
+}
+.batch-output-text {
+  margin: 0;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.batch-progress-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.batch-status {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+.batch-notes-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.batch-notes {
+  margin: 0;
+  padding: 6px 8px 6px 22px;
+  max-height: 180px;
+  overflow-y: auto;
+  border-radius: var(--radius-sm);
+  font-size: 11.5px;
+  overflow-wrap: anywhere;
+}
+.batch-notes li + li {
+  margin-top: 3px;
+}
+.batch-notes.is-error {
+  background: rgba(229, 55, 43, 0.1);
+}
+.batch-notes.is-error strong {
+  color: var(--danger);
+}
+.batch-notes.is-warning {
+  background: var(--warn-soft);
+}
+@media (max-width: 480px) {
+  .batch-views {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.dialog-recovery {
+  width: min(520px, calc(100vw - 32px));
+  max-height: calc(100vh - var(--toolbar-h) - 80px);
+  overflow-y: auto;
+}
+.recovery-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.recovery-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  background: var(--bg-seg);
+}
+.recovery-info {
+  flex: 1;
+  min-width: 0;
+}
+.recovery-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.recovery-detail,
+.recovery-confirm {
+  font-size: 11.5px;
+  color: var(--text-2);
+}
+.recovery-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.recovery-status {
+  flex-basis: 100%;
+  font-size: 11.5px;
+  overflow-wrap: anywhere;
+}
+.recovery-status:empty {
+  display: none;
+}
+.recovery-status.is-error {
+  color: var(--danger);
+}
+.recovery-status-detail {
+  color: var(--text-2);
+}

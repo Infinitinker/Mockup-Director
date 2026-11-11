@@ -14,6 +14,10 @@ Check the npm part locally with:
 npm run licenses
 ```
 
+The end-to-end test tools (see [development.md](development.md#end-to-end-tests)) never ship. The WebdriverIO npm packages are dev dependencies, so they are not in the notices, and the bridge is bundled only into the test build. The two Rust test plugins are optional dependencies behind the Cargo feature `e2e`: `[graph] features` in `deny.toml` turns it on, so the Licenses check covers the test crates too, while cargo-about runs without it, so the notices do not change.
+
+A few build-only npm packages have a license outside the allow list. `BUILD_ONLY_EXCEPTIONS` in `tools/licenses.mjs` accepts each by its exact name and version, with a one-line reason: today `argparse` 3.0.4 (PSF-2.0), `css-value` 0.0.1 (no license) and `spdx-exceptions` 2.5.0 (CC-BY-3.0), which the end-to-end test tools bring. An exception applies only to a dev dependency that no shipped package depends on (`dev` in `package-lock.json`); another version of the package is checked as usual, so an update needs a new look at its license. An exception that matches no installed package fails the check: remove it. Add an exception only for a package that never ships, and only when no allowed alternative exists.
+
 ## Third-party notices
 
 The MIT, BSD and Apache licenses require their notices to come with every copy of the app. [THIRD-PARTY-NOTICES.md](../THIRD-PARTY-NOTICES.md) holds the license texts of the app's dependencies on every system, and every package contains it next to the app's own license: the Windows installer and the portable ZIP, the macOS app, and the Linux packages, as `LICENSE.txt` and `THIRD-PARTY-NOTICES.txt` (`bundle.resources` in `src-tauri/tauri.conf.json`). Each build checks its package contains both, and every release also has a copy, `MockupDirector-<version>-third-party-notices.md`.
@@ -34,6 +38,10 @@ The Windows app is built with Rust's GNU toolchain (MSYS2's MinGW-w64), which pu
 
 - **WebView2Loader.dll.** A GNU build loads Microsoft's `WebView2Loader.dll` at run time, so the installer and the portable ZIP ship it next to the executable. It comes from Microsoft's WebView2 SDK (through the MIT-licensed `webview2-com-sys` crate), under the SDK's BSD-style license, which allows redistribution in binary form when its copyright notice and disclaimer come with the app. The text, `tools/licenses/webview2-sdk.txt`, is the license of the `Microsoft.Web.WebView2` NuGet package; check it when `webview2-com-sys` moves to a new SDK.
 - **The MinGW-w64 runtime**, linked into the executable. Parts of it require their notices in binary copies: `tools/licenses/mingw-w64-runtime.txt` is MSYS2's `share/licenses/crt/COPYING.MinGW-w64-runtime.txt`. The GCC runtime library (libgcc) is under the GPL-3.0 with the GCC Runtime Library Exception, which puts no conditions on the program. The executable does not use winpthreads (it imports no `libwinpthread-1.dll` and contains none of its code), so its license is not included; if that changes, add MSYS2's `share/licenses/winpthreads/COPYING`.
+
+## The Windows installer
+
+The installer is made by [Inno Setup](https://jrsoftware.org/isinfo.php), whose setup program (with its standard texts) is in every installer it makes. Its license is permissive: binaries must keep its copyright notices, which they do as long as Setup is not modified (Setup shows them in its About box), so nothing goes into the notices. The installer and the portable ZIP ship the same app files: the executable, `WebView2Loader.dll`, `LICENSE.txt` and `THIRD-PARTY-NOTICES.txt`.
 
 ## The Linux AppImage
 

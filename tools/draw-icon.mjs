@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 /**
- * Draws the Mockup Director app icon and writes every icon file the apps need.
+ * Draws the Mockup Director app icon and writes the icon files in use: those bundle.icon in
+ * src-tauri/tauri.conf.json lists (the Windows .ico, also used by the installer, the macOS .icns
+ * and the PNGs for Linux), the toolbar logo src/ui/app-logo.svg and the README's docs/images/icon.png.
  *
- *   npm run icons                        regenerate app-icon.svg, src-tauri/icons/* and src/ui/app-logo.svg
+ *   npm run icons                        regenerate them all
  *   npm run icons -- --preview FILE.png  also write a preview sheet (sizes on light and dark)
  *
  * The picture: a product box (the mockup) whose front is a director's slate - a striped band at
@@ -13,7 +15,7 @@
  *
  * Two shapes:
  *  - macOS (.icns): Apple's rounded square (824 px body on a 1024 canvas). Since macOS 26 icons
- *    that are not this shape are shown on a grey plate, so the Mac icon fills the square.
+ *    that are not this shape are shown on a gray plate, so the Mac icon fills the square.
  *  - everything else (.ico for Windows, PNGs): a circle, transparent outside it.
  *
  * Rendering uses @resvg/resvg-js (MPL-2.0, dev dependency only).
@@ -23,8 +25,8 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
 const OUT_DIR = 'src-tauri/icons';
-const SVG_SOURCE = 'app-icon.svg';
 const LOGO_SVG = 'src/ui/app-logo.svg'; // toolbar logo + favicon
+const README_ICON = 'docs/images/icon.png';
 const SMALL = 32; // sizes up to this one get the simple drawing
 
 /* Palette: the app's accent blue. */
@@ -40,16 +42,55 @@ const STRIPE_LIGHT = '#eef3fa';
 const STRIPE_DARK = '#14161c';
 const SMALL_TOP = '#b8c7dc';
 
-/* ------------------------------------------------------------------ */
-/* Drawing helpers                                                     */
-/* ------------------------------------------------------------------ */
+/** @typedef {[number, number]} Point A point on the 1024-pixel canvas, as [x, y]. */
+/** @typedef {(x: number, y: number) => Point} PointAt Maps coordinates on a face to the canvas. */
+/**
+ * @typedef {object} BoxGeometry The proportions of the clapper box.
+ * @property {Point} a The top-left corner of the front face.
+ * @property {number} W The width of the front face.
+ * @property {number} H The height of the front face.
+ * @property {number} rise How far the top edge drops toward the right, per unit of width (y grows downward).
+ * @property {number} k How far the back edges are shifted to the right.
+ * @property {number} lift How far the back edges are shifted up.
+ * @property {number} band The height of the striped band, as a share of H.
+ * @property {number} open The angle the clapper arm is lifted open, in degrees.
+ * @property {number} stripes The number of stripe pairs across the front face.
+ */
+/**
+ * @typedef {object} IconOptions
+ * @property {'round' | 'mac'} shape The outline of the icon.
+ * @property {boolean} simple Whether to draw the bolder version for small sizes.
+ */
+/** @typedef {{ size: number, png: Buffer }} IcoEntry One image of a .ico file. */
+/** @typedef {{ type: string, png: Buffer }} IcnsEntry One image of a .icns file, with its type code. */
 
 let uid = 0;
+/**
+ * A unique SVG id with the given prefix.
+ * @param {string} p
+ */
 const id = (p) => `${p}${++uid}`;
+/**
+ * A number with one decimal, for SVG attributes.
+ * @param {number} n
+ */
 const f1 = (n) => n.toFixed(1);
+/**
+ * The points of a polygon as an SVG points attribute.
+ * @param {Point[]} pts
+ */
 const poly = (pts) => pts.map(([x, y]) => `${f1(x)},${f1(y)}`).join(' ');
+/**
+ * A closed polygon as SVG path data.
+ * @param {Point[]} pts
+ */
 const pathOf = (pts) => `M${pts.map(([x, y]) => `${f1(x)} ${f1(y)}`).join(' L')} Z`;
 
+/**
+ * The bounding box of a polygon as [minX, minY, maxX, maxY].
+ * @param {Point[]} pts
+ * @returns {[number, number, number, number]}
+ */
 function bboxOf(pts) {
   const xs = pts.map((p) => p[0]);
   const ys = pts.map((p) => p[1]);
@@ -59,6 +100,10 @@ function bboxOf(pts) {
 /**
  * The edge of a shape that light from behind catches: an inner rim (stroke clipped to the shape)
  * fading out from the top of the shape downwards.
+ * @param {Point[]} pts The outline of the shape.
+ * @param {number} width The width of the rim.
+ * @param {number} [opacity] The opacity of the rim.
+ * @param {number} [reach] How far down the rim fades out, as a share of the shape's height.
  */
 function rim(pts, width, opacity = 1, reach = 0.55) {
   const d = pathOf(pts);
@@ -97,27 +142,37 @@ function background() {
       <stop offset="0" stop-color="#ffffff" stop-opacity="0.30"/>
       <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
     </radialGradient>`,
-    /** Paints the background into the given shape (a function fill -> SVG element). */
+    /**
+     * Paints the background into the given shape (a function fill -> SVG element).
+     * @param {(fill: string) => string} shape
+     */
     paint: (shape) => shape(`url(#${lin})`) + shape(`url(#${glow})`),
   };
 }
 
-/* ------------------------------------------------------------------ */
-/* The object (drawn for a 1024 canvas, badge r = 500)                 */
-/* ------------------------------------------------------------------ */
-
 /**
  * A product box in a three-quarter view whose front face is a director's slate: a striped band
- * along its top edge and a striped clapper arm hinged at the top-left corner, lifted open.
+ * along its top edge and a striped clapper arm hinged at the top-left corner, lifted open. Drawn for a
+ * 1024-pixel canvas whose badge has a radius of 500.
+ * @param {boolean} simple Whether to draw the bolder version for small sizes.
  */
 function clapperBox(simple) {
+  /** @type {BoxGeometry} */
   const g = simple
     ? { a: [214, 360], W: 352, H: 384, rise: 0.34, k: 232, lift: 92, band: 0.22, open: 34, stripes: 3.5 }
     : { a: [236, 372], W: 334, H: 384, rise: 0.34, k: 206, lift: 82, band: 0.17, open: 32, stripes: 5.5 };
   const a = g.a;
+  /** @type {Point} */
   const b = [a[0] + g.W, a[1] + g.W * g.rise];
+  /** @type {Point} */
   const d = [a[0], a[1] + g.H];
+  /** @type {Point} */
   const c = [b[0], b[1] + g.H];
+  /**
+   * The point on the back of the box behind the given point on the front.
+   * @param {Point} p
+   * @returns {Point}
+   */
   const back = (p) => [p[0] + g.k, p[1] - g.lift];
   const front = [a, b, c, d];
   const side = [b, back(b), back(c), c];
@@ -127,9 +182,17 @@ function clapperBox(simple) {
   // Front-face coordinates: x along the top edge (0..W), y down the face (0..H).
   const ex = [(b[0] - a[0]) / g.W, (b[1] - a[1]) / g.W];
   const ey = [(d[0] - a[0]) / g.H, (d[1] - a[1]) / g.H];
+  /** @type {PointAt} */
   const P = (x, y) => [a[0] + x * ex[0] + y * ey[0], a[1] + x * ex[1] + y * ey[1]];
 
   const sw = g.W / g.stripes; // stripe pitch (one light + one dark stripe)
+  /**
+   * The dark stripes of a band from x0 to x1, h high, in the face coordinates `at` maps.
+   * @param {number} x0
+   * @param {number} x1
+   * @param {number} h
+   * @param {PointAt} at
+   */
   const stripes = (x0, x1, h, at) => {
     const skew = h * 0.95;
     let out = '';
@@ -148,7 +211,9 @@ function clapperBox(simple) {
   const t = (g.open * Math.PI) / 180;
   const armH = bandH * 0.9;
   const gap = g.H * 0.014;
+  /** @type {PointAt} */
   const R = (x, y) => P(x * Math.cos(t) + y * Math.sin(t), -x * Math.sin(t) + y * Math.cos(t));
+  /** @type {PointAt} */
   const armAt = (x, y) => R(x, y - gap - armH);
   const armLen = g.W * 1.03;
   const arm = [armAt(0, 0), armAt(armLen, 0), armAt(armLen, armH), armAt(0, armH)];
@@ -168,7 +233,7 @@ function clapperBox(simple) {
 
   const hinge = armAt(armH * 0.55, armH * 0.5);
   // Centring: horizontally on the BOX alone (the lifted arm sticks out to the left and would pull
-  // the box off-centre), vertically on the whole silhouette (box + arm).
+  // the box off-center), vertically on the whole silhouette (box + arm).
   const [bx0, , bx1] = bboxOf(outline);
   const [, y0, , y1] = bboxOf([...outline, ...arm]);
   const dx = 512 - (bx0 + bx1) / 2;
@@ -193,14 +258,11 @@ function clapperBox(simple) {
   </g>`;
 }
 
-/* ------------------------------------------------------------------ */
-/* Whole icons                                                         */
-/* ------------------------------------------------------------------ */
-
 /**
  * shape 'round' – circle r = 500 on 1024, transparent outside.
  * shape 'mac'   – Apple rounded square (824 body, 100 margin) with a soft drop shadow; the
  *                 drawing is scaled into the body.
+ * @param {IconOptions} options
  */
 function iconSvg({ shape, simple }) {
   uid = 0;
@@ -236,15 +298,19 @@ function iconSvg({ shape, simple }) {
 </svg>`;
 }
 
+/**
+ * Renders an SVG to a PNG of the given width.
+ * @param {string} svg
+ * @param {number} size
+ */
 function render(svg, size) {
   return new Resvg(svg, { fitTo: { mode: 'width', value: size }, shapeRendering: 2 }).render().asPng();
 }
 
-/* ------------------------------------------------------------------ */
-/* Containers                                                          */
-/* ------------------------------------------------------------------ */
-
-/** Windows .ico with PNG-compressed entries (supported since Windows Vista). */
+/**
+ * Windows .ico with PNG-compressed entries (supported since Windows Vista).
+ * @param {IcoEntry[]} entries
+ */
 function ico(entries) {
   const header = Buffer.alloc(6 + 16 * entries.length);
   header.writeUInt16LE(0, 0);
@@ -266,7 +332,10 @@ function ico(entries) {
   return Buffer.concat([header, ...entries.map((e) => e.png)]);
 }
 
-/** macOS .icns with PNG entries. */
+/**
+ * macOS .icns with PNG entries.
+ * @param {IcnsEntry[]} entries
+ */
 function icns(entries) {
   const chunks = entries.map(({ type, png }) => {
     const h = Buffer.alloc(8);
@@ -281,8 +350,11 @@ function icns(entries) {
   return Buffer.concat([h, body]);
 }
 
-/* ------------------------------------------------------------------ */
-
+/**
+ * Writes a file, creating its folder, and reports it.
+ * @param {string} path
+ * @param {string | Buffer} data
+ */
 function write(path, data) {
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, data);
@@ -295,13 +367,16 @@ const svgs = {
   roundDetailed: iconSvg({ shape: 'round', simple: false }),
   roundSimple: iconSvg({ shape: 'round', simple: true }),
 };
+/**
+ * The round icon as a PNG of the given size.
+ * @param {number} size
+ */
 const round = (size) => render(size <= SMALL ? svgs.roundSimple : svgs.roundDetailed, size);
+/**
+ * The macOS icon as a PNG of the given size.
+ * @param {number} size
+ */
 const mac = (size) => render(size <= SMALL ? svgs.macSimple : svgs.macDetailed, size);
-
-const header = `<?xml version="1.0" encoding="UTF-8"?>
-<!-- Mockup Director app icon (macOS shape). GENERATED by tools/draw-icon.mjs – edit the script, then run "npm run icons". -->
-`;
-write(SVG_SOURCE, `${header}${svgs.macDetailed}\n`);
 
 // The small logo in the app's toolbar and the browser favicon: the simple round icon, with
 // prefixed ids (it is inlined into the page) and no fixed size (CSS sizes it).
@@ -311,25 +386,17 @@ const logo = svgs.roundSimple
   .replace(/url\(#/g, 'url(#mdlogo-');
 write(LOGO_SVG, `${logo}\n`);
 
-// PNGs (round): window/taskbar icons, Linux, Windows Store logos.
+// PNGs (round), the ones bundle.icon in tauri.conf.json lists: the Linux packages install them as
+// the app's icons, and on Linux the first one is the window icon.
 const pngs = {
   '32x32.png': 32,
-  '64x64.png': 64,
   '128x128.png': 128,
   '128x128@2x.png': 256,
-  'icon.png': 512,
-  'StoreLogo.png': 50,
-  'Square30x30Logo.png': 30,
-  'Square44x44Logo.png': 44,
-  'Square71x71Logo.png': 71,
-  'Square89x89Logo.png': 89,
-  'Square107x107Logo.png': 107,
-  'Square142x142Logo.png': 142,
-  'Square150x150Logo.png': 150,
-  'Square284x284Logo.png': 284,
-  'Square310x310Logo.png': 310,
 };
 for (const [name, size] of Object.entries(pngs)) write(join(OUT_DIR, name), round(size));
+
+// The icon at the top of README.md.
+write(README_ICON, round(256));
 
 write(join(OUT_DIR, 'icon.ico'), ico([16, 24, 32, 48, 64, 128, 256].map((size) => ({ size, png: round(size) }))));
 
@@ -354,6 +421,13 @@ write(
 const pi = process.argv.indexOf('--preview');
 if (pi !== -1 && process.argv[pi + 1]) {
   const sizes = [16, 32, 64, 128, 256];
+  /**
+   * A PNG placed on the sheet at x, y with size s.
+   * @param {Buffer} png
+   * @param {number} x
+   * @param {number} y
+   * @param {number} s
+   */
   const cell = (png, x, y, s) =>
     `<image x="${x}" y="${y}" width="${s}" height="${s}" href="data:image/png;base64,${png.toString('base64')}"/>`;
   let row = '';

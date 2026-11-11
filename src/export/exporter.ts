@@ -10,17 +10,21 @@
  *     high-quality downscale (no aliasing on thin edges / text).
  *  4. Paint the background ourselves (transparent / solid / gradient / white for JPEG) and
  *     composite the content over it – so the background always fills the whole output.
- *  5. Encode and embed the print resolution (PNG pHYs / JPEG JFIF density, default 300 dpi).
+ *  5. Encode and embed the print resolution (PNG pHYs / JPEG JFIF density, 300 dpi).
  */
-import type { BackgroundSettings, ExportFormat, ExportSettings, StageAPI } from '../core/types';
-import { msg, mtIn, type Message } from '../i18n';
+import type { ExportFormat, ExportSettings } from '../core/types/export';
+import type { BackgroundSettings, StageAPI } from '../core/types/scene';
 import { DEFAULT_EXPORT, MAX_EXPORT_SIZE } from '../core/defaults';
+import { UserError } from '../core/errors';
 import { clampInt, findAlphaBounds, fitInside, supersampleSize, type PixelRect } from './layout';
 import { isJpeg, isPng, setJpegDensity, setPngPhys } from './png';
 import { paintBackground as paintSceneBackground } from '../scene/background';
+import { supportsWebpEncoding } from './formats';
 
-/** Default print resolution written into exported files (Photoshop shows a sensible print size). */
-export const DEFAULT_EXPORT_DPI = 300;
+/** Print resolution written into exported files (an image editor shows a sensible print size). */
+const EXPORT_DPI = 300;
+/** Supersampling factor relative to the target content size. */
+const SUPERSAMPLE = 2;
 /** Longest side of the off-screen render (the stage may clamp further to the GPU limit). */
 const MAX_RENDER_SIDE = 8192;
 const MAX_RENDER_PIXELS = 48_000_000;
@@ -32,93 +36,41 @@ const MAX_RENDER_PIXELS = 48_000_000;
  */
 const ALPHA_THRESHOLD = 5;
 
-export interface ExportOptions {
-  /** Resolution stored in the file (PNG pHYs / JPEG JFIF). Default 300. 0 = don't write. */
-  dpi?: number;
-  /** Supersampling factor relative to the target content size (1..3, default 2). */
-  supersample?: number;
-  /**
-   * What to do when WebP is requested but the engine cannot encode it (Safari / WKWebView):
-   *  'error' (default) – reject with ExportError code 'webp-unsupported';
-   *  'png'             – encode PNG instead (check ExportResult.format and use its extension!).
-   */
-  webpFallback?: 'error' | 'png';
-}
-
-export interface ExportResult {
-  blob: Blob;
-  /** The format actually encoded (differs from the request only with webpFallback 'png'). */
-  format: ExportFormat;
-  width: number;
-  height: number;
-  dpi: number;
-}
-
-export type ExportErrorCode = 'webp-unsupported' | 'encode-failed' | 'render-failed';
-
-/** Export failure with a user-presentable message: `text` is shown in the interface language, `message` is the English text. */
-export class ExportError extends Error {
-  readonly code: ExportErrorCode;
-  readonly text: Message;
-  constructor(code: ExportErrorCode, text: Message) {
-    super(mtIn('en', text));
-    this.name = 'ExportError';
-    this.code = code;
-    this.text = text;
-  }
-}
-
 /**
  * Render the current stage according to the export settings and encode it.
  *
- * @param background The scene's preview background (SceneSettings.background). Used when
- *   settings.background === 'scene' (and for JPEG). OPTIONAL for backwards compatibility: if it is
- *   omitted while 'scene' is requested, the stage is asked for a second, opaque render and its
- *   background pixels are used instead (slower, and in 'canvas' sizing the area outside the render
- *   is filled with the render's corner colour) – callers should pass it.
- * @throws ExportError ('webp-unsupported' when WebP can't be encoded – see supportsWebpEncoding()).
+ * @param background The scene's preview background (SceneSettings.background), painted when
+ *   settings.background === 'scene'.
+ * @throws UserError when the image cannot be rendered or encoded, WebP included where this engine cannot
+ *   encode it (see supportsWebpEncoding() in formats.ts).
  */
 export async function exportImage(
   stage: StageAPI,
   settings: ExportSettings,
-  background?: BackgroundSettings,
-  options?: ExportOptions,
+  background: BackgroundSettings,
 ): Promise<Blob> {
-  return (await exportImageDetailed(stage, settings, background, options)).blob;
-}
-
-/** Same as exportImage() but also reports the encoded format, pixel size and dpi. */
-export async function exportImageDetailed(
-  stage: StageAPI,
-  settings: ExportSettings,
-  background?: BackgroundSettings,
-  options: ExportOptions = {},
-): Promise<ExportResult> {
-  const s = normaliseSettings(settings);
-  let format = s.format;
-  if (format === 'webp' && !supportsWebpEncoding()) {
-    if (options.webpFallback === 'png') format = 'png';
-    else throw webpError();
-  }
+  const s = normalizeSettings(settings);
+  const format = s.format;
+  if (format === 'webp' && !supportsWebpEncoding()) throw webpError();
   const opaque = format === 'jpeg';
-  const dpi = options.dpi === undefined ? DEFAULT_EXPORT_DPI : Math.max(0, options.dpi);
 
-  // --- 1. supersampled transparent render --------------------------------------------------
+  // 1. Supersampled transparent render.
   const availW = Math.max(1, s.width - 2 * s.margin);
   const availH = Math.max(1, s.height - 2 * s.margin);
-  const factor = Math.max(1, Math.min(3, options.supersample ?? 2));
-  const req = supersampleSize(availW, availH, factor, MAX_RENDER_SIDE, MAX_RENDER_PIXELS);
+  const req = supersampleSize(availW, availH, SUPERSAMPLE, MAX_RENDER_SIDE, MAX_RENDER_PIXELS);
   const src = stage.renderToCanvas({ width: req.width, height: req.height, transparent: true });
   const rw = src.width;
   const rh = src.height;
   if (!rw || !rh) {
-    throw new ExportError('render-failed', msg('errRenderFailed'));
+    throw new UserError(
+      'The image could not be rendered: there may not be enough graphics memory. Reduce the export size.',
+    );
   }
 
-  // --- 2. content bounds from alpha --------------------------------------------------------
+  // 2. Content bounds from alpha.
   const crop = measureContent(src) ?? { x: 0, y: 0, w: rw, h: rh };
 
-  // --- 3. crop + scale --------------------------------------------------------------------
+  // 3. Crop and scale.
   const fit = fitInside(crop.w, crop.h, availW, availH);
   const content = resampleRegion(src, crop, fit.width, fit.height);
 
@@ -127,81 +79,38 @@ export async function exportImageDetailed(
   const ox = s.sizing === 'canvas' ? Math.round((outW - fit.width) / 2) : s.margin;
   const oy = s.sizing === 'canvas' ? Math.round((outH - fit.height) / 2) : s.margin;
 
-  // --- 4. background + composite -----------------------------------------------------------
+  // 4. Background and composite.
   const out = createCanvas(outW, outH);
   const g = get2d(out);
-  const wantScene = s.background === 'scene';
-  let composited = false;
-  if (wantScene && background) {
+  if (s.background === 'scene') {
     paintBackground(g, background, outW, outH, opaque);
-  } else if (wantScene && !background) {
-    // Legacy path: no background settings given – borrow the stage's own opaque render.
-    const bgRender = stage.renderToCanvas({ width: rw, height: rh, transparent: false });
-    if (bgRender.width === rw && bgRender.height === rh) {
-      const k = fit.width / crop.w;
-      g.fillStyle = cornerColour(bgRender);
-      g.fillRect(0, 0, outW, outH);
-      g.imageSmoothingEnabled = true;
-      g.imageSmoothingQuality = 'high';
-      // Rough fill for the area around the composition, then the properly resampled crop on top.
-      g.drawImage(bgRender, ox - crop.x * k, oy - crop.y * k, rw * k, rh * k);
-      const opaqueCrop = resampleRegion(bgRender, crop, fit.width, fit.height);
-      g.drawImage(opaqueCrop, ox, oy);
-      releaseCanvas(opaqueCrop);
-      composited = true; // the opaque render already contains the model (don't double the shadow)
-    } else if (opaque) {
-      g.fillStyle = '#ffffff';
-      g.fillRect(0, 0, outW, outH);
-    }
   } else if (opaque) {
     g.fillStyle = '#ffffff';
     g.fillRect(0, 0, outW, outH);
   }
-  if (!composited) g.drawImage(content, ox, oy);
+  g.drawImage(content, ox, oy);
   releaseCanvas(content);
 
-  // --- 5. encode ----------------------------------------------------------------------------
+  // 5. Encode.
   const mime = mimeFor(format);
   let blob = await canvasToBlob(out, mime, format === 'png' ? undefined : s.quality);
   releaseCanvas(out);
   if (blob.type && blob.type !== mime) {
     // Engines fall back to PNG silently for unsupported types (Safari + WebP).
-    if (format === 'webp' && options.webpFallback === 'png' && blob.type === 'image/png') format = 'png';
-    else if (format === 'webp') throw webpError();
-    else {
-      throw new ExportError('encode-failed', msg('errEncodeAs', { format: format.toUpperCase() }));
-    }
+    if (format === 'webp') throw webpError();
+    throw new UserError(`The image could not be encoded as ${format.toUpperCase()}. Choose another format.`);
   }
-  if (dpi > 0) {
-    if (format === 'png') blob = await setPngDpi(blob, dpi);
-    else if (format === 'jpeg') blob = await setJpegDpi(blob, dpi);
-  }
-  return { blob, format, width: outW, height: outH, dpi: format === 'webp' ? 0 : dpi };
+  if (format === 'png') blob = await setPngDpi(blob, EXPORT_DPI);
+  else if (format === 'jpeg') blob = await setJpegDpi(blob, EXPORT_DPI);
+  return blob;
 }
 
-export function extensionFor(format: ExportFormat): string {
-  return format === 'jpeg' ? 'jpg' : format;
-}
-
-export function mimeFor(format: ExportFormat): string {
+function mimeFor(format: ExportFormat): string {
   return format === 'jpeg' ? 'image/jpeg' : `image/${format}`;
 }
 
-let webpSupport: boolean | null = null;
-/**
- * Can this engine ENCODE WebP from a canvas? (Chrome/Edge/Firefox: yes; Safari / WKWebView: no –
- * toBlob silently returns PNG.) The UI should hide or disable the WebP option when false.
- */
-export function supportsWebpEncoding(): boolean {
-  if (webpSupport !== null) return webpSupport;
-  try {
-    const c = createCanvas(2, 2);
-    webpSupport = c.toDataURL('image/webp').startsWith('data:image/webp');
-  } catch {
-    webpSupport = false;
-  }
-  return webpSupport;
-}
+/** What the user sees when this engine cannot encode a WebP image. */
+export const WEBP_IMAGE_UNSUPPORTED = 'This system cannot encode WebP images. Choose PNG or JPEG.';
 
 /** Return a PNG blob with a pHYs chunk set to `dpi`. Non-PNG input is returned unchanged. */
 export async function setPngDpi(blob: Blob, dpi: number): Promise<Blob> {
@@ -215,44 +124,16 @@ export async function setPngDpi(blob: Blob, dpi: number): Promise<Blob> {
 }
 
 /** Return a JPEG blob whose JFIF density is `dpi`. Non-JPEG input is returned unchanged. */
-export async function setJpegDpi(blob: Blob, dpi: number): Promise<Blob> {
+async function setJpegDpi(blob: Blob, dpi: number): Promise<Blob> {
   const bytes = new Uint8Array(await blob.arrayBuffer());
   if (!isJpeg(bytes)) return blob;
   return new Blob([setJpegDensity(bytes, dpi)], { type: 'image/jpeg' });
 }
 
 /**
- * File name like "mockup-director-dvd-case-2026-11-04-1530.png" (local time).
- * @param date defaults to now
- */
-export function suggestFileName(modelId: string, format: ExportFormat, date: Date = new Date()): string {
-  const p = (n: number) => String(n).padStart(2, '0');
-  const stamp = `${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())}-${p(date.getHours())}${p(date.getMinutes())}`;
-  return `mockup-director-${slugify(modelId) || 'mockup'}-${stamp}.${extensionFor(format)}`;
-}
-
-/** ASCII file-name slug. Polish letters are mapped by hand first (ł has no Unicode decomposition), other accents are stripped. */
-export function slugify(s: string): string {
-  const map: Record<string, string> = { ą: 'a', ć: 'c', ę: 'e', ł: 'l', ń: 'n', ó: 'o', ś: 's', ź: 'z', ż: 'z' };
-  return s
-    .toLowerCase()
-    .replace(/[ąćęłńóśźż]/g, (c) => map[c] ?? c)
-    .normalize('NFKD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-
-/** Save-dialog filter for a format (for platform/files.saveBlob). */
-export function fileFilterFor(format: ExportFormat): { name: string; extensions: string[] } {
-  const names: Record<ExportFormat, string> = { png: 'PNG', jpeg: 'JPEG', webp: 'WebP' };
-  return { name: names[format], extensions: format === 'jpeg' ? ['jpg', 'jpeg'] : [format] };
-}
-
-/**
  * Paint the scene background over the whole canvas.
  *  - 'color'    → solid `color`
- *  - 'gradient' → the SAME radial gradient as the on-screen preview (`color` in the centre,
+ *  - 'gradient' → the SAME radial gradient as the on-screen preview (`color` in the center,
  *                 slightly above the middle → `color2` at the corners); delegated to
  *                 scene/background.ts so preview and export can never drift apart
  *  - 'transparent' → nothing (or white when `opaque`, e.g. for JPEG)
@@ -273,11 +154,7 @@ export function paintBackground(
   paintSceneBackground(g, width, height, bg);
 }
 
-/* ------------------------------------------------------------------ */
-/* Internals                                                           */
-/* ------------------------------------------------------------------ */
-
-function normaliseSettings(s: ExportSettings): ExportSettings {
+function normalizeSettings(s: ExportSettings): ExportSettings {
   const width = clampInt(s.width, 1, MAX_EXPORT_SIZE, DEFAULT_EXPORT.width);
   const height = clampInt(s.height, 1, MAX_EXPORT_SIZE, DEFAULT_EXPORT.height);
   // Margin: never more than leaves a 1 px content box.
@@ -296,8 +173,8 @@ function normaliseSettings(s: ExportSettings): ExportSettings {
   };
 }
 
-function webpError(): ExportError {
-  return new ExportError('webp-unsupported', msg('errWebpImage'));
+function webpError(): UserError {
+  return new UserError(WEBP_IMAGE_UNSUPPORTED);
 }
 
 function measureContent(src: HTMLCanvasElement): PixelRect | null {
@@ -345,20 +222,15 @@ function resampleRegion(src: CanvasImageSource, rect: PixelRect, dw: number, dh:
   return out;
 }
 
-function cornerColour(c: HTMLCanvasElement): string {
-  const g = c.getContext('2d');
-  if (!g) return '#ffffff';
-  const [r, gr, b] = g.getImageData(0, 0, 1, 1).data;
-  return `rgb(${r},${gr},${b})`;
-}
-
 function canvasToBlob(c: HTMLCanvasElement, mime: string, quality?: number): Promise<Blob> {
   return new Promise((resolve, reject) => {
     c.toBlob(
       (b) => {
         if (b) resolve(b);
         else {
-          reject(new ExportError('encode-failed', msg('errEncodeImage')));
+          reject(
+            new UserError('The image could not be encoded: there may not be enough memory. Reduce the export size.'),
+          );
         }
       },
       mime,
@@ -377,7 +249,7 @@ function createCanvas(w: number, h: number): HTMLCanvasElement {
 function get2d(c: HTMLCanvasElement): CanvasRenderingContext2D {
   const g = c.getContext('2d');
   if (!g) {
-    throw new ExportError('render-failed', msg('errImageTooLarge'));
+    throw new UserError('Not enough memory for an image this large. Reduce the export size.');
   }
   return g;
 }

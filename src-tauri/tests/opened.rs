@@ -1,15 +1,17 @@
-//! Tests of `src/opened.rs`: which files the operating system's arguments ask to open.
+//! Tests of `src/opened.rs`: which files the operating system's arguments ask to open, the queue that
+//! hands them out once, and reading them, with the kind and path of each error.
 
 use std::ffi::OsString;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use mockup_director_lib::error::ErrorKind;
 use mockup_director_lib::opened::{
     is_project_path, project_paths, read_all, read_opened, OpenedFiles,
 };
 
 #[test]
-fn recognises_the_project_extension_in_any_case() {
+fn recognizes_the_project_extension_in_any_case() {
     assert!(is_project_path(Path::new("C:/Work/Box.mdproj")));
     assert!(is_project_path(Path::new("/home/ania/Box.MDPROJ")));
     assert!(!is_project_path(Path::new("/home/ania/Box.mockup")));
@@ -102,7 +104,27 @@ fn reads_a_project_file_and_reports_a_missing_one() {
     assert_eq!(file.name, "Box.mdproj");
     assert_eq!(file.contents, r#"{"app":"mockup-director"}"#);
 
-    assert!(read_opened(&dir.join("Missing.mdproj")).is_err());
+    let missing = dir.join("Missing.mdproj");
+    let error = read_opened(&missing).unwrap_err();
+    assert_eq!(error.kind, ErrorKind::NotFound);
+    assert_eq!(error.path, missing.to_string_lossy());
+    assert!(error.detail.is_some());
+    let _ = fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn reports_a_file_that_is_not_text() {
+    let dir = std::env::temp_dir().join(format!(
+        "mockup-director-test-opened-binary-{}",
+        std::process::id()
+    ));
+    fs::create_dir_all(&dir).unwrap();
+    let path = dir.join("Box.mdproj");
+    fs::write(&path, [0x89, b'P', b'N', b'G', 0xff]).unwrap();
+
+    let error = read_opened(&path).unwrap_err();
+    assert_eq!(error.kind, ErrorKind::NotText);
+    assert_eq!(error.path, path.to_string_lossy());
     let _ = fs::remove_dir_all(&dir);
 }
 
@@ -124,8 +146,23 @@ fn reads_every_queued_path_and_reports_each_failure() {
     ]);
     let names: Vec<&str> = batch.files.iter().map(|f| f.name.as_str()).collect();
     assert_eq!(names, ["A.mdproj", "B.mdproj"]);
-    assert_eq!(batch.errors.len(), 2);
-    assert!(batch.errors[0].contains("Missing.mdproj"));
-    assert!(batch.errors[1].contains("Folder.mdproj"));
+    let errors: Vec<_> = batch
+        .errors
+        .iter()
+        .map(|e| (e.kind, e.path.clone()))
+        .collect();
+    assert_eq!(
+        errors,
+        [
+            (
+                ErrorKind::NotFound,
+                dir.join("Missing.mdproj").to_string_lossy().into_owned()
+            ),
+            (
+                ErrorKind::NotAFile,
+                dir.join("Folder.mdproj").to_string_lossy().into_owned()
+            ),
+        ]
+    );
     let _ = fs::remove_dir_all(&dir);
 }

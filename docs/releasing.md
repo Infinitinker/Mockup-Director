@@ -2,10 +2,10 @@
 
 ## A new version
 
-1. Raise the version in `package.json` and `src-tauri/Cargo.toml` (`src-tauri/tauri.conf.json` reads it from `package.json`). Versions are `major.minor.patch`; a version with a hyphen, such as `0.3.0-beta.1`, is a pre-release. Commit the updated `src-tauri/Cargo.lock` with it (`cargo update --workspace` refreshes the app's own entry). The Lint check fails when the two versions differ (`node tools/release.mjs check`).
+1. Raise the version in `package.json`, the app's only version: `src-tauri/tauri.conf.json` reads it from there for the app, its packages and the Windows version resource, and `src-tauri/Cargo.toml` has none. Versions are `major.minor.patch`; a version with a hyphen, such as `0.3.0-beta.1`, is a pre-release.
 
    When updating Tauri, raise the npm packages (`@tauri-apps/api`, `@tauri-apps/plugin-dialog`, `@tauri-apps/cli`) together with the `~2.x` ranges in `src-tauri/Cargo.toml`: the Tauri CLI stops the build when the Rust crates and the npm packages differ in `major.minor`.
-2. To try the release first, start **Actions → Release → Run workflow** on `dev`. It builds every file and writes the notes, without a release: both are on the run's page, and the notes also in its summary. GitHub offers **Run workflow** only for workflows that are on `main`; before the first release, the pull request in step 3 is the trial: a pull request that changes how a release is built (the release and build workflows, `.github/actions/`, `tools/release.mjs` or the notes template) runs the Release workflow the same way.
+2. To try the release first, start **Actions → Release → Run workflow** on `dev`. It checks the version and builds and checks every file, without a release: the files are on the run's page for 90 days. Every push to `dev` builds and checks the files of each system too.
 3. Merge `dev` into `main` with a pull request, then tag the merge commit on `main` with an annotated tag and push it:
 
    ```bash
@@ -22,10 +22,10 @@
 
    A pre-release (a tag with a hyphen) can be tagged on any branch.
 4. The tag starts the **Release** workflow (`.github/workflows/release.yml`):
-   - **Check the version:** the tag must be `v` followed by the version in `package.json`, `src-tauri/Cargo.toml` must have the same version, and a release (not a pre-release) must be on `main`.
-   - **Windows, macOS, Linux:** the three build workflows, called by the release.
+   - **Check the version:** the tag must be `v` followed by the version in `package.json`, the version must be of the form `1.2.3` or `1.2.3-beta.1`, and a release (not a pre-release) must be on `main`.
+   - **Windows, macOS, Linux:** the three build workflows, called by the release; each checks its files.
    - **Third-party notices:** the license checks, and that `THIRD-PARTY-NOTICES.md` matches the dependencies; the release gets a copy (see [licenses.md](licenses.md)).
-   - **Draft the release:** checks that exactly these files arrived, then creates a **draft** release named "Mockup Director 0.2.0" with them, marked as a pre-release when the version has a hyphen:
+   - **Draft the release:** checks that exactly these files arrived, records a build provenance attestation for each (so anyone can check a download with `gh attestation verify <file> --repo Infinitinker/Mockup-Director`), then creates a **draft** release named "Mockup Director 0.2.0" with them, marked as a pre-release when the version has a hyphen:
 
      | File | What it is |
      | --- | --- |
@@ -37,7 +37,7 @@
      | `MockupDirector-<version>-linux-x86_64.rpm` | the package for Fedora and openSUSE |
      | `MockupDirector-<version>-third-party-notices.md` | the licenses of the libraries in the app |
 
-     The notes come from `tools/release-notes.md`: a download table, first-launch help and the SHA-256 checksum of every file. `tools/release.mjs` fills them in and checks the files; `tests/tools/release.test.ts` tests it.
+     The notes come from `tools/release-notes.md`: a download table, first-launch help, the SHA-256 checksum of every file and how to check its attestation. `tools/release.mjs` fills them in and checks the files; `tests/tools/release.test.ts` tests it.
 5. On the draft, replace the "What's new" text with the changes for users, check the files, and publish it.
 
 If a build fails, fix it, delete the tag (`git push origin :v0.2.0` and `git tag -d v0.2.0`) and the draft, if there is one, and tag again.
@@ -62,3 +62,15 @@ Without secrets, the workflow builds an ad-hoc signed app (`signingIdentity: "-"
 Signing is turned on when the first three secrets are set; notarization needs the other three too. Missing secrets are skipped, so the build still succeeds without them.
 
 Windows builds and the Linux packages are not signed.
+
+## Repository settings
+
+These settings are made on GitHub, not in files.
+
+To protect `main`, add a branch ruleset (**Settings → Rules → Rulesets → New branch ruleset**): target *Include default branch*, with the rules *Restrict deletions*, *Block force pushes*, *Require a pull request before merging* (0 approvals if you work alone) and *Require status checks to pass* with the checks `Lint`, `Web`, `Licenses`, `Release safety`, `Windows Rust checks`, `Linux Rust checks`, `macOS Rust checks`, `Windows E2E tests`, `Linux E2E tests` and `macOS E2E tests`, each from the GitHub Actions app. These are the jobs of the Checks workflow (`.github/workflows/checks.yml`) and of the E2E tests workflow (`.github/workflows/e2e.yml`). The builds are not required checks: they take ten minutes and more, and the push to `dev` builds the same commit the pull request merges. In a private repository on a free GitHub plan, rulesets are not enforced: they need a public repository or GitHub Pro.
+
+Under **Settings → General → Pull Requests**, allow only merge commits, so the history of `dev` is kept on `main`.
+
+When the repository is public, turn on **Settings → Code security → Private vulnerability reporting**: [SECURITY.md](../SECURITY.md) and the issue chooser's "Security problem" link (`.github/ISSUE_TEMPLATE/config.yml`) send reporters to it.
+
+The issue forms in `.github/ISSUE_TEMPLATE/` add the labels `bug` and `model`, which must exist in the repository (**Issues → Labels**); a form leaves out a label that does not.

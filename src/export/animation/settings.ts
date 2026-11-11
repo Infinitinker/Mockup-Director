@@ -1,8 +1,9 @@
 /**
- * Animation settings: limits, normalisation (used for persisted projects and defensively by the
- * exporter) and small derived values (frame count, effective size).
+ * Animation settings: limits, normalization (used for persisted projects and defensively by the
+ * exporter), switching the format, and small derived values (frame count, effective size).
  */
-import type { AnimationFormat, AnimationSettings } from '../../core/types';
+import type { AnimationFormat, AnimationSettings } from '../../core/types/export';
+import { clamp } from '../../core/math';
 import {
   DEFAULT_ANIMATION,
   DEFAULT_GIF_FPS,
@@ -33,6 +34,26 @@ export function defaultFpsFor(format: AnimationFormat): number {
   return format === 'mp4' ? DEFAULT_VIDEO_FPS : DEFAULT_GIF_FPS;
 }
 
+/**
+ * Switch the settings to another format: its default fps when the old default was in use, the fps and
+ * the size within its limits (keeping the aspect ratio), and the margin within the new size.
+ */
+export function switchAnimationFormat(a: AnimationSettings, format: AnimationFormat): void {
+  const prev = a.format;
+  a.format = format;
+  // Switch to the new format's default fps when the old default was in use.
+  if (a.fps === defaultFpsFor(prev)) a.fps = defaultFpsFor(format);
+  a.fps = Math.min(a.fps, maxFpsFor(format));
+  // Fit the size into the new limit, keeping the aspect ratio.
+  const max = maxSizeFor(format);
+  const k = Math.min(1, max / Math.max(a.width, a.height));
+  if (k < 1) {
+    a.width = Math.max(MIN_ANIMATION_SIZE, Math.round(a.width * k));
+    a.height = Math.max(MIN_ANIMATION_SIZE, Math.round(a.height * k));
+  }
+  a.margin = Math.min(a.margin, maxMarginFor(a.width, a.height));
+}
+
 /** Number of frames of one loop (at least 2). The last frame is NOT a copy of the first. */
 export function frameCountOf(s: Pick<AnimationSettings, 'fps' | 'duration'>): number {
   return Math.max(2, Math.round(s.fps * s.duration));
@@ -55,13 +76,11 @@ function pick<T extends string>(v: unknown, allowed: readonly T[], fallback: T):
   return typeof v === 'string' && (allowed as readonly string[]).includes(v) ? (v as T) : fallback;
 }
 
-const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
-
 /**
  * Return a complete, clamped copy of (possibly untrusted / partial) animation settings.
  * `available` limits the format (e.g. no WebP in Safari, no MP4 without WebCodecs) – falls back to GIF.
  */
-export function normaliseAnimationSettings(
+export function normalizeAnimationSettings(
   raw: unknown,
   available: Partial<Record<AnimationFormat, boolean>> = {},
 ): AnimationSettings {

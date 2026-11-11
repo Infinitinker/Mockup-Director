@@ -1,0 +1,130 @@
+# The end-to-end smoke test of the desktop app (tests/e2e, docs/development.md) with WebdriverIO and
+# the embedded WebDriver server, on Windows, Linux and macOS. For pushes to the two long-lived branches
+# and for pull requests, like the Checks; its jobs have short, fixed names, different from the Checks
+# jobs, so they are required status checks of the main branch ruleset too (docs/releasing.md). That
+# release builds carry no test code is checked by the Checks (job "Release safety").
+name: E2E tests
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A newer push to the same branch or pull request cancels the run still going for the older one.
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: ${{ matrix.name }} E2E tests
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows
+            os: windows-latest
+          - name: Linux
+            os: ubuntu-24.04
+          - name: macOS
+            os: macos-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          # wdio needs Node 22.23.4 or later; a 22.x cached on the runner image can be older.
+          check-latest: true
+      # The report, the WebdriverIO logs, the screenshot and the app log (tests/e2e/folders.ts). The
+      # runner context cannot be used in a job-level env.
+      - name: Output folder
+        run: echo "E2E_OUTPUT=$RUNNER_TEMP/e2e" >> "$GITHUB_ENV"
+      # The Tauri v2 prerequisites, plus Xvfb and Mesa's software OpenGL for the window and WebGL.
+      - name: Linux libraries
+        if: runner.os == 'Linux'
+        uses: ./.github/actions/linux-libraries
+        with:
+          packages: xvfb libegl-mesa0 libgl1-mesa-dri mesa-utils
+      - name: Windows toolchain
+        if: runner.os == 'Windows'
+        uses: ./.github/actions/windows-toolchain
+        with:
+          components: clippy
+      - uses: dtolnay/rust-toolchain@stable
+        if: runner.os != 'Windows'
+        with:
+          components: clippy
+      # The feature changes the build, so this cache stays apart from the Checks one. It holds the e2e
+      # build's own target folder (src-tauri/target/e2e) too. Saved also when the test fails, so that a
+      # re-run of a failing system starts from a cached build.
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+          key: e2e
+          cache-on-failure: true
+      - name: Install
+        run: npm ci
+      # Logged only: what the app renders with.
+      - name: Graphics environment (Windows)
+        if: runner.os == 'Windows'
+        # Git Bash would turn the /v switch into a path.
+        shell: pwsh
+        run: |
+          reg query 'HKLM\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}' /v pv
+          exit 0
+      - name: Graphics environment (Linux)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a -s "-screen 0 1920x1080x24" glxinfo -B || true
+      - name: Graphics environment (macOS)
+        if: runner.os == 'macOS'
+        run: sw_vers; system_profiler SPDisplaysDataType || true
+      # The shell embeds the web UI from dist/ when it is compiled, so the UI is built first.
+      - name: Build the web UI
+        run: npm run build
+      # The code behind #[cfg(feature = "e2e")], which the Checks never compile.
+      - name: Clippy with the e2e feature
+        run: cargo clippy --manifest-path src-tauri/Cargo.toml --features e2e --locked -- -D warnings
+      - name: Build the e2e app
+        run: |
+          npm run e2e:build
+          if [ "$RUNNER_OS" = Windows ]; then ls src-tauri/target/e2e/debug/WebView2Loader.dll; fi
+      - name: Run the smoke test
+        if: runner.os != 'Linux'
+        run: npm run e2e
+      # Never set WEBKIT_DISABLE_COMPOSITING_MODE: it turns WebGL off.
+      - name: Run the smoke test (Linux)
+        if: runner.os == 'Linux'
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: xvfb-run -a -s "-screen 0 1920x1080x24" npm run e2e
+      - name: Collect the app log
+        if: always()
+        run: |
+          id=io.github.infinitinker.mockupdirector.e2e
+          case "$RUNNER_OS" in
+            Windows) log="$LOCALAPPDATA/$id/logs/mockup-director.log" ;;
+            Linux) log="$HOME/.local/share/$id/logs/mockup-director.log" ;;
+            macOS) log="$HOME/Library/Logs/$id/mockup-director.log" ;;
+          esac
+          mkdir -p "$E2E_OUTPUT"
+          if [ -f "$log" ]; then cp "$log" "$E2E_OUTPUT/" || true; else echo "No app log at $log"; fi
+      - name: Job summary
+        if: always()
+        run: |
+          { echo "### ${{ matrix.name }}"; echo '```json'; cat "$E2E_OUTPUT/report.json" || echo '{"report":"missing"}'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: e2e-${{ matrix.name }}
+          path: ${{ runner.temp }}/e2e
+          retention-days: 14

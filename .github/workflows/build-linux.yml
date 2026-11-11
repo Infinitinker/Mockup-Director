@@ -1,25 +1,24 @@
-# Builds the Mockup Director Linux app (x86_64): the AppImage, the .deb and the .rpm package, each
-# kept on the run's page (Actions → run → Artifacts) under its release file name. The release
-# workflow (release.yml) calls this workflow and puts the files on the release.
-#
-# Linux-specific bundle settings live in src-tauri/tauri.linux.conf.json (merged automatically by
-# Tauri on Linux): AppImage + .deb + .rpm.
-#   - AppImage: one file for any distribution; it carries its own GTK / WebKitGTK libraries.
-#   - .deb (Debian, Ubuntu, Mint …) and .rpm (Fedora, openSUSE …): use the system's WebKitGTK 4.1,
-#     declared as package dependencies, so the package manager installs it.
-#
-# The build runs in an ubuntu:22.04 CONTAINER: a Linux binary only runs on systems with the same or
-# a newer glibc than the one it was built against, so the container (glibc 2.35), not the runner
-# image, sets the oldest supported system: Ubuntu 22.04+, Debian 12+, Fedora 36+ and similar.
-# The hosted ubuntu-22.04 runner image itself is deprecated (removed on 2027-04-17), hence the
-# container on a current ubuntu-24.04 host. Raise the container image only when dropping old distros
-# (and update the glibc / distro list in README.md and docs/releasing.md).
 name: Build Linux app
 
-# Runs on every push to dev and main (a merged pull request is a push to main), on demand, from the
-# release workflow, and for pull requests, except those from this repository's dev and main, whose
-# pushes are built already (so Dependabot's pull requests and other branches get a build).
-# It is not a required status check: the Checks workflow (checks.yml) is.
+# Builds the Linux release files: the AppImage, the .deb and the .rpm package, each kept on the run's
+# page under its release file name, and checks them. The Release workflow (release.yml) calls it and
+# drafts the release from them; run on its own, it shows early that a change still builds.
+#
+# It runs on every push to dev and main (a merged pull request is a push to main), from the Release
+# workflow, on demand, and for pull requests other than those from this repository's dev and main,
+# whose pushes are built already (so Dependabot's pull requests and other branches get a build too).
+# It is not a required status check; the Checks (checks.yml) and E2E tests (e2e.yml) are.
+#
+# Linux settings are in src-tauri/tauri.linux.conf.json. The AppImage is one file for any
+# distribution and carries its own GTK and WebKitGTK libraries; the .deb (Debian, Ubuntu, Mint) and
+# the .rpm (Fedora, openSUSE) use the system's WebKitGTK 4.1, which they declare as a dependency.
+#
+# The build runs in an ubuntu:22.04 container: a Linux binary runs only on systems with the same or
+# a newer glibc than the one it was built with, so the container (glibc 2.35), not the runner, sets
+# the oldest supported systems: Ubuntu 22.04+, Debian 12+, Fedora 36+ and similar. The hosted
+# ubuntu-22.04 runner is deprecated (removed on 2027-04-17), hence the container on an ubuntu-24.04
+# runner. Raise the container image only when dropping old distributions, and update the list in the
+# README and docs/releasing.md.
 on:
   push:
     branches: [main, dev]
@@ -28,7 +27,7 @@ on:
   workflow_call:
 
 # A newer push cancels the build still going for the older one; a release's build is never cut short.
-# (Called from release.yml, github.workflow is "Release".)
+# Called from release.yml, github.workflow is "Release".
 concurrency:
   group: build-linux-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.workflow != 'Release' }}
@@ -37,56 +36,48 @@ permissions:
   contents: read
 
 jobs:
-  build-linux:
-    # A fork can have a branch named dev too, so forks are always built. Called from release.yml,
-    # it always builds, also for a pull request from dev.
+  build:
+    # A fork can have a branch named dev too, so forks are always built.
     if: >-
-      github.event_name != 'pull_request' || github.workflow == 'Release' ||
+      github.event_name != 'pull_request' ||
       github.event.pull_request.head.repo.fork || (github.head_ref != 'dev' && github.head_ref != 'main')
-    name: Build (x86_64-unknown-linux-gnu)
+    name: Linux build (x86_64)
     runs-on: ubuntu-24.04
     container: ubuntu:22.04
     timeout-minutes: 60
+    outputs:
+      # The three files, so the check downloads exactly these, whatever else the run builds.
+      artifacts: ${{ steps.appimage.outputs.artifact-id }},${{ steps.deb.outputs.artifact-id }},${{ steps.rpm.outputs.artifact-id }}
     env:
-      DEBIAN_FRONTEND: noninteractive # tzdata (pulled in by WebKitGTK) must not prompt for a timezone
+      DEBIAN_FRONTEND: noninteractive # tzdata, which WebKitGTK pulls in, must not ask for a time zone
     defaults:
       run:
         shell: bash
-
     steps:
-      # Runs before checkout: the bare container has no git (checkout needs it for a real clone).
-      # The container runs as root, so no sudo. Build dependencies follow the Tauri v2 prerequisites
-      # for Debian/Ubuntu; the app has no tray icon, so libayatana-appindicator3-dev is not needed.
-      # The hosted runner image would have git, curl, pkg-config and xz preinstalled; the container
-      # does not. `file` is used by the AppImage bundler, pkg-config by the gtk-rs build scripts.
-      - name: Install system dependencies
+      # Before the checkout, which needs git for a real clone: the bare container has none. It runs as
+      # root, so without sudo. The AppImage bundler uses `file`, the gtk-rs build scripts pkg-config.
+      - name: Install the build tools
         run: |
           apt-get update
           apt-get install -y --no-install-recommends \
-            ca-certificates git curl wget file xz-utils pkg-config build-essential \
-            libwebkit2gtk-4.1-dev libxdo-dev libssl-dev librsvg2-dev
-
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+            ca-certificates git curl wget file xz-utils pkg-config build-essential
+      - uses: actions/checkout@v7
+      # After the checkout, which brings the action.
+      - name: Linux libraries
+        uses: ./.github/actions/linux-libraries
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Rust cache
-        uses: swatinem/rust-cache@v2
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
         with:
           workspaces: src-tauri -> target
 
-      - name: Install npm dependencies
+      - name: Install
         run: npm ci
-
-      - name: Build Tauri app
+      - name: Build the app
         uses: tauri-apps/tauri-action@v1
 
       - name: Name the release files
@@ -99,10 +90,9 @@ jobs:
           cp "$bundle"/deb/*.deb "dist-release/$name.deb"
           cp "$bundle"/rpm/*.rpm "dist-release/$name.rpm"
           ls -la dist-release
-
       # Double-clicking a .mdproj file opens the app only if the package installs the MIME definition
       # (src-tauri/linux/mockup-director-mime.xml) and its .desktop entry takes files (%F) of that type.
-      - name: Check the .mdproj file association in the .deb
+      - name: Check the file association
         run: |
           deb="$(ls dist-release/*.deb)"
           rm -rf deb-check && mkdir deb-check && dpkg-deb -x "$deb" deb-check
@@ -116,10 +106,9 @@ jobs:
             echo "::error::$desktop does not open .mdproj files"
             exit 1
           fi
-
       # The licenses come with every copy (bundle.resources in tauri.conf.json); the AppImage and the
-      # .rpm are made from the same files.
-      - name: Check the .deb contains the licenses
+      # .rpm are made from the same files as the .deb.
+      - name: Check the licenses
         run: |
           for file in LICENSE.txt THIRD-PARTY-NOTICES.txt; do
             if [ -z "$(find deb-check/usr/lib -name "$file")" ]; then
@@ -128,26 +117,44 @@ jobs:
               exit 1
             fi
           done
-
-      # Each file on its own and unzipped, so the run's page offers the file itself. A download does
-      # not keep the AppImage's executable bit, so the user runs `chmod +x` once (see README).
-      - name: Upload AppImage
+      # Each file on its own and unzipped, so the run's page offers the files themselves. Each step
+      # fails unless its pattern matches exactly one file. A download does not keep the AppImage's
+      # executable bit, so users run `chmod +x` once (see the README).
+      - id: appimage
         uses: actions/upload-artifact@v7
         with:
           path: dist-release/*.AppImage
           archive: false
           if-no-files-found: error
-
-      - name: Upload .deb
+      - id: deb
         uses: actions/upload-artifact@v7
         with:
           path: dist-release/*.deb
           archive: false
           if-no-files-found: error
-
-      - name: Upload .rpm
+      - id: rpm
         uses: actions/upload-artifact@v7
         with:
           path: dist-release/*.rpm
           archive: false
           if-no-files-found: error
+
+  files:
+    name: Linux release files
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # What the check runs, and the action.
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: |
+            package.json
+            tools/release.mjs
+            .github/actions/release-files
+          sparse-checkout-cone-mode: false
+      - name: Release files
+        uses: ./.github/actions/release-files
+        with:
+          system: linux
+          artifacts: ${{ needs.build.outputs.artifacts }}

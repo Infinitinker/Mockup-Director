@@ -10,12 +10,19 @@
  * The entry data is kept as Blobs and the final archive is assembled with `new Blob([...parts])`,
  * so no single huge ArrayBuffer has to be allocated (the engine may keep the parts on disk).
  */
+import { UserError } from '../core/errors';
 import { crc32 } from './png';
 
-/** Thrown by ZipWriter.add() when the entry would make the archive exceed the ZIP (non-ZIP64) limits. */
-export class ZipLimitError extends Error {
-  constructor(message = 'ZIP archive limit reached (4 GB / 65535 entries)') {
-    super(message);
+/**
+ * Thrown by ZipWriter.add() when the entry would make the archive exceed the ZIP (non-ZIP64) limits.
+ * Its own class, because the batch export stops at it and keeps what the archive holds; its message
+ * is the one the batch export shows.
+ */
+export class ZipLimitError extends UserError {
+  constructor() {
+    super(
+      'The ZIP file reached its limit of 4 GB or 65,534 files: the remaining items were skipped. Choose fewer items or a smaller size.',
+    );
     this.name = 'ZipLimitError';
   }
 }
@@ -94,7 +101,7 @@ export class ZipWriter {
 
   /**
    * Add a file. Names must be unique (throws otherwise).
-   * @throws ZipLimitError when the archive would exceed 4 GB or 65535 entries (nothing is added).
+   * @throws ZipLimitError when the archive would reach 4 GB or hold more than 65,534 entries (nothing is added).
    */
   async add(name: string, data: Blob | Uint8Array<ArrayBuffer>, date: Date = new Date()): Promise<void> {
     const clean = sanitizeZipName(name);

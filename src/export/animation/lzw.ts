@@ -1,7 +1,7 @@
 /**
  * GIF LZW compression (variable-length codes, 12-bit maximum, clear code when the table is full).
  *
- * Code size rule (the classic, decoder-compatible "compress" behaviour): a code is always written
+ * Code size rule (the classic, decoder-compatible "compress" behavior): a code is always written
  * with the CURRENT size; afterwards, if the next free code no longer fits (nextCode > 2^size - 1)
  * and size < 12, the size grows by one. After a clear code the size returns to minCodeSize + 1.
  * Output is packed LSB-first and split into data sub-blocks of at most 255 bytes, terminated by a

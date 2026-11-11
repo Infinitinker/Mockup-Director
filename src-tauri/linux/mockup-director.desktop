@@ -1,3 +1,6 @@
+# The app's menu entry on Linux: a template that Tauri fills in for the .deb and .rpm packages
+# (desktopTemplate in tauri.linux.conf.json). Unlike Tauri's own template, Exec ends in %F, so the
+# files the system opens with the app (such as .mdproj projects) reach it as arguments.
 [Desktop Entry]
 Categories={{categories}}
 {{#if comment}}

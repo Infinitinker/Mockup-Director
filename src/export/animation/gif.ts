@@ -1,11 +1,11 @@
 /**
  * Animated GIF encoder (GIF89a), written from scratch – no dependency.
  *
- *  - Palette: one GLOBAL palette built from sample frames (stable colours, no flicker between
- *    frames, smaller files) or a LOCAL palette per frame; 256 colours via quantize.ts.
+ *  - Palette: one GLOBAL palette built from sample frames (stable colors, no flicker between
+ *    frames, smaller files) or a LOCAL palette per frame; 256 colors via quantize.ts.
  *  - Dithering: Floyd–Steinberg, ordered (Bayer) or none.
  *  - Transparency (transparent background): 1-bit – pixels with alpha below the threshold become
- *    the transparent index, semi-transparent pixels above it are composited over a matte colour;
+ *    the transparent index, semi-transparent pixels above it are composited over a matte color;
  *    every frame is a full frame with disposal method 2 (restore to background).
  *  - Opaque output with a global palette: pixels that did not change since they were last drawn
  *    are written as the transparent index and every frame is cropped to the changed rectangle
@@ -25,7 +25,7 @@ export interface GifEncoderOptions {
   transparent: boolean;
   /** 1..255, default 128. */
   alphaThreshold?: number;
-  /** Colour semi-transparent pixels are composited over (RGB 0..255). Default white. */
+  /** Color semi-transparent pixels are composited over (RGB 0..255). Default white. */
   matte?: [number, number, number];
   dither: DitherMode;
   palette: 'global' | 'frame';
@@ -33,7 +33,7 @@ export interface GifEncoderOptions {
   loopCount?: number;
 }
 
-/** Max colour difference (per channel) for a pixel to count as unchanged between frames. */
+/** Max color difference (per channel) for a pixel to count as unchanged between frames. */
 const KEEP_TOLERANCE = 2;
 /** Histogram sampling: at most this many pixels per frame. */
 const HIST_SAMPLES = 400_000;
@@ -49,7 +49,7 @@ export class GifAnimationEncoder {
   private readonly indices: Uint8Array;
   private histogram: ColorHistogram | null = null;
   private global: { mapper: PaletteMapper; table: Uint8Array; bits: number; transparentIndex: number } | null = null;
-  /** Diff mode (opaque + global palette): source colour of the currently displayed pixels. */
+  /** Diff mode (opaque + global palette): source color of the currently displayed pixels. */
   private shown: Uint8Array | null = null;
   private keep: Uint8Array | null = null;
   private frames = 0;
@@ -146,8 +146,8 @@ export class GifAnimationEncoder {
       // Local palette per frame.
       const hist = new ColorHistogram();
       hist.addRgb(this.rgb, this.visible, Math.ceil(n / HIST_SAMPLES));
-      const colours = this.o.transparent ? 255 : 256;
-      const pal = buildPalette(hist, colours);
+      const colors = this.o.transparent ? 255 : 256;
+      const pal = buildPalette(hist, colors);
       const count = Math.floor(pal.length / 3);
       const transparentIndex = this.o.transparent ? count : -1;
       const bits = bitsFor(count + (this.o.transparent ? 1 : 0));
@@ -191,13 +191,11 @@ export class GifAnimationEncoder {
     return blob;
   }
 
-  /* ---------------------------------------------------------------- */
-
   private finishGlobalPalette(): void {
     const hist = this.histogram ?? new ColorHistogram();
     // Opaque diff mode and transparency both need one reserved index.
-    const colours = 255;
-    const pal = buildPalette(hist, colours);
+    const colors = 255;
+    const pal = buildPalette(hist, colors);
     const count = Math.floor(pal.length / 3);
     const transparentIndex = count; // first unused entry
     const bits = bitsFor(count + 1);
@@ -240,8 +238,7 @@ export class GifAnimationEncoder {
   /** Diff mode: mark unchanged pixels in `keep`; returns the changed rectangle (null = none). */
   private markUnchanged(): { x0: number; y0: number; x1: number; y1: number } | null {
     const { w, h, rgb } = this;
-    const keep = this.keep!;
-    const shown = this.shown!;
+    const { keep, shown } = this.diffBuffers();
     if (this.frames === 0) {
       keep.fill(0);
       return { x0: 0, y0: 0, x1: w - 1, y1: h - 1 };
@@ -270,10 +267,11 @@ export class GifAnimationEncoder {
     return x1 < 0 ? null : { x0, y0, x1, y1 };
   }
 
-  /** Diff mode: remember the source colour of every pixel drawn in this frame. */
+  /** Diff mode: remember the source color of every pixel drawn in this frame. */
   private rememberShown(): void {
-    const keep = this.frames > 0 ? this.keep! : null;
-    const shown = this.shown!;
+    const buffers = this.diffBuffers();
+    const keep = this.frames > 0 ? buffers.keep : null;
+    const shown = buffers.shown;
     const rgb = this.rgb;
     const n = this.w * this.h;
     for (let p = 0; p < n; p++) {
@@ -282,6 +280,13 @@ export class GifAnimationEncoder {
       shown[p * 3 + 1] = rgb[p * 3 + 1];
       shown[p * 3 + 2] = rgb[p * 3 + 2];
     }
+  }
+
+  /** Diff mode: the buffers made together with the global palette. */
+  private diffBuffers(): { keep: Uint8Array; shown: Uint8Array } {
+    const { keep, shown } = this;
+    if (!keep || !shown) throw new Error('The GIF encoder used diff mode before its buffers were made.');
+    return { keep, shown };
   }
 
   private crop(x0: number, y0: number, x1: number, y1: number): Uint8Array {
@@ -303,9 +308,9 @@ export class GifAnimationEncoder {
     head.ascii('GIF89a');
     head.u16(this.w);
     head.u16(this.h);
-    // Global colour table flag | colour resolution (8 bits) | table size.
+    // Global color table flag | color resolution (8 bits) | table size.
     head.u8(g ? 0x80 | 0x70 | (g.bits - 1) : 0x70);
-    head.u8(0); // background colour index
+    head.u8(0); // background color index
     head.u8(0); // pixel aspect ratio
     this.chunks.push(head.bytes());
     if (g) this.chunks.push(g.table);
@@ -323,7 +328,7 @@ export class GifAnimationEncoder {
   }
 
   /**
-   * Graphic control extension + image descriptor (+ local colour table) + LZW image data.
+   * Graphic control extension + image descriptor (+ local color table) + LZW image data.
    * transparentIndex < 0 = no transparency.
    */
   private writeFrame(
@@ -358,7 +363,7 @@ export class GifAnimationEncoder {
   }
 }
 
-/** Colour table size exponent (1..8) for `count` entries. */
+/** Color table size exponent (1..8) for `count` entries. */
 function bitsFor(count: number): number {
   let bits = 1;
   while (1 << bits < count && bits < 8) bits++;

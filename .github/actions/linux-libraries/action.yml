@@ -1,0 +1,26 @@
+# Installs the system libraries the app needs to build on Debian and Ubuntu: the Tauri v2
+# prerequisites (the app has no tray icon, so no libayatana-appindicator3-dev), with WebKitGTK 4.1.
+# Used by the Linux jobs of checks.yml, e2e.yml and build-linux.yml.
+name: Linux libraries
+description: Installs the Tauri v2 build prerequisites for Debian and Ubuntu with apt-get.
+
+inputs:
+  packages:
+    description: More packages to install with the libraries, separated by spaces.
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    # With sudo on a runner; as root, without it, in a container, which has no sudo.
+    - name: Install system libraries
+      shell: bash
+      env:
+        PACKAGES: ${{ inputs.packages }}
+      run: |
+        as_root() { if [ "$(id -u)" = 0 ]; then "$@"; else sudo "$@"; fi; }
+        read -ra extra <<< "$PACKAGES"
+        as_root apt-get update
+        as_root apt-get install -y --no-install-recommends \
+          libwebkit2gtk-4.1-dev libxdo-dev libssl-dev librsvg2-dev "${extra[@]}"

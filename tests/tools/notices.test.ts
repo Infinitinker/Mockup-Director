@@ -1,3 +1,7 @@
+/**
+ * Tests tools/notices.mjs: the names of the kept license texts, normalizing line ends and spaces, the license
+ * texts of each npm package, and the order and form of THIRD-PARTY-NOTICES.md.
+ */
 import { describe, expect, it } from 'vitest';
 import { APPIMAGE, KEPT, keptFile, normalize, npmEntries, renderNotices } from '../../tools/notices.mjs';
 

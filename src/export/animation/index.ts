@@ -11,30 +11,19 @@
  *     frame so the UI (progress bar, Cancel button) stays responsive.
  * The stage is always restored (try/finally), also on errors and cancellation.
  */
-import type { AnimationFormat, AnimationSettings, BackgroundSettings, StageAPI } from '../../core/types';
-import { msg } from '../../i18n';
+import type { AnimationFormat, AnimationSettings } from '../../core/types/export';
+import type { BackgroundSettings, StageAPI } from '../../core/types/scene';
+import { UserError } from '../../core/errors';
 import { paintBackground } from '../exporter';
-import { AnimationCancelled, AnimationError } from './errors';
+import { animationFormatSupport } from '../formats';
+import { AnimationCanceled, MP4_SIZE_UNSUPPORTED, MP4_UNSUPPORTED, WEBP_ANIMATION_UNSUPPORTED } from './errors';
 import { GifAnimationEncoder } from './gif';
 import { AnimatedWebpWriter } from './webp';
-import { Mp4Writer, mp4EncodingAvailable } from './mp4';
-import { frameCountOf, normaliseAnimationSettings, outputSizeOf } from './settings';
+import { Mp4Writer } from './mp4';
+import { normalizeAnimationSettings, outputSizeOf } from './settings';
 import { frameDelays, turntableAngles } from './turntable';
 
-export { AnimationCancelled, AnimationError, isAnimationCancelled } from './errors';
-export { mp4EncodingAvailable } from './mp4';
-export {
-  defaultFpsFor,
-  frameCountOf,
-  maxFpsFor,
-  maxMarginFor,
-  maxSizeFor,
-  normaliseAnimationSettings,
-  outputSizeOf,
-} from './settings';
-export { turntableAngles } from './turntable';
-
-export type AnimationPhase = 'prepare' | 'palette' | 'frames' | 'finalize';
+type AnimationPhase = 'prepare' | 'palette' | 'frames' | 'finalize';
 
 export interface AnimationProgress {
   phase: AnimationPhase;
@@ -44,11 +33,9 @@ export interface AnimationProgress {
   total: number;
 }
 
-export interface AnimationExportOptions {
+interface AnimationExportOptions {
   /** Scene preview background (used for background 'scene'). */
   background: BackgroundSettings;
-  /** Can the engine encode WebP stills? (supportsWebpEncoding() from ../exporter). */
-  webpSupported: boolean;
   onProgress?: (p: AnimationProgress) => void;
   signal?: AbortSignal;
 }
@@ -68,33 +55,24 @@ const PALETTE_SAMPLES = 8;
 
 const QUALITY_WEBP: Record<AnimationSettings['quality'], number> = { low: 0.6, medium: 0.8, high: 0.92 };
 
-/** MIME type and file extension of an animation format. */
-export function animationMime(format: AnimationFormat): string {
-  return format === 'mp4' ? 'video/mp4' : `image/${format}`;
-}
-
-/** Save-dialog filter for an animation format. */
-export function animationFileFilter(format: AnimationFormat): { name: string; extensions: string[] } {
-  const names: Record<AnimationFormat, string> = { gif: 'GIF', webp: 'WebP', mp4: 'MP4' };
-  return { name: names[format], extensions: [format] };
-}
-
 /** Render and encode the turntable animation of the current stage. */
 export async function exportAnimation(
   stage: StageAPI,
   raw: AnimationSettings,
   opts: AnimationExportOptions,
 ): Promise<AnimationResult> {
-  const s = normaliseAnimationSettings(raw, { webp: opts.webpSupported, mp4: mp4EncodingAvailable() });
+  const s = normalizeAnimationSettings(raw, animationFormatSupport());
   if (s.format !== raw.format) {
-    throw raw.format === 'webp' ? webpUnsupported() : mp4Unsupported();
+    throw raw.format === 'webp' ? new UserError(WEBP_ANIMATION_UNSUPPORTED) : new UserError(MP4_UNSUPPORTED);
   }
   if (!stage.beginAnimation) {
-    throw new AnimationError('unsupported', msg('errAnimationNeedsWebgl'));
+    throw new UserError(
+      'Animation export needs the 3D preview, but WebGL does not work on this computer. Update the graphics drivers, then restart Mockup Director.',
+    );
   }
   const signal = opts.signal;
   const checkAbort = () => {
-    if (signal?.aborted) throw new AnimationCancelled();
+    if (signal?.aborted) throw new AnimationCanceled();
   };
   const progress = (phase: AnimationPhase, done: number, total: number) => opts.onProgress?.({ phase, done, total });
 
@@ -158,9 +136,9 @@ export async function exportAnimation(
       try {
         mp4 = await Mp4Writer.create(W, H, fps, s.quality);
       } catch (e) {
-        throw new AnimationError('mp4-unsupported', msg('errMp4Unsupported'), e);
+        throw new UserError(MP4_SIZE_UNSUPPORTED, { cause: e });
       }
-      if (!mp4) throw mp4Unsupported();
+      if (!mp4) throw new UserError(MP4_SIZE_UNSUPPORTED);
     }
 
     const renderCanvas = createCanvas(rw, rh);
@@ -169,9 +147,10 @@ export async function exportAnimation(
     out = outCanvas;
     const og = get2d(outCanvas, s.format === 'gif');
     checkAbort();
-    session = stage.beginAnimation({ angles, width: rw, height: rh, useViewZoomPan: s.useViewZoomPan });
+    const activeSession = stage.beginAnimation({ angles, width: rw, height: rh, useViewZoomPan: s.useViewZoomPan });
+    session = activeSession;
     const frame = (i: number) => {
-      session!.renderFrame(i, renderCanvas);
+      activeSession.renderFrame(i, renderCanvas);
       og.clearRect(0, 0, W, H);
       if (bg) og.drawImage(bg, 0, 0);
       og.imageSmoothingEnabled = true;
@@ -179,7 +158,7 @@ export async function exportAnimation(
       og.drawImage(renderCanvas, 0, 0, rw, rh, margin, margin, cw, ch);
     };
 
-    // GIF with a global palette: analyse a few evenly spaced frames first.
+    // GIF with a global palette: analyze a few evenly spaced frames first.
     if (gif?.needsPaletteSamples) {
       const count = Math.min(n, PALETTE_SAMPLES);
       for (let k = 0; k < count; k++) {
@@ -198,7 +177,7 @@ export async function exportAnimation(
         gif.addFrame(og.getImageData(0, 0, W, H).data, delaysCs[i]);
       } else if (webp) {
         const blob = await canvasToBlob(outCanvas, 'image/webp', QUALITY_WEBP[s.quality]);
-        if (blob.type && blob.type !== 'image/webp') throw webpUnsupported();
+        if (blob.type && blob.type !== 'image/webp') throw new UserError(WEBP_ANIMATION_UNSUPPORTED);
         webp.addFrame(new Uint8Array(await blob.arrayBuffer()), delaysMs[i]);
       } else if (mp4) {
         await mp4.addFrame(outCanvas);
@@ -216,18 +195,14 @@ export async function exportAnimation(
     let blob: Blob;
     if (gif) blob = gif.finish();
     else if (webp) blob = webp.finish();
-    else blob = await mp4!.finish();
+    else if (mp4) blob = await mp4.finish();
+    else throw new Error('The animation export has no encoder.');
     finished = true;
     // Cancel pressed while the file was being finished: do not hand the file to the save dialog.
     checkAbort();
     progress('finalize', 1, 1);
     if (!blob.size) throw encodeFailed();
     return { blob, format: s.format, width: W, height: H, frames: n };
-  } catch (e) {
-    if (e instanceof AnimationError || e instanceof AnimationCancelled) throw e;
-    if (e && typeof e === 'object' && 'text' in e) throw e; // localized stage errors
-    console.error('[mockup-director] animation export failed', e);
-    throw new AnimationError('encode-failed', msg('errAnimationFailed', { error: errorText(e) }), e);
   } finally {
     session?.end();
     if (mp4 && !finished) void mp4.cancel();
@@ -237,12 +212,8 @@ export async function exportAnimation(
   }
 }
 
-/* ------------------------------------------------------------------ */
-/* Helpers                                                             */
-/* ------------------------------------------------------------------ */
-
 /**
- * Let the browser paint and handle input (rAF while visible). When the window is hidden / minimised,
+ * Let the browser paint and handle input (rAF while visible). When the window is hidden / minimized,
  * rAF does not fire and timers are throttled to about one per second, so a MessageChannel task is
  * used instead – the export keeps its speed in the background.
  */
@@ -268,7 +239,7 @@ function yieldToUi(): Promise<void> {
   });
 }
 
-/** Matte for GIF anti-aliased / semi-transparent pixels: the scene's main colour, else white. */
+/** Matte for GIF anti-aliased / semi-transparent pixels: the scene's main color, else white. */
 function matteFor(bg: BackgroundSettings): [number, number, number] {
   const m = bg.mode !== 'transparent' ? /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(bg.color) : null;
   return m ? [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)] : [255, 255, 255];
@@ -284,7 +255,7 @@ function createCanvas(w: number, h: number): HTMLCanvasElement {
 function get2d(c: HTMLCanvasElement, willReadFrequently = false): CanvasRenderingContext2D {
   const g = c.getContext('2d', willReadFrequently ? { willReadFrequently: true } : undefined);
   if (!g) {
-    throw new AnimationError('render-failed', msg('errAnimationTooLarge'));
+    throw new UserError('Not enough memory for an animation this large. Reduce the size.');
   }
   return g;
 }
@@ -300,24 +271,6 @@ function canvasToBlob(c: HTMLCanvasElement, mime: string, quality: number): Prom
   });
 }
 
-function errorText(e: unknown): string {
-  if (e instanceof Error) return e.message;
-  return String(e);
-}
-
-function encodeFailed(): AnimationError {
-  return new AnimationError('encode-failed', msg('errAnimationEncode'));
-}
-
-function webpUnsupported(): AnimationError {
-  return new AnimationError('webp-unsupported', msg('errWebpAnimation'));
-}
-
-function mp4Unsupported(): AnimationError {
-  return new AnimationError('mp4-unsupported', msg('errMp4Unsupported'));
-}
-
-/** Frame count shown in the UI (same rule as the exporter). */
-export function estimatedFrames(s: Pick<AnimationSettings, 'fps' | 'duration'>): number {
-  return frameCountOf(s);
+function encodeFailed(): UserError {
+  return new UserError('The animation could not be encoded: there may not be enough memory. Reduce the size.');
 }

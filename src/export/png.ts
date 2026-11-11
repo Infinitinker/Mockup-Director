@@ -1,7 +1,7 @@
 /**
  * Pure byte-level helpers for embedding a print resolution (DPI) into encoded images.
  *
- * Browsers' canvas encoders never write a resolution, so Photoshop opens such files at 72 dpi.
+ * Browsers' canvas encoders never write a resolution, so an image editor opens such files at 72 dpi.
  * We patch the encoded bytes instead:
  *  - PNG : insert (or replace) a `pHYs` chunk right after IHDR (spec: must precede IDAT).
  *  - JPEG: set the density fields of the JFIF APP0 segment (or insert one after SOI).
@@ -33,8 +33,8 @@ export function crc32(bytes: Uint8Array, start = 0, end = bytes.length): number 
   return (c ^ 0xffffffff) >>> 0;
 }
 
-/** DPI -> pixels per metre (PNG pHYs unit 1). 300 dpi -> 11811. */
-export function dpiToPixelsPerMetre(dpi: number): number {
+/** DPI -> pixels per meter (PNG pHYs unit 1). 300 dpi -> 11811. */
+export function dpiToPixelsPerMeter(dpi: number): number {
   return Math.max(1, Math.round(dpi / 0.0254));
 }
 
@@ -65,7 +65,7 @@ function chunkType(b: Uint8Array, o: number): string {
 
 /** Build a complete pHYs chunk (length + type + data + CRC = 21 bytes). */
 export function buildPhysChunk(dpi: number): Uint8Array<ArrayBuffer> {
-  const ppm = dpiToPixelsPerMetre(dpi);
+  const ppm = dpiToPixelsPerMeter(dpi);
   const c = new Uint8Array(21);
   writeU32(c, 0, 9);
   c[4] = 0x70; // p
@@ -74,7 +74,7 @@ export function buildPhysChunk(dpi: number): Uint8Array<ArrayBuffer> {
   c[7] = 0x73; // s
   writeU32(c, 8, ppm);
   writeU32(c, 12, ppm);
-  c[16] = 1; // unit: metre
+  c[16] = 1; // unit: meter
   writeU32(c, 17, crc32(c, 4, 17));
   return c;
 }
@@ -121,22 +121,6 @@ export function setPngPhys(png: Uint8Array, dpi: number): Uint8Array<ArrayBuffer
   }
   copy(r, png.length);
   return out;
-}
-
-/** Read the pHYs resolution of a PNG in dpi (rounded to 0.01), or null if absent / not in metres. */
-export function readPngDpi(png: Uint8Array): number | null {
-  if (!isPng(png)) return null;
-  let o = 8;
-  while (o + 12 <= png.length) {
-    const len = readU32(png, o);
-    const type = chunkType(png, o);
-    if (type === 'pHYs' && len === 9 && png[o + 16] === 1) {
-      return Math.round(readU32(png, o + 8) * 0.0254 * 100) / 100;
-    }
-    if (type === 'IDAT' || type === 'IEND') return null;
-    o += 12 + len;
-  }
-  return null;
 }
 
 /**

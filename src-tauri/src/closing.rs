@@ -9,6 +9,8 @@ use std::time::Duration;
 
 use tauri::{Manager, Runtime, Window};
 
+use crate::log;
+
 /// How long the page has to close the window itself; longer than its own wait for the save.
 pub const CLOSE_TIMEOUT: Duration = Duration::from_secs(5);
 
@@ -33,15 +35,15 @@ pub fn on_close_requested<R: Runtime>(window: &Window<R>) {
         .name("close-watchdog".into())
         .spawn(move || {
             std::thread::sleep(CLOSE_TIMEOUT);
-            eprintln!(
+            log::warn(format_args!(
                 "The page did not close the window within {} s; closing it anyway.",
                 CLOSE_TIMEOUT.as_secs()
-            );
+            ));
             if let Err(e) = window.destroy() {
-                eprintln!("Cannot close the window: {e}");
+                log::error(format_args!("Cannot close the window: {e}"));
             }
         });
     if let Err(e) = started {
-        eprintln!("Cannot start the window close watchdog: {e}");
+        log::error(format_args!("Cannot start the window close watchdog: {e}"));
     }
 }

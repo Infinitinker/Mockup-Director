@@ -5,20 +5,23 @@
   "license": "MIT",
   "description": "Mockup Director – photorealistic 3D mockups of packaging, books, print and devices for Windows, macOS and Linux",
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
-    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit && tsc -p tools && tsc -p tests/e2e && vite build",
     "lint": "biome check --error-on-warnings",
     "format": "biome check --write",
     "test": "vitest run",
     "licenses": "node tools/licenses.mjs",
     "notices": "node tools/notices.mjs",
-    "check:i18n": "node tools/check-i18n.mjs",
-    "preview": "vite preview",
     "tauri": "tauri",
     "app:dev": "tauri dev --config src-tauri/tauri.dev.conf.json",
-    "icons": "node tools/draw-icon.mjs"
+    "e2e:build": "node tools/e2e-build.mjs",
+    "e2e": "wdio run tests/e2e/wdio.config.ts",
+    "icons": "node tools/draw-icon.mjs",
+    "installer": "node tools/installer.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "~2.12.4",
@@ -30,9 +33,19 @@
     "@biomejs/biome": "2.6.6",
     "@resvg/resvg-js": "2.6.2",
     "@tauri-apps/cli": "~2.12.4",
+    "@types/node": "^22.20.5",
     "@types/three": "^0.187.0",
+    "@wdio/cli": "^10.2.0",
+    "@wdio/globals": "^10.2.0",
+    "@wdio/local-runner": "^10.2.0",
+    "@wdio/mocha-framework": "^10.2.0",
+    "@wdio/spec-reporter": "^10.2.0",
+    "@wdio/tauri-plugin": "2.0.0-next.0",
+    "@wdio/tauri-service": "2.0.0-next.0",
+    "@wdio/types": "^10.2.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.5",
-    "vitest": "^5.1.0"
+    "vitest": "^5.1.0",
+    "webdriverio": "^10.2.0"
   }
 }

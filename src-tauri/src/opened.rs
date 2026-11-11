@@ -13,7 +13,9 @@ use std::sync::Mutex;
 
 use tauri::Manager;
 
-/// The extension of project files (`PROJECT_EXT` in `src/ui/project.ts`).
+use crate::error::{CommandError, ErrorKind};
+
+/// The extension of project files (`PROJECT_EXT` in `src/project/format.ts`).
 pub const PROJECT_EXTENSION: &str = "mdproj";
 
 /// Emitted to the web UI when files arrive while the app is running: from macOS, or (on Windows and
@@ -59,7 +61,7 @@ impl OpenedFiles {
     }
 }
 
-#[derive(serde::Serialize)]
+#[derive(Debug, serde::Serialize)]
 pub struct OpenedFile {
     /// The file name, e.g. "Box.mdproj".
     pub name: String,
@@ -73,25 +75,25 @@ pub struct OpenedFile {
 pub struct OpenedBatch {
     /// The files that could be read.
     pub files: Vec<OpenedFile>,
-    /// One message for each path that could not be read, naming the path.
-    pub errors: Vec<String>,
+    /// One error for each path that could not be read.
+    pub errors: Vec<CommandError>,
 }
 
 /// Reads one queued file. Anything that is not a regular file (a folder, a device, a pipe) is
-/// reported instead of read, so a pipe named `*.mdproj` cannot block the reader.
-pub fn read_opened(path: &Path) -> Result<OpenedFile, String> {
-    let cannot_read = |e: std::io::Error| format!("Cannot read {}: {e}", path.display());
+/// reported as `not-a-file` instead of read, so a pipe named `*.mdproj` cannot block the reader; a
+/// file that is not UTF-8 text is `not-text`.
+pub fn read_opened(path: &Path) -> Result<OpenedFile, CommandError> {
+    let cannot_read = |e: std::io::Error| CommandError::io(path, &e);
     if !fs::metadata(path).map_err(cannot_read)?.is_file() {
-        return Err(format!(
-            "Cannot open {}: it is a folder or another item, not a file",
-            path.display()
-        ));
+        return Err(CommandError::new(ErrorKind::NotAFile, path));
     }
     let name = path
         .file_name()
         .map(|n| n.to_string_lossy().into_owned())
         .unwrap_or_default();
-    let contents = fs::read_to_string(path).map_err(cannot_read)?;
+    let bytes = fs::read(path).map_err(cannot_read)?;
+    let contents =
+        String::from_utf8(bytes).map_err(|_| CommandError::new(ErrorKind::NotText, path))?;
     Ok(OpenedFile { name, contents })
 }
 
@@ -108,7 +110,7 @@ pub fn read_all(paths: Vec<PathBuf>) -> OpenedBatch {
 }
 
 /// Hands the queued project files to the web UI (and forgets them). An async command, so the
-/// files (which can be tens of megabytes with embedded images) are read off the main thread.
+/// files (which can be tens of megabytes with embedded artwork) are read off the main thread.
 #[tauri::command]
 pub async fn take_opened_files(app: tauri::AppHandle) -> OpenedBatch {
     read_all(app.state::<OpenedFiles>().take())

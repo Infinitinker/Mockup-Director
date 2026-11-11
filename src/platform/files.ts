@@ -1,17 +1,39 @@
 /**
- * File I/O that works both in the Tauri v2 desktop shell (WKWebView on macOS) and in a browser
- * (dev mode / web preview).
+ * File I/O that works both in the Tauri v2 desktop shell and in a browser (dev mode / web preview).
  *
- * Desktop save contract (implemented on the Rust side by the Tauri agent):
- *   invoke('save_file', <raw bytes as Uint8Array>, { headers: { 'x-path': encodeURIComponent(path) } })
- * The raw body avoids the JSON-encoding overhead of large PNGs (a 4000×4000 PNG can be 30+ MB).
+ * Desktop save contract (the save commands in src-tauri/src/saves.rs):
+ *   const id = await invoke('save_open', { path, replace });
+ *   await invoke('save_write', <raw bytes>, { headers: { 'x-save-id': String(id) } }); // once per chunk, in order
+ *   await invoke('save_commit', { id, size }); // or, after a failure, invoke('save_abort', { id })
+ * The file is sent in chunks of SAVE_CHUNK_BYTES, so a batch ZIP of several gigabytes is never one
+ * message or one buffer; the raw bodies avoid JSON-encoding the bytes. The shell writes a temporary
+ * file and puts it in place on commit, so a failed save leaves an existing file as it was; it
+ * refuses an empty chunk, and a commit whose `size` (the blob's) is not what it received.
+ * `replace` is true for the path as the save dialog returned it, whose replacing the dialog asked
+ * about. When the dialog's path lacked the extension and `ensureExtension` added it, the dialog did
+ * not ask about that name: `replace` is false, the shell refuses a file already there
+ * (`already-exists`), and the dialog is shown again with the corrected name, so it asks itself.
+ * A failed command rejects with a `CommandError`, which `fromCommandError` turns into a `UserError`
+ * naming the file (a malformed call, `invalid-request`, becomes a plain `Error`).
  */
 import { isTauri, invoke } from '@tauri-apps/api/core';
+import { UserError } from '../core/errors';
+import { fromCommandError, isCommandError } from './commandErrors';
+import { log } from './log';
 
-export interface FileFilter {
+interface FileFilter {
   name: string;
   extensions: string[];
 }
+
+/** How sure saveBlob must be of the write. */
+interface SaveOptions {
+  /** Only resolve with a name once the file is known to be written: never fall back to a download. */
+  confirmed?: boolean;
+}
+
+const UNCONFIRMED_SAVE =
+  'This browser cannot confirm that the file was saved, so the copy is kept. Save it from the desktop app, or from a browser that has a save dialog.';
 
 /** True when running inside the Tauri desktop shell. */
 export function inDesktopApp(): boolean {
@@ -24,12 +46,19 @@ export function inDesktopApp(): boolean {
 
 /**
  * Asks where to save and writes the blob. Resolves with the name of the saved file (without its
- * folder), which the user may have changed in the save dialog, or null if the user cancelled.
- * A classic browser download cannot report either, so it resolves with the suggested name.
+ * folder), which the user may have changed in the save dialog, or null if the user canceled.
+ * A classic browser download cannot report either, so it resolves with the suggested name; with
+ * `confirmed`, a browser that can only download, or a browser save that fails, rejects with a
+ * `UserError` instead. A file the desktop app cannot write rejects with a `UserError` naming the file.
  */
-export async function saveBlob(blob: Blob, suggestedName: string, filters: FileFilter[]): Promise<string | null> {
+export async function saveBlob(
+  blob: Blob,
+  suggestedName: string,
+  filters: FileFilter[],
+  opts: SaveOptions = {},
+): Promise<string | null> {
   if (inDesktopApp()) return saveInDesktopApp(blob, suggestedName, filters);
-  return saveInBrowser(blob, suggestedName, filters);
+  return saveInBrowser(blob, suggestedName, filters, opts);
 }
 
 /** Let the user pick file(s). `accept` like "image/*" or ".mdproj". */
@@ -75,50 +104,103 @@ export function pickFiles(accept: string, multiple = false): Promise<File[]> {
   });
 }
 
-/** Read a picked file as text (project files). */
-export function readFileText(file: File): Promise<string> {
-  return file.text();
-}
+/** The largest chunk of a file sent to the desktop shell at once (8 MiB). */
+export const SAVE_CHUNK_BYTES = 8 * 1024 * 1024;
 
-/* ------------------------------------------------------------------ */
-/* Desktop (Tauri)                                                     */
-/* ------------------------------------------------------------------ */
+/** The request header that names the save a chunk belongs to (`SAVE_ID_HEADER` in src-tauri/src/saves.rs). */
+const SAVE_ID_HEADER = 'x-save-id';
 
-async function saveInDesktopApp(blob: Blob, suggestedName: string, filters: FileFilter[]): Promise<string | null> {
-  const { save } = await import('@tauri-apps/plugin-dialog');
-  const picked = await save({
-    defaultPath: suggestedName,
-    filters: filters.map((f) => ({ name: f.name, extensions: f.extensions.map(stripDot) })),
-  });
-  if (!picked) return null; // cancelled
-  const path = ensureExtension(picked, filters, suggestedName);
-  const bytes = new Uint8Array(await blob.arrayBuffer());
-  await invoke('save_file', bytes, { headers: { 'x-path': encodeURIComponent(path) } });
-  return path.split(/[\\/]/).pop() || suggestedName;
+/** The `[start, end)` byte ranges that split a file of `size` bytes into chunks, in order; none for an empty file. */
+export function chunkRanges(size: number, chunkBytes = SAVE_CHUNK_BYTES): [number, number][] {
+  const ranges: [number, number][] = [];
+  for (let start = 0; start < size; start += chunkBytes) ranges.push([start, Math.min(start + chunkBytes, size)]);
+  return ranges;
 }
 
 /**
- * The macOS save panel normally appends the extension, but users can delete it; make sure the file
- * keeps an extension from the filters (otherwise Finder / Photoshop will not recognise it).
+ * Shows the save dialog and writes the blob where the user chose. A name the dialog returned
+ * without the extension gets it, and must not replace a file the dialog did not ask about: when a
+ * file of the corrected name is there, the dialog is shown again with that name, so it asks.
  */
-export function ensureExtension(path: string, filters: FileFilter[], suggestedName: string): string {
+async function saveInDesktopApp(blob: Blob, suggestedName: string, filters: FileFilter[]): Promise<string | null> {
+  const { save } = await import('@tauri-apps/plugin-dialog');
+  const dialogFilters = filters.map((f) => ({ name: f.name, extensions: f.extensions.map(stripDot) }));
+  let defaultPath = suggestedName;
+  for (;;) {
+    const picked = await save({ defaultPath, filters: dialogFilters });
+    if (!picked) return null; // canceled
+    const path = ensureExtension(picked, filters, suggestedName);
+    const replace = path === picked;
+    const name = path.split(/[\\/]/).pop() || suggestedName;
+    try {
+      await writeInDesktopApp(blob, path, name, replace);
+      return name;
+    } catch (e) {
+      if (!replace && isCommandError(e) && e.kind === 'already-exists') {
+        defaultPath = path;
+        continue;
+      }
+      throw fromCommandError(e, 'save');
+    }
+  }
+}
+
+/**
+ * Writes the blob to `path` through the shell's save commands, one chunk at a time, so at most one
+ * chunk is in memory besides the blob. When a chunk cannot be read or written, the save is aborted.
+ * Unless `replace` is set, a file already at `path` is refused (`already-exists`).
+ */
+async function writeInDesktopApp(blob: Blob, path: string, name: string, replace: boolean): Promise<void> {
+  const id = await invoke<number>('save_open', { path, replace });
+  try {
+    for (const [start, end] of chunkRanges(blob.size)) {
+      const bytes = await readChunk(blob, start, end, name);
+      await invoke('save_write', bytes, { headers: { [SAVE_ID_HEADER]: String(id) } });
+    }
+  } catch (e) {
+    try {
+      await invoke('save_abort', { id });
+    } catch (abortError) {
+      log.warn(`Cannot abort the save of “${name}”`, abortError);
+    }
+    throw e;
+  }
+  // The save ends with the commit, also when it fails: nothing to abort then.
+  await invoke('save_commit', { id, size: blob.size });
+}
+
+async function readChunk(blob: Blob, start: number, end: number, name: string): Promise<ArrayBuffer> {
+  try {
+    return await blob.slice(start, end).arrayBuffer();
+  } catch (e) {
+    throw new UserError(
+      `“${name}” could not be saved: Mockup Director could not read what it was saving. Try again; if it fails again, restart Mockup Director.`,
+      { cause: e },
+    );
+  }
+}
+
+/**
+ * The macOS save panel normally appends the extension, but users can delete it, and the GTK dialog
+ * on Linux adds none; make sure the file keeps an extension from the filters (otherwise a file
+ * manager or an image editor will not recognize it).
+ */
+function ensureExtension(path: string, filters: FileFilter[], suggestedName: string): string {
   const exts = filters.flatMap((f) => f.extensions.map((e) => stripDot(e).toLowerCase()));
   if (exts.length === 0 || exts.includes('*')) return path;
   const base = path.split(/[\\/]/).pop() ?? path;
   const dot = base.lastIndexOf('.');
   const ext = dot > 0 ? base.slice(dot + 1).toLowerCase() : '';
   if (ext && exts.includes(ext)) return path;
-  const sugExt = suggestedName.includes('.') ? suggestedName.split('.').pop()!.toLowerCase() : '';
+  const sugExt = suggestedName.includes('.')
+    ? suggestedName.slice(suggestedName.lastIndexOf('.') + 1).toLowerCase()
+    : '';
   return `${path}.${exts.includes(sugExt) ? sugExt : exts[0]}`;
 }
 
 function stripDot(e: string): string {
   return e.replace(/^\*?\./, '');
 }
-
-/* ------------------------------------------------------------------ */
-/* Browser                                                             */
-/* ------------------------------------------------------------------ */
 
 interface SavePickerWindow {
   showSaveFilePicker?: (options: {
@@ -144,8 +226,14 @@ const MIME_BY_EXT: Record<string, string> = {
   zip: 'application/zip',
 };
 
-async function saveInBrowser(blob: Blob, suggestedName: string, filters: FileFilter[]): Promise<string | null> {
+async function saveInBrowser(
+  blob: Blob,
+  suggestedName: string,
+  filters: FileFilter[],
+  opts: SaveOptions,
+): Promise<string | null> {
   const w = window as unknown as SavePickerWindow;
+  if (typeof w.showSaveFilePicker !== 'function' && opts.confirmed) throw new UserError(UNCONFIRMED_SAVE);
   if (typeof w.showSaveFilePicker === 'function') {
     try {
       const types = filters
@@ -155,13 +243,14 @@ async function saveInBrowser(blob: Blob, suggestedName: string, filters: FileFil
           const mime = blob.type || MIME_BY_EXT[exts[0].slice(1)] || 'application/octet-stream';
           return { description: f.name, accept: { [mime]: exts } };
         });
-      const handle = await w.showSaveFilePicker({ suggestedName, types: types.length ? types : undefined });
+      const handle = await w.showSaveFilePicker(types.length ? { suggestedName, types } : { suggestedName });
       const writable = await handle.createWritable();
       await writable.write(blob);
       await writable.close();
       return handle.name;
     } catch (err) {
-      if (err instanceof DOMException && err.name === 'AbortError') return null; // user cancelled
+      if (err instanceof DOMException && err.name === 'AbortError') return null; // user canceled
+      if (opts.confirmed) throw new UserError(UNCONFIRMED_SAVE, { cause: err });
       // NotAllowedError/SecurityError (e.g. user activation expired after a long render),
       // unsupported types… → fall through to a classic download.
     }
@@ -171,7 +260,7 @@ async function saveInBrowser(blob: Blob, suggestedName: string, filters: FileFil
 }
 
 /** Trigger a classic browser download (cannot detect cancel – always "saved"). */
-export function downloadBlob(blob: Blob, name: string): void {
+function downloadBlob(blob: Blob, name: string): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

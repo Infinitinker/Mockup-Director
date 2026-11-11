@@ -1,6 +1,7 @@
 [package]
 name = "mockup-director"
-version = "0.1.0"
+# No version: the app's version is the one in package.json, which tauri.conf.json reads (for the
+# app, its bundles and the Windows version resource). Cargo counts this crate as 0.0.0.
 description = "Mockup Director – photorealistic 3D mockups of packaging, books, print and devices"
 authors = ["Infinitinker"]
 license = "MIT"
@@ -24,6 +25,12 @@ doctest = false
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
+# Test-only: the WebdriverIO plugins the end-to-end tests drive the app with (tests/e2e,
+# docs/development.md). Built only by `npm run e2e:build`; release builds pass no features, so the
+# plugins are never in them, and a build without debug assertions refuses the feature (lib.rs).
+[features]
+e2e = ["dep:tauri-plugin-wdio", "dep:tauri-plugin-wdio-webdriver"]
+
 [dependencies]
 # No extra tauri features are needed: no tray icon, no asset protocol, no private macOS APIs.
 # (tauri-build verifies that these features match tauri.conf.json.)
@@ -34,6 +41,20 @@ tauri = { version = "~2.12", features = [] }
 tauri-plugin-dialog = "~2.8"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+# The end-to-end test plugins (feature e2e): a WebDriver server inside the app, and the bridge that
+# lets the tests mock commands. Exact versions: they must match @wdio/tauri-service in package.json.
+tauri-plugin-wdio = { version = "=2.0.0-next.0", optional = true }
+tauri-plugin-wdio-webdriver = { version = "=2.0.0-next.0", optional = true }
+
+# The native message when the app cannot start or cannot open its window (the dialog plugin needs a
+# running app): rfd on Windows and macOS, with the version and features tauri-plugin-dialog uses;
+# on Linux GTK itself, which tao already started on the main thread (rfd would run GTK on a thread of
+# its own). Neither adds crates.
+[target.'cfg(not(target_os = "linux"))'.dependencies]
+rfd = { version = "0.17", default-features = false, features = ["common-controls-v6"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+gtk = "0.18"
 
 # One app process on Windows and Linux: a second launch (double-clicking another project file) hands
 # its files to the running app, which opens them in tabs. Rust only; it has no npm package. Not on

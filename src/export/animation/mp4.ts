@@ -5,6 +5,7 @@
  * Availability: Chromium / WebView2 and Safari 16.4+ (macOS 13.3+). On older WebKit (macOS 12)
  * there is no VideoEncoder – the UI hides MP4 and explains why.
  */
+import { mp4EncodingAvailable } from '../formats';
 
 /** Bits per pixel per frame for the quality presets (≈ 7.5 Mbit/s for 1080p30 at 'medium'). */
 const BPP: Record<'low' | 'medium' | 'high', number> = { low: 0.06, medium: 0.12, high: 0.22 };
@@ -22,20 +23,13 @@ const LEVELS: [number, number, number][] = [
 /** profile_idc + constraint flags: High, Main, Constrained Baseline, Baseline. */
 const PROFILES = ['6400', '4d00', '42e0', '4200'];
 
-/** Is WebCodecs video encoding present at all? (Config support is checked per export.) */
-export function mp4EncodingAvailable(): boolean {
-  return (
-    typeof VideoEncoder === 'function' && typeof VideoFrame === 'function' && typeof EncodedVideoChunk === 'function'
-  );
-}
-
-export function bitrateFor(width: number, height: number, fps: number, quality: 'low' | 'medium' | 'high'): number {
+function bitrateFor(width: number, height: number, fps: number, quality: 'low' | 'medium' | 'high'): number {
   const bps = width * height * fps * (BPP[quality] ?? BPP.medium);
   return Math.round(Math.min(50_000_000, Math.max(400_000, bps)));
 }
 
 /** Codec strings to try for a size / fps, the lowest sufficient level first. */
-export function avcCandidates(width: number, height: number, fps: number): string[] {
+function avcCandidates(width: number, height: number, fps: number): string[] {
   const mbw = Math.ceil(width / 16);
   const mbh = Math.ceil(height / 16);
   const fs = mbw * mbh;
@@ -50,7 +44,7 @@ export function avcCandidates(width: number, height: number, fps: number): strin
 }
 
 /** Find a supported encoder configuration (null = H.264 encoding unsupported for this size). */
-export async function findAvcConfig(
+async function findAvcConfig(
   width: number,
   height: number,
   fps: number,
@@ -105,7 +99,8 @@ export class Mp4Writer {
     let writer: Mp4Writer | null = null;
     const encoder = new VideoEncoder({
       output: (chunk, meta) => {
-        const w = writer!;
+        const w = writer;
+        if (!w) throw new Error('The MP4 encoder produced output before its writer was made.');
         // Packets must reach the muxer in decode order – chain the (async) adds.
         w.chain = w.chain
           .then(() => source.add(mb.EncodedPacket.fromEncodedChunk(chunk), meta))
@@ -160,7 +155,7 @@ export class Mp4Writer {
     try {
       await this.output.cancel();
     } catch {
-      /* already finished or cancelled */
+      /* already finished or canceled */
     }
   }
 

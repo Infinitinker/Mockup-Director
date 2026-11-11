@@ -1,5 +1,6 @@
 /**
- * Turntable motion: product rotation angle per frame and per-frame delays.
+ * Turntable motion: product rotation angle per frame and per-frame delays. The stage renders the frames at these
+ * angles (src/scene/stage/turntable.ts).
  *
  * Angles are PRODUCT rotations in degrees around the vertical axis (+ = counter-clockwise seen
  * from above), relative to the current view – frame 0 is always exactly the current view.
@@ -9,7 +10,7 @@
  *           sine between the turning points (slow at +-A, fastest through the start view);
  *           'linear' is a triangle wave. Both start at the current view and loop seamlessly.
  */
-import type { AnimationSettings } from '../../core/types';
+import type { AnimationSettings } from '../../core/types/export';
 import { frameCountOf } from './settings';
 
 export function turntableAngles(

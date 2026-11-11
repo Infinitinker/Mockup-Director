@@ -1,0 +1,17 @@
+{
+  // Type-checks the command-line tools (JavaScript with JSDoc types) and vite.config.ts, which run in
+  // Node 22+ rather than the web engines the root tsconfig.json targets. npm run build runs it.
+  "compilerOptions": {
+    "target": "ES2024",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "lib": ["ES2024"],
+    "types": ["node"],
+    "allowJs": true,
+    "checkJs": true,
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true
+  },
+  "include": ["*.mjs", "../vite.config.ts"]
+}

@@ -9,60 +9,128 @@
  *    directly would render upside-down; drawing it into a canvas avoids that trap.
  *  - EXIF orientation (JPEG): JPEGs are decoded through HTMLImageElement, which applies EXIF
  *    orientation in every supported engine (Safari ≥ 13.1, Chrome ≥ 81, Firefox ≥ 77), and
- *    drawImage() of such an image paints it upright. ImageBitmap's EXIF behaviour differed
+ *    drawImage() of such an image paints it upright. ImageBitmap's EXIF behavior differed
  *    between engines/versions, so it is only used for non-JPEG rasters (off-main-thread decode).
- *  - SVG is rasterised through HTMLImageElement at a generous size (vector = free quality).
- *  - GPU copies are downscaled so the longest side is ≤ 4096 px (high-quality step-down).
+ *  - SVG is rasterized through HTMLImageElement at a generous size (vector = free quality).
+ *  - GPU copies are downscaled so the longest side is ≤ 4096 px (high-quality step-down), through
+ *    temporary canvases no side of which is longer than MAX_STEP_SIDE (`downscaleSteps`).
+ *  - Limits: a file over MAX_ARTWORK_BYTES is refused before it is read, and a raster image over
+ *    MAX_ARTWORK_PIXELS before it is decoded when its header says its size (imageSize.ts), otherwise
+ *    once decoded, before it is drawn. An SVG is not checked against the pixel limit: it is
+ *    rasterized at a fixed size (SVG_RASTER_SIZE), and raster images embedded in it, which the
+ *    engine decodes while drawing it, are not checked either. Every load waits for the one before
+ *    it (`oneAtATime`), whoever asked for it, so only one full-size image is in memory at once.
+ *  - The messages fit both uses of loadImageFile: artwork added to a model, and files chosen for a
+ *    batch export.
  */
 import * as THREE from 'three';
-import { msg, mtIn, type Message } from '../i18n';
-import type { ImageAsset } from './types';
+import { UserError } from './errors';
+import { type PixelSize, imageSize } from './imageSize';
+import { megabytes } from './math';
+import { parseDataUrl, sniffMime } from './mime';
+import { sizeSvgRoot, svgIntrinsicSize } from './svg';
+import type { Artwork } from './types/project';
+
+/**
+ * The largest artwork file the app takes, in bytes (100 MB). The file is kept whole, in memory and in the project
+ * file, as a data URL a third larger than the file.
+ */
+export const MAX_ARTWORK_BYTES = 100_000_000;
+
+/**
+ * The most pixels an artwork may have (100 megapixels): enough for an A1 poster at 300 dpi (7016 × 9933 pixels).
+ * Decoded, an image takes 4 bytes a pixel, so at most 400 MB of memory.
+ */
+export const MAX_ARTWORK_PIXELS = 100_000_000;
+
+/** Throws a UserError when the artwork file `name`, `bytes` long, is larger than MAX_ARTWORK_BYTES. */
+export function checkArtworkBytes(name: string, bytes: number): void {
+  if (bytes <= MAX_ARTWORK_BYTES) return;
+  throw new UserError(
+    `The file “${name}” is ${megabytes(bytes)}, more than Mockup Director can use (${megabytes(MAX_ARTWORK_BYTES)}). Save it as a smaller file, for example with fewer pixels, then choose it again.`,
+  );
+}
+
+/** Throws a UserError when the image `name` has more pixels than MAX_ARTWORK_PIXELS. */
+export function checkArtworkPixels(name: string, { width, height }: PixelSize): void {
+  if (width * height <= MAX_ARTWORK_PIXELS) return;
+  const pixels = (n: number) => n.toLocaleString('en-US');
+  throw new UserError(
+    `The image “${name}” is ${pixels(width)} × ${pixels(height)} pixels, more than Mockup Director can use (${MAX_ARTWORK_PIXELS / 1_000_000} megapixels). Scale it down, then choose it again.`,
+  );
+}
 
 /** Longest side of the GPU texture. Originals stay untouched in the data URL. */
-export const MAX_TEXTURE_SIZE = 4096;
-/** SVGs are rasterised so their longest side is this many px (unless that exceeds the texture cap). */
+const MAX_TEXTURE_SIZE = 4096;
+/** SVGs are rasterized so their longest side is this many px (unless that exceeds the texture cap). */
 const SVG_RASTER_SIZE = 3072;
-
-/** Error with a user-presentable message: `text` is shown in the interface language, `message` is the English text. */
-export class ImageLoadError extends Error {
-  readonly text: Message;
-  constructor(text: Message, cause?: unknown) {
-    super(mtIn('en', text));
-    this.name = 'ImageLoadError';
-    this.text = text;
-    if (cause !== undefined) (this as { cause?: unknown }).cause = cause;
-  }
-}
 
 /** File extensions / MIME types we try to decode (the engine decides what actually works). */
 export const IMAGE_ACCEPT = 'image/*,.png,.jpg,.jpeg,.webp,.gif,.svg,.avif,.heic,.heif,.bmp,.tif,.tiff';
 
-/* ------------------------------------------------------------------ */
-/* Public API                                                          */
-/* ------------------------------------------------------------------ */
+/**
+ * Decode an image File into an Artwork (sRGB texture, keeps the data URL). Throws a UserError when the file cannot
+ * be read or decoded, or is over the limits.
+ */
+export async function loadImageFile(file: File): Promise<Artwork> {
+  checkArtworkBytes(file.name, file.size);
+  return oneAtATime(() => readImageFile(file));
+}
 
-/** Decode an image File into an ImageAsset (sRGB texture, keeps the data URL). */
-export async function loadImageFile(file: File): Promise<ImageAsset> {
-  const bytes = new Uint8Array(await file.arrayBuffer());
+async function readImageFile(file: File): Promise<Artwork> {
+  let bytes: Uint8Array<ArrayBuffer>;
+  try {
+    bytes = new Uint8Array(await file.arrayBuffer());
+  } catch (err) {
+    throw new UserError(
+      `The file “${file.name}” could not be read. Check that it still exists and can be opened, then choose it again.`,
+      { cause: err },
+    );
+  }
   const mime = sniffMime(bytes, file.type, file.name);
+  checkHeaderSize(bytes, file.name);
   const blob = new Blob([bytes], { type: mime });
-  const dataUrl = await blobToDataUrl(blob);
+  const dataUrl = await blobToDataUrl(blob, file.name);
   return decodeToAsset(blob, mime, dataUrl, file.name);
 }
 
-/** Recreate an ImageAsset from a data URL (project loading). */
-export async function loadImageDataUrl(dataUrl: string, name: string): Promise<ImageAsset> {
+/**
+ * Recreate an Artwork from a data URL (project loading). Throws a UserError when the data URL is damaged, cannot
+ * be decoded, or holds an image over the pixel limit.
+ */
+export function loadImageDataUrl(dataUrl: string, name: string): Promise<Artwork> {
+  return oneAtATime(() => readImageDataUrl(dataUrl, name));
+}
+
+async function readImageDataUrl(dataUrl: string, name: string): Promise<Artwork> {
   // Decoded manually instead of fetch(dataUrl): a strict CSP (connect-src) may block fetching data: URLs.
   const parsed = parseDataUrl(dataUrl);
   if (!parsed) {
-    throw new ImageLoadError(msg('errImageCorrupt', { name }));
+    throw new UserError(`The artwork “${name}” in the project is damaged. Add the artwork again.`);
   }
   const mime = sniffMime(parsed.bytes, parsed.mime, name);
+  checkHeaderSize(parsed.bytes, name);
   const blob = new Blob([parsed.bytes], { type: mime });
   return decodeToAsset(blob, mime, dataUrl, name);
 }
 
-export function disposeImageAsset(asset: ImageAsset): void {
+/** The last load started; the next one waits for it, whether it succeeded or failed. */
+let lastLoad: Promise<unknown> = Promise.resolve();
+
+/** Runs `load` after every load started before it has ended, so that only one image is read and decoded at once. */
+function oneAtATime<T>(load: () => Promise<T>): Promise<T> {
+  const run = lastLoad.then(load);
+  lastLoad = run.catch(() => undefined);
+  return run;
+}
+
+/** Refuses an image whose header says it is over the pixel limit, before anything decodes it. */
+function checkHeaderSize(bytes: Uint8Array, name: string): void {
+  const size = imageSize(bytes);
+  if (size) checkArtworkPixels(name, size);
+}
+
+export function disposeArtwork(asset: Artwork): void {
   const img = asset.texture.image as unknown;
   asset.texture.dispose();
   // WebKit has a global canvas-memory budget; shrinking the canvas frees its backing store now.
@@ -72,18 +140,17 @@ export function disposeImageAsset(asset: ImageAsset): void {
   }
 }
 
-/* ------------------------------------------------------------------ */
-/* Decoding                                                            */
-/* ------------------------------------------------------------------ */
-
-async function decodeToAsset(blob: Blob, mime: string, dataUrl: string, name: string): Promise<ImageAsset> {
+async function decodeToAsset(blob: Blob, mime: string, dataUrl: string, name: string): Promise<Artwork> {
   let canvas: HTMLCanvasElement;
   try {
-    if (mime === 'image/svg+xml') canvas = await rasteriseSvg(blob);
-    else canvas = await decodeRaster(blob, mime);
+    if (mime === 'image/svg+xml') canvas = await rasterizeSvg(blob);
+    else canvas = await decodeRaster(blob, mime, name);
   } catch (err) {
-    if (err instanceof ImageLoadError) throw err;
-    throw new ImageLoadError(msg('errImageDecode', { name }), err);
+    if (err instanceof UserError) throw err;
+    throw new UserError(
+      `The file “${name}” could not be read as an image. Choose a PNG, JPEG, WebP, GIF or SVG file.`,
+      { cause: err },
+    );
   }
   return {
     name,
@@ -94,8 +161,11 @@ async function decodeToAsset(blob: Blob, mime: string, dataUrl: string, name: st
   };
 }
 
-/** Raster formats: ImageBitmap (non-JPEG) with HTMLImageElement fallback, baked into a canvas. */
-async function decodeRaster(blob: Blob, mime: string): Promise<HTMLCanvasElement> {
+/**
+ * Raster formats: ImageBitmap (non-JPEG) with HTMLImageElement fallback, baked into a canvas. The decoded size is
+ * checked against the pixel limit before it is drawn, for the formats whose header imageSize does not read.
+ */
+async function decodeRaster(blob: Blob, mime: string, name: string): Promise<HTMLCanvasElement> {
   if (mime !== 'image/jpeg' && typeof createImageBitmap === 'function') {
     let bmp: ImageBitmap | null = null;
     try {
@@ -105,6 +175,7 @@ async function decodeRaster(blob: Blob, mime: string): Promise<HTMLCanvasElement
     }
     if (bmp && bmp.width > 0 && bmp.height > 0) {
       try {
+        checkArtworkPixels(name, bmp);
         return drawToCanvas(bmp, bmp.width, bmp.height);
       } finally {
         bmp.close();
@@ -116,11 +187,12 @@ async function decodeRaster(blob: Blob, mime: string): Promise<HTMLCanvasElement
   const w = img.naturalWidth;
   const h = img.naturalHeight;
   if (!w || !h) throw new Error('Image has no size');
+  checkArtworkPixels(name, { width: w, height: h });
   return drawToCanvas(img, w, h);
 }
 
-/** SVG: rasterise via <img>. Sizes come from the SVG itself (width/height or viewBox). */
-async function rasteriseSvg(blob: Blob): Promise<HTMLCanvasElement> {
+/** SVG: rasterize via <img>. Sizes come from the SVG itself (width/height or viewBox). */
+async function rasterizeSvg(blob: Blob): Promise<HTMLCanvasElement> {
   const text = await blob.text();
   const intrinsic = svgIntrinsicSize(text);
   const w = intrinsic?.width ?? 1024;
@@ -138,45 +210,63 @@ async function rasteriseSvg(blob: Blob): Promise<HTMLCanvasElement> {
   return canvas;
 }
 
-/** Draw a decoded source into a canvas, downscaling to MAX_TEXTURE_SIZE with a step-down filter. */
-function drawToCanvas(src: CanvasImageSource, w: number, h: number): HTMLCanvasElement {
-  const s = Math.min(1, MAX_TEXTURE_SIZE / Math.max(w, h));
-  const tw = Math.max(1, Math.round(w * s));
-  const th = Math.max(1, Math.round(h * s));
-  let cur: CanvasImageSource = src;
-  let cw = w;
-  let ch = h;
-  const temps: HTMLCanvasElement[] = [];
-  // Halve until within 2× of the target – a single big downscale aliases badly in some engines.
+/**
+ * The longest side of a temporary canvas while downscaling. The engines cannot draw into a canvas with a side over
+ * 32,767 px and drop such drawing without an error, so the first step goes down to this at most.
+ */
+const MAX_STEP_SIDE = 16384;
+
+/**
+ * The sizes of the canvases that downscale an image of `width` × `height` px to at most MAX_TEXTURE_SIZE on its
+ * longest side, in order; the last is the texture's. The first step scales so no side is over MAX_STEP_SIDE, then
+ * each step halves, until the image is within 2× of the texture's size: a single big downscale aliases badly in some
+ * engines.
+ */
+export function downscaleSteps(width: number, height: number): PixelSize[] {
+  const s = Math.min(1, MAX_TEXTURE_SIZE / Math.max(width, height));
+  const tw = Math.max(1, Math.round(width * s));
+  const th = Math.max(1, Math.round(height * s));
+  const steps: PixelSize[] = [];
+  let cw = width;
+  let ch = height;
   while (cw > tw * 2 || ch > th * 2) {
-    const nw = Math.max(tw, Math.ceil(cw / 2));
-    const nh = Math.max(th, Math.ceil(ch / 2));
-    const c = createCanvas(nw, nh);
-    const g = get2d(c);
-    g.imageSmoothingEnabled = true;
-    g.imageSmoothingQuality = 'high';
-    g.drawImage(cur, 0, 0, cw, ch, 0, 0, nw, nh);
-    temps.push(c);
-    cur = c;
-    cw = nw;
-    ch = nh;
+    const scale = Math.max(cw, ch) / 2 > MAX_STEP_SIDE ? MAX_STEP_SIDE / Math.max(cw, ch) : 0.5;
+    cw = Math.max(tw, Math.min(MAX_STEP_SIDE, Math.ceil(cw * scale)));
+    ch = Math.max(th, Math.min(MAX_STEP_SIDE, Math.ceil(ch * scale)));
+    steps.push({ width: cw, height: ch });
   }
-  const out = createCanvas(tw, th);
-  const g = get2d(out);
+  steps.push({ width: tw, height: th });
+  return steps;
+}
+
+/** Draw a decoded source into a canvas, downscaling to MAX_TEXTURE_SIZE in the steps of `downscaleSteps`. */
+function drawToCanvas(src: CanvasImageSource, w: number, h: number): HTMLCanvasElement {
+  const [first, ...rest] = downscaleSteps(w, h);
+  let canvas = drawScaled(src, w, h, first);
+  for (const size of rest) {
+    const next = drawScaled(canvas, canvas.width, canvas.height, size);
+    // WebKit has a global canvas-memory budget; shrinking the step's canvas frees its backing store now.
+    canvas.width = 0;
+    canvas.height = 0;
+    canvas = next;
+  }
+  return canvas;
+}
+
+/** A new canvas of `size` holding the `w` × `h` source, scaled with high-quality smoothing. */
+function drawScaled(src: CanvasImageSource, w: number, h: number, size: PixelSize): HTMLCanvasElement {
+  const c = createCanvas(size.width, size.height);
+  const g = get2d(c);
   g.imageSmoothingEnabled = true;
   g.imageSmoothingQuality = 'high';
-  g.drawImage(cur, 0, 0, cw, ch, 0, 0, tw, th);
-  for (const t of temps) {
-    t.width = 0;
-    t.height = 0;
-  }
-  return out;
+  g.drawImage(src, 0, 0, w, h, 0, 0, size.width, size.height);
+  return c;
 }
 
 function makeTexture(canvas: HTMLCanvasElement): THREE.Texture {
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.flipY = true; // canvas source → flipY honoured (v = 0 is the image bottom)
+  tex.flipY = true; // canvas source → flipY honored (v = 0 is the image bottom)
   tex.anisotropy = 16; // three clamps to the GPU maximum
   tex.generateMipmaps = true;
   tex.minFilter = THREE.LinearMipmapLinearFilter;
@@ -209,10 +299,6 @@ function loadHtmlImage(blob: Blob): Promise<HTMLImageElement> {
   });
 }
 
-/* ------------------------------------------------------------------ */
-/* Helpers                                                             */
-/* ------------------------------------------------------------------ */
-
 function createCanvas(w: number, h: number): HTMLCanvasElement {
   const c = document.createElement('canvas');
   c.width = w;
@@ -223,115 +309,24 @@ function createCanvas(w: number, h: number): HTMLCanvasElement {
 function get2d(c: HTMLCanvasElement): CanvasRenderingContext2D {
   const g = c.getContext('2d');
   if (!g) {
-    throw new ImageLoadError(msg('errImageMemory'));
+    throw new UserError('Not enough memory to load an image this large. Choose a smaller image.');
   }
   return g;
 }
 
-function blobToDataUrl(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(String(r.result));
-    r.onerror = () => reject(r.error ?? new Error('FileReader failed'));
-    r.readAsDataURL(blob);
-  });
-}
-
-/** Parse a data: URL into bytes (base64 or percent-encoded). */
-function parseDataUrl(url: string): { mime: string; bytes: Uint8Array<ArrayBuffer> } | null {
-  const m = /^data:([^,]*?),/i.exec(url);
-  if (!m) return null;
-  const meta = m[1];
-  const body = url.slice(m[0].length);
-  const isB64 = /;base64$/i.test(meta);
-  const mime = (meta.replace(/;base64$/i, '').split(';')[0] || 'application/octet-stream').toLowerCase();
+/** The data URL of the artwork file `name`. Throws a UserError when it cannot be made (most often, memory ran out). */
+async function blobToDataUrl(blob: Blob, name: string): Promise<string> {
   try {
-    if (isB64) {
-      const bin = atob(body.replace(/\s+/g, ''));
-      const bytes = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-      return { mime, bytes };
-    }
-    const enc = new TextEncoder().encode(decodeURIComponent(body));
-    const bytes = new Uint8Array(enc.length);
-    bytes.set(enc);
-    return { mime, bytes };
-  } catch {
-    return null;
+    return await new Promise<string>((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(String(r.result));
+      r.onerror = () => reject(r.error ?? new Error('FileReader failed'));
+      r.readAsDataURL(blob);
+    });
+  } catch (err) {
+    throw new UserError(
+      `The file “${name}” could not be loaded: there is likely not enough memory. Close other projects or choose a smaller file.`,
+      { cause: err },
+    );
   }
-}
-
-/**
- * Determine the real MIME type from magic bytes (file.type is often empty or wrong,
- * e.g. files without extension or from some file pickers). Falls back to the declared type.
- */
-export function sniffMime(b: Uint8Array, declared: string, name = ''): string {
-  const at = (o: number, ...v: number[]) => v.every((x, i) => b[o + i] === x);
-  const ascii = (o: number, s: string) => at(o, ...Array.from(s, (c) => c.charCodeAt(0)));
-  if (at(0, 0x89, 0x50, 0x4e, 0x47)) return 'image/png';
-  if (at(0, 0xff, 0xd8, 0xff)) return 'image/jpeg';
-  if (ascii(0, 'GIF8')) return 'image/gif';
-  if (ascii(0, 'RIFF') && ascii(8, 'WEBP')) return 'image/webp';
-  if (ascii(4, 'ftyp')) {
-    const brand = String.fromCharCode(b[8], b[9], b[10], b[11]);
-    if (brand === 'avif' || brand === 'avis') return 'image/avif';
-    if (/^(heic|heix|hevc|heim|heis|mif1|msf1)$/.test(brand)) return 'image/heic';
-  }
-  if (ascii(0, 'BM')) return 'image/bmp';
-  if (at(0, 0x49, 0x49, 0x2a, 0x00) || at(0, 0x4d, 0x4d, 0x00, 0x2a)) return 'image/tiff';
-  // SVG: text starting (after optional BOM / whitespace / XML prolog / comments) with <svg
-  const head = new TextDecoder('utf-8', { fatal: false }).decode(b.subarray(0, 2048)).toLowerCase();
-  // biome-ignore lint/suspicious/noControlCharactersInRegex: control characters mark a binary file, not SVG text.
-  if (/<svg[\s>]/.test(head) && !/[\x00-\x08]/.test(head)) return 'image/svg+xml';
-  if (declared) return declared.toLowerCase();
-  if (/\.svgz?$/i.test(name)) return 'image/svg+xml';
-  return 'application/octet-stream';
-}
-
-/**
- * Rewrite the root <svg> tag with width/height = (tw, th) px. If it has no viewBox, one is added
- * from its intrinsic size (vw, vh in user units = CSS px) so the drawing scales instead of clipping.
- */
-export function sizeSvgRoot(svg: string, tw: number, th: number, vw: number, vh: number): string {
-  const m = /<svg\b[^>]*>/i.exec(svg);
-  if (!m) return svg;
-  let tag = m[0];
-  const hasViewBox = /\sviewBox\s*=/i.test(tag);
-  tag = tag.replace(/\s(width|height)\s*=\s*("[^"]*"|'[^']*')/gi, '');
-  const selfClosing = /\/\s*>$/.test(tag);
-  const head = tag.replace(/\/?\s*>$/, '');
-  const extra = ` width="${tw}" height="${th}"${hasViewBox ? '' : ` viewBox="0 0 ${vw} ${vh}" preserveAspectRatio="none"`}`;
-  tag = head + extra + (selfClosing ? '/>' : '>');
-  return svg.slice(0, m.index) + tag + svg.slice(m.index + m[0].length);
-}
-
-/** Intrinsic size of an SVG document from width/height (absolute units) or the viewBox. */
-export function svgIntrinsicSize(svg: string): { width: number; height: number } | null {
-  const tag = /<svg\b[^>]*>/i.exec(svg)?.[0];
-  if (!tag) return null;
-  const attr = (n: string) => new RegExp(`\\s${n}\\s*=\\s*["']([^"']*)["']`, 'i').exec(tag)?.[1];
-  const toPx = (v?: string): number | null => {
-    if (!v) return null;
-    const m = /^\s*([\d.]+)\s*(px|pt|mm|cm|in)?\s*$/i.exec(v);
-    if (!m) return null; // percentages etc. → fall back to viewBox
-    const n = parseFloat(m[1]);
-    const unit = (m[2] ?? 'px').toLowerCase();
-    const k = unit === 'pt' ? 96 / 72 : unit === 'mm' ? 96 / 25.4 : unit === 'cm' ? 96 / 2.54 : unit === 'in' ? 96 : 1;
-    return n > 0 ? n * k : null;
-  };
-  const w = toPx(attr('width'));
-  const h = toPx(attr('height'));
-  const vb = attr('viewBox')
-    ?.trim()
-    .split(/[\s,]+/)
-    .map(Number);
-  const vbOk = vb && vb.length === 4 && vb[2] > 0 && vb[3] > 0;
-  if (w && h) return { width: w, height: h };
-  if (vbOk) {
-    const ar = vb[2] / vb[3];
-    if (w) return { width: w, height: w / ar };
-    if (h) return { width: h * ar, height: h };
-    return { width: vb[2], height: vb[3] };
-  }
-  return null;
 }

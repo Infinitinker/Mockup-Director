@@ -1,24 +1,24 @@
-# Builds the Mockup Director Windows app (x64): the NSIS installer and a portable ZIP, each kept on
-# the run's page (Actions → run → Artifacts) under its release file name. The release workflow
-# (release.yml) calls this workflow and puts the files on the release.
-#
-# Windows-specific bundle settings live in src-tauri/tauri.windows.conf.json (merged automatically
-# by Tauri on Windows): NSIS installer only, per-user install (no admin rights needed).
-# The app is not code-signed, so Windows SmartScreen shows "Windows protected your PC" on first
-# run → "More info" → "Run anyway" (see README).
-#
-# It is built with MSYS2 (MINGW64) and Rust's GNU toolchain, not with Microsoft's C++ tools: the
-# same toolchain as a developer's machine (docs/development.md). Tauri supports only MSVC
-# officially, so this job also checks what a GNU build could get wrong. A GNU build loads
-# WebView2Loader.dll at run time instead of linking it in: the installer must contain it, and the
-# portable version is a ZIP with the DLL next to the executable. To go back to MSVC, replace the
-# MSYS2 and Rust setup steps with `dtolnay/rust-toolchain@stable`, and package the portable .exe alone.
 name: Build Windows app
 
-# Runs on every push to dev and main (a merged pull request is a push to main), on demand, from the
-# release workflow, and for pull requests, except those from this repository's dev and main, whose
-# pushes are built already (so Dependabot's pull requests and other branches get a build).
-# It is not a required status check: the Checks workflow (checks.yml) is.
+# Builds the Windows release files: the installer and the portable ZIP, each kept on the run's
+# page under its release file name, and checks them. The Release workflow (release.yml) calls it and
+# drafts the release from them; run on its own, it shows early that a change still builds.
+#
+# It runs on every push to dev and main (a merged pull request is a push to main), from the Release
+# workflow, on demand, and for pull requests other than those from this repository's dev and main,
+# whose pushes are built already (so Dependabot's pull requests and other branches get a build too).
+# It is not a required status check; the Checks (checks.yml) and E2E tests (e2e.yml) are.
+#
+# Tauri builds the app without its own installers (bundle.active false in
+# src-tauri/tauri.windows.conf.json); the installer is made with Inno Setup from tools/installer.iss
+# (npm run installer). It installs for the user alone, with no administrator rights, or for all users
+# if they choose. The app is not code-signed, so Windows SmartScreen warns on the first start (see the
+# README).
+#
+# It is built with MSYS2 (MINGW64) and Rust's GNU toolchain, not with Microsoft's C++ tools: the
+# toolchain of a developer's machine (.github/actions/windows-toolchain explains why). A GNU build
+# loads WebView2Loader.dll at run time instead of linking it in: the installer installs it, and the
+# portable version is a ZIP with the DLL next to the executable.
 on:
   push:
     branches: [main, dev]
@@ -27,7 +27,7 @@ on:
   workflow_call:
 
 # A newer push cancels the build still going for the older one; a release's build is never cut short.
-# (Called from release.yml, github.workflow is "Release".)
+# Called from release.yml, github.workflow is "Release".
 concurrency:
   group: build-windows-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.workflow != 'Release' }}
@@ -35,80 +35,63 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  # Inno Setup's installer, checked against the SHA-256 that its release on GitHub lists.
+  INNO_SETUP_URL: https://github.com/jrsoftware/issrc/releases/download/is-7_1_1/innosetup-7.1.1-x64.exe
+  INNO_SETUP_SHA256: 8a5a6711c3766a6e5fb74f280ba0e3551e719ce94538d901fdbd1f8f9920b3f0
+
 jobs:
-  build-windows:
-    # A fork can have a branch named dev too, so forks are always built. Called from release.yml,
-    # it always builds, also for a pull request from dev.
+  build:
+    # A fork can have a branch named dev too, so forks are always built.
     if: >-
-      github.event_name != 'pull_request' || github.workflow == 'Release' ||
+      github.event_name != 'pull_request' ||
       github.event.pull_request.head.repo.fork || (github.head_ref != 'dev' && github.head_ref != 'main')
-    name: Build (x86_64-pc-windows-gnu)
+    name: Windows build (x64)
     runs-on: windows-latest
     timeout-minutes: 60
+    outputs:
+      # The two files, so the check downloads exactly these, whatever else the run builds.
+      artifacts: ${{ steps.setup.outputs.artifact-id }},${{ steps.portable.outputs.artifact-id }}
     defaults:
       run:
         shell: bash
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
 
-      # gcc links the app, windres compiles its icon and manifest. GITHUB_PATH puts MINGW64 first,
-      # ahead of other MinGW copies on the runner (e.g. Strawberry Perl's).
-      - name: Setup MSYS2 (MINGW64)
-        id: msys2
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: MINGW64
-          update: false
-          install: mingw-w64-x86_64-gcc
-
-      - name: Put MINGW64 on PATH
-        run: echo "${{ steps.msys2.outputs.msys2-location }}/mingw64/bin" >> "$GITHUB_PATH"
-
-      # The GNU toolchain as the HOST toolchain, so build scripts are built with it too (a GNU
-      # target on the runner's default MSVC toolchain would still use Microsoft's linker).
-      - name: Setup Rust (GNU toolchain)
-        run: |
-          rustup toolchain install stable-x86_64-pc-windows-gnu --profile minimal --no-self-update
-          rustup default stable-x86_64-pc-windows-gnu
-          rustc -vV
-          which gcc windres
-
-      - name: Rust cache
-        uses: swatinem/rust-cache@v2
+      - name: Windows toolchain
+        uses: ./.github/actions/windows-toolchain
+      - uses: swatinem/rust-cache@v2
         with:
           workspaces: src-tauri -> target
 
-      - name: Install npm dependencies
+      - name: Install
         run: npm ci
+      # The app in src-tauri/target/release, with WebView2Loader.dll and the license texts
+      # (bundle.resources in tauri.conf.json) next to it.
+      - name: Build the app
+        run: npm run tauri build
 
-      - name: Build Tauri app
-        uses: tauri-apps/tauri-action@v1
-
-      # A GNU build cannot start without WebView2Loader.dll; tauri-bundler puts it into the NSIS
-      # installer (fixed for GNU builds in tauri-bundler 2.2.2). The licenses come with every copy
-      # (bundle.resources in tauri.conf.json). 7-Zip can list NSIS installers.
-      - name: Check the installer contains WebView2Loader.dll and the licenses
+      - name: Install Inno Setup
+        shell: pwsh
         run: |
-          installer="$(ls src-tauri/target/release/bundle/nsis/*-setup.exe | head -n 1)"
-          7z l "$installer" > installer-contents.txt
-          for file in WebView2Loader.dll LICENSE.txt THIRD-PARTY-NOTICES.txt; do
-            if ! grep -qiF "$file" installer-contents.txt; then
-              cat installer-contents.txt
-              echo "::error::$installer does not contain $file"
-              exit 1
-            fi
-          done
+          $installer = Join-Path $env:RUNNER_TEMP "innosetup.exe"
+          $folder = Join-Path $env:RUNNER_TEMP "InnoSetup"
+          Invoke-WebRequest $env:INNO_SETUP_URL -OutFile $installer
+          $hash = (Get-FileHash $installer -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($hash -ne $env:INNO_SETUP_SHA256) { throw "Inno Setup's installer has the SHA-256 $hash, not $env:INNO_SETUP_SHA256." }
+          $setup = Start-Process $installer -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-", "/DIR=$folder" -Wait -PassThru
+          if ($setup.ExitCode -ne 0) { throw "Inno Setup's installer failed with exit code $($setup.ExitCode)." }
+          "ISCC=$(Join-Path $folder 'ISCC.exe')" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+      # Inno Setup stops on a file the app should have and does not, so the installer is complete.
+      - name: Build the installer
+        run: npm run installer
 
-      # The release binary embeds the whole frontend, so it also runs without installing. It needs
-      # the Microsoft Edge WebView2 runtime (part of Windows 10/11) and, as a GNU build, the
+      # The release binary embeds the whole web UI, so it also runs without installing. It needs the
+      # Microsoft Edge WebView2 runtime (part of Windows 10 and 11) and, as a GNU build,
       # WebView2Loader.dll next to it, so the portable version is a ZIP of both.
       - name: Name the release files
         run: |
@@ -117,7 +100,7 @@ jobs:
           release="src-tauri/target/release"
           folder="portable/Mockup Director"
           mkdir -p dist-release "$folder"
-          cp "$release"/bundle/nsis/*-setup.exe "dist-release/$name-setup.exe"
+          cp "$release/installer/$name-setup.exe" dist-release/
           cp "$release/mockup-director.exe" "$folder/Mockup Director.exe"
           cp "$release/WebView2Loader.dll" "$folder/"
           cp LICENSE "$folder/LICENSE.txt"
@@ -142,18 +125,37 @@ jobs:
             "Built from commit $GITHUB_SHA." > "$folder/README.txt"
           (cd portable && 7z a -tzip "../dist-release/$name-portable.zip" "Mockup Director" > /dev/null)
           ls -la dist-release
-
-      # Each file on its own and unzipped, so the run's page offers the file itself.
-      - name: Upload installer
+      # Each file on its own and unzipped, so the run's page offers the files themselves. Each step
+      # fails unless its pattern matches exactly one file.
+      - id: setup
         uses: actions/upload-artifact@v7
         with:
           path: dist-release/*-windows-x64-setup.exe
           archive: false
           if-no-files-found: error
-
-      - name: Upload portable ZIP
+      - id: portable
         uses: actions/upload-artifact@v7
         with:
           path: dist-release/*-windows-x64-portable.zip
           archive: false
           if-no-files-found: error
+
+  files:
+    name: Windows release files
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # What the check runs, and the action.
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: |
+            package.json
+            tools/release.mjs
+            .github/actions/release-files
+          sparse-checkout-cone-mode: false
+      - name: Release files
+        uses: ./.github/actions/release-files
+        with:
+          system: windows
+          artifacts: ${{ needs.build.outputs.artifacts }}

@@ -1,12 +1,12 @@
 /**
- * Non-blocking notifications (bottom-centre stack). Errors stay longer and repeated identical
+ * Non-blocking notifications (a stack centered below the toolbar). Errors stay longer and repeated identical
  * messages are de-duplicated (e.g. a model failing on every slider step).
  */
 import { h } from './dom';
 import { ICONS } from './icons';
-import { t } from '../i18n';
+import { log } from '../platform/log';
 
-export type ToastKind = 'info' | 'success' | 'error' | 'warning';
+type ToastKind = 'info' | 'success' | 'error' | 'warning';
 
 let container: HTMLElement | null = null;
 const recent = new Map<string, number>();
@@ -16,7 +16,7 @@ export function mountToasts(parent: HTMLElement): void {
   parent.appendChild(container);
 }
 
-export function toast(kind: ToastKind, title: string, detail?: string): void {
+function toast(kind: ToastKind, title: string, detail?: string): void {
   const key = `${kind}|${title}|${detail ?? ''}`;
   const now = Date.now();
   const last = recent.get(key);
@@ -26,7 +26,7 @@ export function toast(kind: ToastKind, title: string, detail?: string): void {
 
   if (!container) {
     // UI not mounted yet – at least log it.
-    (kind === 'error' ? console.error : console.info)(`[mockup-director] ${title}${detail ? `: ${detail}` : ''}`);
+    log[kind === 'error' ? 'error' : kind === 'warning' ? 'warn' : 'info'](`${title}${detail ? `: ${detail}` : ''}`);
     return;
   }
   const icon = kind === 'success' ? ICONS.check : kind === 'error' || kind === 'warning' ? ICONS.warn : ICONS.info;
@@ -44,8 +44,8 @@ export function toast(kind: ToastKind, title: string, detail?: string): void {
   const close = h('button', {
     class: 'toast-close',
     html: ICONS.close,
-    title: t('close'),
-    label: t('close'),
+    title: 'Close',
+    label: 'Close',
     attrs: { type: 'button' },
     on: { click: () => dismiss() },
   });

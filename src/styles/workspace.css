@@ -1,0 +1,346 @@
+/* The parts of the workspace: the gallery, the viewport (the preview, view bar, hints and drop overlay), the
+   inspector (its tabs, the panel frame and the notes and empty states the panels share), and the thin scrollbars
+   of the sidebars and the panels. */
+.sidebar-left {
+  background: var(--bg-sidebar);
+  border-right: 0.5px solid var(--border-strong);
+  padding: 10px 8px 16px;
+}
+.sidebar-heading {
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--text-3);
+  padding: 10px 8px 5px;
+  letter-spacing: 0.01em;
+}
+.gallery-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.gallery-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text);
+}
+.gallery-item:hover {
+  background: var(--bg-hover);
+}
+.gallery-item.active {
+  background: var(--accent-soft);
+}
+.gallery-item.active .gallery-icon {
+  color: var(--accent);
+  background: var(--bg-card);
+}
+.gallery-icon {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--bg-seg);
+  color: var(--text-2);
+}
+.gallery-icon svg {
+  width: 28px;
+  height: 28px;
+  display: block;
+}
+.gallery-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.25;
+}
+.gallery-badge {
+  flex: none;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  display: grid;
+  place-items: center;
+}
+
+.viewport {
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+  min-height: 0;
+  background: var(--bg-window);
+}
+.stage-host {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+.stage-host canvas {
+  display: block;
+}
+.checkerboard {
+  background-color: var(--checker-a);
+  background-image:
+    linear-gradient(45deg, var(--checker-b) 25%, transparent 25%, transparent 75%, var(--checker-b) 75%),
+    linear-gradient(45deg, var(--checker-b) 25%, transparent 25%, transparent 75%, var(--checker-b) 75%);
+  background-size: 16px 16px;
+  background-position:
+    0 0,
+    8px 8px;
+}
+.glass {
+  background: var(--glass);
+  -webkit-backdrop-filter: saturate(180%) blur(22px);
+  backdrop-filter: saturate(180%) blur(22px);
+  box-shadow: var(--shadow-pop);
+}
+.viewbar {
+  /* Centered with auto margins, not left: 50% + translate: an absolutely positioned box with
+     left: 50% only gets HALF the viewport as its shrink-to-fit width and wraps far too early
+     (seen on macOS, where the system font is wider). */
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 14px;
+  margin: 0 auto;
+  width: -webkit-fit-content;
+  /* biome-ignore lint/suspicious/noDuplicateProperties: the prefixed value is the fallback for older WebKit. */
+  width: fit-content;
+  max-width: calc(100% - 24px);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  z-index: 2;
+}
+.vb-group {
+  display: flex;
+  gap: 1px;
+}
+.vb-btn {
+  height: 26px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  color: var(--text);
+}
+.vb-btn:hover {
+  background: var(--bg-hover);
+}
+.vb-btn:active {
+  background: var(--bg-active);
+}
+.vb-icon {
+  width: 28px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+}
+.vb-sep {
+  width: 0.5px;
+  height: 18px;
+  background: var(--border-strong);
+}
+.viewbar .ctl-seg.compact .seg-btn {
+  min-width: 28px;
+}
+.viewport-hint {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  max-width: calc(100% - 24px);
+  padding: 4px 9px;
+  border-radius: 7px;
+  font-size: 11px;
+  color: var(--text-2);
+  background: var(--glass);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  backdrop-filter: saturate(180%) blur(16px);
+  box-shadow: 0 0 0 0.5px var(--border);
+  pointer-events: none;
+  z-index: 1;
+}
+.viewport-error {
+  position: absolute;
+  inset: auto 24px 70px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  color: var(--danger);
+  box-shadow: var(--shadow-pop);
+  z-index: 3;
+  text-align: center;
+}
+.drop-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: none;
+  place-items: center;
+  background: rgba(0, 122, 255, 0.08);
+  border: 2px dashed var(--accent);
+  border-radius: 10px;
+  margin: 8px;
+  pointer-events: none;
+}
+.viewport.dragging .drop-overlay {
+  display: grid;
+}
+.drop-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 22px;
+  border-radius: 12px;
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-pop);
+  font-weight: 550;
+  max-width: 320px;
+  text-align: center;
+}
+.drop-icon {
+  color: var(--accent);
+}
+.drop-icon svg {
+  width: 32px;
+  height: 32px;
+}
+
+.sidebar-right {
+  background: var(--bg-inspector);
+  border-left: 0.5px solid var(--border-strong);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.tabs {
+  flex: none;
+  display: flex;
+  gap: 2px;
+  margin: 10px 10px 4px;
+  padding: 2px;
+  border-radius: var(--radius);
+  background: var(--bg-seg);
+}
+.tab {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 26px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font-size: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: var(--text);
+  white-space: nowrap;
+}
+.tab:hover:not(.active) {
+  background: var(--bg-hover);
+}
+.tab.active {
+  background: var(--bg-control);
+  box-shadow: var(--shadow-control);
+  font-weight: 550;
+}
+.tab-badge {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.tab-panels {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+}
+.panel {
+  padding: 6px 12px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.panel-intro,
+.ctl-note {
+  font-size: 11px;
+  color: var(--text-2);
+  line-height: 1.4;
+}
+.warn-note {
+  color: var(--warn);
+}
+.empty-state {
+  color: var(--text-2);
+  text-align: center;
+  padding: 24px 8px;
+}
+.empty-state.small {
+  padding: 8px 4px;
+  font-size: 12px;
+}
+.panel-header {
+  padding: 4px 2px 2px;
+}
+.panel-title {
+  font-weight: 650;
+  font-size: 14px;
+}
+.panel-sub {
+  color: var(--text-2);
+  font-size: 11px;
+  margin-top: 2px;
+}
+.panel-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
+.sidebar::-webkit-scrollbar,
+.tab-panels::-webkit-scrollbar {
+  width: 10px;
+}
+.sidebar::-webkit-scrollbar-thumb,
+.tab-panels::-webkit-scrollbar-thumb {
+  background: rgba(127, 127, 127, 0.35);
+  border-radius: 6px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+.sidebar::-webkit-scrollbar-track,
+.tab-panels::-webkit-scrollbar-track {
+  background: transparent;
+}

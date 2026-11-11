@@ -1,17 +1,17 @@
 /**
- * Shared context passed to every UI component: the store, the stage and the app-level actions.
+ * Shared context passed to every UI component: the store, the stage and the app-level actions, and what the
+ * actions work on, among them the contract of the 3D preview.
  */
-import type { Lang, StageAPI } from '../core/types';
-import type { Signal } from './dom';
-import type { Store } from './state';
-import type { MessageKey } from '../i18n';
-import type { AnimationProgress } from './exportBridge';
+import type { StageAPI } from '../core/types/scene';
+import type { Coalescer, Signal } from './dom';
+import type { Store } from '../documents/store';
+import type { Documents } from '../documents/tabs';
+import type { AnimationProgress } from '../export/animation';
 
-export type TabId = 'images' | 'model' | 'scene' | 'export' | 'styles';
+export type TabId = 'artwork' | 'model' | 'scene' | 'export' | 'looks';
 
 export interface Actions {
   selectModel(id: string): void;
-  setLang(lang: Lang): void;
   /** A new project in a new tab. */
   newProject(): Promise<void>;
   /** Opens project files, each in its own tab (an untouched new tab is reused). Without files: asks for one. */
@@ -31,13 +31,13 @@ export interface Actions {
   openBatchExport(): void;
   undo(): void;
   redo(): void;
-  /** Apply preset view by index into VIEW_PRESETS. */
+  /** Apply preset view by index into VIEW_PRESETS (src/scene/views.ts). */
   setView(index: number): void;
   resetView(): void;
   /** Load files into slots of the current model. Without slotIds: fill empty slots in slot order. */
-  assignImages(files: File[], slotIds?: string[]): Promise<void>;
-  pickImageFor(slotId: string): Promise<void>;
-  removeImage(slotId: string): void;
+  assignArtwork(files: File[], slotIds?: string[]): Promise<void>;
+  pickArtworkFor(slotId: string): Promise<void>;
+  removeArtwork(slotId: string): void;
   downloadTemplate(slotId: string): Promise<void>;
   showTab(tab: TabId): void;
 }
@@ -50,22 +50,39 @@ export interface AppContext {
   exportBusy: Signal<boolean>;
   /** Progress of a running animation export (null when none is running). */
   animationProgress: Signal<AnimationProgress | null>;
-  /** "modelId/slotId" keys of slots whose image is being decoded */
+  /** "modelId/slotId" keys of slots whose artwork is being decoded */
   loadingSlots: Signal<ReadonlySet<string>>;
 }
 
-export interface ViewPreset {
-  key: MessageKey;
-  yaw: number;
-  pitch: number;
+/** The 3D preview the actions flush and hold; `createPreview` in app/preview.ts makes it. */
+export interface Preview {
+  /** The stage, or the stand-in that refuses to render when WebGL does not work. */
+  readonly stage: StageAPI;
+  /** Rebuilds the active document's model; while the model is locked, the rebuild waits. */
+  readonly rebuild: Coalescer;
+  /** Applies the document's scene settings; skipped while a batch export drives the stage. */
+  readonly applyScene: Coalescer;
+  /** True while an animation or a batch export renders from the stage. */
+  readonly modelLocked: boolean;
+  /** True while a batch export drives the stage. */
+  readonly batchActive: boolean;
+  /** Locks the model for an animation export: rebuilds asked for meanwhile wait. */
+  lockModel(): void;
+  /** Unlocks it and schedules a rebuild that was asked for meanwhile. */
+  unlockModel(): void;
+  /** Hands the stage to a batch export: the model is locked and the scene settings are not applied. */
+  beginBatch(): void;
+  /** Puts the document back on the stage after a batch export: its scene settings and a rebuild of its model. */
+  endBatch(): void;
+  /** Keeps the renderer sized to the host. */
+  followSize(): void;
 }
 
-/** Preset camera views (keyboard 1–6). */
-export const VIEW_PRESETS: ViewPreset[] = [
-  { key: 'viewFront', yaw: 0, pitch: 0 },
-  { key: 'viewLeft34', yaw: -30, pitch: 12 },
-  { key: 'viewRight34', yaw: 30, pitch: 12 },
-  { key: 'viewSide', yaw: 90, pitch: 5 },
-  { key: 'viewTop', yaw: 0, pitch: 60 },
-  { key: 'viewBack', yaw: 180, pitch: 10 },
-];
+/**
+ * What the actions work on: the app context without the actions themselves, the open tabs, and the 3D preview
+ * they flush and hold. Each action module takes only the parts it names.
+ */
+export interface ActionContext extends Omit<AppContext, 'actions'> {
+  docs: Documents;
+  preview: Preview;
+}

@@ -12,7 +12,7 @@
  *  - 'lid'      (primary) lid top, W x H.
  *  - 'lidSides' the four lid walls as one band: front | right | back | left (height = lid height).
  *  - 'base'     the visible part of the base walls as one band (same order).
- * Bands read upright when the box lies flat; empty bands use the colour params.
+ * Bands read upright when the box lies flat; empty bands use the color params.
  */
 import * as THREE from 'three';
 import type {
@@ -22,15 +22,16 @@ import type {
   ParamValues,
   PrintTemplate,
   SelectParamDef,
-} from '../../core/types';
-import { L, num, placeOnGround, str } from '../shared';
+} from '../../core/types/model';
+import { placeOnGround } from '../geometry';
+import { icon } from '../icon';
+import { colorOf, num, str } from '../params';
 import {
   aspectOf,
   bandTemplate,
   bevelParam,
   bleedOf,
   bleedParam,
-  colorOf,
   colorParam,
   depthParam,
   edgeRadius,
@@ -39,7 +40,6 @@ import {
   finishParam,
   G_DIM,
   heightParam,
-  icon,
   regionMapper,
   sideColorParam,
   surfaceMaterial,
@@ -51,13 +51,9 @@ import { FACE_INDEX, roundedBoxGeometry, type FaceId, type FaceUVMapper } from '
 
 const DEFAULTS = { w: 180, h: 240, d: 40, cover: 67 } as const;
 
-/* ------------------------------------------------------------------ */
-/* Params                                                              */
-/* ------------------------------------------------------------------ */
-
 const lidCoverParam: NumberParamDef = {
   id: 'lidCover',
-  label: L('Lid height'),
+  label: 'Lid height',
   type: 'number',
   min: 30,
   max: 100,
@@ -69,21 +65,17 @@ const lidCoverParam: NumberParamDef = {
 
 const orientationParam: SelectParamDef = {
   id: 'orientation',
-  label: L('Placement'),
+  label: 'Placement',
   type: 'select',
   options: [
-    { value: 'flat', label: L('Lying flat (lid up)') },
-    { value: 'upright', label: L('Standing (lid facing front)') },
+    { value: 'flat', label: 'Lying flat (lid up)' },
+    { value: 'upright', label: 'Standing (lid facing front)' },
   ],
   default: 'flat',
   group: G_DIM,
 };
 
-const baseColorParam = colorParam('baseColor', L('Base colour (without artwork)'), '#d8d4cc');
-
-/* ------------------------------------------------------------------ */
-/* Dimensions & templates                                              */
-/* ------------------------------------------------------------------ */
+const baseColorParam = colorParam('baseColor', 'Base color (no artwork)', '#d8d4cc');
 
 interface SlimDims {
   W: number;
@@ -106,7 +98,7 @@ function slimDims(params: ParamValues): SlimDims {
   return { W, H, D, lidH, baseVis: D - lidH, t: Math.min(1.5, Math.min(W, H) * 0.05) };
 }
 
-const LID_LABEL = L('Lid – top');
+const LID_LABEL = 'Lid – top';
 
 function lidTemplate(params: ParamValues): PrintTemplate {
   const { W, H } = slimDims(params);
@@ -116,10 +108,10 @@ function lidTemplate(params: ParamValues): PrintTemplate {
 /** Band panels in wrap order (front | right | back | left) for a w x l footprint. */
 function wallPanels(w: number, l: number) {
   return [
-    { w, label: L('Front') },
-    { w: l, label: L('Right side') },
-    { w, label: L('Back') },
-    { w: l, label: L('Left side') },
+    { w, label: 'Front' },
+    { w: l, label: 'Right side' },
+    { w, label: 'Back' },
+    { w: l, label: 'Left side' },
   ];
 }
 /** Faces matching wallPanels() order. */
@@ -134,10 +126,6 @@ function baseTemplate(params: ParamValues): PrintTemplate {
   const { W, H, baseVis, t } = slimDims(params);
   return bandTemplate(wallPanels(W - 2 * t, H - 2 * t), Math.max(1, baseVis), bleedOf(params));
 }
-
-/* ------------------------------------------------------------------ */
-/* Build                                                               */
-/* ------------------------------------------------------------------ */
 
 /** Lazily created solid material, shared by every face that uses it within one build. */
 function solid(finish: Finish, color: string): () => THREE.Material {
@@ -157,17 +145,17 @@ function buildSlimBox(ctx: ModelContext): THREE.Object3D {
   const inner = new THREE.Group(); // lying flat, bottom on y = 0
   inner.name = 'box-slim';
 
-  /* ---- Lid ---- */
+  // Lid
   const lidUV: Partial<Record<FaceId, FaceUVMapper>> = {};
   const lidMats: THREE.Material[] = new Array<THREE.Material>(6);
   const lidTpl = lidTemplate(p);
-  lidUV.py = regionMapper(lidTpl, lidTpl.regions![0]);
+  lidUV.py = regionMapper(lidTpl, 0);
   lidMats[FACE_INDEX.py] = surfaceMaterial(finish, { map: ctx.getTexture('lid') });
 
-  const lidSidesMat = ctx.hasImage('lidSides') ? surfaceMaterial(finish, { map: ctx.getTexture('lidSides') }) : null;
+  const lidSidesMat = ctx.hasArtwork('lidSides') ? surfaceMaterial(finish, { map: ctx.getTexture('lidSides') }) : null;
   const sidesTpl = lidSidesTemplate(p);
   WALL_FACES.forEach((face, i) => {
-    if (lidSidesMat) lidUV[face] = regionMapper(sidesTpl, sidesTpl.regions![i]);
+    if (lidSidesMat) lidUV[face] = regionMapper(sidesTpl, i);
     lidMats[FACE_INDEX[face]] = lidSidesMat ?? sidePlain();
   });
   // Underside of the lid: the narrow rim around the base – or the whole bottom of a full-telescope box.
@@ -182,13 +170,13 @@ function buildSlimBox(ctx: ModelContext): THREE.Object3D {
   lid.castShadow = true;
   inner.add(lid);
 
-  /* ---- Base (only the part below the lid plus a small hidden overlap) ---- */
+  // Base (only the part below the lid plus a small hidden overlap)
   if (hasBase) {
     const overlap = Math.min(2, lidH * 0.5);
     const hb = baseVis + overlap;
     const baseUV: Partial<Record<FaceId, FaceUVMapper>> = {};
     const baseMats: THREE.Material[] = new Array<THREE.Material>(6);
-    const baseMat = ctx.hasImage('base') ? surfaceMaterial(finish, { map: ctx.getTexture('base') }) : null;
+    const baseMat = ctx.hasArtwork('base') ? surfaceMaterial(finish, { map: ctx.getTexture('base') }) : null;
     const tpl = baseTemplate(p);
     // Region covers the VISIBLE height only. The hidden overlap above it runs on into the top
     // bleed of the band (rectMapper extrapolates linearly) and is clamped at the bleed's outer
@@ -198,7 +186,7 @@ function buildSlimBox(ctx: ModelContext): THREE.Object3D {
     const maxT = (regionH + bleedOf(p)) / regionH;
     WALL_FACES.forEach((face, i) => {
       if (baseMat) {
-        const m = regionMapper(tpl, tpl.regions![i]);
+        const m = regionMapper(tpl, i);
         baseUV[face] = (s, tt) => m(s, Math.min(maxT, (tt * hb) / baseVis));
       }
       baseMats[FACE_INDEX[face]] = baseMat ?? basePlain();
@@ -234,19 +222,14 @@ function buildSlimBox(ctx: ModelContext): THREE.Object3D {
   return root;
 }
 
-/* ------------------------------------------------------------------ */
-/* Definition                                                          */
-/* ------------------------------------------------------------------ */
-
 const DEF_DIMS = slimDims({});
 
 export const slimBoxModel: ModelDefinition = {
   id: 'box-slim',
   category: 'box',
-  name: L('Slim box'),
-  description: L(
-    'Flat two-piece box with a lid over a base (board game, gift, phone, cosmetics). Lying flat or standing.',
-  ),
+  name: 'Slim box',
+  description:
+    'Flat two-piece box with a lid over a base (board game, gift, phone, cosmetics), lying flat or standing.',
   icon: icon(
     '<path d="M8 30 L22 20 H56 L42 30 Z"/><path d="M8 30 V44 H42 V30"/><path d="M42 44 L56 34 V20"/>' +
       '<path d="M8 39 H42 L56 29" stroke-width="2"/>',
@@ -255,21 +238,21 @@ export const slimBoxModel: ModelDefinition = {
     {
       id: 'lid',
       label: LID_LABEL,
-      hint: L('Main artwork on the lid.'),
+      hint: 'Main artwork on the lid.',
       aspect: aspectOf(faceTemplate(DEF_DIMS.W, DEF_DIMS.H, BLEED_MM, LID_LABEL)),
       template: lidTemplate,
     },
     {
       id: 'lidSides',
-      label: L('Lid – sides'),
-      hint: L('Band: front | right | back | left.'),
+      label: 'Lid – sides',
+      hint: 'The four lid walls in one band: front | right | back | left.',
       aspect: aspectOf(bandTemplate(wallPanels(DEF_DIMS.W, DEF_DIMS.H), DEF_DIMS.lidH, BLEED_MM)),
       template: lidSidesTemplate,
     },
     {
       id: 'base',
-      label: L('Base – sides'),
-      hint: L('Visible part of the base below the lid, same band layout.'),
+      label: 'Base – sides',
+      hint: 'The visible part of the base below the lid, in the same band layout.',
       aspect: aspectOf(
         bandTemplate(wallPanels(DEF_DIMS.W - 2 * DEF_DIMS.t, DEF_DIMS.H - 2 * DEF_DIMS.t), DEF_DIMS.baseVis, BLEED_MM),
       ),
@@ -278,8 +261,8 @@ export const slimBoxModel: ModelDefinition = {
   ],
   params: [
     widthParam(DEFAULTS.w, 20),
-    heightParam(DEFAULTS.h, 20, 600, L('Length')),
-    depthParam(DEFAULTS.d, 5, 200, L('Thickness')),
+    heightParam(DEFAULTS.h, 20, 600, 'Length'),
+    depthParam(DEFAULTS.d, 5, 200, 'Thickness'),
     lidCoverParam,
     orientationParam,
     bevelParam,

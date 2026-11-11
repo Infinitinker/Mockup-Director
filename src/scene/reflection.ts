@@ -17,7 +17,7 @@
  *  - All objects use layer 1 (excluded from the shadow capture camera).
  */
 import * as THREE from 'three';
-import type { ReflectionSettings } from '../core/types';
+import type { ReflectionSettings } from '../core/types/scene';
 
 export const REFLECTION_LAYER = 1;
 
@@ -77,7 +77,7 @@ export class Reflection {
       this.depthMats[side] = new THREE.MeshBasicMaterial({
         colorWrite: false,
         side,
-        // Push the pre-pass slightly back so the colour pass (LessEqual) always wins on its own surface.
+        // Push the pre-pass slightly back so the color pass (LessEqual) always wins on its own surface.
         polygonOffset: true,
         polygonOffsetFactor: 1,
         polygonOffsetUnits: 1,
@@ -104,7 +104,7 @@ export class Reflection {
     };
 
     const content = new THREE.Group();
-    // Colour copy and depth pre-pass copy share the same transform hierarchy.
+    // Color copy and depth pre-pass copy share the same transform hierarchy.
     content.add(
       this.cloneTree(
         model,

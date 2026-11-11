@@ -1,15 +1,28 @@
-import type { ModelDefinition } from '../core/types';
-import { boxModel, extraBoxModels } from './box';
-import { dvdModel, blurayModel } from './keepcase';
-import { cdCaseModel } from './jewelcase';
+/** The models the gallery shows, in display order, and finding one by id. */
+import type { ModelDefinition } from '../core/types/model';
+import { boxModel } from './box';
+import { dielineBoxModel } from './box/dieline';
+import { slimBoxModel } from './box/slim';
+import { blurayDiscModel, boxDiscModel, cdDiscModel, dvdDiscModel } from './composites';
 import { discModel } from './disc';
-import { boxDiscModel, dvdDiscModel, blurayDiscModel, cdDiscModel, compositeModels } from './composites';
-import { bookModels } from './books';
-import { flatPrintModels } from './printFlat';
-import { foldedPrintModels } from './printFolded';
-import { handheldModels } from './handheld';
-import { computerModels } from './computer';
-import { screenModels } from './screen';
+import { cdCaseModel } from './disc/jewelCase';
+import { blurayModel, dvdModel } from './disc/keepCase';
+import { hardcoverModel, paperbackModel } from './book/bound';
+import { spiralNotebookModel } from './book/notebook';
+import { brochureModel } from './print/flat/brochure';
+import { businessCardModel } from './print/flat/businessCard';
+import { flyerModel } from './print/flat/flyer';
+import { plasticCardModel } from './print/flat/plasticCard';
+import { postcardModel } from './print/flat/postcard';
+import { bifoldModel } from './print/folded/bifold';
+import { greetingCardModel } from './print/folded/greetingCard';
+import { trifoldModel } from './print/folded/trifold';
+import { laptopModel } from './device/computer/laptop';
+import { monitorModel } from './device/computer/monitor';
+import { phoneModel } from './device/handheld/phone';
+import { tabletModel } from './device/handheld/tablet';
+import { browserWindowModel } from './device/screen/browser';
+import { screenshotModel } from './device/screen/screenshot';
 
 /**
  * All models shown in the gallery, in display order (the gallery groups them by category and
@@ -17,7 +30,8 @@ import { screenModels } from './screen';
  */
 export const MODELS: ModelDefinition[] = [
   boxModel,
-  ...extraBoxModels,
+  dielineBoxModel,
+  slimBoxModel,
   boxDiscModel,
   dvdModel,
   dvdDiscModel,
@@ -26,16 +40,24 @@ export const MODELS: ModelDefinition[] = [
   cdCaseModel,
   cdDiscModel,
   discModel,
-  ...bookModels,
-  ...flatPrintModels,
-  ...foldedPrintModels,
-  ...handheldModels,
-  ...computerModels,
-  ...screenModels,
+  hardcoverModel,
+  paperbackModel,
+  spiralNotebookModel,
+  businessCardModel,
+  flyerModel,
+  postcardModel,
+  plasticCardModel,
+  brochureModel,
+  trifoldModel,
+  greetingCardModel,
+  bifoldModel,
+  phoneModel,
+  tabletModel,
+  laptopModel,
+  monitorModel,
+  screenshotModel,
+  browserWindowModel,
 ];
-
-// Safety net: any composite added later but not placed above is still listed.
-for (const m of compositeModels) if (!MODELS.includes(m)) MODELS.push(m);
 
 export function getModel(id: string): ModelDefinition {
   return MODELS.find((m) => m.id === id) ?? MODELS[0];

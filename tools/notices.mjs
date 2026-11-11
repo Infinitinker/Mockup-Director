@@ -46,12 +46,39 @@ export const BUNDLED = [
 export const APPIMAGE =
   'The AppImage also contains libraries of the Linux system it is built on (Ubuntu 22.04): GTK 3, WebKitGTK and their dependencies, mostly under the LGPL. They are not listed here. To see them, run the AppImage with --appimage-extract and look in squashfs-root/usr/lib; each comes from an Ubuntu 22.04 package (on Ubuntu, dpkg -S <file> names it), whose license and source code are listed at https://packages.ubuntu.com.';
 
-/** The kept text of an npm package that ships no license file: @scope/name → scope-name.txt. */
+/** @typedef {{ file: string, text: string }} LicenseText A license file and its text. */
+
+/**
+ * @typedef {object} NpmEntry An npm package the app ships, with its license texts.
+ * @property {string} name
+ * @property {string | undefined} version
+ * @property {string | null} license
+ * @property {string | null} repository
+ * @property {LicenseText[]} texts
+ */
+
+/**
+ * @typedef {object} BundledEntry A part of the Windows app from no package manager, with its license text.
+ * @property {string} title
+ * @property {string} about
+ * @property {string} source
+ * @property {string} text
+ */
+
+/**
+ * The kept text of an npm package that ships no license file: @scope/name → scope-name.txt.
+ * @param {string} name
+ * @returns {string}
+ */
 export function keptFile(name) {
   return `${name.replace(/^@/, '').replace('/', '-')}.txt`;
 }
 
-/** LF line ends, no trailing spaces, no blank lines around: the same text on every system. */
+/**
+ * LF line ends, no trailing spaces, no blank lines around: the same text on every system.
+ * @param {string} text
+ * @returns {string}
+ */
 export function normalize(text) {
   return text
     .replace(/\r\n?/g, '\n')
@@ -59,7 +86,11 @@ export function normalize(text) {
     .trim();
 }
 
-/** A code block that a run of backticks in the text cannot close. */
+/**
+ * A code block that a run of backticks in the text cannot close.
+ * @param {string} text
+ * @returns {string}
+ */
 function fenced(text) {
   const longest = Math.max(2, ...(text.match(/`+/g) ?? []).map((run) => run.length));
   const fence = '`'.repeat(longest + 1);
@@ -70,17 +101,23 @@ function fenced(text) {
  * The shipped npm packages with their license texts: the files each package contains, or else its
  * kept text. `kept` maps the file names in tools/licenses to their texts. Returns the entries, the
  * kept files used, and an error for each package without a text.
+ * @param {NpmEntry[]} packages
+ * @param {Map<string, string>} kept
+ * @returns {{ entries: NpmEntry[], used: Set<string>, errors: string[] }}
  */
 export function npmEntries(packages, kept) {
+  /** @type {NpmEntry[]} */
   const entries = [];
+  /** @type {Set<string>} */
   const used = new Set();
+  /** @type {string[]} */
   const errors = [];
   for (const p of packages) {
     let texts = p.texts;
     if (!texts.length) {
       const file = keptFile(p.name);
       if (kept.has(file)) {
-        texts = [{ file, text: kept.get(file) }];
+        texts = [{ file, text: /** @type {string} */ (kept.get(file)) }];
         used.add(file);
       } else {
         const source = p.repository ?? `https://www.npmjs.com/package/${p.name}`;
@@ -94,7 +131,11 @@ export function npmEntries(packages, kept) {
   return { entries, used, errors };
 }
 
-/** The whole notices file; `rust` is cargo-about's part, rendered with src-tauri/about.hbs. */
+/**
+ * The whole notices file; `rust` is cargo-about's part, rendered with src-tauri/about.hbs.
+ * @param {{ bundled: BundledEntry[], npm: NpmEntry[], rust: string }} parts
+ * @returns {string}
+ */
 export function renderNotices({ bundled, npm, rust }) {
   const parts = [
     '# Third-party notices',
@@ -116,7 +157,11 @@ export function renderNotices({ bundled, npm, rust }) {
   return `${parts.join('\n\n')}\n`;
 }
 
-/** The license files a package folder contains: LICENSE, or LICENSE-MIT and LICENSE-APACHE for two licenses. */
+/**
+ * The license files a package folder contains: LICENSE, or LICENSE-MIT and LICENSE-APACHE for two licenses.
+ * @param {string} path
+ * @returns {LicenseText[]}
+ */
 function licenseFiles(path) {
   if (!existsSync(path)) return [];
   return readdirSync(path)
@@ -125,6 +170,11 @@ function licenseFiles(path) {
     .map((file) => ({ file, text: readFileSync(join(path, file), 'utf8') }));
 }
 
+/**
+ * Runs cargo-about with the arguments; `ok` is false when it could not run or failed.
+ * @param {string[]} args
+ * @returns {{ ok: boolean, out: string, err: string }}
+ */
 function cargoAbout(args) {
   const run = spawnSync('cargo', ['about', ...args], {
     encoding: 'utf8',
@@ -164,8 +214,13 @@ function rustNotices() {
   }
 }
 
+/**
+ * The notices file, from the kept texts, the npm packages and cargo-about; throws listing every missing text.
+ * @returns {string}
+ */
 function build() {
   const kept = new Map(readdirSync(KEPT).map((file) => [file, readFileSync(join(KEPT, file), 'utf8')]));
+  /** @type {string[]} */
   const errors = [];
   const bundled = BUNDLED.map((b) => {
     if (!kept.has(b.file)) errors.push(`${KEPT}/${b.file} is missing: it holds the license of ${b.title}.`);
@@ -183,6 +238,10 @@ function build() {
   return renderNotices({ bundled, npm: npm.entries, rust: rustNotices() });
 }
 
+/**
+ * Writes the notices file, or with --check fails unless it is up to date.
+ * @param {string[]} args
+ */
 function main(args) {
   try {
     const notices = build();
@@ -204,7 +263,7 @@ function main(args) {
     }
     console.log(`${NOTICES} is up to date.`);
   } catch (error) {
-    console.error(error.message);
+    console.error(/** @type {Error} */ (error).message);
     process.exit(1);
   }
 }

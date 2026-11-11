@@ -1,0 +1,260 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`the registry > shows the slots in the snapshot at the defaults, with and without artwork 1`] = `
+{
+  "bluray-case": {
+    "withArtwork": [
+      "cover",
+    ],
+    "withoutArtwork": [
+      "front",
+    ],
+  },
+  "bluray-case-disc": {
+    "withArtwork": [
+      "cover",
+      "disc",
+    ],
+    "withoutArtwork": [
+      "disc",
+      "front",
+    ],
+  },
+  "book-hardcover": {
+    "withArtwork": [
+      "cover",
+    ],
+    "withoutArtwork": [
+      "front",
+    ],
+  },
+  "book-paperback": {
+    "withArtwork": [
+      "cover",
+    ],
+    "withoutArtwork": [
+      "front",
+    ],
+  },
+  "box": {
+    "withArtwork": [
+      "back",
+      "bottom",
+      "front",
+      "left",
+      "right",
+      "top",
+    ],
+    "withoutArtwork": [
+      "front",
+    ],
+  },
+  "box-dieline": {
+    "withArtwork": [
+      "net",
+    ],
+    "withoutArtwork": [
+      "net",
+    ],
+  },
+  "box-disc": {
+    "withArtwork": [
+      "back",
+      "bottom",
+      "disc",
+      "front",
+      "left",
+      "right",
+      "top",
+    ],
+    "withoutArtwork": [
+      "disc",
+      "front",
+    ],
+  },
+  "box-slim": {
+    "withArtwork": [
+      "base",
+      "lid",
+      "lidSides",
+    ],
+    "withoutArtwork": [
+      "lid",
+    ],
+  },
+  "cd-case": {
+    "withArtwork": [
+      "booklet",
+      "inlay",
+    ],
+    "withoutArtwork": [
+      "booklet",
+    ],
+  },
+  "cd-case-disc": {
+    "withArtwork": [
+      "booklet",
+      "disc",
+      "inlay",
+    ],
+    "withoutArtwork": [
+      "booklet",
+      "disc",
+    ],
+  },
+  "device-browser": {
+    "withArtwork": [
+      "screen",
+    ],
+    "withoutArtwork": [
+      "screen",
+    ],
+  },
+  "device-laptop": {
+    "withArtwork": [
+      "screen",
+    ],
+    "withoutArtwork": [
+      "screen",
+    ],
+  },
+  "device-monitor": {
+    "withArtwork": [
+      "screen",
+    ],
+    "withoutArtwork": [
+      "screen",
+    ],
+  },
+  "device-phone": {
+    "withArtwork": [
+      "screen",
+    ],
+    "withoutArtwork": [
+      "screen",
+    ],
+  },
+  "device-screenshot": {
+    "withArtwork": [
+      "screen",
+    ],
+    "withoutArtwork": [
+      "screen",
+    ],
+  },
+  "device-tablet": {
+    "withArtwork": [
+      "screen",
+    ],
+    "withoutArtwork": [
+      "screen",
+    ],
+  },
+  "disc": {
+    "withArtwork": [
+      "disc",
+    ],
+    "withoutArtwork": [
+      "disc",
+    ],
+  },
+  "dvd-case": {
+    "withArtwork": [
+      "cover",
+    ],
+    "withoutArtwork": [
+      "front",
+    ],
+  },
+  "dvd-case-disc": {
+    "withArtwork": [
+      "cover",
+      "disc",
+    ],
+    "withoutArtwork": [
+      "disc",
+      "front",
+    ],
+  },
+  "notebook-spiral": {
+    "withArtwork": [
+      "back",
+      "front",
+    ],
+    "withoutArtwork": [
+      "front",
+    ],
+  },
+  "print-bifold": {
+    "withArtwork": [
+      "inside",
+      "outside",
+    ],
+    "withoutArtwork": [
+      "outside",
+    ],
+  },
+  "print-brochure": {
+    "withArtwork": [
+      "cover",
+    ],
+    "withoutArtwork": [
+      "front",
+    ],
+  },
+  "print-business-card": {
+    "withArtwork": [
+      "back",
+      "front",
+    ],
+    "withoutArtwork": [
+      "front",
+    ],
+  },
+  "print-flyer": {
+    "withArtwork": [
+      "back",
+      "front",
+    ],
+    "withoutArtwork": [
+      "front",
+    ],
+  },
+  "print-greeting-card": {
+    "withArtwork": [
+      "inside",
+      "outside",
+    ],
+    "withoutArtwork": [
+      "outside",
+    ],
+  },
+  "print-plastic-card": {
+    "withArtwork": [
+      "back",
+      "front",
+    ],
+    "withoutArtwork": [
+      "front",
+    ],
+  },
+  "print-postcard": {
+    "withArtwork": [
+      "back",
+      "front",
+    ],
+    "withoutArtwork": [
+      "front",
+    ],
+  },
+  "print-trifold": {
+    "withArtwork": [
+      "inside",
+      "outside",
+    ],
+    "withoutArtwork": [
+      "outside",
+    ],
+  },
+}
+`;
