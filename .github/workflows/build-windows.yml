@@ -7,7 +7,7 @@ name: Build Windows app
 # It runs on every push to dev and main (a merged pull request is a push to main), from the Release
 # workflow, on demand, and for pull requests other than those from this repository's dev and main,
 # whose pushes are built already (so Dependabot's pull requests and other branches get a build too).
-# It is not a required status check: the Checks workflow (checks.yml) is.
+# It is not a required status check: the Checks (checks.yml) and E2E (e2e.yml) workflows are.
 #
 # Tauri builds the app without its own installers (bundle.active false in
 # src-tauri/tauri.windows.conf.json); the installer is made with Inno Setup from tools/installer.iss
