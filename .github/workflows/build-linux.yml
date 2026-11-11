@@ -7,7 +7,7 @@ name: Build Linux app
 # It runs on every push to dev and main (a merged pull request is a push to main), from the Release
 # workflow, on demand, and for pull requests other than those from this repository's dev and main,
 # whose pushes are built already (so Dependabot's pull requests and other branches get a build too).
-# It is not a required status check: the Checks (checks.yml) and E2E (e2e.yml) workflows are.
+# It is not a required status check; the Checks (checks.yml) and E2E tests (e2e.yml) are.
 #
 # Linux settings are in src-tauri/tauri.linux.conf.json. The AppImage is one file for any
 # distribution and carries its own GTK and WebKitGTK libraries; the .deb (Debian, Ubuntu, Mint) and
@@ -41,7 +41,7 @@ jobs:
     if: >-
       github.event_name != 'pull_request' ||
       github.event.pull_request.head.repo.fork || (github.head_ref != 'dev' && github.head_ref != 'main')
-    name: Build (linux-x86_64)
+    name: Linux build (x86_64)
     runs-on: ubuntu-24.04
     container: ubuntu:22.04
     timeout-minutes: 60
@@ -140,7 +140,7 @@ jobs:
           if-no-files-found: error
 
   files:
-    name: Check the files
+    name: Linux release files
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 15

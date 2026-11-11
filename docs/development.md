@@ -109,7 +109,7 @@ cargo fmt --check --manifest-path src-tauri/Cargo.toml
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 ```
 
-The **Checks** workflow (`.github/workflows/checks.yml`) runs all of these for every push to `main` and `dev` and for every pull request, in a few minutes: `Lint` (Biome and rustfmt), `Web` (type-check, build, unit tests), `Licenses`, `Release safety` (release builds carry no test code, see [End-to-end tests](#end-to-end-tests)), and clippy and the Rust tests on three systems, `Windows` (with MSYS2 and the GNU toolchain), `Linux` and `macOS`. The Rust code differs per system and clippy and the tests only see the code of the system they run on, hence three runs. Once a month Dependabot opens a pull request to `dev` with new versions of the actions the workflows use (`.github/dependabot.yml`).
+The **Checks** workflow (`.github/workflows/checks.yml`) runs all of these for every push to `main` and `dev` and for every pull request, in a few minutes: `Lint` (Biome and rustfmt), `Web` (type-check, build, unit tests), `Licenses`, `Release safety` (release builds carry no test code, see [End-to-end tests](#end-to-end-tests)), and clippy and the Rust tests on three systems, `Windows Rust checks` (with MSYS2 and the GNU toolchain), `Linux Rust checks` and `macOS Rust checks`. The Rust code differs per system and clippy and the tests only see the code of the system they run on, hence three runs. Once a month Dependabot opens a pull request to `dev` with new versions of the actions the workflows use (`.github/dependabot.yml`).
 
 ## End-to-end tests
 
@@ -132,7 +132,7 @@ On Linux without a desktop, run the test in a virtual screen: `xvfb-run -a -s "-
 - **Its own identifier**, `io.github.infinitinker.mockupdirector.e2e`: a running Mockup Director or `npm run app:dev` never takes its launch over, and it has its own data folder. Each run deletes that folder first on Windows and Linux, so the app starts with no restored tabs. On macOS it is not deleted, because the web engine's data of a binary run outside an app bundle is shared with `npm run app:dev`.
 - **The output**, in `E2E_OUTPUT` or else `mockup-director-e2e` in the temp folder: `report.json` (the steps that passed, their durations and what the WebGL check found), `app.png` (a screenshot of the window's page) and the WebdriverIO logs. The app's own log is in its data folder (Windows and Linux) or in `~/Library/Logs/io.github.infinitinker.mockupdirector.e2e` (macOS); `report.json` names it (`appLog`).
 
-The **E2E** workflow (`.github/workflows/e2e.yml`) runs the test for every push to `main` and `dev` and for every pull request, like the Checks, on three systems: `E2E Windows`, `E2E Linux` (Xvfb with software OpenGL) and `E2E macOS`. Each job also runs clippy with the `e2e` feature, which the Checks never compile, and keeps the output folder and the app's log as an artifact, with the report in the job summary. You need not run the test before every commit; run it after changes to how the app starts, switches models or saves, and after updating WebdriverIO or the Tauri plugins.
+The **E2E tests** workflow (`.github/workflows/e2e.yml`) runs the test for every push to `main` and `dev` and for every pull request, like the Checks, on three systems: `Windows E2E tests`, `Linux E2E tests` (Xvfb with software OpenGL) and `macOS E2E tests`. Each job also runs clippy with the `e2e` feature, which the Checks never compile, and keeps the output folder and the app's log as an artifact, with the report in the job summary. You need not run the test before every commit; run it after changes to how the app starts, switches models or saves, and after updating WebdriverIO or the Tauri plugins.
 
 ## Interface texts
 
@@ -179,7 +179,7 @@ rustup target add aarch64-apple-darwin x86_64-apple-darwin
 npm run tauri build -- --target universal-apple-darwin
 ```
 
-GitHub Actions builds all three systems on every push to `dev` and `main` and for pull requests from other branches and forks (`build-windows.yml`, `build-macos.yml`, `build-linux.yml`). Each build's **Check the files** job then checks that exactly the release's files of that system arrived, under the names they have in a release (`MockupDirector-<version>-windows-x64-setup.exe` and so on); they are in the run's **Artifacts**. Releases are described in [releasing.md](releasing.md).
+GitHub Actions builds all three systems on every push to `dev` and `main` and for pull requests from other branches and forks (`build-windows.yml`, `build-macos.yml`, `build-linux.yml`). Each build's release files job (**Windows release files**, **macOS release files**, **Linux release files**) then checks that exactly the release's files of that system arrived, under the names they have in a release (`MockupDirector-<version>-windows-x64-setup.exe` and so on); they are in the run's **Artifacts**. Releases are described in [releasing.md](releasing.md).
 
 ## Branches
 

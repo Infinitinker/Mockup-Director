@@ -1,7 +1,7 @@
 /**
  * Smoke test of the desktop app: it starts, shows the 3D view (or its message for missing WebGL),
  * switches models, and saves a project through a mocked save dialog; writes a report of the steps,
- * their durations and the WebGL check, which the E2E workflow shows in its job summary.
+ * their durations and the WebGL check, which the E2E tests workflow shows in its job summary.
  */
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { arch, tmpdir } from 'node:os';
@@ -35,7 +35,7 @@ interface Probe {
   innerHeight: number;
 }
 
-/** The report (OUTPUT/report.json, see tests/e2e/folders.ts), shown in the E2E workflow's job summary. */
+/** The report (OUTPUT/report.json, see tests/e2e/folders.ts), shown in the E2E tests workflow's job summary. */
 interface Report {
   os: string;
   arch: string;

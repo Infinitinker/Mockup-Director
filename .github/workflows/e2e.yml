@@ -3,7 +3,7 @@
 # and for pull requests, like the Checks; its jobs have short, fixed names, different from the Checks
 # jobs, so they are required status checks of the main branch ruleset too (docs/releasing.md). That
 # release builds carry no test code is checked by the Checks (job "Release safety").
-name: E2E
+name: E2E tests
 
 on:
   push:
@@ -21,7 +21,7 @@ concurrency:
 
 jobs:
   e2e:
-    name: E2E ${{ matrix.name }}
+    name: ${{ matrix.name }} E2E tests
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     strategy:

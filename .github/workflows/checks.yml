@@ -116,7 +116,7 @@ jobs:
   # and clippy and the tests only see the code of the system they run on, so they run on each: on
   # Windows with MSYS2 and Rust's GNU toolchain, the one the app is built with.
   system:
-    name: ${{ matrix.name }}
+    name: ${{ matrix.name }} Rust checks
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     strategy:

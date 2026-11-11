@@ -7,7 +7,7 @@ name: Build Windows app
 # It runs on every push to dev and main (a merged pull request is a push to main), from the Release
 # workflow, on demand, and for pull requests other than those from this repository's dev and main,
 # whose pushes are built already (so Dependabot's pull requests and other branches get a build too).
-# It is not a required status check: the Checks (checks.yml) and E2E (e2e.yml) workflows are.
+# It is not a required status check; the Checks (checks.yml) and E2E tests (e2e.yml) are.
 #
 # Tauri builds the app without its own installers (bundle.active false in
 # src-tauri/tauri.windows.conf.json); the installer is made with Inno Setup from tools/installer.iss
@@ -46,7 +46,7 @@ jobs:
     if: >-
       github.event_name != 'pull_request' ||
       github.event.pull_request.head.repo.fork || (github.head_ref != 'dev' && github.head_ref != 'main')
-    name: Build (windows-x64)
+    name: Windows build (x64)
     runs-on: windows-latest
     timeout-minutes: 60
     outputs:
@@ -141,7 +141,7 @@ jobs:
           if-no-files-found: error
 
   files:
-    name: Check the files
+    name: Windows release files
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 15
