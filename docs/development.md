@@ -127,7 +127,7 @@ npm run e2e
 
 On Linux without a desktop, run the test in a virtual screen: `xvfb-run -a -s "-screen 0 1920x1080x24" npm run e2e`.
 
-- **The e2e build** (`tools/e2e-build.mjs`) is a debug build with the Cargo feature `e2e` and the overlay `src-tauri/tauri.e2e.conf.json`. The feature adds two test plugins to the shell, a WebDriver server inside the app (port 4445) and the bridge that lets the test answer commands; the overlay allows them in the window and loads a test build of the web part, `vite build --mode e2e`, whose entry `tests/e2e/app/entry.ts` installs the bridge before it starts the app, written to `dist-e2e/`. Release builds pass no features and use neither, so they never contain the plugins, and a release build given the feature fails to compile (`compile_error!` in `src-tauri/src/lib.rs`). The `Release safety` check also proves that the web build and the dependency graph of a release carry no test code.
+- **The e2e build** (`tools/e2e-build.mjs`) is a debug build with the Cargo feature `e2e` and the overlay `src-tauri/tauri.e2e.conf.json`. The feature adds two test plugins to the shell, a WebDriver server inside the app (port 4445) and the bridge that lets the test answer commands; the overlay allows them in the window and loads a test build of the web part, `vite build --mode e2e`, whose entry `tests/e2e/app/entry.ts` installs the bridge before it starts the app, written to `dist-e2e/`. Release builds pass no features and use neither, so they never contain the plugins, and a release build given the feature fails to compile (`compile_error!` in `src-tauri/src/lib.rs`). The `Release safety` check (`tools/release-safety.mjs`) also proves that the web build and the dependency graph of a release carry no test code.
 - **Its own Cargo target folder:** the build sets `CARGO_TARGET_DIR` to `src-tauri/target/e2e`, so `npm run app:dev` and `cargo test`, which build into `src-tauri/target/debug`, never replace it. The test starts `src-tauri/target/e2e/debug/mockup-director` (`.exe` on Windows).
 - **Its own identifier and data folder**, `io.github.infinitinker.mockupdirector.e2e` and `Mockup Director E2E`: a running Mockup Director or `npm run app:dev` never takes its launch over, and its data stays apart. Each run deletes that folder first on Windows and Linux, so the app starts with no restored tabs. On macOS it is not deleted, because the web engine's data of a binary run outside an app bundle is shared with `npm run app:dev`.
 - **The output**, in `E2E_OUTPUT` or else `mockup-director-e2e` in the temp folder: `report.json` (the steps that passed, their durations and what the WebGL check found), `app.png` (a screenshot of the window's page) and the WebdriverIO logs. The app's own log is in its data folder (Windows and Linux) or in `~/Library/Logs/Mockup Director E2E` (macOS); `report.json` names it (`appLog`).
@@ -185,7 +185,11 @@ npm run build && npm test
 node tools/licenses.mjs && cargo deny --manifest-path src-tauri/Cargo.toml --config src-tauri/deny.toml check licenses && node tools/notices.mjs --check
 ```
 
-**Release safety** (`checks.yml`): the script of its step "No test code in the release builds", after `npm run build`.
+**Release safety** (`checks.yml`):
+
+```bash
+npm run build && node tools/release-safety.mjs
+```
 
 **Linux Rust checks** (`checks.yml`):
 

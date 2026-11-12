@@ -242,6 +242,8 @@ tools/installer.iss         the Windows installer (Inno Setup 7): files, the .md
 tools/installer.mjs         builds it (npm run installer)
 tools/e2e-build.mjs         builds the app for the end-to-end test (npm run e2e:build) into
                             src-tauri/target/e2e
+tools/release-safety.mjs    checks that the release builds carry no test code (the Release safety
+                            job), after npm run build
 tools/draw-icon.mjs         draws the app icon and writes the icon files in use: src-tauri/icons/,
                             src/ui/app-logo.svg and docs/images/icon.png (npm run icons)
 start.bat, start.sh         run the desktop app from source (npm run app:dev), see docs/development.md
