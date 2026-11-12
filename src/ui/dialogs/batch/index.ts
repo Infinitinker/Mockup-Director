@@ -25,6 +25,7 @@ import {
   storedMode,
 } from './selection';
 import { createSetup, type SetupChoice } from './setup';
+import { log } from '../../../platform/log';
 
 let dialogOpen = false;
 
@@ -254,8 +255,8 @@ export function openBatchDialog(ctx: Pick<AppContext, 'store' | 'stage'>, host: 
     dialogOpen = false;
     try {
       prevFocus?.focus();
-    } catch {
-      /* ignore */
+    } catch (e) {
+      log.warn('Cannot give the focus back after the batch dialog closed', e);
     }
   }
 
