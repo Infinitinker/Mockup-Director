@@ -29,6 +29,7 @@ import type { Reflection } from '../reflection';
 import type { FitPoints, ModelInfo } from './modelInfo';
 import { keyIntensity, keyLightDir } from './lighting';
 import { gpuLimits, renderSize, renderTiles } from './tiles';
+import { log } from '../../platform/log';
 
 const DEG = Math.PI / 180;
 
@@ -160,8 +161,9 @@ export function startAnimation(host: TurntableHost, o: AnimationFramingOptions):
   overlay.height = canvas.height;
   try {
     overlay.getContext('2d')?.drawImage(canvas, 0, 0);
-  } catch {
-    /* an empty overlay is fine */
+  } catch (e) {
+    // An empty overlay still hides the turntable's frames, only without the last picture.
+    log.warn('Cannot copy the 3D view onto the overlay that hides the turntable render', e);
   }
   overlay.className = 'mockup-director-stage-freeze';
   overlay.setAttribute('aria-hidden', 'true');
