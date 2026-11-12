@@ -70,7 +70,7 @@ Every [release](https://github.com/Infinitinker/Mockup-Director/releases/latest)
 
 Download `MockupDirector-x.y.z-windows-x64-setup.exe` and run it. It installs Mockup Director for you alone, so it needs no administrator rights; if you are an administrator, you can choose to install it for all users instead. It needs Windows 10 or 11 (64-bit) with Microsoft Edge WebView2, which comes with Windows; if it is missing, the installer downloads it.
 
-Rather not install anything? Download `MockupDirector-x.y.z-windows-x64-portable.zip` instead, unzip it anywhere and start **Mockup Director.exe** in the folder. It keeps its data in the same place as the installed app.
+Rather not install anything? Download `MockupDirector-x.y.z-windows-x64-portable.zip` instead, unzip it anywhere and start **mockup-director.exe** in the folder. It keeps its data in the same place as the installed app.
 
 ### macOS
 

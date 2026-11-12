@@ -101,14 +101,14 @@ jobs:
           folder="portable/Mockup Director"
           mkdir -p dist-release "$folder"
           cp "$release/installer/$name-setup.exe" dist-release/
-          cp "$release/mockup-director.exe" "$folder/Mockup Director.exe"
+          cp "$release/mockup-director.exe" "$folder/"
           cp "$release/WebView2Loader.dll" "$folder/"
           cp LICENSE "$folder/LICENSE.txt"
           cp THIRD-PARTY-NOTICES.md "$folder/THIRD-PARTY-NOTICES.txt"
           printf '%s\r\n' \
             "Mockup Director $version, portable" \
             "" \
-            "Start Mockup Director.exe. Nothing is installed: the app keeps its open tabs and looks in" \
+            "Start mockup-director.exe. Nothing is installed: the app keeps its open tabs and looks in" \
             "%LOCALAPPDATA%\\io.github.infinitinker.mockupdirector, the same folder the installed app uses." \
             "" \
             "Update: replace this folder with the one from the new version." \

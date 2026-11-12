@@ -17,7 +17,7 @@
 #endif
 
 #define AppName "Mockup Director"
-#define AppExe "Mockup Director.exe"
+#define AppExe "mockup-director.exe"
 #define Repository "https://github.com/Infinitinker/Mockup-Director"
 #define AppGuid "5232673D-A21D-4A04-B4C4-6E8C5ACCFEDE"
 #define Build "..\src-tauri\target\release"
@@ -85,7 +85,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 [Files]
 ; A GNU build loads WebView2Loader.dll at run time, so it goes next to the app; the license texts
 ; come with every copy. Inno Setup fails on a missing file, so a build without one never ships.
-Source: "{#Build}\mockup-director.exe"; DestDir: "{app}"; DestName: "{#AppExe}"; Flags: ignoreversion
+Source: "{#Build}\{#AppExe}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#Build}\WebView2Loader.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#Build}\LICENSE.txt"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#Build}\THIRD-PARTY-NOTICES.txt"; DestDir: "{app}"; Flags: ignoreversion

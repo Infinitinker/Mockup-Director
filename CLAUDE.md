@@ -12,7 +12,7 @@ Code written before these rules is being brought in line with them, stage by sta
 - American spelling: color, center, gray, canceled, normalize, millimeter.
 - Each concept has one name, used in the interface, code, file names, storage keys, docs and commit messages: a **look**, not a style or preset; **artwork**, not images. The names are listed in the terms table in `docs/architecture.md`.
 - The name is **Mockup Director** in prose and the interface, and `MockupDirector-<version>-…` in release file names. Elsewhere:
-  - `mockup-director` for the npm package, the binary Cargo builds and storage keys (`mockup-director.*`), and `mockup_director_lib` for the Rust library; the Windows installer and portable ZIP ship the binary as `Mockup Director.exe`;
+  - `mockup-director` for the npm package, the binary Cargo builds (shipped under that name everywhere, as `mockup-director.exe` on Windows) and storage keys (`mockup-director.*`), and `mockup_director_lib` for the Rust library;
   - `io.github.infinitinker.mockupdirector` as the app identifier, with `.dev` added for the app run from source (`src-tauri/tauri.dev.conf.json`);
   - project files: the `.mdproj` extension and only that one, the MIME type `application/x-mockup-director-project` and the type identifier `io.github.infinitinker.mockupdirector.project`.
 
