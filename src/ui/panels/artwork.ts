@@ -11,6 +11,7 @@ import { ICONS } from '../icons';
 import { completeParams } from '../../models/params';
 import { aspectMismatch, expectedAspects } from '../../models/slots';
 import { hasAny } from '../../documents/store';
+import { log } from '../../platform/log';
 
 /** Small cached thumbnails (data URLs of a downscaled copy) so re-renders don't decode huge images. */
 const thumbCache = new WeakMap<Artwork, string>();
@@ -40,7 +41,8 @@ function thumbnailFor(a: Artwork): string {
         url = c.toDataURL('image/png');
       }
     }
-  } catch {
+  } catch (e) {
+    log.warn('Cannot draw the thumbnail of an artwork, so the artwork itself is shown', e);
     url = a.dataUrl;
   }
   thumbCache.set(a, url);

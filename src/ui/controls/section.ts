@@ -4,6 +4,7 @@
 import { h, nextId } from '../dom';
 import { safeStorage } from '../../platform/storage';
 import { ICONS } from '../icons';
+import { log } from '../../platform/log';
 
 const SECTION_KEY = 'mockup-director.ui.collapsed';
 let collapsedCache: Set<string> | null = null;
@@ -12,7 +13,8 @@ function collapsedSet(): Set<string> {
   try {
     const arr = JSON.parse(safeStorage.get(SECTION_KEY) ?? '[]') as unknown;
     collapsedCache = new Set(Array.isArray(arr) ? arr.filter((x): x is string => typeof x === 'string') : []);
-  } catch {
+  } catch (e) {
+    log.warn(`The stored value ${SECTION_KEY} is damaged, so every section is open`, e);
     collapsedCache = new Set();
   }
   return collapsedCache;

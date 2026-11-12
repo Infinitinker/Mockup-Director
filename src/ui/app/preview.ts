@@ -150,11 +150,15 @@ export function createPreview(store: Store, host: HTMLElement, showError: (messa
       rebuild.flush();
     },
     followSize() {
+      // Resizing runs on every frame while the window is resized: only the first failure is logged.
+      let resizeFailed = false;
       const resize = frameCoalescer(() => {
         try {
           stage.resize();
-        } catch {
-          /* ignore */
+        } catch (e) {
+          if (resizeFailed) return;
+          resizeFailed = true;
+          log.warn('Cannot resize the 3D view', e);
         }
       });
       if (typeof ResizeObserver !== 'undefined') new ResizeObserver(() => resize.schedule()).observe(host);
