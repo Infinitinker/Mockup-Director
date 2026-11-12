@@ -185,8 +185,10 @@ async function decodeRaster(blob: Blob, mime: string, name: string): Promise<HTM
     let bmp: ImageBitmap | null = null;
     try {
       bmp = await createImageBitmap(blob);
-    } catch {
-      bmp = null; // e.g. Safari < 15 or a format the bitmap decoder lacks – fall back below
+    } catch (e) {
+      // e.g. Safari < 15 or a format the bitmap decoder lacks: decoded as an image below.
+      log.warn(`Cannot decode the ${mime} image with createImageBitmap, so it is decoded as an image`, e);
+      bmp = null;
     }
     if (bmp && bmp.width > 0 && bmp.height > 0) {
       try {
@@ -300,7 +302,11 @@ function loadHtmlImage(blob: Blob): Promise<HTMLImageElement> {
     const done = () => URL.revokeObjectURL(url);
     img.onload = () => {
       // decode() guarantees the pixels are ready before drawImage (avoids blank first draws in WebKit).
-      const ready = typeof img.decode === 'function' ? img.decode().catch(() => undefined) : Promise.resolve();
+      // A failed decode() still leaves the loaded image to draw.
+      const ready =
+        typeof img.decode === 'function'
+          ? img.decode().catch((e: unknown) => log.warn('Cannot finish decoding an image before it is drawn', e))
+          : Promise.resolve();
       ready.then(() => {
         done();
         resolve(img);
