@@ -162,7 +162,7 @@ rustup target add aarch64-apple-darwin x86_64-apple-darwin
 npm run tauri build -- --target universal-apple-darwin
 ```
 
-GitHub Actions builds all three systems on every push to `dev` and `main` and for pull requests from other branches and forks (`build-windows.yml`, `build-macos.yml`, `build-linux.yml`). Each build's release files job (**Windows release files**, **macOS release files**, **Linux release files**) then checks that exactly the release's files of that system arrived, under the names they have in a release (`MockupDirector-<version>-windows-x64-setup.exe` and so on); they are in the run's **Artifacts**. Releases are described in [releasing.md](releasing.md).
+GitHub Actions builds all three systems for every pull request (`build-windows.yml`, `build-macos.yml`, `build-linux.yml`), and on request: Actions > Build Windows app (or macOS, Linux) > Run workflow, on any branch. Each build's release files job (**Windows release files**, **macOS release files**, **Linux release files**) then checks that exactly the release's files of that system arrived, under the names they have in a release (`MockupDirector-<version>-windows-x64-setup.exe` and so on); they are in the run's **Artifacts**. Releases are described in [releasing.md](releasing.md).
 
 ## Branches
 
