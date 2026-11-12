@@ -10,7 +10,7 @@ Everything in the project is written in English: code, comments, documentation, 
 
 ## Contributing a model
 
-A model needs no UI code: the interface is built from its definition. [docs/models.md](docs/models.md) describes the contract and the 3D conventions every model follows.
+A model needs no UI code: the interface is built from its definition. Never written code? [docs/first-model.md](docs/first-model.md) takes you from getting the code to the pull request, step by step. [docs/models.md](docs/models.md) describes the contract and the 3D conventions every model follows.
 
 1. Create the model's file in `src/models/`, with its parameters, slots and `build()` function.
 2. Register it in `MODELS` in `src/models/registry.ts`.

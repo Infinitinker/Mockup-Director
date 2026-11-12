@@ -1,5 +1,7 @@
 # Writing models
 
+This is the reference for writing models. New to the code? Start with [Your first model](first-model.md), a step-by-step guide that needs no programming experience.
+
 A model is one kind of product the app can show: a box, a keep case, a book, a phone. Each is a `ModelDefinition` (`src/core/types/model.ts`) in a module or folder in `src/models/`, listed in `MODELS` in `src/models/registry.ts`. The definition says what the user can change (parameters), which artwork the model takes (slots), and how to make the 3D object (`build`). The gallery, the Model tab and the Artwork tab are built from it, so adding a model never needs UI code. Every model follows the [3D conventions](architecture.md#3d-conventions); the full list is at the top of `src/core/types/model.ts`. The built-in models are the examples:
 
 | File | Models |
@@ -184,38 +186,7 @@ To add a composite, export the base model's build function from its module, defi
 
 ## Adding a model
 
-1. Create a file in `src/models/`, for example `poster.ts`, and export a `ModelDefinition`:
-
-   ```ts
-   import * as THREE from 'three';
-   import type { ModelDefinition } from '../core/types/model';
-   import { castShadows, placeOnGround } from './geometry';
-   import { printMaterial, solidPlastic } from './materials';
-   import { mmParam, num } from './params';
-
-   export const posterModel: ModelDefinition = {
-     id: 'poster',
-     category: 'print',
-     name: 'Mounted poster',
-     icon: '<svg viewBox="0 0 64 64"><rect x="16" y="8" width="32" height="48" fill="none" stroke="currentColor" stroke-width="3"/></svg>',
-     slots: [{ id: 'front', label: 'Front', aspect: 210 / 297 }],
-     params: [
-       mmParam('width', 'Width', 210, 50, 1000),
-       mmParam('height', 'Height', 297, 50, 1000),
-       mmParam('thickness', 'Thickness', 5, 1, 30, 0.5),
-     ],
-     build(ctx) {
-       const w = num(ctx.params, 'width', 210), h = num(ctx.params, 'height', 297), t = num(ctx.params, 'thickness', 5);
-       // BoxGeometry material order: +X, -X, +Y, -Y, +Z (front), -Z (back).
-       const edge = solidPlastic('#f2f2f2', 0.6);
-       const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, t), [
-         edge, edge, edge, edge, printMaterial(ctx.getTexture('front')), edge,
-       ]);
-       return placeOnGround(castShadows(mesh));
-     },
-   };
-   ```
-
+1. Create a module in `src/models/` that exports a `ModelDefinition`. [Your first model](first-model.md) walks through a complete one, a mounted poster, line by line, for readers new to the code.
 2. Add it to the `MODELS` array in `src/models/registry.ts`, at its place in the gallery. It then appears in its category, with its Model and Artwork tabs. Raise the number of models in README.md ("Shows your artwork on N models"): `tests/readme.test.ts` checks it against `MODELS`.
 3. Where it helps, give a slot a `template` and a `hint`, and the model a `description` and a `defaultCamera`.
 4. Its new IDs and slots change the snapshots of the model tests (see [Testing](#testing)): update them with `npx vitest run -u tests/models`, and check in the diff that they only add. Add tests for what the model does beyond the contract, then run the checks:

@@ -216,7 +216,8 @@ Further documentation, for developers:
 - [docs/development.md](docs/development.md): building and running from source, checks, branches
 - [docs/architecture.md](docs/architecture.md): how the app is built and where the code lives
 - [docs/interface-texts.md](docs/interface-texts.md): how the interface's texts are written
-- [docs/models.md](docs/models.md): adding a new 3D model
+- [docs/first-model.md](docs/first-model.md): your first model, step by step, with no programming experience needed
+- [docs/models.md](docs/models.md): adding a new 3D model, the full reference
 - [docs/releasing.md](docs/releasing.md): versions, releases and code signing
 - [docs/licenses.md](docs/licenses.md): the dependency license policy and third-party notices
 
