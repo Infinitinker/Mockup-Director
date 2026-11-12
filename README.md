@@ -10,11 +10,11 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Infinitinker/Mockup-Director/releases/latest"><img src="https://img.shields.io/github/v/release/Infinitinker/Mockup-Director?label=Download" alt="Latest release"></a>
-  <a href="https://github.com/Infinitinker/Mockup-Director/actions/workflows/checks.yml"><img src="https://img.shields.io/github/actions/workflow/status/Infinitinker/Mockup-Director/checks.yml?branch=main&label=Checks" alt="Checks on main"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue" alt="License: MIT"></a>
-  <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-555" alt="Platform: Windows, macOS and Linux">
-  <img src="https://img.shields.io/badge/Works-offline-2ea44f" alt="Works offline">
+  <a href="https://github.com/Infinitinker/Mockup-Director/releases/latest"><img src="https://img.shields.io/github/v/release/Infinitinker/Mockup-Director" alt="Latest release"></a>
+  <a href="https://github.com/Infinitinker/Mockup-Director/actions/workflows/checks.yml"><img src="https://img.shields.io/github/actions/workflow/status/Infinitinker/Mockup-Director/checks.yml?branch=main&label=checks" alt="Checks on main"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License: MIT"></a>
+  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-555" alt="Platform: Windows, macOS and Linux">
+  <img src="https://img.shields.io/badge/works-offline-2ea44f" alt="Works offline">
 </p>
 
 Mockup Director turns flat artwork into a picture of the finished product: drop your design on a box, a DVD case, a book cover, a business card or a laptop screen, set the light, and export a photorealistic image, a turning animation, or a whole series at once. It is free and open source, runs on Windows, macOS and Linux, and works offline.
