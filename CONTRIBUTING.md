@@ -14,7 +14,7 @@ A model needs no UI code: the interface is built from its definition. Never writ
 
 1. Create the model's file in `src/models/`, with its parameters, slots and `build()` function.
 2. Register it in `MODELS` in `src/models/registry.ts`.
-3. The tests in `tests/models/` check every registered model; update their snapshots with `npx vitest run -u tests/models` and check that the diff only adds the new model.
+3. The tests in `tests/models/` check every registered model; update their snapshots with `npx vitest run tests/models -u` and check that the diff only adds the new model.
 4. Run the checks: `npm run lint`, `npm run build` and `npm test`.
 
 ## Code

@@ -139,10 +139,10 @@ The project checks every model automatically. Before you send yours, run the sam
 2. The tests keep a record of the names that project files save. Add your model to it:
 
    ```bash
-   npm test -- -u tests/models
+   npm test -- tests/models -u
    ```
 
-   It takes a minute or two. In the summary at the end, the `Snapshots` line says `2 updated`.
+   In the summary at the end, the `Snapshots` line says `2 updated`. The folder goes before `-u`: after it, it would be taken as part of `-u`, and every snapshot of the project would be updated.
 3. Let the project lay out your code the way all its files are laid out:
 
    ```bash
