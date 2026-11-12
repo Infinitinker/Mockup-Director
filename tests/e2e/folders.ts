@@ -51,7 +51,7 @@ function xdgFolder(variable: string, fallback: string): string {
 }
 
 /**
- * The e2e app's log file, by the same rules as `log_dir` in src-tauri/src/log.rs: in the data folder on
+ * The e2e app's log file, by the same rules as `log_dir` in src-tauri/src/folders.rs: in the data folder on
  * Windows, in the XDG state folder on Linux (XDG_STATE_HOME counts only when it is an absolute path, as
  * for the `dirs` crate) and in ~/Library/Logs on macOS.
  */

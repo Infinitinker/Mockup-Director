@@ -9,6 +9,7 @@
 //!    project files to the running app (which opens them in tabs) and brings its window forward;
 //!    on macOS the system itself sends them to the running app, as an event,
 //!  - a close watchdog (`closing.rs`): the window closes even when the page does not answer,
+//!  - the app's per-user folders (`folders.rs`): the data, log and web engine folders,
 //!  - the log (`log.rs`), with `write_log` for the page's entries, and a native message when the
 //!    app cannot start,
 //!  - on Linux, turning off WebKitGTK's DMA-BUF renderer, which leaves the window blank on many
@@ -17,6 +18,7 @@
 pub mod closing;
 pub mod error;
 pub mod files;
+pub mod folders;
 pub mod log;
 pub mod opened;
 pub mod saves;
@@ -73,9 +75,9 @@ pub fn run() {
     let context = tauri::generate_context!();
     let version = context.package_info().version.to_string();
     let log_dir = log::start(
-        log::data_folder(context.config().app.app_directories_override.as_ref())
-            .zip(log::system_log_root())
-            .map(|(folder, root)| log::log_dir(&root, folder)),
+        folders::data_folder(context.config().app.app_directories_override.as_ref())
+            .zip(folders::system_log_root())
+            .map(|(folder, root)| folders::log_dir(&root, folder)),
     );
 
     // Windows and Linux pass double-clicked project files as arguments. If the working directory
@@ -180,15 +182,12 @@ pub fn run() {
     });
 }
 
-/// Builds a window from its config. On Windows and Linux its web engine keeps its data (the session,
-/// the looks, the interface choices and its caches) in the `webview` subfolder of the app's data
-/// folder: by default Tauri gives the engine the data folder itself, where WebView2 and WebKitGTK
-/// would put capitalized folders of their own (`EBWebView`, `WebKitCache`, `CacheStorage`). On macOS
-/// WKWebView keeps its own store and ignores the setting.
+/// Builds a window from its config, with the web engine's data in `folders::webview_dir` on Windows
+/// and Linux.
 fn build_window(app: &App, config: &WindowConfig) -> tauri::Result<WebviewWindow> {
     let builder = WebviewWindowBuilder::from_config(app, config)?;
     #[cfg(not(target_os = "macos"))]
-    let builder = builder.data_directory(app.path().app_local_data_dir()?.join("webview"));
+    let builder = builder.data_directory(folders::webview_dir(app)?);
     builder.build()
 }
 

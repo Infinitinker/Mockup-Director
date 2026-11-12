@@ -34,7 +34,7 @@ const ISCC_FOLDERS = [
 /**
  * The name of the app's data folder in %LOCALAPPDATA%: the <name> of the `$LOCALDATA/<name>` root
  * that `app > appDirectoriesOverride` sets in tauri.conf.json (read the same way by `data_folder` in
- * src-tauri/src/log.rs).
+ * src-tauri/src/folders.rs).
  * @param {{ app?: { appDirectoriesOverride?: unknown } }} config the parsed tauri.conf.json
  */
 export function dataFolder(config) {
