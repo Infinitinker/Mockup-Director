@@ -78,13 +78,15 @@ Download `MockupDirector-x.y.z-macos-universal.dmg`, open it and drag **Mockup D
 
 ### Linux
 
-Mockup Director needs 64-bit Linux (x86_64) with glibc 2.35 or newer: Ubuntu 22.04+, Debian 12+, Linux Mint 21+, Fedora 36+, openSUSE Tumbleweed / Leap 16 and similar. Download one of these files and run its command in the folder you downloaded it to:
+Mockup Director needs 64-bit Linux (x86_64) with glibc 2.35 or newer: Ubuntu 22.04+, Debian 12+, Linux Mint 21+, Fedora 36+, openSUSE Tumbleweed / Leap 16 and similar. Download one of these files, then open it from your file manager or run its command in the folder you downloaded it to:
 
 - **AppImage**, for any distribution, without installing:
 
   ```bash
   chmod +x ./MockupDirector-*-linux-x86_64.AppImage && ./MockupDirector-*-linux-x86_64.AppImage
   ```
+
+  Without a terminal: a downloaded file loses its permission to run as a program, so a double-click does not start it yet. In the file manager, right-click the file, choose **Properties** and turn on **Executable as Program** (on older GNOME and in Linux Mint: the **Permissions** tab, **Allow executing file as program**; in KDE: **Permissions**, **Is executable**). Then double-click it. Started this way it shows no errors: if nothing happens, run the command above in a terminal to see why; often FUSE is missing (see [Questions](#questions)). The AppImage adds no entry to the applications menu and does not open `.mdproj` files when you double-click them.
 
 - **`.deb`**, for Debian, Ubuntu and Mint:
 
@@ -103,6 +105,8 @@ Mockup Director needs 64-bit Linux (x86_64) with glibc 2.35 or newer: Ubuntu 22.
   ```bash
   sudo zypper install --allow-unsigned-rpm ./MockupDirector-*-linux-x86_64.rpm
   ```
+
+Double-clicking a `.deb` or `.rpm` package opens the system's software installer, which asks for your password and installs it. If it refuses the package or fails (for example Ubuntu's App Center with a downloaded `.deb`, or a graphical installer with the unsigned `.rpm`), use the command above, or the AppImage.
 
 The `.deb` and `.rpm` packages install the system's WebKitGTK and add Mockup Director to the applications menu; the AppImage carries its own copy.
 
@@ -177,7 +181,7 @@ A Mac blocks apps that are not signed with an Apple Developer ID the first time.
 xattr -dr com.apple.quarantine "/Applications/Mockup Director.app"
 ```
 
-**Linux: the AppImage says "No suitable fusermount binary found".**
+**Linux: the AppImage does not start, or says "No suitable fusermount binary found".**
 FUSE is missing: install the `fuse3` package, or start the AppImage with `--appimage-extract-and-run`.
 
 **Linux: the window stays blank or white, or the 3D preview is missing.**

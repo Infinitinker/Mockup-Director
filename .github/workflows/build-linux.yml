@@ -110,7 +110,7 @@ jobs:
           done
       # Each file on its own and unzipped, so the run's page offers the files themselves. Each step
       # fails unless its pattern matches exactly one file. A download does not keep the AppImage's
-      # executable bit, so users run `chmod +x` once (see the README).
+      # executable bit, so users make it executable once (see the README).
       - id: appimage
         uses: actions/upload-artifact@v7
         with:

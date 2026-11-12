@@ -17,7 +17,7 @@ Describe the changes of this version here, for users, then publish the release.
 
 - **Windows:** the app is not signed, so SmartScreen says "Windows protected your PC". Click **More info → Run anyway**, once.
 - **macOS:** if macOS says it could not verify the app, open **System Settings → Privacy & Security** and click **Open Anyway** next to the message about Mockup Director.
-- **Linux AppImage:** make it executable first: `chmod +x MockupDirector-{version}-linux-x86_64.AppImage`.
+- **Linux AppImage:** make it executable first: in the file manager under **Properties** (turn on **Executable as Program**, or on the **Permissions** tab, **Allow executing file as program**), or with `chmod +x MockupDirector-{version}-linux-x86_64.AppImage`.
 
 The [README](https://github.com/{repository}#installing) has the details, also for installing the `.deb` and `.rpm` packages, and [answers to common questions](https://github.com/{repository}#questions).
 
