@@ -253,6 +253,7 @@ async function saveInBrowser(
       if (opts.confirmed) throw new UserError(UNCONFIRMED_SAVE, { cause: err });
       // NotAllowedError/SecurityError (e.g. user activation expired after a long render),
       // unsupported types… → fall through to a classic download.
+      log.warn('The save dialog could not save the file, so it is downloaded instead', err);
     }
   }
   downloadBlob(blob, suggestedName);
