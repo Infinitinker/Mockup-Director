@@ -11,6 +11,12 @@ import { randomInt, seededRandom } from '../../random';
 
 type Motion = Pick<AnimationSettings, 'fps' | 'duration' | 'motion' | 'swingAngle' | 'direction' | 'easing'>;
 
+/**
+ * Whether two angles agree to 9 decimal places, as `toBeCloseTo(expected, 9)` checks. The random
+ * runs check every frame this way and expect once per run: an expect per frame makes them slow.
+ */
+const closeTo = (actual: number, expected: number) => Math.abs(actual - expected) < 5e-10;
+
 const motion = (overrides: Partial<Motion>): Motion => ({
   fps: 2,
   duration: 4,
@@ -50,11 +56,10 @@ describe('turntableAngles, full turn', () => {
       const n = frameCountOf(s);
       const sign = s.direction === 'cw' ? -1 : 1;
       expect(angles).toHaveLength(n);
-      angles.forEach((angle, k) => {
-        expect(angle * sign).toBeGreaterThanOrEqual(0);
-        expect(angle * sign).toBeLessThan(360);
-        expect(angle).toBeCloseTo((sign * 360 * k) / n, 9);
-      });
+      const wrong = angles.flatMap((angle, k) =>
+        angle * sign >= 0 && angle * sign < 360 && closeTo(angle, (sign * 360 * k) / n) ? [] : [{ k, angle }],
+      );
+      expect(wrong, JSON.stringify(s)).toEqual([]);
     }
   });
 });
@@ -101,10 +106,10 @@ describe('turntableAngles, swing', () => {
       const angles = turntableAngles(s);
       const n = angles.length;
       expect(n).toBe(frameCountOf(s));
-      for (let k = 0; k < n; k++) {
-        expect(Math.abs(angles[k])).toBeLessThanOrEqual(s.swingAngle + 1e-9);
-        if (k > 0) expect(angles[k] + angles[n - k]).toBeCloseTo(0, 9);
-      }
+      const wrong = angles.flatMap((angle, k) =>
+        Math.abs(angle) <= s.swingAngle + 1e-9 && (k === 0 || closeTo(angle + angles[n - k], 0)) ? [] : [{ k, angle }],
+      );
+      expect(wrong, JSON.stringify(s)).toEqual([]);
       if (n % 4 === 0) {
         expect(Math.max(...angles.map(Math.abs))).toBeCloseTo(s.swingAngle, 9);
       }
@@ -126,7 +131,10 @@ describe('turntableAngles with normalized settings', () => {
       });
       const angles = turntableAngles(s);
       expect(angles.length).toBeGreaterThanOrEqual(2);
-      for (const angle of angles) expect(Number.isFinite(angle)).toBe(true);
+      expect(
+        angles.filter((angle) => !Number.isFinite(angle)),
+        JSON.stringify(s),
+      ).toEqual([]);
     }
   });
 });
@@ -161,10 +169,8 @@ describe('frameDelays', () => {
       const step = units / fps;
       expect(delays).toHaveLength(count);
       expect(delays.reduce((sum, d) => sum + d, 0)).toBe(Math.round(count * step));
-      for (const d of delays) {
-        expect(Number.isInteger(d)).toBe(true);
-        expect(Math.abs(d - step)).toBeLessThan(1);
-      }
+      const wrong = delays.filter((d) => !Number.isInteger(d) || Math.abs(d - step) >= 1);
+      expect(wrong, `${count} frames at ${fps} fps in units of 1/${units} s`).toEqual([]);
     }
   });
 });
