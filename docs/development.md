@@ -159,13 +159,13 @@ The `Licenses` job also needs cargo-deny and cargo-about, in the versions `.gith
 cargo install --locked cargo-deny@0.20.2 && cargo install --locked cargo-about@0.9.3 --features cli
 ```
 
-Clone your Windows checkout, so commits you haven't pushed are checked too, and install the npm packages; replace the path with your checkout's, where `C:\` is `/mnt/c/`, and `dev` with the branch you work on. Later, `git pull` in the clone brings in that branch's newer commits:
+Clone your Windows checkout into `~/Projekty`, so commits you haven't pushed are checked too, and install the npm packages; if your checkout is somewhere other than `D:\Projekty\Mockup-Director`, use its path (`D:\` is `/mnt/d/`), and replace `dev` with the branch you work on. The clone is only for running the checks: make and commit changes in the Windows checkout, and `git pull` in the clone brings them in:
 
 ```bash
-git clone --branch dev /mnt/c/path/to/Mockup-Director ~/Mockup-Director && cd ~/Mockup-Director && npm ci
+git clone --branch dev /mnt/d/Projekty/Mockup-Director ~/Projekty/Mockup-Director && cd ~/Projekty/Mockup-Director && npm ci
 ```
 
-Then, in `~/Mockup-Director`, run what each Linux job runs.
+Then, in `~/Projekty/Mockup-Director`, run what each Linux job runs.
 
 **Lint** (`checks.yml`):
 
