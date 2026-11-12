@@ -58,10 +58,8 @@ jobs:
       # After the checkout, which brings the action.
       - name: Linux libraries
         uses: ./.github/actions/linux-libraries
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
+      - name: Node.js
+        uses: ./.github/actions/node
 
       - uses: dtolnay/rust-toolchain@stable
       - uses: swatinem/rust-cache@v2
@@ -145,6 +143,7 @@ jobs:
             package.json
             tools/release.mjs
             .github/actions/release-files
+            .github/actions/node
           sparse-checkout-cone-mode: false
       - name: Release files
         uses: ./.github/actions/release-files

@@ -39,10 +39,8 @@ jobs:
       artifacts: ${{ steps.dmg.outputs.artifact-id }}
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
+      - name: Node.js
+        uses: ./.github/actions/node
 
       # Both macOS targets, for the universal binary.
       - uses: dtolnay/rust-toolchain@stable
@@ -128,6 +126,7 @@ jobs:
             package.json
             tools/release.mjs
             .github/actions/release-files
+            .github/actions/node
           sparse-checkout-cone-mode: false
       - name: Release files
         uses: ./.github/actions/release-files

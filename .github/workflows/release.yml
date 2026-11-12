@@ -31,9 +31,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0 # The history of main, to check that the tag is on it.
-      - uses: actions/setup-node@v7
+      - name: Node.js
+        uses: ./.github/actions/node
         with:
-          node-version: 22
+          cache: false
       # The version in package.json, of the form 1.2.3; one with a hyphen is a pre-release.
       - name: Read the version
         id: version
@@ -75,10 +76,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
+      - name: Node.js
+        uses: ./.github/actions/node
       - name: Install
         run: npm ci
       - name: Licenses and notices
@@ -107,9 +106,10 @@ jobs:
       attestations: write # To store them.
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - name: Node.js
+        uses: ./.github/actions/node
         with:
-          node-version: 22
+          cache: false
       # skip-decompress keeps each file as uploaded: otherwise the Windows ZIP would arrive unpacked.
       - uses: actions/download-artifact@v8
         with:

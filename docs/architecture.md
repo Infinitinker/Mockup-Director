@@ -216,6 +216,7 @@ src-tauri/      the Tauri v2 shell (Rust): main.rs starts lib.rs, which sets up 
   release.yml        for a v* tag: checks the version, calls the three builds, drafts the release with
                      provenance attestations; by hand, the same without drafting
 .github/actions/
+  node/              Node.js 22 with npm's cache, for every job that runs Node.js
   notices/           the license checks and the notices check, for checks.yml and release.yml
   windows-toolchain/ MSYS2 (MINGW64) and Rust's GNU toolchain, and why, for the Windows jobs
   linux-libraries/   the Tauri system libraries for Debian and Ubuntu, for the Linux jobs

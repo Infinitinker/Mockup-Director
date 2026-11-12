@@ -1,0 +1,24 @@
+# Sets up Node.js 22, the version CLAUDE.md and package.json's engines name, with npm's download
+# cache. Used by every job that runs Node.js, in all the workflows and in release-files. Needs a
+# checkout first; one without package-lock.json passes cache: false.
+name: Node.js
+description: Sets up Node.js 22, with npm's download cache unless told otherwise.
+
+inputs:
+  cache:
+    description: Whether to cache npm's downloads, which needs package-lock.json in the checkout.
+    required: false
+    default: 'true'
+  check-latest:
+    description: Whether to fetch the newest Node.js 22 rather than the one cached on the runner image.
+    required: false
+    default: 'false'
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v7
+      with:
+        node-version: 22
+        cache: ${{ inputs.cache == 'true' && 'npm' || '' }}
+        check-latest: ${{ inputs.check-latest }}

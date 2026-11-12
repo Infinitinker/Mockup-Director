@@ -1,8 +1,8 @@
 # Checks the release files of one system after its build: downloads exactly the files the build kept
 # on the run's page and checks that they are the release's files of that system, under their release
 # names (node tools/release.mjs files), and that every ZIP is whole. Used by the files job of
-# build-windows.yml, build-macos.yml and build-linux.yml. Needs a checkout with package.json and
-# tools/release.mjs first; a sparse one is enough.
+# build-windows.yml, build-macos.yml and build-linux.yml. Needs a checkout with package.json,
+# tools/release.mjs and .github/actions/node first; a sparse one is enough.
 name: Release files
 description: Downloads a build's release files and checks them with tools/release.mjs.
 
@@ -17,9 +17,10 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: actions/setup-node@v7
+    - name: Node.js
+      uses: ./.github/actions/node
       with:
-        node-version: 22
+        cache: false
 
     # skip-decompress keeps each file as uploaded: otherwise the Windows ZIP would arrive unpacked.
     - uses: actions/download-artifact@v8
