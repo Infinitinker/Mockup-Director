@@ -50,7 +50,7 @@ The terminal shows an address, `http://localhost:1420`. Open it in your web brow
 Every model lives in the `src/models` folder. Create a new file there named `poster.ts`, paste this into it, and save it:
 
 ```ts
-/** A mounted poster ('poster'): a print on a stiff board, with its width, height and thickness. */
+/** A mounted poster ('print-poster'): a print on a stiff board, with its width, height and thickness. */
 import * as THREE from 'three';
 import type { ModelDefinition } from '../core/types/model';
 import { castShadows, placeOnGround } from './geometry';
@@ -59,7 +59,7 @@ import { printMaterial, solidPlastic } from './materials';
 import { mmParam, num } from './params';
 
 export const posterModel: ModelDefinition = {
-  id: 'poster',
+  id: 'print-poster',
   category: 'print',
   name: 'Mounted poster',
   icon: icon('<rect x="16" y="8" width="32" height="48" rx="1"/>'),
@@ -87,7 +87,7 @@ What each part does:
 
 - **The first line**, between `/**` and `*/`, says in a sentence what the file is. Every file in the project starts with one.
 - **The `import` lines** bring in the tools the model uses: `THREE` is [three.js](https://threejs.org/), the library that draws the 3D scene, and the others are helpers the built-in models share, from the files next to yours (`geometry.ts`, `icon.ts`, `materials.ts`, `params.ts`).
-- **`id: 'poster'`** is the model's name inside the app. Project files save it, so it never changes once the model is released. It is lowercase words joined by hyphens.
+- **`id: 'print-poster'`** is the model's name inside the app. Project files save it, so it never changes once the model is released. It is lowercase words joined by hyphens, starting with the prefix that models of its kind share: `print-` for print, `box-` for boxes, `device-` for devices.
 - **`category: 'print'`** is the group the model appears in: `box`, `disc`, `book`, `print` or `device`.
 - **`name: 'Mounted poster'`** is what you see in the app, with only the first word capitalized.
 - **`icon`** is the small drawing next to the name, on a grid of 64 × 64. This one is a tall rectangle: 32 wide and 48 high, starting 16 from the left and 8 from the top.
