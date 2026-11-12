@@ -2,7 +2,7 @@
 
 A desktop app that turns flat artwork into photorealistic 3D mockups (boxes, disc cases, books, print, devices) and exports stills, turntable animations and batches. Tauri v2 (Rust shell in `src-tauri/`) with a TypeScript + three.js web UI in `src/`, for Windows, macOS and Linux.
 
-`README.md` is for users. Developer documentation is in `docs/`: `architecture.md` (design, code map, folders, terms, files and data), `models.md` (the model contract), `development.md` (setup, checks, interface texts), `releasing.md` and `licenses.md`. Keep them current when the code changes.
+`README.md` is for users. Developer documentation is in `docs/`: `architecture.md` (design, code map, folders, terms, files and data), `models.md` (the model contract), `development.md` (setup and checks), `interface-texts.md` (the rules for the interface's texts), `releasing.md` and `licenses.md`. Keep them current when the code changes.
 
 Code written before these rules is being brought in line with them, stage by stage. Follow the rules in new and changed code, and don't extend what they replace.
 
@@ -53,7 +53,7 @@ The goal is clean code, modularity, portability, and that anyone can make a conv
 
 ### Ease of use
 - A new user gets from download to an exported mockup without reading docs: sensible defaults for every model, its camera and its look.
-- Interface texts follow the guide in `docs/development.md`: sentence case, `…` only for commands that ask for more and for progress texts, and hints in full sentences.
+- Interface texts follow the rules in `docs/interface-texts.md`: sentence case, `…` only for commands that ask for more and for progress texts, and hints in full sentences.
 - Projects, the looks file and the session carry a `version`. A change that an older app would lose on re-save raises it and adds a migration; a file from a newer version is refused with a message to update Mockup Director. Until the first release there is no backwards-compatibility code.
 - The README and its screenshots are updated together with the features they show.
 

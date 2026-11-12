@@ -136,24 +136,7 @@ The **E2E tests** workflow (`.github/workflows/e2e.yml`) runs the test for every
 
 ## Interface texts
 
-The interface's texts are plain English strings, written in the code where they are used: in the interface modules, in the errors a user sees (a `UserError` from `src/core/errors.ts`, whose message the interface shows as it is; `errorMessage` in `src/ui/errors.ts` turns any other error into a general message with the raw text as detail; the Rust shell sends a kind code instead of a text, and the texts for its file errors are in `src/platform/commandErrors.ts`), and in the labels and hints of models and looks. Every new or changed text follows these rules:
-
-| Rule | Write | Not |
-| --- | --- | --- |
-| English only, with American spelling. | Color, Center, Analyzing colors | Colour, Centre, Analysing colours |
-| Sentence case for labels, buttons, menu items, tab names and headings. | Save current look, Restore defaults, Batch export | Save Current Look |
-| The ellipsis character `…`, never three dots, and only on a command that asks for more before it acts, and on a progress text. A command that acts at once has none. | Open project…, Save project…, Export image…, Choose…, Loading…, Exporting… | Loading..., Restore defaults… |
-| Hints and descriptions are full sentences ending with a period. Labels have no period. | This model has no settings. (hint); Lock aspect ratio (label) | Small = flat telephoto look, large = strong perspective (hint) |
-| Clauses are joined with a colon. The en dash `–` is only for ranges and as a separator in names and labels. | The project file could not be read: it is damaged. Ø 22–119.5 mm, A5 – 148 × 210 mm, Inside – left | Drop artwork – it fills the empty slots of the model |
-| Curly quotes “ ” and the apostrophe ’. | Save changes to “${name}”?, Don’t save | Could not decode the image "${name}", Don't save |
-| No "Please". | Choose PNG or JPEG. | Please choose PNG or JPEG. |
-| A count is written as "Label: ${n}". | Files chosen: ${n}, Imported looks: ${n} | ${n} files chosen, Errors (${n}) |
-| A control with a shortcut shows it as "Action (shortcut)", in its tooltip. `shortcutLabel` in `src/ui/dom.ts` writes the keys for the system. | Undo (Ctrl+Z), New tab (⌘T) | Ctrl+Z: Undo |
-| An error message says what happened, then what to do. | Not enough memory to load an image this large. Choose a smaller image. The file could not be read: it is not a Mockup Director project. Choose a .mdproj file. | This is not a Mockup Director project file. |
-| One name per concept: the terms in [architecture.md](architecture.md#terms). | look, artwork, light preset, view | preset or style for a look, image for artwork |
-| Millimeters as mm after a space, degrees as ° with no space, × between dimensions. | Standard 10.4 mm, 120 × 120 mm, 360° turn, ±${a}° | 10.4mm, 90 deg, 120x120 mm |
-
-Texts take values through template literals, never through concatenated strings: `` `Save changes to “${name}”?` ``, not `'Save changes to “' + name + '”?'`.
+Every new or changed text of the interface follows the rules in [interface-texts.md](interface-texts.md).
 
 ## Building the desktop app
 
