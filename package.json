@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "license": "MIT",
-  "description": "Mockup Director – photorealistic 3D mockups of packaging, books, print and devices for Windows, macOS and Linux",
+  "description": "Your artwork, as a real product. Photorealistic 3D mockups of boxes, disc cases, books, print and devices, made on your own computer.",
   "type": "module",
   "engines": {
     "node": ">=22"
