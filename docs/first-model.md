@@ -87,7 +87,7 @@ What each part does:
 
 - **The first line**, between `/**` and `*/`, says in a sentence what the file is. Every file in the project starts with one.
 - **The `import` lines** bring in the tools the model uses: `THREE` is [three.js](https://threejs.org/), the library that draws the 3D scene, and the others are helpers the built-in models share, from the files next to yours (`geometry.ts`, `icon.ts`, `materials.ts`, `params.ts`).
-- **`id: 'print-poster'`** is the model's name inside the app. Project files save it, so it never changes once the model is released. It is lowercase words joined by hyphens, starting with the prefix that models of its kind share: `print-` for print, `box-` for boxes, `device-` for devices.
+- **`id: 'print-poster'`** is the model's name inside the app. Project files save it, so it never changes once the model is released. It is lowercase words joined by hyphens. Related models share a prefix, such as `print-` for the print models, so the poster's ID starts with it.
 - **`category: 'print'`** is the group the model appears in: `box`, `disc`, `book`, `print` or `device`.
 - **`name: 'Mounted poster'`** is what you see in the app, with only the first word capitalized.
 - **`icon`** is the small drawing next to the name, on a grid of 64 × 64. This one is a tall rectangle: 32 wide and 48 high, starting 16 from the left and 8 from the top.
