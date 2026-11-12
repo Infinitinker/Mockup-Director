@@ -134,6 +134,76 @@ On Linux without a desktop, run the test in a virtual screen: `xvfb-run -a -s "-
 
 The **E2E tests** workflow (`.github/workflows/e2e.yml`) runs the test for every push to `main` and `dev` and for every pull request, like the Checks, on three systems: `Windows E2E tests`, `Linux E2E tests` (Xvfb with software OpenGL) and `macOS E2E tests`. Each job also runs clippy with the `e2e` feature, which the Checks never compile, and keeps the output folder and the app's log as an artifact, with the report in the job summary. You need not run the test before every commit; run it after changes to how the app starts, switches models or saves, and after updating WebdriverIO or the Tauri plugins.
 
+## Linux checks on Windows (WSL)
+
+On Windows, the Linux jobs can run in WSL 2 with Ubuntu 26.04, the release the Linux runners use, in a clone of its own inside WSL: `node_modules` and the Rust build made on Windows don't run on Linux, and files on the Windows drives are slow to reach from WSL.
+
+In the Ubuntu shell, install the system packages the Linux jobs install: the Tauri libraries (`.github/actions/linux-libraries`), and Xvfb with Mesa's software OpenGL for the end-to-end test:
+
+```bash
+sudo apt-get update && sudo apt-get install -y --no-install-recommends build-essential curl git file pkg-config libwebkit2gtk-4.1-dev libxdo-dev libssl-dev librsvg2-dev xvfb libegl-mesa0 libgl1-mesa-dri mesa-utils
+```
+
+Then Node.js 22 through [nvm](https://github.com/nvm-sh/nvm), and Rust (stable) through rustup, with clippy and rustfmt:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/master/install.sh | bash && . ~/.nvm/nvm.sh && nvm install 22
+```
+```bash
+curl -fsSL https://sh.rustup.rs | sh -s -- -y --component clippy,rustfmt && . ~/.cargo/env
+```
+
+The `Licenses` job also needs cargo-deny and cargo-about, in the versions `.github/actions/notices` pins:
+
+```bash
+cargo install --locked cargo-deny@0.20.2 && cargo install --locked cargo-about@0.9.3 --features cli
+```
+
+Clone your Windows checkout, so commits you haven't pushed are checked too, and install the npm packages; replace the path with your checkout's, where `C:\` is `/mnt/c/`, and `dev` with the branch you work on. Later, `git pull` in the clone brings in that branch's newer commits:
+
+```bash
+git clone --branch dev /mnt/c/path/to/Mockup-Director ~/Mockup-Director && cd ~/Mockup-Director && npm ci
+```
+
+Then, in `~/Mockup-Director`, run what each Linux job runs.
+
+**Lint** (`checks.yml`):
+
+```bash
+npx biome ci --error-on-warnings && cargo fmt --manifest-path src-tauri/Cargo.toml --check
+```
+
+**Web** (`checks.yml`):
+
+```bash
+npm run build && npm test
+```
+
+**Licenses** (`checks.yml`, through `.github/actions/notices`):
+
+```bash
+node tools/licenses.mjs && cargo deny --manifest-path src-tauri/Cargo.toml --config src-tauri/deny.toml check licenses && node tools/notices.mjs --check
+```
+
+**Release safety** (`checks.yml`): the script of its step "No test code in the release builds", after `npm run build`.
+
+**Linux Rust checks** (`checks.yml`):
+
+```bash
+npm run build && (cd src-tauri && cargo clippy --all-targets --locked -- -D warnings && cargo test --locked)
+```
+
+**Linux E2E tests** (`e2e.yml`), with Mesa's software OpenGL in a virtual screen:
+
+```bash
+npm run build && cargo clippy --manifest-path src-tauri/Cargo.toml --features e2e --locked -- -D warnings && npm run e2e:build
+```
+```bash
+LIBGL_ALWAYS_SOFTWARE=1 xvfb-run -a -s "-screen 0 1920x1080x24" npm run e2e
+```
+
+**Linux build (x86_64)** (`build-linux.yml`) makes the AppImage, the .deb and the .rpm with `npm run tauri build`. It builds in an `ubuntu:22.04` container, so the files run on older systems too; the same command in WSL shows that the app still builds, but its files need Ubuntu 26.04's newer glibc. **Linux release files**, which checks the files a build put on the run's page, has nothing to run locally.
+
 ## Interface texts
 
 Every new or changed text of the interface follows the rules in [interface-texts.md](interface-texts.md).
