@@ -9,7 +9,7 @@
     2. Install Rust with the GNU toolchain as the default: `rustup-init --default-host x86_64-pc-windows-gnu`.
     3. Put `C:\msys64\mingw64\bin` at the end of your `PATH`: Rust links with its `gcc`, and Tauri compiles the app's icon and manifest with its `windres`.
 
-    Tauri supports only Microsoft's MSVC toolchain officially, but builds, tests and `npm run app:dev` work with GNU. A GNU build loads `WebView2Loader.dll` at run time: the build puts it next to the executable, and the installer installs it.
+    Tauri supports only Microsoft's MSVC toolchain officially, but builds, tests and `npm run app:dev` work with GNU. A GNU build loads `WebView2Loader.dll` at run time: the build puts it next to the executable, and the installer installs it. Biome, which `npm run lint` and `npm run format` run, is a prebuilt program that needs the Microsoft Visual C++ runtime (`VCRUNTIME140.dll`), which most Windows machines already have; WSL runs the same lint (see [Linux checks on Windows (WSL)](#linux-checks-on-windows-wsl)).
   - **macOS:** Xcode Command Line Tools (`xcode-select --install`).
   - **Linux (Debian / Ubuntu):** the WebKitGTK development packages:
 
