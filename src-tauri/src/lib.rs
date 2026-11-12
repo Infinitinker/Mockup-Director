@@ -10,7 +10,9 @@
 //!    on macOS the system itself sends them to the running app, as an event,
 //!  - a close watchdog (`closing.rs`): the window closes even when the page does not answer,
 //!  - the log (`log.rs`), with `write_log` for the page's entries, and a native message when the
-//!    app cannot start.
+//!    app cannot start,
+//!  - on Linux, turning off WebKitGTK's DMA-BUF renderer, which leaves the window blank on many
+//!    systems (`webkit.rs`).
 
 pub mod closing;
 pub mod error;
@@ -18,6 +20,7 @@ pub mod files;
 pub mod log;
 pub mod opened;
 pub mod saves;
+pub mod webkit;
 
 // The test plugins run an open WebDriver server inside the app: a release build must never get them,
 // even when someone passes the feature to it. `npm run e2e:build` always makes a debug build.
@@ -64,6 +67,9 @@ fn on_second_launch(app: &AppHandle, args: Vec<String>, cwd: String) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // First of all, while this is the only thread and before WebKitGTK starts (see webkit::configure).
+    #[cfg(target_os = "linux")]
+    let dmabuf = webkit::configure();
     let context = tauri::generate_context!();
     let version = context.package_info().version.to_string();
     let log_dir = log::start(
@@ -144,6 +150,17 @@ pub fn run() {
         std::env::consts::OS,
         std::env::consts::ARCH
     ));
+    #[cfg(target_os = "linux")]
+    match dmabuf {
+        webkit::DmabufRenderer::TurnOff => log::info(format_args!(
+            "Turned WebKitGTK's DMA-BUF renderer off ({}=1)",
+            webkit::DISABLE_DMABUF_RENDERER
+        )),
+        webkit::DmabufRenderer::UserChoice(value) => log::info(format_args!(
+            "Left {} as it was set: {value:?}",
+            webkit::DISABLE_DMABUF_RENDERER
+        )),
+    }
     app.run(|app_handle, event| {
         // The process ends without dropping the app's state, so the temporary files of saves that
         // are still open are removed here.

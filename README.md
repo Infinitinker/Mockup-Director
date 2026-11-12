@@ -181,13 +181,7 @@ xattr -dr com.apple.quarantine "/Applications/Mockup Director.app"
 FUSE is missing: install the `fuse3` package, or start the AppImage with `--appimage-extract-and-run`.
 
 **Linux: the window stays blank or white, or the 3D preview is missing.**
-This is a known WebKitGTK problem with DMA-BUF rendering, common with NVIDIA graphics and Wayland. Start the app with:
-
-```bash
-WEBKIT_DISABLE_DMABUF_RENDERER=1 mockup-director
-```
-
-For the AppImage, put the same `WEBKIT_DISABLE_DMABUF_RENDERER=1` before `./MockupDirector-*-linux-x86_64.AppImage`.
+WebKitGTK's DMA-BUF renderer causes this on many systems, most often with NVIDIA graphics and Wayland, so Mockup Director turns it off itself. It leaves it on only when `WEBKIT_DISABLE_DMABUF_RENDERER` is already set in your environment: if you set it to `0`, remove it. If the window is still blank, update your graphics drivers.
 
 **It says "The 3D preview is not available: WebGL does not work on this computer".**
 Update your graphics drivers, then restart Mockup Director; on a virtual machine, enable 3D acceleration.

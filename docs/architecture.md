@@ -30,7 +30,7 @@ Mockup Director is a [Tauri v2](https://v2.tauri.app/) app. The whole app is a w
 | Rust shell (`src-tauri/`) | the app's own process | the web engine cannot show native save dialogs, write files atomically, keep one app instance, receive the files the system opens with the app, write a log file, or report a start that fails before the page can |
 | Browser fallback (`npm run dev`) | any browser, served by Vite on port 1420 | developing the UI without the shell; saving falls back to the File System Access API where there is one, otherwise to a download (`src/platform/files.ts`) |
 
-The code must work in Safari 15 (Vite builds for `safari15`, `vite.config.ts`) and in WebKitGTK. Features that depend on the engine are detected at run time: WebP encoding (`supportsWebpEncoding`) and WebCodecs for MP4 (`mp4EncodingAvailable`), both in `src/export/formats.ts`.
+The code must work in Safari 15 (Vite builds for `safari15`, `vite.config.ts`) and in WebKitGTK. On Linux the shell turns off WebKitGTK's DMA-BUF renderer before anything else starts (`src-tauri/src/webkit.rs`), by setting `WEBKIT_DISABLE_DMABUF_RENDERER=1` unless the variable is already set: with that renderer the window stays blank or shows no 3D view on many systems, most often with NVIDIA graphics or under Wayland. The log says which it did. Features that depend on the engine are detected at run time: WebP encoding (`supportsWebpEncoding`) and WebCodecs for MP4 (`mp4EncodingAvailable`), both in `src/export/formats.ts`.
 
 The page and the shell talk through these commands and events. Only `src/platform/` uses them.
 
@@ -178,7 +178,8 @@ src-tauri/      the Tauri v2 shell (Rust): main.rs starts lib.rs, which sets up 
                 a single app process and the commands; the commands' error (error.rs), saving files:
                 the open saves and their commands (saves.rs) and writing a file atomically (files.rs),
                 opened project files (opened.rs), closing the window if the page never answers
-                (closing.rs), the log (log.rs); build.rs generates the Tauri context; tests in
+                (closing.rs), the log (log.rs), turning off WebKitGTK's DMA-BUF renderer on Linux
+                (webkit.rs); build.rs generates the Tauri context; tests in
                 src-tauri/tests/ (common/ holds the helpers the saving tests share)
   Cargo.toml                the crate (library mockup_director_lib) and its dependencies; no version
                             (the one in package.json is the app's)
