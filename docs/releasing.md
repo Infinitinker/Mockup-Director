@@ -5,7 +5,7 @@
 1. Raise the version in `package.json`, the app's only version: `src-tauri/tauri.conf.json` reads it from there for the app, its packages and the Windows version resource, and `src-tauri/Cargo.toml` has none. Versions are `major.minor.patch`; a version with a hyphen, such as `0.3.0-beta.1`, is a pre-release.
 
    When updating Tauri, raise the npm packages (`@tauri-apps/api`, `@tauri-apps/plugin-dialog`, `@tauri-apps/cli`) together with the `~2.x` ranges in `src-tauri/Cargo.toml`: the Tauri CLI stops the build when the Rust crates and the npm packages differ in `major.minor`.
-2. To try the release first, start **Actions → Release → Run workflow** on `dev`. It checks the version and builds and checks every file, without a release: the files are on the run's page for 90 days. Every push to `dev` builds and checks the files of each system too.
+2. To try the release first, start **Actions → Release → Run workflow** on `dev`. It checks the version and builds and checks every file, without a release: the files are on the run's page for 90 days. Every pull request, the one from `dev` to `main` too, builds and checks the files of each system as well.
 3. Merge `dev` into `main` with a pull request, then tag the merge commit on `main` with an annotated tag and push it:
 
    ```bash
@@ -44,7 +44,7 @@ If a build fails, fix it, delete the tag (`git push origin :v0.2.0` and `git tag
 
 ## Linux builds
 
-The Linux build runs in an `ubuntu:22.04` container (on an `ubuntu-24.04` runner). A Linux binary runs only on systems with the same or a newer glibc than the one it was built with, so the container sets the oldest supported systems: glibc 2.35, that is Ubuntu 22.04+, Debian 12+ and Fedora 36+. Raise the container image only when dropping old distributions, and update the list in the README.
+The Linux build runs in an `ubuntu:22.04` container (on the `ubuntu-26.04` runner all Linux jobs use). A Linux binary runs only on systems with the same or a newer glibc than the one it was built with, so the container sets the oldest supported systems: glibc 2.35, that is Ubuntu 22.04+, Debian 12+ and Fedora 36+. Raise the container image only when dropping old distributions, and update the list in the README.
 
 ## Signing and notarization (macOS, optional)
 
@@ -67,7 +67,7 @@ Windows builds and the Linux packages are not signed.
 
 These settings are made on GitHub, not in files.
 
-To protect `main`, add a branch ruleset (**Settings → Rules → Rulesets → New branch ruleset**): target *Include default branch*, with the rules *Restrict deletions*, *Block force pushes*, *Require a pull request before merging* (0 approvals if you work alone) and *Require status checks to pass* with the checks `Lint`, `Web`, `Licenses`, `Release safety`, `Windows Rust checks`, `Linux Rust checks`, `macOS Rust checks`, `Windows E2E tests`, `Linux E2E tests` and `macOS E2E tests`, each from the GitHub Actions app. These are the jobs of the Checks workflow (`.github/workflows/checks.yml`) and of the E2E tests workflow (`.github/workflows/e2e.yml`). The builds are not required checks: they take ten minutes and more, and the push to `dev` builds the same commit the pull request merges. In a private repository on a free GitHub plan, rulesets are not enforced: they need a public repository or GitHub Pro.
+To protect `main`, add a branch ruleset (**Settings → Rules → Rulesets → New branch ruleset**): target *Include default branch*, with the rules *Restrict deletions*, *Block force pushes*, *Require a pull request before merging* (0 approvals if you work alone) and *Require status checks to pass* with the checks `Lint`, `Web`, `Licenses`, `Release safety`, `Windows Rust checks`, `Linux Rust checks`, `macOS Rust checks`, `Windows E2E tests`, `Linux E2E tests` and `macOS E2E tests`, each from the GitHub Actions app. These are the jobs of the Checks workflow (`.github/workflows/checks.yml`) and of the E2E tests workflow (`.github/workflows/e2e.yml`). The builds are not required checks: they take ten minutes and more. They still run for the pull request, so a failed build shows on it, and the Release workflow builds every file again before a release. In a private repository on a free GitHub plan, rulesets are not enforced: they need a public repository or GitHub Pro.
 
 Under **Settings → General → Pull Requests**, allow only merge commits, so the history of `dev` is kept on `main`.
 

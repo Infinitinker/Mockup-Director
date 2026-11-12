@@ -16,8 +16,8 @@ name: Build Linux app
 # a newer glibc than the one it was built with, so the container (glibc 2.35), not the runner, sets
 # the oldest supported systems: Ubuntu 22.04+, Debian 12+, Fedora 36+ and similar. The hosted
 # ubuntu-22.04 runner is deprecated (removed on 2027-04-17), hence the container on the ubuntu-26.04
-# runner all Linux jobs use. Raise the container image only when dropping old distributions, and update the list in the
-# README and docs/releasing.md.
+# runner all Linux jobs use. Raise the container image only when dropping old distributions, and
+# update the list in the README and docs/releasing.md.
 on:
   pull_request:
   workflow_dispatch:

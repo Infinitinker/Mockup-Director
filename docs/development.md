@@ -240,7 +240,7 @@ GitHub Actions builds all three systems for every pull request (`build-windows.y
 
 ## Branches
 
-`main` is the stable version; day-to-day work happens on `dev`. Changes reach `main` through a pull request from `dev`. Every push to `dev` and `main` (merging a pull request too) builds the apps and runs the Checks.
+`main` is the stable version; day-to-day work happens on `dev`. Changes reach `main` through a pull request from `dev`. Every push to `dev` and `main` (merging a pull request too) runs the Checks and the E2E tests; the apps are built for every pull request, by the release and on request.
 
 How `main` is protected on GitHub is described in [releasing.md](releasing.md#repository-settings).
 
