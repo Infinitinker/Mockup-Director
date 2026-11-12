@@ -1,8 +1,8 @@
 /**
  * The folders the end-to-end tests use: the e2e build of the app, the e2e app's data folder (its
- * WebView profile, session and log) and log file per system, the output folder for the report, the
- * WebdriverIO logs and the screenshot, and clearing the data folder before a run so the app starts
- * with no restored projects.
+ * WebView profile and session, and on Windows its log) and its log folder and file per system, the
+ * output folder for the report, the WebdriverIO logs and the screenshot, and clearing the data and
+ * log folders before a run, so the app starts with no restored projects and a log of that run only.
  */
 import { rmSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
@@ -58,15 +58,23 @@ function xdgFolder(variable: string, fallback: string): string {
 export function logFile(): string {
   const name = 'mockup-director.log';
   if (process.platform === 'win32') return join(dataFolderOf(), 'logs', name);
-  if (process.platform === 'darwin') return join(homedir(), 'Library/Logs', E2E_DATA_FOLDER, name);
-  return join(xdgFolder('XDG_STATE_HOME', '.local/state'), E2E_DATA_FOLDER, 'log', name);
+  return join(logRoot(), process.platform === 'darwin' ? name : join('log', name));
+}
+
+/** The e2e app's folder in the folder where the system keeps logs, on Linux and macOS. */
+function logRoot(): string {
+  if (process.platform === 'darwin') return join(homedir(), 'Library/Logs', E2E_DATA_FOLDER);
+  return join(xdgFolder('XDG_STATE_HOME', '.local/state'), E2E_DATA_FOLDER);
 }
 
 /**
  * Deletes the e2e app's data folder (Windows and Linux), so it starts with no restored projects and no
- * recovery dialog. The retries cover WebView2 processes that hold files for a moment after a run.
+ * recovery dialog, and its log folder (on Windows inside the data folder), so the log holds this run
+ * only. The retries cover WebView2 processes that hold files for a moment after a run.
  */
 export function clearProfile(): void {
+  const remove = (folder: string) => rmSync(folder, { recursive: true, force: true, maxRetries: 5, retryDelay: 500 });
   const folder = dataFolder();
-  if (folder) rmSync(folder, { recursive: true, force: true, maxRetries: 5, retryDelay: 500 });
+  if (folder) remove(folder);
+  if (process.platform !== 'win32') remove(logRoot());
 }
