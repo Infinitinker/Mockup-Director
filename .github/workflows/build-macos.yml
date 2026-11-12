@@ -32,7 +32,7 @@ permissions:
 jobs:
   build:
     name: macOS build (universal)
-    runs-on: macos-latest
+    runs-on: macos-15
     timeout-minutes: 60
     outputs:
       # The file, so the check downloads exactly this, whatever else the run builds.
