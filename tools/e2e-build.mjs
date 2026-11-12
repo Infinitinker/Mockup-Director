@@ -10,7 +10,7 @@
  * arguments go to tauri build.
  */
 import { spawnSync } from 'node:child_process';
-import { copyFileSync } from 'node:fs';
+import { copyFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -34,6 +34,9 @@ if (result.error) {
 }
 if (result.status !== 0) process.exit(result.status ?? 1);
 try {
+  // A new file, not one written over in place: macOS caches the code signature of a file, and kills a
+  // binary rewritten under it at launch.
+  rmSync(APP, { force: true });
   copyFileSync(BUILT, APP);
 } catch (e) {
   console.error(`Could not copy the e2e build to ${APP}: ${e instanceof Error ? e.message : String(e)}`);
