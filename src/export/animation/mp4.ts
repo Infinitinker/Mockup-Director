@@ -155,8 +155,9 @@ export class Mp4Writer {
     this.closeEncoder();
     try {
       await this.output.cancel();
-    } catch {
-      /* already finished or canceled */
+    } catch (e) {
+      // Output.cancel returns quietly when the output is already finished or canceled.
+      log.warn('Cannot cancel the video output', e);
     }
   }
 
