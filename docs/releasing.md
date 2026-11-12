@@ -30,7 +30,7 @@
      | File | What it is |
      | --- | --- |
      | `MockupDirector-<version>-windows-x64-setup.exe` | the Windows installer |
-     | `MockupDirector-<version>-windows-x64-portable.zip` | the portable Windows app, with `LICENSE.txt` and `README.txt` |
+     | `MockupDirector-<version>-windows-x64.zip` | the Windows app to unzip and run without installing, with `LICENSE.txt` and `README.txt` |
      | `MockupDirector-<version>-macos-universal.dmg` | the macOS app, for Apple Silicon and Intel |
      | `MockupDirector-<version>-linux-x86_64.AppImage` | the Linux app for any distribution |
      | `MockupDirector-<version>-linux-x86_64.deb` | the package for Debian, Ubuntu and Mint |

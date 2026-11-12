@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Writes THIRD-PARTY-NOTICES.md: the license texts of the app's dependencies on every system. Every
- * package of the app and the portable ZIP contain it next to LICENSE (docs/licenses.md).
+ * package of the app and the Windows ZIP contain it next to LICENSE (docs/licenses.md).
  *
  *   node tools/notices.mjs           write it (npm run notices)
  *   node tools/notices.mjs --check   fail unless it is up to date (the Licenses check in CI)

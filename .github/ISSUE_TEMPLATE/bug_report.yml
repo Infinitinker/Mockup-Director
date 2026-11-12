@@ -23,7 +23,7 @@ body:
       label: Which download
       options:
         - Windows installer
-        - Windows portable ZIP
+        - Windows ZIP
         - macOS .dmg
         - Linux AppImage
         - Linux .deb

@@ -1,6 +1,6 @@
 name: Build Windows app
 
-# Builds the Windows release files: the installer and the portable ZIP, each kept on the run's
+# Builds the Windows release files: the installer and the ZIP, each kept on the run's
 # page under its release file name, and checks them. The Release workflow (release.yml) calls it and
 # drafts the release from them; run on its own, it shows early that a change still builds.
 #
@@ -18,7 +18,7 @@ name: Build Windows app
 # It is built with MSYS2 (MINGW64) and Rust's GNU toolchain, not with Microsoft's C++ tools: the
 # toolchain of a developer's machine (.github/actions/windows-toolchain explains why). A GNU build
 # loads WebView2Loader.dll at run time instead of linking it in: the installer installs it, and the
-# portable version is a ZIP with the DLL next to the executable.
+# ZIP has the DLL next to the executable.
 on:
   push:
     branches: [main, dev]
@@ -51,7 +51,7 @@ jobs:
     timeout-minutes: 60
     outputs:
       # The two files, so the check downloads exactly these, whatever else the run builds.
-      artifacts: ${{ steps.setup.outputs.artifact-id }},${{ steps.portable.outputs.artifact-id }}
+      artifacts: ${{ steps.setup.outputs.artifact-id }},${{ steps.zip.outputs.artifact-id }}
     defaults:
       run:
         shell: bash
@@ -92,13 +92,13 @@ jobs:
 
       # The release binary embeds the whole web UI, so it also runs without installing. It needs the
       # Microsoft Edge WebView2 runtime (part of Windows 10 and 11) and, as a GNU build,
-      # WebView2Loader.dll next to it, so the portable version is a ZIP of both.
+      # WebView2Loader.dll next to it, so the ZIP holds both.
       - name: Name the release files
         run: |
           version="$(node -p "require('./package.json').version")"
           name="MockupDirector-$version-windows-x64"
           release="src-tauri/target/release"
-          folder="portable/Mockup Director"
+          folder="zip/Mockup Director"
           mkdir -p dist-release "$folder"
           cp "$release/installer/$name-setup.exe" dist-release/
           cp "$release/mockup-director.exe" "$folder/"
@@ -106,7 +106,7 @@ jobs:
           cp LICENSE "$folder/LICENSE.txt"
           cp THIRD-PARTY-NOTICES.md "$folder/THIRD-PARTY-NOTICES.txt"
           printf '%s\r\n' \
-            "Mockup Director $version, portable" \
+            "Mockup Director $version" \
             "" \
             "Start mockup-director.exe. Nothing is installed: the app keeps its open tabs and looks in" \
             "%LOCALAPPDATA%\\Mockup Director, the same folder the installed app uses." \
@@ -123,7 +123,7 @@ jobs:
             "" \
             "Source and help: https://github.com/${{ github.repository }}" \
             "Built from commit $GITHUB_SHA." > "$folder/README.txt"
-          (cd portable && 7z a -tzip "../dist-release/$name-portable.zip" "Mockup Director" > /dev/null)
+          (cd zip && 7z a -tzip "../dist-release/$name.zip" "Mockup Director" > /dev/null)
           ls -la dist-release
       # Each file on its own and unzipped, so the run's page offers the files themselves. Each step
       # fails unless its pattern matches exactly one file.
@@ -133,10 +133,10 @@ jobs:
           path: dist-release/*-windows-x64-setup.exe
           archive: false
           if-no-files-found: error
-      - id: portable
+      - id: zip
         uses: actions/upload-artifact@v7
         with:
-          path: dist-release/*-windows-x64-portable.zip
+          path: dist-release/*-windows-x64.zip
           archive: false
           if-no-files-found: error
 

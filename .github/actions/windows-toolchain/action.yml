@@ -4,7 +4,7 @@
 # wrong. A GNU build loads WebView2Loader.dll at run time instead of linking it in, which is why the
 # Windows build (build-windows.yml) ships the DLL with the app. Used by the Windows jobs of checks.yml,
 # e2e.yml and build-windows.yml. To go back to MSVC, replace this action with dtolnay/rust-toolchain,
-# and ship the portable .exe alone.
+# and ship the .exe alone in the ZIP.
 name: Windows toolchain
 description: Installs MSYS2 (MINGW64) with gcc and makes Rust's stable GNU toolchain the default.
 

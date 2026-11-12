@@ -7,7 +7,7 @@ Describe the changes of this version here, for users, then publish the release.
 | System | File |
 | --- | --- |
 | Windows 10 and 11 (64-bit), installer | [MockupDirector-{version}-windows-x64-setup.exe]({download}/MockupDirector-{version}-windows-x64-setup.exe) |
-| Windows, portable (unzip and run, no installing) | [MockupDirector-{version}-windows-x64-portable.zip]({download}/MockupDirector-{version}-windows-x64-portable.zip) |
+| Windows 10 and 11 (64-bit), ZIP (unzip and run, no installing) | [MockupDirector-{version}-windows-x64.zip]({download}/MockupDirector-{version}-windows-x64.zip) |
 | macOS 12 or later (Apple Silicon and Intel) | [MockupDirector-{version}-macos-universal.dmg]({download}/MockupDirector-{version}-macos-universal.dmg) |
 | Linux x86_64 with glibc 2.35 or newer (Ubuntu 22.04+, Debian 12+, Fedora 36+ and similar), any distribution | [MockupDirector-{version}-linux-x86_64.AppImage]({download}/MockupDirector-{version}-linux-x86_64.AppImage) |
 | Debian 12+, Ubuntu 22.04+, Linux Mint 21+ | [MockupDirector-{version}-linux-x86_64.deb]({download}/MockupDirector-{version}-linux-x86_64.deb) |

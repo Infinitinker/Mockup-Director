@@ -209,7 +209,7 @@ src-tauri/      the Tauri v2 shell (Rust): main.rs starts lib.rs, which sets up 
                      checks, Linux Rust checks, macOS Rust checks); for main, dev and pull requests
   e2e.yml            the end-to-end smoke test on Windows, Linux and macOS (Windows E2E tests,
                      Linux E2E tests, macOS E2E tests); for main, dev and pull requests
-  build-windows.yml  the installer (x64, Inno Setup) and a portable ZIP, built with MSYS2; then checks
+  build-windows.yml  the installer (x64, Inno Setup) and a ZIP, built with MSYS2; then checks
                      the files
   build-macos.yml    a universal .dmg; then checks the file
   build-linux.yml    .AppImage, .deb and .rpm (x86_64); then checks the files

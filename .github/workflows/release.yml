@@ -110,7 +110,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-      # skip-decompress keeps each file as uploaded: otherwise the portable ZIP would arrive unpacked.
+      # skip-decompress keeps each file as uploaded: otherwise the Windows ZIP would arrive unpacked.
       - uses: actions/download-artifact@v8
         with:
           pattern: MockupDirector-*
