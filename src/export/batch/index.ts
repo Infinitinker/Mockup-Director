@@ -17,6 +17,7 @@ import type { ExportFormat } from '../../core/types/export';
 import type { StageAPI } from '../../core/types/scene';
 import { extensionFor } from '../formats';
 import { ZipLimitError, ZipWriter } from '../zip';
+import { log } from '../../platform/log';
 
 /** Implemented by ui/app/actions/exporting.ts: exclusive access to the stage for the duration of a batch. */
 export interface BatchHost {
@@ -117,8 +118,8 @@ export async function runBatch(
     list.forEach((fn) => {
       try {
         fn();
-      } catch {
-        /* disposal must never break the batch */
+      } catch (e) {
+        log.warn('Cannot free the memory of a batch item', e);
       }
     });
   const runner: BatchStage = {

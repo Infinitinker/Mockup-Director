@@ -16,7 +16,7 @@ import type { SceneSettings, StageAPI } from '../../core/types/scene';
 import { cloneScene } from '../../core/defaults';
 import { UserError } from '../../core/errors';
 import { getPlaceholderTexture } from '../../core/placeholder';
-import { disposeArtwork, loadImageFile } from '../../core/images';
+import { disposeArtwork, disposeArtworks, loadImageFile } from '../../core/images';
 import { getModel } from '../../models/registry';
 import { completeParams } from '../../models/params';
 import { slotFor } from '../../models/slots';
@@ -82,16 +82,7 @@ function slugOf(name: string): string {
  * item. Never call this for maps the store or its history still reference.
  */
 function disposeArtworkMap(m: ArtworkMap): void {
-  for (const slots of Object.values(m)) {
-    for (const a of Object.values(slots)) {
-      if (!a) continue;
-      try {
-        disposeArtwork(a);
-      } catch {
-        /* ignore – disposal must never break the UI */
-      }
-    }
-  }
+  disposeArtworks(Object.values(m).flatMap((slots) => Object.values(slots)));
 }
 
 /**

@@ -6,6 +6,7 @@
  * there is no VideoEncoder – the UI hides MP4 and explains why.
  */
 import { mp4EncodingAvailable } from '../formats';
+import { log } from '../../platform/log';
 
 /** Bits per pixel per frame for the quality presets (≈ 7.5 Mbit/s for 1080p30 at 'medium'). */
 const BPP: Record<'low' | 'medium' | 'high', number> = { low: 0.06, medium: 0.12, high: 0.22 };
@@ -164,8 +165,8 @@ export class Mp4Writer {
     this.closed = true;
     try {
       if (this.encoder.state !== 'closed') this.encoder.close();
-    } catch {
-      /* ignore */
+    } catch (e) {
+      log.warn('Cannot close the video encoder', e);
     }
   }
 
