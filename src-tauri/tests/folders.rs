@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 use mockup_director_lib::folders::{data_folder, log_dir, system_log_root};
 use tauri::utils::config::AppDirectoriesOverride;
 
+/// The `app > appDirectoriesOverride` of a Tauri config file in src-tauri.
 fn directories_override(file: &str) -> AppDirectoriesOverride {
     let path = Path::new(env!("CARGO_MANIFEST_DIR")).join(file);
     let config: serde_json::Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();

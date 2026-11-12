@@ -77,7 +77,6 @@ fn reads_levels_as_the_page_sends_them() {
     assert!(serde_json::from_str::<Level>(r#""debug""#).is_err());
 }
 
-/// The `app > appDirectoriesOverride` of a Tauri config file in src-tauri.
 #[test]
 fn creates_the_folder_and_appends_to_an_existing_file() {
     let dir = TempDir::new("append");
