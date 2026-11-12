@@ -30,6 +30,7 @@ import { megabytes } from './math';
 import { parseDataUrl, sniffMime } from './mime';
 import { sizeSvgRoot, svgIntrinsicSize } from './svg';
 import type { Artwork } from './types/project';
+import { log } from '../platform/log';
 
 /**
  * The largest artwork file the app takes, in bytes (100 MB). The file is kept whole, in memory and in the project
@@ -128,6 +129,20 @@ function oneAtATime<T>(load: () => Promise<T>): Promise<T> {
 function checkHeaderSize(bytes: Uint8Array, name: string): void {
   const size = imageSize(bytes);
   if (size) checkArtworkPixels(name, size);
+}
+
+/**
+ * Disposes each artwork. A failure is logged and the others are still disposed: freeing memory must
+ * never break the interface or a batch.
+ */
+export function disposeArtworks(assets: Iterable<Artwork>): void {
+  for (const a of assets) {
+    try {
+      disposeArtwork(a);
+    } catch (e) {
+      log.warn('Cannot free the memory of an artwork', e);
+    }
+  }
 }
 
 export function disposeArtwork(asset: Artwork): void {
