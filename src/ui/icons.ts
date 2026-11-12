@@ -41,7 +41,6 @@ export const ICONS = {
   upload: svg('<path d="M8 10.5v-8"/><path d="M5 5.5l3-3 3 3"/><path d="M3 13.5h10"/>'),
   folderImg: svg('<path d="M1.75 4.25V12.5h12.5V5.75H7.5L6 4.25z"/><path d="M5.5 10.5 7.5 8.5l1.5 1.25 1.5-1.25"/>'),
   close: svg('<path d="m4 4 8 8M12 4l-8 8"/>'),
-  sparkle: svg('<path d="M8 2v3M8 11v3M2 8h3M11 8h3M4 4l1.8 1.8M10.2 10.2 12 12M12 4l-1.8 1.8M5.8 10.2 4 12"/>'),
   info: svg('<circle cx="8" cy="8" r="6"/><path d="M8 7.25v4M8 4.9v.1"/>'),
 } as const;
 
