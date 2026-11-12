@@ -50,9 +50,9 @@ impl Level {
 
 /// The name of the app's data folder: the `<name>` of the `$LOCALDATA/<name>` root that
 /// `app > appDirectoriesOverride` sets in the Tauri config ("Mockup Director", with " Dev" and
-/// " E2E" for the app run from source and for the end-to-end tests). On Windows and Linux Tauri
-/// keeps the web engine's data (the session and the looks) in that folder. None when the config
-/// sets no such root.
+/// " E2E" for the app run from source and for the end-to-end tests). On Windows and Linux the web
+/// engine keeps its data (the session and the looks) in that folder's `webview` subfolder. None when
+/// the config sets no such root.
 pub fn data_folder(directories: Option<&AppDirectoriesOverride>) -> Option<&OsStr> {
     let Some(AppDirectoriesOverride::Root(root)) = directories else {
         return None;

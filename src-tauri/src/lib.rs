@@ -26,7 +26,8 @@ compile_error!("The e2e feature is only for the debug test build (npm run e2e:bu
 
 use std::path::{Path, PathBuf};
 
-use tauri::{AppHandle, Emitter, Manager, WebviewWindowBuilder, WindowEvent};
+use tauri::utils::config::WindowConfig;
+use tauri::{App, AppHandle, Emitter, Manager, WebviewWindow, WebviewWindowBuilder, WindowEvent};
 
 /// Queues project files for the web UI and tells it they arrived.
 fn hand_over(app: &AppHandle, paths: Vec<PathBuf>) {
@@ -117,7 +118,7 @@ pub fn run() {
                 .iter()
                 .find(|window| window.label == "main")
                 .ok_or_else(|| tauri::Error::WindowNotFound)
-                .and_then(|config| WebviewWindowBuilder::from_config(app, config)?.build());
+                .and_then(|config| build_window(app, config));
             if let Err(e) = made {
                 fail_to_start(
                     "Mockup Director could not open its window.",
@@ -160,6 +161,18 @@ pub fn run() {
             hand_over(app_handle, paths);
         }
     });
+}
+
+/// Builds a window from its config. On Windows and Linux its web engine keeps its data (the session,
+/// the looks, the interface choices and its caches) in the `webview` subfolder of the app's data
+/// folder: by default Tauri gives the engine the data folder itself, where WebView2 and WebKitGTK
+/// would put capitalized folders of their own (`EBWebView`, `WebKitCache`, `CacheStorage`). On macOS
+/// WKWebView keeps its own store and ignores the setting.
+fn build_window(app: &App, config: &WindowConfig) -> tauri::Result<WebviewWindow> {
+    let builder = WebviewWindowBuilder::from_config(app, config)?;
+    #[cfg(not(target_os = "macos"))]
+    let builder = builder.data_directory(app.path().app_local_data_dir()?.join("webview"));
+    builder.build()
 }
 
 /// Logs why the app cannot start, says so in a native message (`what` happened, then what to do and
