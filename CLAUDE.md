@@ -62,6 +62,7 @@ The goal is clean code, modularity, portability, and that anyone can make a conv
 ## Tooling
 
 - Node.js 22+ with npm, and the Rust stable toolchain for the desktop app; on Windows MSYS2 with Rust's GNU toolchain. See `docs/development.md`.
+- The project's own code builds with free toolchains: on Windows MSYS2 and Rust's GNU toolchain, never MSVC or Visual Studio, and build files, CI and docs offer no MSVC route. Prebuilt dependencies and tools (npm binaries, installers) may be built with MSVC.
 - Before committing: `npm run lint`, `npm run build` and `npm test` (`npm run format` fixes formatting); for Rust changes `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` (in `src-tauri/`); `npm run licenses` and `npm run notices` after changing dependencies (commit the regenerated `THIRD-PARTY-NOTICES.md`). The end-to-end tests (`npm run e2e:build`, then `npm run e2e`) are not needed before each commit: CI runs them.
 - Before pushing a change that touches Linux (platform-specific code: `src/platform/` and the `cfg(target_os)` branches in `src-tauri/`; the per-user folders, packaging, the Linux CI jobs), run the Linux checks in WSL as "Linux checks on Windows (WSL)" in `docs/development.md` lists them. Other changes leave them to CI.
 - The Windows installer is made by Inno Setup 7 from `tools/installer.iss` (`npm run installer`, after `npm run tauri build`).
