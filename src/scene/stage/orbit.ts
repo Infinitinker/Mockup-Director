@@ -7,6 +7,7 @@
 import * as THREE from 'three';
 import type { CameraSettings } from '../../core/types/scene';
 import { PITCH_LIMIT, ZOOM_MAX, ZOOM_MIN, wrapDeg } from '../camera';
+import { log } from '../../platform/log';
 
 const ORBIT_DEG_PER_PX = 0.35;
 
@@ -122,6 +123,14 @@ export function attachOrbit(canvas: HTMLCanvasElement, options: OrbitOptions): O
 
   const pointers = new Map<number, { x: number; y: number }>();
   let pinch: PinchState | null = null;
+  // Capturing runs on every press: only the first failure is logged. Without it a drag still works
+  // while the pointer stays over the view.
+  let captureFailed = false;
+  const captureFailure = (action: string, e: unknown) => {
+    if (captureFailed) return;
+    captureFailed = true;
+    log.warn(`Cannot ${action} the pointer of the 3D view`, e);
+  };
   let gestureActive = false;
   let gestureLastScale = 1;
 
@@ -141,8 +150,8 @@ export function attachOrbit(canvas: HTMLCanvasElement, options: OrbitOptions): O
     e.preventDefault();
     try {
       canvas.setPointerCapture(e.pointerId);
-    } catch {
-      /* ignore */
+    } catch (err) {
+      captureFailure('capture', err);
     }
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pointers.size === 2) pinch = pinchState();
@@ -184,8 +193,8 @@ export function attachOrbit(canvas: HTMLCanvasElement, options: OrbitOptions): O
     pointers.delete(e.pointerId);
     try {
       canvas.releasePointerCapture(e.pointerId);
-    } catch {
-      /* ignore */
+    } catch (err) {
+      captureFailure('release', err);
     }
     pinch = pointers.size >= 2 ? pinchState() : null;
     if (pointers.size === 0) canvas.style.cursor = 'grab';
