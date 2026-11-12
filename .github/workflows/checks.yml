@@ -23,7 +23,7 @@ jobs:
   # fastest runner.
   lint:
     name: Lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
@@ -44,7 +44,7 @@ jobs:
   # runs in Node.js, the same on every system.
   web:
     name: Web
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
@@ -61,7 +61,7 @@ jobs:
   # texts of the app's dependencies) up to date with them: the same checks as a release.
   licenses:
     name: Licenses
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
@@ -77,7 +77,7 @@ jobs:
   # check can see them when they are on.
   release-safety:
     name: Release safety
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
@@ -118,7 +118,7 @@ jobs:
           - name: Windows
             os: windows-latest
           - name: Linux
-            os: ubuntu-24.04
+            os: ubuntu-26.04
           - name: macOS
             os: macos-latest
     defaults:

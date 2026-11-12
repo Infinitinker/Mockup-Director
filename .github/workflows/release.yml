@@ -22,7 +22,7 @@ permissions:
 jobs:
   version:
     name: Check the version
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -72,7 +72,7 @@ jobs:
   notices:
     name: Third-party notices
     needs: version
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
@@ -98,7 +98,7 @@ jobs:
     name: Draft the release
     needs: [version, windows, macos, linux, notices]
     if: github.event_name == 'push'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     permissions:
       contents: write # To create the release.

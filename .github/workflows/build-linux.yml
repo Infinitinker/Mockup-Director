@@ -15,8 +15,8 @@ name: Build Linux app
 # The build runs in an ubuntu:22.04 container: a Linux binary runs only on systems with the same or
 # a newer glibc than the one it was built with, so the container (glibc 2.35), not the runner, sets
 # the oldest supported systems: Ubuntu 22.04+, Debian 12+, Fedora 36+ and similar. The hosted
-# ubuntu-22.04 runner is deprecated (removed on 2027-04-17), hence the container on an ubuntu-24.04
-# runner. Raise the container image only when dropping old distributions, and update the list in the
+# ubuntu-22.04 runner is deprecated (removed on 2027-04-17), hence the container on the ubuntu-26.04
+# runner all Linux jobs use. Raise the container image only when dropping old distributions, and update the list in the
 # README and docs/releasing.md.
 on:
   pull_request:
@@ -35,7 +35,7 @@ permissions:
 jobs:
   build:
     name: Linux build (x86_64)
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     container: ubuntu:22.04
     timeout-minutes: 60
     outputs:
@@ -133,7 +133,7 @@ jobs:
   files:
     name: Linux release files
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     steps:
       # What the check runs, and the action.
