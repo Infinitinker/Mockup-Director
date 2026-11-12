@@ -67,7 +67,8 @@ pub fn run() {
     let version = context.package_info().version.to_string();
     let log_dir = log::start(
         log::data_folder(context.config().app.app_directories_override.as_ref())
-            .and_then(|folder| log::log_dir(folder, |name| std::env::var_os(name))),
+            .zip(log::system_log_root())
+            .map(|(folder, root)| log::log_dir(&root, folder)),
     );
 
     // Windows and Linux pass double-clicked project files as arguments. If the working directory

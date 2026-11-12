@@ -2170,6 +2170,7 @@ dependencies = [
 name = "mockup-director"
 version = "0.0.0"
 dependencies = [
+ "dirs",
  "gtk",
  "rfd",
  "serde",

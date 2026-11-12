@@ -30,21 +30,36 @@ export const OUTPUT = process.env.E2E_OUTPUT ?? join(tmpdir(), 'mockup-director-
  * keyed by the process name, which npm run app:dev shares, so it is never deleted.
  */
 export function dataFolder(): string | null {
+  if (process.platform === 'darwin') return null;
+  return dataFolderOf();
+}
+
+/** The e2e app's data folder on Windows and Linux. */
+function dataFolderOf(): string {
   if (process.platform === 'win32') {
     const local = process.env.LOCALAPPDATA;
     if (!local) throw new Error('LOCALAPPDATA is not set, so the e2e app data folder cannot be found.');
     return join(local, E2E_DATA_FOLDER);
   }
-  if (process.platform === 'darwin') return null;
-  const xdg = process.env.XDG_DATA_HOME;
-  return join(xdg && isAbsolute(xdg) ? xdg : join(homedir(), '.local/share'), E2E_DATA_FOLDER);
+  return join(xdgFolder('XDG_DATA_HOME', '.local/share'), E2E_DATA_FOLDER);
 }
 
-/** The e2e app's log file, by the same rules as `log_dir` in src-tauri/src/log.rs. */
+/** An XDG base folder: the variable when it is an absolute path, otherwise its default in the home folder. */
+function xdgFolder(variable: string, fallback: string): string {
+  const value = process.env[variable];
+  return value && isAbsolute(value) ? value : join(homedir(), fallback);
+}
+
+/**
+ * The e2e app's log file, by the same rules as `log_dir` in src-tauri/src/log.rs: in the data folder on
+ * Windows, in the XDG state folder on Linux (XDG_STATE_HOME counts only when it is an absolute path, as
+ * for the `dirs` crate) and in ~/Library/Logs on macOS.
+ */
 export function logFile(): string {
-  const folder = dataFolder();
-  const logs = folder ? join(folder, 'logs') : join(homedir(), 'Library/Logs', E2E_DATA_FOLDER);
-  return join(logs, 'mockup-director.log');
+  const name = 'mockup-director.log';
+  if (process.platform === 'win32') return join(dataFolderOf(), 'logs', name);
+  if (process.platform === 'darwin') return join(homedir(), 'Library/Logs', E2E_DATA_FOLDER, name);
+  return join(xdgFolder('XDG_STATE_HOME', '.local/state'), E2E_DATA_FOLDER, 'log', name);
 }
 
 /**

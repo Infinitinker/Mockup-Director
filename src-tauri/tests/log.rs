@@ -1,13 +1,14 @@
 //! Tests of `src/log.rs`: where the log goes, how an entry is written, and how the files are renamed
 //! when they get large.
 
-use std::ffi::{OsStr, OsString};
+use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use mockup_director_lib::log::{
-    data_folder, format_entry, format_time, log_dir, shorten, Level, LogFile, FILE_NAME,
+    data_folder, format_entry, format_time, log_dir, shorten, system_log_root, Level, LogFile,
+    FILE_NAME,
 };
 use tauri::utils::config::AppDirectoriesOverride;
 
@@ -121,56 +122,31 @@ fn has_no_data_folder_without_a_local_data_root() {
 }
 
 #[test]
-fn places_the_log_folder_in_the_data_folder() {
-    let home = if cfg!(windows) {
-        r"C:\Users\someone"
+fn places_the_log_folder_where_the_system_keeps_logs() {
+    let root = if cfg!(windows) {
+        PathBuf::from(r"C:\Users\someone\AppData\Local")
+    } else if cfg!(target_os = "macos") {
+        PathBuf::from("/Users/someone/Library/Logs")
     } else {
-        "/home/someone"
-    };
-    let local = if cfg!(windows) {
-        r"C:\Users\someone\AppData\Local"
-    } else {
-        "/data"
-    };
-    let var = |name: &str| match name {
-        "HOME" => Some(OsString::from(home)),
-        "LOCALAPPDATA" | "XDG_DATA_HOME" => Some(OsString::from(local)),
-        _ => None,
+        PathBuf::from("/home/someone/.local/state")
     };
     let expected = if cfg!(windows) {
-        PathBuf::from(local).join("Some App").join("logs")
+        root.join("Some App").join("logs")
     } else if cfg!(target_os = "macos") {
-        PathBuf::from(home).join("Library/Logs/Some App")
+        root.join("Some App")
     } else {
-        PathBuf::from(local).join("Some App/logs")
+        root.join("Some App/log")
     };
-    assert_eq!(log_dir(OsStr::new("Some App"), var), Some(expected));
+    assert_eq!(log_dir(&root, OsStr::new("Some App")), expected);
 }
 
-#[cfg(all(unix, not(target_os = "macos")))]
 #[test]
-fn uses_the_home_folder_when_xdg_data_home_is_not_usable() {
-    for xdg in [None, Some(""), Some("relative/path")] {
-        let var = |name: &str| match name {
-            "HOME" => Some(OsString::from("/home/someone")),
-            "XDG_DATA_HOME" => xdg.map(OsString::from),
-            _ => None,
-        };
-        assert_eq!(
-            log_dir(OsStr::new("Some App"), var),
-            Some(PathBuf::from("/home/someone/.local/share/Some App/logs")),
-            "{xdg:?}"
-        );
+fn finds_the_system_log_folder() {
+    let root = system_log_root().expect("the system's log folder");
+    assert!(root.is_absolute(), "{}", root.display());
+    if cfg!(target_os = "macos") {
+        assert!(root.ends_with("Library/Logs"), "{}", root.display());
     }
-}
-
-#[test]
-fn has_no_log_folder_without_its_variable() {
-    assert_eq!(log_dir(OsStr::new("Some App"), |_| None), None);
-    assert_eq!(
-        log_dir(OsStr::new("Some App"), |_| Some(OsString::from("relative"))),
-        None
-    );
 }
 
 #[test]

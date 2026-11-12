@@ -7,7 +7,7 @@
 //! standard error output; a build run from source writes them there as well. Never log artwork or
 //! file contents.
 
-use std::ffi::{OsStr, OsString};
+use std::ffi::OsStr;
 use std::fmt::Display;
 use std::fs::{self, File, OpenOptions};
 use std::io::{self, Write};
@@ -68,26 +68,32 @@ pub fn data_folder(directories: Option<&AppDirectoriesOverride>) -> Option<&OsSt
     }
 }
 
-/// The log folder for the data folder named `folder` (see `data_folder`): on Windows
-/// `%LOCALAPPDATA%\<folder>\logs` and on Linux `$XDG_DATA_HOME/<folder>/logs` (`~/.local/share` when
-/// XDG_DATA_HOME is not set), as Tauri's `app_log_dir` places it for that root; on macOS
-/// `~/Library/Logs/<folder>`, where macOS keeps logs. `var` reads an environment variable; a
-/// variable that is empty or not an absolute path counts as not set. None when the folder cannot be
-/// known.
-pub fn log_dir(folder: &OsStr, var: impl Fn(&str) -> Option<OsString>) -> Option<PathBuf> {
-    let absolute = |name: &str| {
-        var(name)
-            .map(PathBuf::from)
-            .filter(|path| path.is_absolute())
-    };
+/// The folder the system keeps logs in, from the `dirs` crate: on Windows the local app data folder
+/// (`%LOCALAPPDATA%`), on Linux the state folder (`$XDG_STATE_HOME`, or `~/.local/state` when that is
+/// not set or not an absolute path), on macOS `~/Library/Logs`. `dirs` has no logs folder for macOS,
+/// and Tauri's `app_log_dir` names the folder there after the app identifier rather than the app, so
+/// `Library/Logs` is joined to the home folder here. None when the system has no such folder.
+pub fn system_log_root() -> Option<PathBuf> {
     if cfg!(windows) {
-        Some(absolute("LOCALAPPDATA")?.join(folder).join("logs"))
+        dirs::data_local_dir()
     } else if cfg!(target_os = "macos") {
-        Some(absolute("HOME")?.join("Library").join("Logs").join(folder))
+        Some(dirs::home_dir()?.join("Library").join("Logs"))
     } else {
-        let data = absolute("XDG_DATA_HOME")
-            .or_else(|| Some(absolute("HOME")?.join(".local").join("share")))?;
-        Some(data.join(folder).join("logs"))
+        dirs::state_dir()
+    }
+}
+
+/// The log folder of the data folder named `folder` (see `data_folder`) inside the system's log folder
+/// `root` (see `system_log_root`): `<root>\<folder>\logs` on Windows, `<root>/<folder>/log` on Linux and
+/// `<root>/<folder>` on macOS, where each system keeps an app's logs.
+pub fn log_dir(root: &Path, folder: &OsStr) -> PathBuf {
+    let dir = root.join(folder);
+    if cfg!(windows) {
+        dir.join("logs")
+    } else if cfg!(target_os = "macos") {
+        dir
+    } else {
+        dir.join("log")
     }
 }
 
@@ -311,7 +317,7 @@ pub fn start(dir: Option<PathBuf>) -> Option<PathBuf> {
                 dir.display()
             )
         }),
-        None => Err("The log folder is not known: the Tauri config names no data folder, or the environment variable for it is not set. Entries go to the standard error output.".to_owned()),
+        None => Err("The log folder is not known: the Tauri config names no data folder, or the system has no folder for logs. Entries go to the standard error output.".to_owned()),
     };
     let folder = match opened {
         Ok(file) => {

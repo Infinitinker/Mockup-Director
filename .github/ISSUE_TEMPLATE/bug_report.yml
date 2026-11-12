@@ -52,7 +52,7 @@ body:
       description: >
         The end of mockup-director.log, from around when the problem happened. It is on Windows in
         %LOCALAPPDATA%\Mockup Director\logs, on macOS in ~/Library/Logs/Mockup Director, on Linux in
-        ~/.local/share/Mockup Director/logs. For the app run from source (npm run app:dev), the folder
+        ~/.local/state/Mockup Director/log. For the app run from source (npm run app:dev), the folder
         is named Mockup Director Dev instead. It can name your files and folders: check it for anything
         you’d rather not share first.
       render: text

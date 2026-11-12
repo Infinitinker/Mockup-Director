@@ -112,7 +112,7 @@ jobs:
           folder="Mockup Director E2E"
           case "$RUNNER_OS" in
             Windows) log="$LOCALAPPDATA/$folder/logs/mockup-director.log" ;;
-            Linux) log="$HOME/.local/share/$folder/logs/mockup-director.log" ;;
+            Linux) log="$HOME/.local/state/$folder/log/mockup-director.log" ;;
             macOS) log="$HOME/Library/Logs/$folder/mockup-director.log" ;;
           esac
           mkdir -p "$E2E_OUTPUT"
