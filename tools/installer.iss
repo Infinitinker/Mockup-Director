@@ -2,17 +2,19 @@
 ; (ISCC.exe) from the app that `npm run tauri build` leaves in src-tauri/target/release. It installs
 ; for the current user, with no administrator rights, into %LOCALAPPDATA%\Programs\Mockup Director,
 ; or, if the user chooses and is an administrator, for all users into Program Files. Either way each
-; user's looks, settings, open tabs and log stay in their own %LOCALAPPDATA%\<identifier>.
+; user's looks, settings, open tabs and log stay in their own %LOCALAPPDATA%\Mockup Director.
 ;
 ; installer.mjs passes:
 ;   AppVersion      the release, e.g. 0.2.0 or 0.3.0-beta.1
 ;   NumericVersion  its four numbers for the Windows version resource, e.g. 0.2.0.0
-;   Identifier      the app identifier (tauri.conf.json), which names the app's data folder
+;   Identifier      the app identifier (tauri.conf.json), which names the single-instance lock
+;   DataFolder      the name of the app's data folder in %LOCALAPPDATA% (app.appDirectoriesOverride
+;                   in tauri.conf.json)
 ;   Publisher       the publisher (tauri.conf.json)
 ;   Copyright       the copyright line (tauri.conf.json)
 ;   OutputDir       where the installer is written
 
-#if !Defined(AppVersion) || !Defined(NumericVersion) || !Defined(Identifier) || !Defined(Publisher) || !Defined(Copyright) || !Defined(OutputDir)
+#if !Defined(AppVersion) || !Defined(NumericVersion) || !Defined(Identifier) || !Defined(DataFolder) || !Defined(Publisher) || !Defined(Copyright) || !Defined(OutputDir)
   #error Build the installer with npm run installer (tools/installer.mjs), which passes the values this script needs.
 #endif
 
@@ -195,7 +197,7 @@ begin
     RemoveProjectDefault;
   if (CurUninstallStep = usPostUninstall) and not UninstallSilent and not IsAdminInstallMode then
   begin
-    UserData := ExpandConstant('{localappdata}\{#Identifier}');
+    UserData := ExpandConstant('{localappdata}\{#DataFolder}');
     if DirExists(UserData) and
        (MsgBox(FmtMessage(CustomMessage('DeleteData'), [UserData]), mbConfirmation, MB_YESNO or MB_DEFBUTTON2) = IDYES) and
        not DelTree(UserData, True, True, True) then

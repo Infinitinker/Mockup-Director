@@ -109,11 +109,11 @@ jobs:
             "Mockup Director $version, portable" \
             "" \
             "Start mockup-director.exe. Nothing is installed: the app keeps its open tabs and looks in" \
-            "%LOCALAPPDATA%\\io.github.infinitinker.mockupdirector, the same folder the installed app uses." \
+            "%LOCALAPPDATA%\\Mockup Director, the same folder the installed app uses." \
             "" \
             "Update: replace this folder with the one from the new version." \
             "Remove: delete this folder. To remove your data too, also delete" \
-            "%LOCALAPPDATA%\\io.github.infinitinker.mockupdirector (this also clears the installed app's data)." \
+            "%LOCALAPPDATA%\\Mockup Director (this also clears the installed app's data)." \
             "" \
             "Windows 10 or 11 (64-bit) with Microsoft Edge WebView2 is needed; it comes with Windows." \
             "The app is not signed: if SmartScreen stops it, click More info, then Run anyway." \

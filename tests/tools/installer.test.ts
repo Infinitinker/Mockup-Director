@@ -1,6 +1,29 @@
-/** Tests tools/installer.mjs: the four-part version Inno Setup takes, and where the Inno Setup compiler is found. */
+/**
+ * Tests tools/installer.mjs: the data folder the uninstaller offers to delete, the four-part version
+ * Inno Setup takes, and where the Inno Setup compiler is found.
+ */
 import { describe, expect, it } from 'vitest';
-import { findCompiler, numericVersion } from '../../tools/installer.mjs';
+import tauri from '../../src-tauri/tauri.conf.json';
+import { dataFolder, findCompiler, numericVersion } from '../../tools/installer.mjs';
+
+describe('dataFolder', () => {
+  it('reads the folder name from tauri.conf.json', () => {
+    expect(dataFolder(tauri)).toBe('Mockup Director');
+  });
+
+  it('rejects a config without a $LOCALDATA/<name> root', () => {
+    for (const root of [
+      undefined,
+      '$DATA/Mockup Director',
+      '$LOCALDATA',
+      '$LOCALDATA/a/b',
+      '$LOCALDATA/..',
+      { localData: 'x' },
+    ]) {
+      expect(() => dataFolder({ app: { appDirectoriesOverride: root } })).toThrow('$LOCALDATA/<name>');
+    }
+  });
+});
 
 describe('numericVersion', () => {
   it('pads a release with a zero', () => {

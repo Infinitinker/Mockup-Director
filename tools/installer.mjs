@@ -32,6 +32,19 @@ const ISCC_FOLDERS = [
 ];
 
 /**
+ * The name of the app's data folder in %LOCALAPPDATA%: the <name> of the `$LOCALDATA/<name>` root
+ * that `app > appDirectoriesOverride` sets in tauri.conf.json (read the same way by `data_folder` in
+ * src-tauri/src/log.rs).
+ * @param {{ app?: { appDirectoriesOverride?: unknown } }} config the parsed tauri.conf.json
+ */
+export function dataFolder(config) {
+  const root = config.app?.appDirectoriesOverride;
+  const name = typeof root === 'string' ? /^\$LOCALDATA\/(?!\.\.?$)([^/\\]+)$/.exec(root)?.[1] : undefined;
+  if (!name) throw new Error('tauri.conf.json sets no app.appDirectoriesOverride of the form $LOCALDATA/<name>.');
+  return name;
+}
+
+/**
  * The four numbers of a Windows version: the release's three and a zero, also for pre-releases.
  * @param {string} version
  */
@@ -81,6 +94,7 @@ function main() {
     AppVersion: version,
     NumericVersion: numericVersion(version),
     Identifier: tauri.identifier,
+    DataFolder: dataFolder(tauri),
     Publisher: tauri.bundle.publisher,
     Copyright: tauri.bundle.copyright,
     OutputDir: OUTPUT,

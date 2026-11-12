@@ -14,6 +14,7 @@ Code written before these rules is being brought in line with them, stage by sta
 - The name is **Mockup Director** in prose and the interface, and `MockupDirector-<version>-…` in release file names. Elsewhere:
   - `mockup-director` for the npm package, the binary Cargo builds (shipped under that name everywhere, as `mockup-director.exe` on Windows) and storage keys (`mockup-director.*`), and `mockup_director_lib` for the Rust library;
   - `io.github.infinitinker.mockupdirector` as the app identifier, with `.dev` added for the app run from source (`src-tauri/tauri.dev.conf.json`);
+  - `Mockup Director` as the name of the app's data folder (`app > appDirectoriesOverride`), with ` Dev` and ` E2E` added for the app run from source and the end-to-end tests;
   - project files: the `.mdproj` extension and only that one, the MIME type `application/x-mockup-director-project` and the type identifier `io.github.infinitinker.mockupdirector.project`.
 
   The repository is `Infinitinker/Mockup-Director`.

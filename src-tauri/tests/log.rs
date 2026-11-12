@@ -1,14 +1,15 @@
 //! Tests of `src/log.rs`: where the log goes, how an entry is written, and how the files are renamed
 //! when they get large.
 
-use std::ffi::OsString;
+use std::ffi::{OsStr, OsString};
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use mockup_director_lib::log::{
-    format_entry, format_time, log_dir, shorten, Level, LogFile, FILE_NAME,
+    data_folder, format_entry, format_time, log_dir, shorten, Level, LogFile, FILE_NAME,
 };
+use tauri::utils::config::AppDirectoriesOverride;
 
 /// A fresh folder for one test, removed when the test ends.
 struct TempDir(PathBuf);
@@ -81,8 +82,46 @@ fn reads_levels_as_the_page_sends_them() {
     assert!(serde_json::from_str::<Level>(r#""debug""#).is_err());
 }
 
+/// The `app > appDirectoriesOverride` of a Tauri config file in src-tauri.
+fn directories_override(file: &str) -> AppDirectoriesOverride {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join(file);
+    let config: serde_json::Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+    serde_json::from_value(config["app"]["appDirectoriesOverride"].clone()).unwrap()
+}
+
 #[test]
-fn places_the_log_folder_like_tauri() {
+fn names_the_data_folder_of_each_build() {
+    for (file, folder) in [
+        ("tauri.conf.json", "Mockup Director"),
+        ("tauri.dev.conf.json", "Mockup Director Dev"),
+        ("tauri.e2e.conf.json", "Mockup Director E2E"),
+    ] {
+        let directories = directories_override(file);
+        assert_eq!(
+            data_folder(Some(&directories)),
+            Some(OsStr::new(folder)),
+            "{file}"
+        );
+    }
+}
+
+#[test]
+fn has_no_data_folder_without_a_local_data_root() {
+    assert_eq!(data_folder(None), None);
+    for json in [
+        r#""$DATA/Mockup Director""#,
+        r#""$LOCALDATA""#,
+        r#""$LOCALDATA/Mockup/Director""#,
+        r#""./data""#,
+        r#"{ "localData": "$LOCALDATA/Mockup Director" }"#,
+    ] {
+        let directories: AppDirectoriesOverride = serde_json::from_str(json).unwrap();
+        assert_eq!(data_folder(Some(&directories)), None, "{json}");
+    }
+}
+
+#[test]
+fn places_the_log_folder_in_the_data_folder() {
     let home = if cfg!(windows) {
         r"C:\Users\someone"
     } else {
@@ -99,13 +138,13 @@ fn places_the_log_folder_like_tauri() {
         _ => None,
     };
     let expected = if cfg!(windows) {
-        PathBuf::from(local).join("app.id").join("logs")
+        PathBuf::from(local).join("Some App").join("logs")
     } else if cfg!(target_os = "macos") {
-        PathBuf::from(home).join("Library/Logs/app.id")
+        PathBuf::from(home).join("Library/Logs/Some App")
     } else {
-        PathBuf::from(local).join("app.id/logs")
+        PathBuf::from(local).join("Some App/logs")
     };
-    assert_eq!(log_dir("app.id", var), Some(expected));
+    assert_eq!(log_dir(OsStr::new("Some App"), var), Some(expected));
 }
 
 #[cfg(all(unix, not(target_os = "macos")))]
@@ -118,8 +157,8 @@ fn uses_the_home_folder_when_xdg_data_home_is_not_usable() {
             _ => None,
         };
         assert_eq!(
-            log_dir("app.id", var),
-            Some(PathBuf::from("/home/someone/.local/share/app.id/logs")),
+            log_dir(OsStr::new("Some App"), var),
+            Some(PathBuf::from("/home/someone/.local/share/Some App/logs")),
             "{xdg:?}"
         );
     }
@@ -127,9 +166,9 @@ fn uses_the_home_folder_when_xdg_data_home_is_not_usable() {
 
 #[test]
 fn has_no_log_folder_without_its_variable() {
-    assert_eq!(log_dir("app.id", |_| None), None);
+    assert_eq!(log_dir(OsStr::new("Some App"), |_| None), None);
     assert_eq!(
-        log_dir("app.id", |_| Some(OsString::from("relative"))),
+        log_dir(OsStr::new("Some App"), |_| Some(OsString::from("relative"))),
         None
     );
 }

@@ -7,15 +7,16 @@
 //! standard error output; a build run from source writes them there as well. Never log artwork or
 //! file contents.
 
-use std::ffi::OsString;
+use std::ffi::{OsStr, OsString};
 use std::fmt::Display;
 use std::fs::{self, File, OpenOptions};
 use std::io::{self, Write};
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 use std::sync::{Mutex, OnceLock, TryLockError};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use serde::Deserialize;
+use tauri::utils::config::AppDirectoriesOverride;
 
 /// The name of the log file in the log folder.
 pub const FILE_NAME: &str = "mockup-director.log";
@@ -47,30 +48,46 @@ impl Level {
     }
 }
 
-/// The log folder for the app identifier, as Tauri's `app_log_dir` places it: on Windows
-/// `%LOCALAPPDATA%\<identifier>\logs`, on macOS `~/Library/Logs/<identifier>`, on Linux
-/// `$XDG_DATA_HOME/<identifier>/logs` (`~/.local/share` when XDG_DATA_HOME is not set). `var` reads
-/// an environment variable; a variable that is empty or not an absolute path counts as not set.
-/// None when the folder cannot be known.
-pub fn log_dir(identifier: &str, var: impl Fn(&str) -> Option<OsString>) -> Option<PathBuf> {
+/// The name of the app's data folder: the `<name>` of the `$LOCALDATA/<name>` root that
+/// `app > appDirectoriesOverride` sets in the Tauri config ("Mockup Director", with " Dev" and
+/// " E2E" for the app run from source and for the end-to-end tests). On Windows and Linux Tauri
+/// keeps the web engine's data (the session and the looks) in that folder. None when the config
+/// sets no such root.
+pub fn data_folder(directories: Option<&AppDirectoriesOverride>) -> Option<&OsStr> {
+    let Some(AppDirectoriesOverride::Root(root)) = directories else {
+        return None;
+    };
+    let mut parts = root.components();
+    match (parts.next(), parts.next(), parts.next()) {
+        (Some(Component::Normal(base)), Some(Component::Normal(name)), None)
+            if base == "$LOCALDATA" =>
+        {
+            Some(name)
+        }
+        _ => None,
+    }
+}
+
+/// The log folder for the data folder named `folder` (see `data_folder`): on Windows
+/// `%LOCALAPPDATA%\<folder>\logs` and on Linux `$XDG_DATA_HOME/<folder>/logs` (`~/.local/share` when
+/// XDG_DATA_HOME is not set), as Tauri's `app_log_dir` places it for that root; on macOS
+/// `~/Library/Logs/<folder>`, where macOS keeps logs. `var` reads an environment variable; a
+/// variable that is empty or not an absolute path counts as not set. None when the folder cannot be
+/// known.
+pub fn log_dir(folder: &OsStr, var: impl Fn(&str) -> Option<OsString>) -> Option<PathBuf> {
     let absolute = |name: &str| {
         var(name)
             .map(PathBuf::from)
             .filter(|path| path.is_absolute())
     };
     if cfg!(windows) {
-        Some(absolute("LOCALAPPDATA")?.join(identifier).join("logs"))
+        Some(absolute("LOCALAPPDATA")?.join(folder).join("logs"))
     } else if cfg!(target_os = "macos") {
-        Some(
-            absolute("HOME")?
-                .join("Library")
-                .join("Logs")
-                .join(identifier),
-        )
+        Some(absolute("HOME")?.join("Library").join("Logs").join(folder))
     } else {
         let data = absolute("XDG_DATA_HOME")
             .or_else(|| Some(absolute("HOME")?.join(".local").join("share")))?;
-        Some(data.join(identifier).join("logs"))
+        Some(data.join(folder).join("logs"))
     }
 }
 
@@ -294,7 +311,7 @@ pub fn start(dir: Option<PathBuf>) -> Option<PathBuf> {
                 dir.display()
             )
         }),
-        None => Err("The log folder is not known: the environment variable that names it is not set. Entries go to the standard error output.".to_owned()),
+        None => Err("The log folder is not known: the Tauri config names no data folder, or the environment variable for it is not set. Entries go to the standard error output.".to_owned()),
     };
     let folder = match opened {
         Ok(file) => {

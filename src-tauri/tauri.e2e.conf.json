@@ -6,6 +6,7 @@
     "frontendDist": "../dist-e2e"
   },
   "app": {
+    "appDirectoriesOverride": "$LOCALDATA/Mockup Director E2E",
     "withGlobalTauri": true,
     "security": {
       "capabilities": [

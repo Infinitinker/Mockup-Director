@@ -65,9 +65,10 @@ fn on_second_launch(app: &AppHandle, args: Vec<String>, cwd: String) {
 pub fn run() {
     let context = tauri::generate_context!();
     let version = context.package_info().version.to_string();
-    let log_dir = log::start(log::log_dir(&context.config().identifier, |name| {
-        std::env::var_os(name)
-    }));
+    let log_dir = log::start(
+        log::data_folder(context.config().app.app_directories_override.as_ref())
+            .and_then(|folder| log::log_dir(folder, |name| std::env::var_os(name))),
+    );
 
     // Windows and Linux pass double-clicked project files as arguments. If the working directory
     // cannot be read, relative paths stay relative (and fail with a clear error when read).

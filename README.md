@@ -202,10 +202,10 @@ No. It makes no network connections: no accounts, no telemetry and no update che
 Yes. The images you export are yours, and the app contains no third-party templates, artwork or logos. If your design needs a logo such as the DVD Video, Blu-ray Disc or Apple logos, add it to your own artwork under its owner's terms.
 
 **Where are my settings and open tabs?**
-Your looks, the open tabs and a few interface choices are kept in your user profile, in a folder named after the app's identifier, `io.github.infinitinker.mockupdirector`: on Windows in `%LOCALAPPDATA%`, on Linux in `~/.local/share`, on macOS in `~/Library/WebKit`. Your projects are wherever you saved the `.mdproj` files.
+Your looks, the open tabs and a few interface choices are kept in your user profile, in a folder named `Mockup Director`: on Windows in `%LOCALAPPDATA%`, on Linux in `~/.local/share`. On macOS the system keeps them in a folder named after the app's identifier, `~/Library/WebKit/io.github.infinitinker.mockupdirector`. Your projects are wherever you saved the `.mdproj` files.
 
 **Something went wrong. Is there a log?**
-Yes: `mockup-director.log`, on Windows in `%LOCALAPPDATA%\io.github.infinitinker.mockupdirector\logs`, on macOS in `~/Library/Logs/io.github.infinitinker.mockupdirector`, on Linux in `~/.local/share/io.github.infinitinker.mockupdirector/logs`. It records errors, never your artwork or the contents of your files, but it can name your files and folders: read it before you attach it to a bug report. It keeps about 3 MB and deletes the oldest entries.
+Yes: `mockup-director.log`, on Windows in `%LOCALAPPDATA%\Mockup Director\logs`, on macOS in `~/Library/Logs/Mockup Director`, on Linux in `~/.local/share/Mockup Director/logs`. It records errors, never your artwork or the contents of your files, but it can name your files and folders: read it before you attach it to a bug report. It keeps about 3 MB and deletes the oldest entries.
 
 **How do I update or remove it?**
 To update, install the newer version over the old one: run the new installer on Windows, drag the new app to **Applications** on macOS, or install the new package or replace the AppImage on Linux; with the portable ZIP, replace its folder. Your looks and open tabs stay. To remove it, uninstall it like any other app (on Windows in Settings → Apps). Uninstalling keeps the settings folder and the log folder above; delete them yourself to remove everything. On Windows, if you installed Mockup Director for you alone, the uninstaller asks whether to delete them too.

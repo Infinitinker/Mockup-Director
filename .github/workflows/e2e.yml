@@ -110,11 +110,11 @@ jobs:
       - name: Collect the app log
         if: always()
         run: |
-          id=io.github.infinitinker.mockupdirector.e2e
+          folder="Mockup Director E2E"
           case "$RUNNER_OS" in
-            Windows) log="$LOCALAPPDATA/$id/logs/mockup-director.log" ;;
-            Linux) log="$HOME/.local/share/$id/logs/mockup-director.log" ;;
-            macOS) log="$HOME/Library/Logs/$id/mockup-director.log" ;;
+            Windows) log="$LOCALAPPDATA/$folder/logs/mockup-director.log" ;;
+            Linux) log="$HOME/.local/share/$folder/logs/mockup-director.log" ;;
+            macOS) log="$HOME/Library/Logs/$folder/mockup-director.log" ;;
           esac
           mkdir -p "$E2E_OUTPUT"
           if [ -f "$log" ]; then cp "$log" "$E2E_OUTPUT/" || true; else echo "No app log at $log"; fi
