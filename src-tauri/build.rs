@@ -13,18 +13,13 @@ fn main() {
 /// them into the app executable only. Test executables link the whole app too, including the
 /// dialog code that needs Common Controls v6, which Windows loads only for an executable whose
 /// manifest asks for it; without it they fail to start (STATUS_ENTRYPOINT_NOT_FOUND). So the same
-/// resource file is linked into the tests.
+/// resource file, `libresource.a` with the GNU toolchain the app is built with, is linked into the tests.
 fn link_windows_resource_into_tests() {
     if env::var("CARGO_CFG_TARGET_OS").as_deref() != Ok("windows") {
         return;
     }
     let out_dir = env::var("OUT_DIR").expect("cargo sets OUT_DIR for build scripts");
-    let file = if env::var("CARGO_CFG_TARGET_ENV").as_deref() == Ok("msvc") {
-        "resource.lib"
-    } else {
-        "libresource.a"
-    };
-    let resource = Path::new(&out_dir).join(file);
+    let resource = Path::new(&out_dir).join("libresource.a");
     if resource.exists() {
         println!("cargo:rustc-link-arg-tests={}", resource.display());
     } else {
