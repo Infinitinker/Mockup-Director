@@ -27,7 +27,6 @@ body:
         - macOS .dmg
         - Linux AppImage
         - Linux .deb
-        - Linux .rpm
         - Built from source
     validations:
       required: true

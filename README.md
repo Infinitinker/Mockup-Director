@@ -98,7 +98,7 @@ Mockup Director needs 64-bit Linux (x86_64) with glibc 2.35 or newer: Ubuntu 22.
   sudo apt install ./MockupDirector-*-linux-x86_64.deb
   ```
 
-- **`.rpm`**, for Fedora:
+- **`.rpm`**, for Fedora. Skipped for now: the tool that builds the app cannot package a beta version as an `.rpm` yet, so until a release offers it again, use the AppImage. Once it is back:
 
   ```bash
   sudo dnf install ./MockupDirector-*-linux-x86_64.rpm

@@ -217,7 +217,8 @@ src-tauri/      the Tauri v2 shell (Rust): main.rs starts lib.rs, which sets up 
   build-windows.yml  the installer (x64, Inno Setup) and a ZIP, built with MSYS2; then checks
                      the files
   build-macos.yml    a universal .dmg; then checks the file
-  build-linux.yml    .AppImage, .deb and .rpm (x86_64) and the list of the AppImage's libraries;
+  build-linux.yml    .AppImage, .deb and .rpm (x86_64; the .rpm skipped for now, see
+                     releasing.md) and the list of the AppImage's libraries;
                      then checks the files
   release.yml        for a v* tag: checks the version, calls the three builds and the advisories,
                      drafts the release with provenance attestations; by hand, the same without

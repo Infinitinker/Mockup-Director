@@ -11,7 +11,8 @@ name: Build Linux app
 #
 # Linux settings are in src-tauri/tauri.linux.conf.json. The AppImage is one file for any
 # distribution and carries its own GTK and WebKitGTK libraries; the .deb (Debian, Ubuntu, Mint) and
-# the .rpm (Fedora, openSUSE) use the system's WebKitGTK 4.1, which they declare as a dependency.
+# the .rpm (Fedora, openSUSE) use the system's WebKitGTK 4.1, which they declare as a dependency. The
+# .rpm is skipped for now: Tauri cannot make one for a pre-release version yet (docs/releasing.md).
 #
 # The build runs in an ubuntu:22.04 container: a Linux binary runs only on systems with the same or
 # a newer glibc than the one it was built with, so the container (glibc 2.35), not the runner, sets
@@ -41,7 +42,7 @@ jobs:
     timeout-minutes: 60
     outputs:
       # The three files, so the check downloads exactly these, whatever else the run builds.
-      artifacts: ${{ steps.appimage.outputs.artifact-id }},${{ steps.deb.outputs.artifact-id }},${{ steps.rpm.outputs.artifact-id }},${{ steps.libraries.outputs.artifact-id }}
+      artifacts: ${{ steps.appimage.outputs.artifact-id }},${{ steps.deb.outputs.artifact-id }},${{ steps.libraries.outputs.artifact-id }}
     env:
       DEBIAN_FRONTEND: noninteractive # tzdata, which WebKitGTK pulls in, must not ask for a time zone
     defaults:
@@ -80,7 +81,6 @@ jobs:
           mkdir -p dist-release
           cp "$bundle"/appimage/*.AppImage "dist-release/$name.AppImage"
           cp "$bundle"/deb/*.deb "dist-release/$name.deb"
-          cp "$bundle"/rpm/*.rpm "dist-release/$name.rpm"
           ls -la dist-release
       # The AppImage carries Ubuntu's GTK and WebKitGTK libraries, many under the LGPL: the list names
       # the package of each, its version, its source code and its copyright file (docs/licenses.md).
@@ -129,12 +129,6 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           path: dist-release/*.deb
-          archive: false
-          if-no-files-found: error
-      - id: rpm
-        uses: actions/upload-artifact@v7
-        with:
-          path: dist-release/*.rpm
           archive: false
           if-no-files-found: error
       - id: libraries
