@@ -144,7 +144,7 @@ The **Looks** tab has a few built-in looks (named scene settings: light, shadow,
 
 The **Export** tab makes:
 
-- **an image:** PNG (with transparency), JPEG or WebP, up to 4000 × 4000 px, with a margin. PNG and JPEG also store the print resolution (DPI) in the file.
+- **an image:** PNG (with transparency), JPEG or WebP, up to 4000 × 4000 px, square or in another aspect ratio (4:5, 3:2, 16:9, 9:16 or your own), with a margin. PNG and JPEG also store the print resolution (DPI) in the file.
 - **an animation:** the product turning a full 360° or swinging back and forth, as a GIF, animated WebP or MP4 (H.264), 1–20 seconds long. It starts from the current view and keeps the light, shadow and reflection, with one fixed framing so nothing is cropped. You can follow the progress and cancel.
 - **a batch:** many mockups in one ZIP file: many images in one side of a model, several views of the current project, or many project files at once.
 
