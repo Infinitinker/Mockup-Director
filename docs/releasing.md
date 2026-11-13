@@ -5,7 +5,7 @@
 1. Raise the version in `package.json`, the app's only version: `src-tauri/tauri.conf.json` reads it from there for the app, its packages and the Windows version resource, and `src-tauri/Cargo.toml` has none. Versions are `major.minor.patch`; a version with a hyphen, such as `0.3.0-beta.1`, is a pre-release.
 
    When updating Tauri, raise the npm packages (`@tauri-apps/api`, `@tauri-apps/plugin-dialog`, `@tauri-apps/cli`) together with the `~2.x` ranges in `src-tauri/Cargo.toml`: the Tauri CLI stops the build when the Rust crates and the npm packages differ in `major.minor`.
-2. To try the release first, start **Actions → Release → Run workflow** on `dev`. It checks the version and builds and checks every file, without a release: the files are on the run's page for 90 days. Every pull request, the one from `dev` to `main` too, builds and checks the files of each system as well.
+2. To try the release first, start **Actions → Release → Run workflow** on `dev`. It checks the version and builds and checks every file, without a release: the files are on the run's page for 90 days. Every pull request, the one from `dev` to `main` too, builds and checks the files of each system as well. Test the Windows files by hand (see [Testing the files](#testing-the-files)).
 3. Merge `dev` into `main` with a pull request, then tag the merge commit on `main` with an annotated tag and push it:
 
    ```bash
@@ -43,6 +43,21 @@
 5. On the draft, replace the "What's new" text with the changes for users, check the files, and publish it.
 
 If a build fails, fix it, delete the tag (`git push origin :v0.2.0` and `git tag -d v0.2.0`) and the draft, if there is one, and tag again.
+
+The macOS jobs run on GitHub's `macos-15` runners, which are sometimes scarce: a job can wait in the queue for hours or be canceled. Run it again later (**Re-run failed jobs** on the run's page); no release is drafted without the macOS file.
+
+## Testing the files
+
+Before each release, test the files of the trial run (step 2) by hand on Windows:
+
+- [ ] **The installer** (`-setup.exe`): SmartScreen warns about an unknown publisher; **More info → Run anyway** installs it, and the app starts from the Start menu.
+- [ ] **A project file:** double-clicking a `.mdproj` file opens it in the app; with the app already open, it opens in that window instead of a second one.
+- [ ] **A mockup:** add artwork to a model, export a still and an animation, save the project through the save dialog, close the app and open the project again.
+- [ ] **An update:** installing the new version over the last release keeps the looks and the session.
+- [ ] **The ZIP:** unzipped to a folder, `mockup-director.exe` starts without installing.
+- [ ] **Uninstalling** from **Settings → Apps** removes the app and its Start menu entry.
+
+Linux and macOS are not tested by hand. There, the end-to-end tests (`tests/e2e/`, run on each system for every push to `main` and `dev` and for every pull request) start the real app, show the 3D view, switch models and save a project through the save dialog; the builds check their files (the licenses in every copy, the Linux packages' file association and the AppImage's libraries). A problem a user reports on one of them that these do not catch becomes a new end-to-end test or build check.
 
 ## Linux builds
 
