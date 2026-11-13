@@ -111,6 +111,18 @@ cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 
 The **Checks** workflow (`.github/workflows/checks.yml`) runs all of these for every push to `main` and `dev` and for every pull request, in a few minutes: `Lint` (Biome and rustfmt), `Web` (type-check, build, unit tests), `Licenses`, `Release safety` (release builds carry no test code, see [End-to-end tests](#end-to-end-tests)), and clippy and the Rust tests on three systems, `Windows Rust checks` (with MSYS2 and the GNU toolchain), `Linux Rust checks` and `macOS Rust checks`. The Rust code differs per system and clippy and the tests only see the code of the system they run on, hence three runs. Once a month Dependabot opens a pull request to `dev` with new versions of the actions the workflows and the shared actions in `.github/actions/` use (`.github/dependabot.yml`).
 
+The security advisories of the dependencies, the npm registry's for the npm packages and the [RustSec](https://rustsec.org/) database's for the Rust crates:
+
+```bash
+npm audit
+```
+
+```bash
+cargo deny --manifest-path src-tauri/Cargo.toml --config src-tauri/deny.toml check advisories
+```
+
+They fail on any npm advisory, on any Rust vulnerability and on a yanked crate. An unmaintained or unsound Rust crate fails only when the app depends on it directly: the ones deep in Tauri's dependencies move only with Tauri (`[advisories]` in `src-tauri/deny.toml`, which says how to accept an advisory that does not affect the app). The advisory databases change every day, so these are not part of the Checks: the **Advisories** workflow (`.github/workflows/advisories.yml`) runs them every Monday, for pushes and pull requests that change `package-lock.json`, `src-tauri/Cargo.lock` or `deny.toml`, and before every release. When it fails, update the dependency the advisory names (for one deep in another package's dependencies, `npm update <package>` or `cargo update -p <crate>` within the versions the lockfile allows), or accept the advisory with a reason.
+
 ## End-to-end tests
 
 One smoke test, in `tests/e2e/`, drives the real desktop app with [WebdriverIO](https://webdriver.io/) and `@wdio/tauri-service`: the app starts, shows the 3D view (or its message when WebGL does not work), switches to another model, and saves a project through the save dialog, which the test answers itself (a mock), then checks the file on disk and saves again, which writes the same file without the dialog. `npm test` does not run it. It needs Node.js 22.23.4, 24.22.1 or 26.12.1 or newer in that line, more than the rest of the project.

@@ -25,6 +25,7 @@
    - **Check the version:** the tag must be `v` followed by the version in `package.json`, the version must be of the form `1.2.3` or `1.2.3-beta.1`, and a release (not a pre-release) must be on `main`.
    - **Windows, macOS, Linux:** the three build workflows, called by the release; each checks its files.
    - **Third-party notices:** the license checks, and that `THIRD-PARTY-NOTICES.md` matches the dependencies; the release gets a copy (see [licenses.md](licenses.md)).
+   - **Advisories:** no npm package or Rust crate has an open security advisory (the Advisories workflow, `advisories.yml`, see [development.md](development.md#checks)); otherwise no release is drafted.
    - **Draft the release:** checks that exactly these files arrived, records a build provenance attestation for each (so anyone can check a download with `gh attestation verify <file> --repo Infinitinker/Mockup-Director`), then creates a **draft** release named "Mockup Director 0.2.0" with them, marked as a pre-release when the version has a hyphen:
 
      | File | What it is |

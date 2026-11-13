@@ -199,7 +199,7 @@ src-tauri/      the Tauri v2 shell (Rust): main.rs starts lib.rs, which sets up 
                             dragging, the title, destroying the window, the save dialog and the
                             devtools shortcut in builds run from source
   icons/                    the app icons that bundle.icon lists, written by tools/draw-icon.mjs
-  deny.toml                 allowed licenses of Rust dependencies (cargo-deny)
+  deny.toml                 allowed licenses of Rust dependencies, and the advisory rules (cargo-deny)
   about.toml, about.hbs     the Rust part of the third-party notices (cargo-about)
 .github/
   dependabot.yml     a monthly pull request with new versions of the actions the workflows and the
@@ -218,8 +218,11 @@ src-tauri/      the Tauri v2 shell (Rust): main.rs starts lib.rs, which sets up 
   build-macos.yml    a universal .dmg; then checks the file
   build-linux.yml    .AppImage, .deb and .rpm (x86_64) and the list of the AppImage's libraries;
                      then checks the files
-  release.yml        for a v* tag: checks the version, calls the three builds, drafts the release with
-                     provenance attestations; by hand, the same without drafting
+  release.yml        for a v* tag: checks the version, calls the three builds and the advisories,
+                     drafts the release with provenance attestations; by hand, the same without
+                     drafting
+  advisories.yml     the security advisories of the npm packages (npm audit) and the Rust crates
+                     (cargo-deny): every Monday, when a lockfile changes, and for each release
 .github/actions/
   node/              Node.js 22 with npm's cache, for every job that runs Node.js
   notices/           the license checks and the notices check, for checks.yml and release.yml

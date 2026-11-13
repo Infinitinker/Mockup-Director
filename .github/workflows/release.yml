@@ -94,9 +94,14 @@ jobs:
           archive: false
           if-no-files-found: error
 
+  # No release is drafted while a dependency has an open security advisory.
+  advisories:
+    name: Advisories
+    uses: ./.github/workflows/advisories.yml
+
   draft:
     name: Draft the release
-    needs: [version, windows, macos, linux, notices]
+    needs: [version, windows, macos, linux, notices, advisories]
     if: github.event_name == 'push'
     runs-on: ubuntu-26.04
     timeout-minutes: 15

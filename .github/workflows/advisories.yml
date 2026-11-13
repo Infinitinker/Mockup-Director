@@ -1,0 +1,58 @@
+name: Advisories
+
+# Checks the npm packages and the Rust crates against the published security advisories: npm audit
+# (the npm registry's advisories) and cargo-deny with the RustSec database (the [advisories] rules in
+# src-tauri/deny.toml). The databases change every day, so this runs on its own, not with the Checks:
+# every Monday, when a lockfile or deny.toml changes, by hand (Actions > Advisories > Run workflow),
+# and from the Release workflow, which drafts no release while an advisory is open (docs/releasing.md).
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  push:
+    branches: [main, dev]
+    paths: [package-lock.json, src-tauri/Cargo.lock, src-tauri/deny.toml, .github/workflows/advisories.yml]
+  pull_request:
+    paths: [package-lock.json, src-tauri/Cargo.lock, src-tauri/deny.toml, .github/workflows/advisories.yml]
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  npm:
+    name: npm advisories
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: |
+            package.json
+            package-lock.json
+            .github/actions/node
+          sparse-checkout-cone-mode: false
+      - name: Node.js
+        uses: ./.github/actions/node
+        with:
+          cache: false
+      # Every package, also the build and test tools, which run on CI and the contributors' machines.
+      # Reads only package-lock.json: nothing is installed.
+      - name: npm audit
+        run: npm audit
+
+  rust:
+    name: Rust advisories
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: src-tauri
+      # The version the Licenses check uses (.github/actions/notices).
+      - name: Install cargo-deny
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-deny@0.20.2
+      - name: cargo deny check advisories
+        run: cargo deny --manifest-path src-tauri/Cargo.toml --config src-tauri/deny.toml check advisories

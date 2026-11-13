@@ -1,6 +1,8 @@
-# cargo-deny configuration – used in CI (.github/workflows/checks.yml, job "Licenses") to make sure no
-# Rust dependency brings a copyleft license (GPL, AGPL, LGPL, …) into the app.
+# cargo-deny configuration – used in CI to make sure no Rust dependency brings a copyleft license
+# (GPL, AGPL, LGPL, …) into the app (.github/workflows/checks.yml, job "Licenses"), and that none has
+# a security advisory (.github/workflows/advisories.yml).
 #   cargo deny --manifest-path src-tauri/Cargo.toml --config src-tauri/deny.toml check licenses
+#   cargo deny --manifest-path src-tauri/Cargo.toml --config src-tauri/deny.toml check advisories
 
 [graph]
 # Only the platforms we ship (keep in sync with `targets` in src-tauri/about.toml). The Linux target
@@ -44,3 +46,13 @@ unused-allowed-license = "allow"
 [licenses.private]
 # Our own crate (publish = false) is MIT anyway, but there is no need to check it.
 ignore = true
+
+[advisories]
+# Fails on every vulnerability in the RustSec database and on a yanked crate in Cargo.lock. An
+# unmaintained or unsound crate fails only when the app depends on it directly: the ones deep in
+# Tauri's dependencies (the gtk-rs 0.18 crates on Linux, zbus through tauri-plugin-single-instance)
+# move only with Tauri. To accept an advisory that does not affect the app, add its id with the
+# reason: ignore = [{ id = "RUSTSEC-…", reason = "…" }].
+unmaintained = "workspace"
+unsound = "workspace"
+yanked = "deny"
