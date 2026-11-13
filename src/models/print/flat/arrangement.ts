@@ -99,7 +99,7 @@ export function arrange(
     // Ground every item on its own: a bent sheet turned over rests on its two ends (its middle is
     // higher), so grounding only the whole group would leave the other item floating in the air.
     place.updateMatrixWorld(true);
-    const box = new THREE.Box3().setFromObject(place);
+    const box = new THREE.Box3().setFromObject(place, true);
     if (!box.isEmpty()) flat.position.y = -box.min.y;
     return place;
   };

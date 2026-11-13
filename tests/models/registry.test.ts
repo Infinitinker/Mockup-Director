@@ -44,37 +44,9 @@ interface PlacementException {
 /** The first entry that matches a model and its parameters applies. */
 const PLACEMENT_EXCEPTIONS: PlacementException[] = [
   {
-    models: ['print-flyer'],
-    when: (params) => params.layout === 'leaning' && Number(params.bend) > 0,
-    tolerance: { floor: null, z: null },
-    reason:
-      'known issue: a bent flyer leaning back floats up to 8 mm above the floor and sits up to 17 mm off-center in z',
-  },
-  {
     models: ['dvd-case', 'bluray-case'],
     tolerance: { x: 0.001 },
     reason: 'the case is centered on its body, and the insert wraps up to 0.26 mm past the spine',
-  },
-  {
-    models: ['device-laptop', 'device-monitor'],
-    tolerance: { z: 0.005 },
-    reason:
-      'known issue: placeOnGround measures the bounding boxes of the geometries, too big for turned parts, ' +
-      'which leaves the vertices up to 0.3 % of the size off-center in z',
-  },
-  {
-    models: ['print-business-card', 'print-postcard', 'print-plastic-card', 'print-trifold', 'device-tablet'],
-    tolerance: { x: 0.005, z: 0.005 },
-    reason:
-      'known issue: placeOnGround measures the bounding boxes of the geometries, too big for turned or folded parts, ' +
-      'which leaves the vertices up to 0.3 % of the size off-center in x and z',
-  },
-  {
-    models: ['print-greeting-card', 'print-bifold'],
-    tolerance: { floor: 0.005, x: 0.005, z: 0.005 },
-    reason:
-      'known issue: placeOnGround measures the bounding boxes of the geometries, too big for folded parts, ' +
-      'which leaves the vertices up to 0.3 % of the size off-center or above the floor',
   },
 ];
 

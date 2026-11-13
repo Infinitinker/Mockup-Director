@@ -82,10 +82,14 @@ export function castShadows(root: THREE.Object3D): THREE.Object3D {
   return root;
 }
 
-/** Put the object's lowest point on y = 0 and center it on x/z. */
+/**
+ * Put the object's lowest point on y = 0 and center it on x/z. The bounds are measured on the
+ * vertices: the bounding boxes of turned or bent parts reach past them, which would lift the
+ * object off the floor.
+ */
 export function placeOnGround(root: THREE.Object3D): THREE.Object3D {
   root.updateMatrixWorld(true);
-  const box = new THREE.Box3().setFromObject(root);
+  const box = new THREE.Box3().setFromObject(root, true);
   if (box.isEmpty()) return root;
   const c = box.getCenter(new THREE.Vector3());
   root.position.x -= c.x;

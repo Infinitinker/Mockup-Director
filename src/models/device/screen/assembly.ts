@@ -64,23 +64,9 @@ export function addBody(
   }
 }
 
-/**
- * Tilt back, cast shadows, stand on the ground.
- *
- * The tilt is baked into the (unshared, per-build) geometries instead of being set as an object
- * rotation: placeOnGround() uses the non-precise Box3.setFromObject(), which transforms each
- * geometry's local bounding BOX – for a rotated, bent panel with rounded corners that box's corners
- * lie well below the real geometry and the panel would float above y = 0. With the rotation baked
- * in, every bounding box is the exact vertex AABB in the final orientation.
- */
+/** Tilt back, cast shadows, stand on the ground. */
 export function finishPanel(panel: THREE.Group, tiltDeg: number): THREE.Object3D {
-  const a = -clamp(tiltDeg, 0, 75) * DEG; // top leans away from the viewer (-Z)
-  if (a !== 0) {
-    panel.traverse((o) => {
-      const m = o as THREE.Mesh;
-      if (m.isMesh) m.geometry.rotateX(a);
-    });
-  }
+  panel.rotation.x = -clamp(tiltDeg, 0, 75) * DEG; // top leans away from the viewer (-Z)
   const root = new THREE.Group();
   root.add(panel);
   castShadows(root);

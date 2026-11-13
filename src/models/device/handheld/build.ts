@@ -332,7 +332,7 @@ export function buildDevice(ctx: ModelContext, spec: DeviceSpec): THREE.Object3D
   // Stylus (tablet).
   if (spec.kind === 'tablet' && bool(p, 'stylus', false)) {
     device.updateMatrixWorld(true);
-    const box = new THREE.Box3().setFromObject(device);
+    const box = new THREE.Box3().setFromObject(device, true);
     const dark = new THREE.Color(frameColor).getHSL({ h: 0, s: 0, l: 0 }).l < 0.3;
     const stylus = buildStylus(dark);
     // Lying on the ground in front of the device, slightly turned for a natural look.

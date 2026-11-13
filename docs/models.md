@@ -134,7 +134,7 @@ Helpers in `src/models/geometry.ts`:
 
 | Helper | What it does |
 |---|---|
-| `placeOnGround(root)` | Moves the object so its lowest point is at `y = 0` and it is centered on `x` and `z`. Uses bounding boxes of the geometry, which can be too big for rotated parts; `composites/compose.ts` measures vertices instead. |
+| `placeOnGround(root)` | Moves the object so its lowest point is at `y = 0` and it is centered on `x` and `z`, measured on its vertices, so turned and bent parts sit exactly. |
 | `castShadows(root)` | Sets `castShadow` on every mesh in the tree. |
 | `roundedRectShape(w, h, r)` | A rounded rectangle centered on the origin, for extrusions. |
 | `remapUVs(geo, u0, v0, u1, v1)` | Maps a geometry's 0–1 UVs into a rectangle of the image. |
