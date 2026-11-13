@@ -35,6 +35,7 @@
      | `MockupDirector-<version>-linux-x86_64.AppImage` | the Linux app for any distribution |
      | `MockupDirector-<version>-linux-x86_64.deb` | the package for Debian, Ubuntu and Mint |
      | `MockupDirector-<version>-linux-x86_64.rpm` | the package for Fedora and openSUSE |
+     | `MockupDirector-<version>-linux-x86_64-appimage-libraries.md` | the Ubuntu libraries the AppImage carries, with their licenses and sources (see [licenses.md](licenses.md#the-linux-appimage)) |
      | `MockupDirector-<version>-third-party-notices.md` | the licenses of the libraries in the app |
 
      The notes come from `tools/release-notes.md`: a download table, first-launch help, the SHA-256 checksum of every file and how to check its attestation. `tools/release.mjs` fills them in and checks the files; `tests/tools/release.test.ts` tests it.

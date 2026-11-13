@@ -216,7 +216,8 @@ src-tauri/      the Tauri v2 shell (Rust): main.rs starts lib.rs, which sets up 
   build-windows.yml  the installer (x64, Inno Setup) and a ZIP, built with MSYS2; then checks
                      the files
   build-macos.yml    a universal .dmg; then checks the file
-  build-linux.yml    .AppImage, .deb and .rpm (x86_64); then checks the files
+  build-linux.yml    .AppImage, .deb and .rpm (x86_64) and the list of the AppImage's libraries;
+                     then checks the files
   release.yml        for a v* tag: checks the version, calls the three builds, drafts the release with
                      provenance attestations; by hand, the same without drafting
 .github/actions/
@@ -241,6 +242,9 @@ tools/licenses/             license texts that come from no package: the Windows
 tools/release.mjs           the release rules: version and tag, the files, the notes (the build
                             workflows, release.yml)
 tools/release-notes.md      the template of the release notes
+tools/appimage-libraries.mjs
+                            lists the libraries the AppImage carries, with their licenses and
+                            sources (build-linux.yml)
 tools/installer.iss         the Windows installer (Inno Setup 7): files, the .mdproj association,
                             WebView2, uninstalling
 tools/installer.mjs         builds it (npm run installer)

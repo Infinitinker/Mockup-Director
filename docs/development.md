@@ -209,7 +209,7 @@ npm run build && cargo clippy --manifest-path src-tauri/Cargo.toml --features e2
 LIBGL_ALWAYS_SOFTWARE=1 xvfb-run -a -s "-screen 0 1920x1080x24" npm run e2e
 ```
 
-**Linux build (x86_64)** (`build-linux.yml`) makes the AppImage, the .deb and the .rpm with `npm run tauri build`. It builds in an `ubuntu:22.04` container, so the files run on older systems too; the same command in WSL shows that the app still builds, but its files need Ubuntu 26.04's newer glibc. **Linux release files**, which checks the files a build put on the run's page, has nothing to run locally.
+**Linux build (x86_64)** (`build-linux.yml`) makes the AppImage, the .deb and the .rpm with `npm run tauri build`, and lists the AppImage's libraries with `node tools/appimage-libraries.mjs <AppImage> <list.md>`, which also runs in WSL on an AppImage built there. It builds in an `ubuntu:22.04` container, so the files run on older systems too; the same command in WSL shows that the app still builds, but its files need Ubuntu 26.04's newer glibc. **Linux release files**, which checks the files a build put on the run's page, has nothing to run locally.
 
 ## Interface texts
 

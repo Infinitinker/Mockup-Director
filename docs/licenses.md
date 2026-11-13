@@ -28,7 +28,7 @@ The MIT, BSD and Apache licenses require their notices to come with every copy o
 - **The npm packages bundled into the web UI** (the production dependencies), with the license files each contains. A package that contains none gets its text from `tools/licenses/<package>.txt` (`@scope/name` is `scope-name.txt`), copied from the package's source at the installed version; `@tauri-apps/plugin-dialog` is one.
 - **The Rust crates**, through cargo-about (`src-tauri/about.toml`, `src-tauri/about.hbs`).
 
-It ends with a note that the AppImage's system libraries are not listed and how to find them (see [The Linux AppImage](#the-linux-appimage)). It stops when something the app ships has no license text, and when a text in `tools/licenses/` is no longer needed. Each entry names its source code, as the MPL-2.0 asks for its libraries (mediabunny, and a few Rust crates).
+It ends with a note that the AppImage's system libraries are listed in a file of their own (see [The Linux AppImage](#the-linux-appimage)). It stops when something the app ships has no license text, and when a text in `tools/licenses/` is no longer needed. Each entry names its source code, as the MPL-2.0 asks for its libraries (mediabunny, and a few Rust crates).
 
 The file is committed, because the Tauri build needs it, and the **Licenses** check fails when it does not match the dependencies: run `npm run notices` after changing dependencies and commit the result. The versions of cargo-deny and cargo-about are pinned in `.github/actions/notices`, and `tools/notices.mjs` checks it runs with the same cargo-about; raise them together, by hand, and compare the notices before and after.
 
@@ -47,16 +47,12 @@ The installer is made by [Inno Setup](https://jrsoftware.org/isinfo.php), whose 
 
 The `.deb` and `.rpm` packages use the GTK and WebKitGTK libraries installed on the system. The AppImage instead contains copies of GTK 3, WebKitGTK and their dependencies (among them GLib/GIO, libsoup 3, GStreamer, pango, cairo, gdk-pixbuf, ICU and libgcrypt). These are mostly LGPL-2.0+/2.1+ libraries, dynamically linked, so the app's own code is not covered by them; some have permissive licenses (MIT, BSD, ICU).
 
-Distributing the AppImage means distributing those libraries too, and the LGPL then requires including their licenses and making their source code available (or a written offer to provide it), for each bundled LGPL library. To get the exact list for a release, extract the AppImage:
+Distributing the AppImage means distributing those libraries too, and the LGPL then requires including their licenses and making their source code available (or a written offer to provide it), for each bundled LGPL library. So every release carries, next to the AppImage, `MockupDirector-<version>-linux-x86_64-appimage-libraries.md`, written by `tools/appimage-libraries.mjs` in the Linux build (`build-linux.yml`, step "List the AppImage's libraries"):
 
-```bash
-./MockupDirector-*-linux-x86_64.AppImage --appimage-extract
-```
+- every Ubuntu package the AppImage took files from, with its version, its source package and a link to that version's Launchpad page, which offers its source files (Launchpad keeps the versions it has superseded), and the files of the AppImage it supplied;
+- each package's copyright file, with its licenses, whole;
+- the parts the AppImage tools add: the AppImage runtime at the start of the file, named by the address of its source at the commit it was built from (it reports it with `--appimage-version`; it contains libfuse, under the LGPL-2.1, and its repository says how to build it), and linuxdeploy's `AppRun` and GTK hook, under the MIT license.
 
-```bash
-ls squashfs-root/usr/lib
-```
+The tool extracts the AppImage and finds the package of each file with `dpkg -S` by the file's name, since the AppImage keeps a file's name but not its folder (on Ubuntu 22.04 some libraries are recorded under `/lib`, not `/usr/lib`). It needs the package database of the system that made the AppImage, so it runs in the build's container. It stops the build when a file comes from no package and is not one of the app's own files, the AppImage tools' parts or a cache made during the build (`NOT_FROM_PACKAGES` in the tool), and when a package has no copyright file; `tests/tools/appimage-libraries.test.ts` tests its parts that run without dpkg. linuxdeploy also copies the copyright files of most libraries into the AppImage, under `usr/share/doc/<package>`, but misses those recorded under `/lib`, so the list is the complete one.
 
-On Ubuntu 22.04 (the system the AppImage is built on), `dpkg -S <file>` names the package each file comes from; attach those packages' copyright files and link their source packages in the release.
-
-The license check in CI covers the npm and Rust dependencies, not the system libraries bundled into the AppImage.
+The license check in CI covers the npm and Rust dependencies; the list above covers the system libraries in the AppImage.

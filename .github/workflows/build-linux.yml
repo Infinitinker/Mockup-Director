@@ -1,7 +1,8 @@
 name: Build Linux app
 
-# Builds the Linux release files: the AppImage, the .deb and the .rpm package, each kept on the run's
-# page under its release file name, and checks them. The Release workflow (release.yml) calls it and
+# Builds the Linux release files: the AppImage, the .deb and the .rpm package, and the list of the
+# libraries the AppImage carries, each kept on the run's page under its release file name, and checks
+# them. The Release workflow (release.yml) calls it and
 # drafts the release from them; run on its own, it shows early that a change still builds.
 #
 # It runs for every pull request (also Dependabot's and those from forks), from the Release workflow,
@@ -40,7 +41,7 @@ jobs:
     timeout-minutes: 60
     outputs:
       # The three files, so the check downloads exactly these, whatever else the run builds.
-      artifacts: ${{ steps.appimage.outputs.artifact-id }},${{ steps.deb.outputs.artifact-id }},${{ steps.rpm.outputs.artifact-id }}
+      artifacts: ${{ steps.appimage.outputs.artifact-id }},${{ steps.deb.outputs.artifact-id }},${{ steps.rpm.outputs.artifact-id }},${{ steps.libraries.outputs.artifact-id }}
     env:
       DEBIAN_FRONTEND: noninteractive # tzdata, which WebKitGTK pulls in, must not ask for a time zone
     defaults:
@@ -81,6 +82,13 @@ jobs:
           cp "$bundle"/deb/*.deb "dist-release/$name.deb"
           cp "$bundle"/rpm/*.rpm "dist-release/$name.rpm"
           ls -la dist-release
+      # The AppImage carries Ubuntu's GTK and WebKitGTK libraries, many under the LGPL: the list names
+      # the package of each, its version, its source code and its copyright file (docs/licenses.md).
+      # It reads this system's package database, so it runs here, where the AppImage was made.
+      - name: List the AppImage's libraries
+        run: |
+          name="MockupDirector-$(node -p "require('./package.json').version")-linux-x86_64"
+          node tools/appimage-libraries.mjs "dist-release/$name.AppImage" "dist-release/$name-appimage-libraries.md"
       # Double-clicking a .mdproj file opens the app only if the package installs the MIME definition
       # (src-tauri/linux/mockup-director-mime.xml) and its .desktop entry takes files (%F) of that type.
       - name: Check the file association
@@ -127,6 +135,12 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           path: dist-release/*.rpm
+          archive: false
+          if-no-files-found: error
+      - id: libraries
+        uses: actions/upload-artifact@v7
+        with:
+          path: dist-release/*-appimage-libraries.md
           archive: false
           if-no-files-found: error
 
