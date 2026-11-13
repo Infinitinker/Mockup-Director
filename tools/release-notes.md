@@ -11,7 +11,6 @@ Describe the changes of this version here, for users, then publish the release.
 | macOS 12 or later (Apple Silicon and Intel) | [MockupDirector-{version}-macos-universal.dmg]({download}/MockupDirector-{version}-macos-universal.dmg) |
 | Linux x86_64 with glibc 2.35 or newer (Ubuntu 22.04+, Debian 12+, Fedora 36+ and similar), any distribution | [MockupDirector-{version}-linux-x86_64.AppImage]({download}/MockupDirector-{version}-linux-x86_64.AppImage) |
 | Debian 12+, Ubuntu 22.04+, Linux Mint 21+ | [MockupDirector-{version}-linux-x86_64.deb]({download}/MockupDirector-{version}-linux-x86_64.deb) |
-| Fedora 36+, openSUSE Tumbleweed / Leap 16 | [MockupDirector-{version}-linux-x86_64.rpm]({download}/MockupDirector-{version}-linux-x86_64.rpm) |
 
 ## First launch
 
@@ -19,7 +18,7 @@ Describe the changes of this version here, for users, then publish the release.
 - **macOS:** if macOS says it could not verify the app, open **System Settings → Privacy & Security** and click **Open Anyway** next to the message about Mockup Director.
 - **Linux AppImage:** make it executable first: in the file manager under **Properties** (turn on **Executable as Program**, or on the **Permissions** tab, **Allow executing file as program**), or with `chmod +x MockupDirector-{version}-linux-x86_64.AppImage`.
 
-The [README](https://github.com/{repository}#installing) has the details, also for installing the `.deb` and `.rpm` packages, and [answers to common questions](https://github.com/{repository}#questions).
+The [README](https://github.com/{repository}#installing) has the details, also for installing the `.deb` package, and [answers to common questions](https://github.com/{repository}#questions).
 
 ## Checksums (SHA-256)
 

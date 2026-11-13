@@ -35,7 +35,7 @@
      | `MockupDirector-<version>-macos-universal.dmg` | the macOS app, for Apple Silicon and Intel |
      | `MockupDirector-<version>-linux-x86_64.AppImage` | the Linux app for any distribution |
      | `MockupDirector-<version>-linux-x86_64.deb` | the package for Debian, Ubuntu and Mint |
-     | `MockupDirector-<version>-linux-x86_64.rpm` | the package for Fedora and openSUSE |
+     | `MockupDirector-<version>-linux-x86_64.rpm` | the package for Fedora and openSUSE (skipped for now, see [Linux builds](#linux-builds)) |
      | `MockupDirector-<version>-linux-x86_64-appimage-libraries.md` | the Ubuntu libraries the AppImage carries, with their licenses and sources (see [licenses.md](licenses.md#the-linux-appimage)) |
      | `MockupDirector-<version>-third-party-notices.md` | the licenses of the libraries in the app |
 
@@ -62,6 +62,8 @@ Linux and macOS are not tested by hand. There, the end-to-end tests (`tests/e2e/
 ## Linux builds
 
 The Linux build runs in an `ubuntu:22.04` container (on the `ubuntu-26.04` runner all Linux jobs use). A Linux binary runs only on systems with the same or a newer glibc than the one it was built with, so the container sets the oldest supported systems: glibc 2.35, that is Ubuntu 22.04+, Debian 12+ and Fedora 36+. Raise the container image only when dropping old distributions, and update the list in the README.
+
+The `.rpm` package is skipped for now. The Tauri CLI (2.12.4) cannot make one for a pre-release version such as `0.1.0-beta.1`, because RPM allows no hyphen in a version; Tauri's fix ([tauri-apps/tauri#16336](https://github.com/tauri-apps/tauri/pull/16336), in tauri-bundler 2.10.5) writes it as `0.1.0~beta.1`. Once a Tauri release carries it, raise Tauri (step 1 of [A new version](#a-new-version)) and revert the commit "build: skip the .rpm package until tauri can bundle a pre-release", which brings back its build, its place among the release files and its row in the release notes.
 
 ## Signing
 
