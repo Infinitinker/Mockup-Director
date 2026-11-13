@@ -156,7 +156,7 @@ export function keepSession(docs: Documents, exportBusy: Signal<boolean>): Sessi
       }
       const initial = docs.activeId;
       const replaceInitial = docs.activeIsPristine();
-      docs.add(state, { id: copy.id, name: copy.name, dirty: copy.dirty, position: 'end' });
+      docs.add(state, { id: copy.id, name: copy.name, path: copy.path, dirty: copy.dirty, position: 'end' });
       // Only now, in the same run as the tab was added: no save comes in between, and a failed add keeps the entry.
       session.reopen(copy.id);
       if (replaceInitial) docs.close(initial);
@@ -180,7 +180,7 @@ export function keepSession(docs: Documents, exportBusy: Signal<boolean>): Sessi
       return;
     }
     const { session: stored, recovered, missing, indexDamaged, repair } = loaded;
-    const restored: { id: string; name: string; dirty: boolean; state: DocumentState }[] = [];
+    const restored: { id: string; name: string; path: string | null; dirty: boolean; state: DocumentState }[] = [];
     let failedArtwork = 0;
     const leftOut = { settings: 0, artwork: 0 };
     marker.keepOnly(loaded.unopened.map((t) => t.id));
@@ -194,13 +194,13 @@ export function keepSession(docs: Documents, exportBusy: Signal<boolean>): Sessi
         failedArtwork += failed;
         leftOut.settings += tab.report.settings;
         leftOut.artwork += tab.report.artwork;
-        restored.push({ id: tab.id, name: tab.name, dirty: tab.dirty, state });
+        restored.push({ id: tab.id, name: tab.name, path: tab.path, dirty: tab.dirty, state });
       }
       // The user may already have started working in the first tab while we were loading: keep it.
       const initial = docs.activeId;
       const replaceInitial = docs.activeIsPristine() && restored.length > 0;
       for (const r of restored)
-        docs.add(r.state, { id: r.id, name: r.name, dirty: r.dirty, activate: false, position: 'end' });
+        docs.add(r.state, { id: r.id, name: r.name, path: r.path, dirty: r.dirty, activate: false, position: 'end' });
       // The unopened entries stay in the index, and their records are deleted only when the user chooses to.
       session.adopt(
         restored.map((r) => r.id),

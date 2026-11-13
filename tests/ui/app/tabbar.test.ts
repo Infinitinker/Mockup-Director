@@ -6,6 +6,7 @@ import { tabLabel } from '../../../src/ui/app/tabbar';
 const tab = (name: string, untitledNumber: number): TabInfo => ({
   id: 'tab-1',
   name,
+  path: null,
   untitledNumber,
   dirty: false,
   active: true,

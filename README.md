@@ -148,7 +148,7 @@ Some formats depend on your system's web engine: WebP export is available where 
 
 ## Projects and tabs
 
-- **Projects** are saved as `.mdproj` files, which hold the model, your artwork, the scene and the export settings. A project can hold up to 400 MB, counting the artwork of every model you used in it (artwork carried over when you switch models counts again); a file that would make it larger is refused, and artwork is not carried over to another model when it would, so remove artwork or use smaller files. Double-click one to open it in Mockup Director (the installer and the Linux packages register the file type; with the AppImage, use the app's **Open…** button).
+- **Projects** are saved as `.mdproj` files, which hold the model, your artwork, the scene and the export settings. **Save** writes the project to its file; a new project asks where to save it the first time. **Save as…** saves it to a new file, which **Save** then writes to. A project can hold up to 400 MB, counting the artwork of every model you used in it (artwork carried over when you switch models counts again); a file that would make it larger is refused, and artwork is not carried over to another model when it would, so remove artwork or use smaller files. Double-click one to open it in Mockup Director (the installer and the Linux packages register the file type; with the AppImage, use the app's **Open…** button).
 - **Tabs:** every open project is a tab above the 3D preview, with its own undo history. **New** opens a new tab; **Open…** opens each project in its own tab, taking the place of an untouched new tab. A project you double-click while the app is open arrives as a new tab in the same window (during an export, it opens when the export ends). A • marks a tab with unsaved changes; closing it asks whether to save them.
 - **Your open tabs are saved automatically** a moment after each change and when you close the window, unsaved changes included, and come back the next time you start the app. So closing the window does not ask. On macOS, quitting the app (⌘Q, **Quit** in the Dock, logging out) skips that last save, so changes from the last second or two may be missing: close the window first, or save the project.
 - **Projects that cannot be reopened are never thrown away.** If a project that was open comes from a newer version of Mockup Director, or its stored copy is damaged, a dialog at the start lists it: save it to a file, delete it, or leave it for the next start. A newer Mockup Director reopens the ones from a newer version by itself. If Mockup Director closed while reopening your projects (for example, because their artwork took more memory than the computer has, or because it was quit or the computer shut down meanwhile), the next start does not try those projects again but lists them in the same dialog: open one again there, or save it to a file.
@@ -161,7 +161,8 @@ On macOS use ⌘ instead of Ctrl, except for switching tabs (Ctrl+Tab / Ctrl+Shi
 | --- | --- |
 | Ctrl+N or Ctrl+T | New project, in a new tab |
 | Ctrl+O | Open projects, each in its own tab |
-| Ctrl+S | Save the project in the active tab |
+| Ctrl+S | Save the project in the active tab to its file (a new project asks where) |
+| Ctrl+Shift+S | Save the project in the active tab as a new file |
 | Ctrl+W | Close the active tab |
 | Ctrl+Tab / Ctrl+Shift+Tab (also Ctrl+PageDown / Ctrl+PageUp) | Next / previous tab (on macOS also ⇧⌘] / ⇧⌘[) |
 | Ctrl+E | Export an image |

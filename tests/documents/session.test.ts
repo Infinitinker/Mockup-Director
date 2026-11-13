@@ -38,12 +38,13 @@ class FakeStore implements SessionStore {
 const tab = (id: string, revision = 1): TabSnapshot => ({
   id,
   name: id.toUpperCase(),
+  path: null,
   dirty: false,
   revision,
   state: documentState('box'),
 });
-const kept = { id: 'k', name: 'Kept', dirty: true };
-const other = { id: 'o', name: '', dirty: true };
+const kept = { id: 'k', name: 'Kept', path: null, dirty: true };
+const other = { id: 'o', name: '', path: null, dirty: true };
 const ids = (w: Write) => w.index.tabs.map((t) => t.id);
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 

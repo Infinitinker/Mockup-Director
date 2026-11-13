@@ -8,7 +8,7 @@ import { Store, hasAny } from '../../documents/store';
 import { Documents, freshDocument } from '../../documents/tabs';
 import type { AnimationProgress } from '../../export/animation';
 import { inDesktopApp } from '../../platform/files';
-import { handleOpenedFiles } from '../../platform/launch';
+import { handleOpenedFiles } from '../../platform/opened';
 import { isMac } from '../../platform/os';
 import { setWindowTitle } from '../../platform/window';
 import { createArtworkActions } from './actions/artwork';
@@ -128,7 +128,7 @@ export function startApp(root: HTMLElement): void {
   session.restore(() => {
     // Projects the operating system asked to open (a double-clicked .mdproj), each in a tab.
     void handleOpenedFiles(
-      (files) => void openProjectFiles(files),
+      (projects) => void openProjectFiles(projects),
       (e) => {
         logShownError('Could not open the project', e);
         notify.error('Could not open the project', errorMessage(e));

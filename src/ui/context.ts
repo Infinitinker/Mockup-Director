@@ -14,10 +14,18 @@ export interface Actions {
   selectModel(id: string): void;
   /** A new project in a new tab. */
   newProject(): Promise<void>;
-  /** Opens project files, each in its own tab (an untouched new tab is reused). Without files: asks for one. */
+  /**
+   * Opens a project file (one dropped on the window, which has no path to save back to) in its own tab (an
+   * untouched new tab is reused). Without a file: asks for project files.
+   */
   openProject(file?: File): Promise<void>;
-  /** Saves a tab's project (the active one by default). Resolves true when it was saved. */
+  /**
+   * Saves a tab's project (the active one by default) to its file, asking where only when it has none. Resolves
+   * true when it was saved.
+   */
   saveProject(tabId?: string): Promise<boolean>;
+  /** Saves the active tab's project to a file the user picks. Resolves true when it was saved. */
+  saveProjectAs(): Promise<boolean>;
   /** Closes a project tab (the active one by default), asking first when it has unsaved changes. */
   closeProject(tabId?: string): Promise<void>;
   /** Switches to the next (+1) or previous (-1) project tab. */

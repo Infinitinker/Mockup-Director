@@ -60,7 +60,7 @@ describe('Documents', () => {
     edit(store, 1);
     expect(docs.tabs()[0].dirty).toBe(true);
 
-    docs.markSaved(docs.activeId, store.revision, 'Box');
+    docs.markSaved(docs.activeId, store.revision, 'Box', null);
     expect(docs.tabs()[0]).toMatchObject({ name: 'Box', untitledNumber: 0, dirty: false });
 
     edit(store, 2);
@@ -69,6 +69,21 @@ describe('Documents', () => {
     expect(docs.tabs()[0].dirty).toBe(false);
     store.undo();
     expect(docs.tabs()[0].dirty).toBe(true);
+  });
+
+  it("keeps the path of a tab's file: given when added, replaced when saved, in the tabs and the snapshot", () => {
+    const { store, docs } = setup();
+    expect(docs.tabs()[0].path).toBeNull();
+    const opened = docs.add(documentState(), { name: 'Box', path: '/projects/Box.mdproj' });
+    expect(docs.tab(opened)?.path).toBe('/projects/Box.mdproj');
+
+    docs.markSaved(opened, store.revision, 'Box copy', '/projects/Box copy.mdproj');
+    expect(docs.tab(opened)).toMatchObject({ name: 'Box copy', path: '/projects/Box copy.mdproj' });
+    expect(docs.snapshot().map((t) => t.path)).toEqual([null, '/projects/Box copy.mdproj']);
+
+    docs.activate(docs.tabs()[0].id);
+    docs.markActiveOpened('Book', '/projects/Book.mdproj');
+    expect(docs.tabs()[0]).toMatchObject({ name: 'Book', path: '/projects/Book.mdproj', dirty: false });
   });
 
   it('keeps a tab dirty while another tab is active', () => {
@@ -96,7 +111,7 @@ describe('Documents', () => {
     const revision = store.revision;
     // A project opened from the system while the save dialog is open becomes the active tab.
     const second = docs.add(documentState());
-    docs.markSaved(first, revision, 'Box');
+    docs.markSaved(first, revision, 'Box', null);
     expect(docs.tab(first)).toMatchObject({ name: 'Box', dirty: false, active: false });
     expect(docs.tab(second)).toMatchObject({ name: '', untitledNumber: 2, active: true });
   });
@@ -106,7 +121,7 @@ describe('Documents', () => {
     edit(store, 1);
     const revision = store.revision;
     edit(store, 2);
-    docs.markSaved(docs.activeId, revision, 'Box');
+    docs.markSaved(docs.activeId, revision, 'Box', null);
     expect(docs.tab(docs.activeId)).toMatchObject({ name: 'Box', dirty: true });
   });
 
@@ -115,7 +130,7 @@ describe('Documents', () => {
     const first = docs.activeId;
     docs.add(documentState());
     docs.close(first);
-    expect(() => docs.markSaved(first, store.revision, 'Box')).not.toThrow();
+    expect(() => docs.markSaved(first, store.revision, 'Box', null)).not.toThrow();
     expect(docs.tabs().map((t) => t.name)).toEqual(['']);
   });
 
@@ -233,7 +248,7 @@ describe('Documents', () => {
     expect(docs.activeIsPristine()).toBe(true);
     edit(store, 1);
     expect(docs.activeIsPristine()).toBe(false);
-    docs.markSaved(docs.activeId, store.revision, 'Box');
+    docs.markSaved(docs.activeId, store.revision, 'Box', null);
     expect(docs.activeIsPristine()).toBe(false);
     docs.add(documentState());
     expect(docs.activeIsPristine()).toBe(true);

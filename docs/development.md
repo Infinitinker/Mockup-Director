@@ -113,7 +113,7 @@ The **Checks** workflow (`.github/workflows/checks.yml`) runs all of these for e
 
 ## End-to-end tests
 
-One smoke test, in `tests/e2e/`, drives the real desktop app with [WebdriverIO](https://webdriver.io/) and `@wdio/tauri-service`: the app starts, shows the 3D view (or its message when WebGL does not work), switches to another model, and saves a project through the save dialog, which the test answers itself (a mock), then checks the file on disk. `npm test` does not run it. It needs Node.js 22.23.4, 24.22.1 or 26.12.1 or newer in that line, more than the rest of the project.
+One smoke test, in `tests/e2e/`, drives the real desktop app with [WebdriverIO](https://webdriver.io/) and `@wdio/tauri-service`: the app starts, shows the 3D view (or its message when WebGL does not work), switches to another model, and saves a project through the save dialog, which the test answers itself (a mock), then checks the file on disk and saves again, which writes the same file without the dialog. `npm test` does not run it. It needs Node.js 22.23.4, 24.22.1 or 26.12.1 or newer in that line, more than the rest of the project.
 
 First build the app for it, then run it:
 

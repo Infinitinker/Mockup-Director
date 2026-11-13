@@ -77,7 +77,7 @@ export class SessionSaver {
     ids.forEach((id) => {
       this.owned.add(id);
     });
-    this.unopened = unopened.map(({ id, name, dirty }) => ({ id, name, dirty }));
+    this.unopened = unopened.map(({ id, name, path, dirty }) => ({ id, name, path, dirty }));
   }
 
   /**
@@ -99,7 +99,7 @@ export class SessionSaver {
     // Projects are serialized now: the store edits the active state in place, so a snapshot read
     // later could hold newer content than its revision says.
     this.queued = {
-      open: tabs.map(({ id, name, dirty }) => ({ id, name, dirty })),
+      open: tabs.map(({ id, name, path, dirty }) => ({ id, name, path, dirty })),
       activeId,
       changed: tabs
         .filter((t) => this.written.get(t.id) !== t.revision || this.writing.has(t.id))

@@ -4,7 +4,9 @@
 //!  - the native dialog plugin (save / open panels),
 //!  - saving (`saves.rs`, `files.rs`): writes files made by the web UI (exports, project files) to
 //!    a path the user chose in the native save panel, in chunks and atomically,
-//!  - `take_opened_files`: the project files the operating system asked the app to open,
+//!  - project files to open, with their paths (`opened.rs`): `take_opened_files` for those the
+//!    operating system asked the app to open, `pick_project_files` for those picked in the open
+//!    dialog,
 //!  - a single app process: on Windows and Linux, launching the app again hands the new launch's
 //!    project files to the running app (which opens them in tabs) and brings its window forward;
 //!    on macOS the system itself sends them to the running app, as an event,
@@ -114,6 +116,7 @@ pub fn run() {
             saves::save_commit,
             saves::save_abort,
             opened::take_opened_files,
+            opened::pick_project_files,
             log::write_log
         ])
         // The window is made here rather than by Tauri (`"create": false` in tauri.conf.json), so

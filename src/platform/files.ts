@@ -26,6 +26,12 @@ interface FileFilter {
   extensions: string[];
 }
 
+/** A saved file: its name (without its folder), and its full path in the desktop app (null in a browser). */
+export interface SavedFile {
+  name: string;
+  path: string | null;
+}
+
 /** How sure saveBlob must be of the write. */
 interface SaveOptions {
   /** Only resolve with a name once the file is known to be written: never fall back to a download. */
@@ -45,20 +51,50 @@ export function inDesktopApp(): boolean {
 }
 
 /**
- * Asks where to save and writes the blob. Resolves with the name of the saved file (without its
- * folder), which the user may have changed in the save dialog, or null if the user canceled.
- * A classic browser download cannot report either, so it resolves with the suggested name; with
- * `confirmed`, a browser that can only download, or a browser save that fails, rejects with a
- * `UserError` instead. A file the desktop app cannot write rejects with a `UserError` naming the file.
+ * Asks where to save and writes the blob. Resolves with the saved file, whose name the user may have
+ * changed in the save dialog, or null if the user canceled. A classic browser download cannot report
+ * either, so it resolves with the suggested name; with `confirmed`, a browser that can only download,
+ * or a browser save that fails, rejects with a `UserError` instead. A file the desktop app cannot
+ * write rejects with a `UserError` naming the file.
  */
+export async function saveBlobAs(
+  blob: Blob,
+  suggestedName: string,
+  filters: FileFilter[],
+  opts: SaveOptions = {},
+): Promise<SavedFile | null> {
+  if (inDesktopApp()) return saveInDesktopApp(blob, suggestedName, filters);
+  const name = await saveInBrowser(blob, suggestedName, filters, opts);
+  return name === null ? null : { name, path: null };
+}
+
+/** As `saveBlobAs`, resolving with the saved file's name only. */
 export async function saveBlob(
   blob: Blob,
   suggestedName: string,
   filters: FileFilter[],
   opts: SaveOptions = {},
 ): Promise<string | null> {
-  if (inDesktopApp()) return saveInDesktopApp(blob, suggestedName, filters);
-  return saveInBrowser(blob, suggestedName, filters, opts);
+  return (await saveBlobAs(blob, suggestedName, filters, opts))?.name ?? null;
+}
+
+/**
+ * Writes the blob to `path` in the desktop app, replacing the file there without asking; resolves
+ * with the file's name. A file it cannot write rejects with a `UserError` naming the file.
+ */
+export async function writeBlob(blob: Blob, path: string): Promise<string> {
+  const name = fileNameOf(path);
+  try {
+    await writeInDesktopApp(blob, path, name, true);
+  } catch (e) {
+    throw fromCommandError(e, 'save');
+  }
+  return name;
+}
+
+/** The last part of a path: the file name. */
+function fileNameOf(path: string): string {
+  return path.split(/[\\/]/).pop() ?? path;
 }
 
 /** Let the user pick file(s). `accept` like "image/*" or ".mdproj". */
@@ -122,7 +158,7 @@ export function chunkRanges(size: number, chunkBytes = SAVE_CHUNK_BYTES): [numbe
  * without the extension gets it, and must not replace a file the dialog did not ask about: when a
  * file of the corrected name is there, the dialog is shown again with that name, so it asks.
  */
-async function saveInDesktopApp(blob: Blob, suggestedName: string, filters: FileFilter[]): Promise<string | null> {
+async function saveInDesktopApp(blob: Blob, suggestedName: string, filters: FileFilter[]): Promise<SavedFile | null> {
   const { save } = await import('@tauri-apps/plugin-dialog');
   const dialogFilters = filters.map((f) => ({ name: f.name, extensions: f.extensions.map(stripDot) }));
   let defaultPath = suggestedName;
@@ -131,10 +167,10 @@ async function saveInDesktopApp(blob: Blob, suggestedName: string, filters: File
     if (!picked) return null; // canceled
     const path = ensureExtension(picked, filters, suggestedName);
     const replace = path === picked;
-    const name = path.split(/[\\/]/).pop() || suggestedName;
+    const name = fileNameOf(path) || suggestedName;
     try {
       await writeInDesktopApp(blob, path, name, replace);
-      return name;
+      return { name, path };
     } catch (e) {
       if (!replace && isCommandError(e) && e.kind === 'already-exists') {
         defaultPath = path;

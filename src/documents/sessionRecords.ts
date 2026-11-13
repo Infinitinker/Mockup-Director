@@ -74,6 +74,8 @@ export interface IndexTab {
   id: string;
   /** The project's name; '' for a project never saved. */
   name: string;
+  /** The full path of the project's file, which Save writes to; null when there is none. */
+  path: string | null;
   /** The tab had unsaved changes. */
   dirty: boolean;
 }
@@ -174,6 +176,7 @@ export function readIndex(raw: unknown): ReadIndex | 'damaged' {
     tabs.push({
       id: entry.id,
       name: typeof entry.name === 'string' ? entry.name : '',
+      path: typeof entry.path === 'string' && entry.path !== '' ? entry.path : null,
       dirty: typeof entry.dirty === 'boolean' ? entry.dirty : true,
     });
   }
@@ -242,7 +245,7 @@ export function readSession(
     [...records.keys()].filter((id) => !listed.has(id)),
     records,
   );
-  for (const id of orphans) add({ id, name: '', dirty: true }, records.get(id));
+  for (const id of orphans) add({ id, name: '', path: null, dirty: true }, records.get(id));
 
   const storedActive = indexed?.activeId ?? '';
   const activeId = tabs.some((t) => t.id === storedActive) ? storedActive : (tabs[0]?.id ?? '');
@@ -259,9 +262,9 @@ export function readSession(
 
 /** The index a save writes: the open tabs in tab order, then the unopened entries that are not open. */
 export function buildIndex(open: readonly IndexTab[], activeId: string, unopened: readonly IndexTab[]): IndexRecord {
-  const tabs = open.map(({ id, name, dirty }) => ({ id, name, dirty }));
+  const tabs = open.map(({ id, name, path, dirty }) => ({ id, name, path, dirty }));
   const openIds = new Set(tabs.map((t) => t.id));
-  for (const { id, name, dirty } of unopened) if (!openIds.has(id)) tabs.push({ id, name, dirty });
+  for (const { id, name, path, dirty } of unopened) if (!openIds.has(id)) tabs.push({ id, name, path, dirty });
   return { version: SESSION_VERSION, activeId, tabs };
 }
 

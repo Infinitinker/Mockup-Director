@@ -10,6 +10,9 @@ export const ICONS = {
   newDoc: svg('<path d="M4 1.75h5l3 3v9.5H4z"/><path d="M9 1.75v3h3"/><path d="M8 7.5v4M6 9.5h4"/>'),
   open: svg('<path d="M1.75 4.25V12.5h12.5V5.75H7.5L6 4.25z"/><path d="M1.75 4.25V3.5h4.5"/>'),
   save: svg('<path d="M8 2v7.5"/><path d="M5 6.75 8 9.75l3-3"/><path d="M2.5 10.5v3h11v-3"/>'),
+  saveAs: svg(
+    '<path d="M6.5 2v7.5"/><path d="M3.5 6.75l3 3 3-3"/><path d="M2.5 10.5v3h11v-3"/><path d="M10.5 7l.5-1.75L13.25 3l1.25 1.25-2.25 2.25z"/>',
+  ),
   undo: svg('<path d="M5.5 4 2.5 7l3 3"/><path d="M2.75 7H10a3.25 3.25 0 0 1 0 6.5H7"/>'),
   redo: svg('<path d="m10.5 4 3 3-3 3"/><path d="M13.25 7H6a3.25 3.25 0 0 0 0 6.5h3"/>'),
   exportImg: svg('<path d="M8 10V2"/><path d="M5 5 8 2l3 3"/><path d="M3.5 7.5H2.5v6h11v-6h-1"/>'),

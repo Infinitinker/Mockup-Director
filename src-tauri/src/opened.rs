@@ -6,12 +6,17 @@
 //! The paths are queued here and the web UI takes them with the `take_opened_files` command: at
 //! start-up, and whenever the `files-opened` event says more arrived. Only the queued paths can be
 //! read this way, so the command cannot be used to read any other file.
+//!
+//! The project files the user picks with Open… are read here too: `pick_project_files` shows the
+//! open dialog and reads only the files picked in it. Each file is handed out with its path, so the
+//! web UI can save the project back to it.
 
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 use tauri::Manager;
+use tauri_plugin_dialog::DialogExt;
 
 use crate::error::{CommandError, ErrorKind};
 
@@ -65,6 +70,9 @@ impl OpenedFiles {
 pub struct OpenedFile {
     /// The file name, e.g. "Box.mdproj".
     pub name: String,
+    /// The full path, to save the project back to; none when the path is not valid Unicode, which
+    /// the web UI could not hand back unchanged.
+    pub path: Option<String>,
     /// The file's text (a project file is JSON).
     pub contents: String,
 }
@@ -94,7 +102,11 @@ pub fn read_opened(path: &Path) -> Result<OpenedFile, CommandError> {
     let bytes = fs::read(path).map_err(cannot_read)?;
     let contents =
         String::from_utf8(bytes).map_err(|_| CommandError::new(ErrorKind::NotText, path))?;
-    Ok(OpenedFile { name, contents })
+    Ok(OpenedFile {
+        name,
+        path: path.to_str().map(str::to_owned),
+        contents,
+    })
 }
 
 /// Reads every path, keeping the files that could be read and the errors of those that could not.
@@ -114,4 +126,28 @@ pub fn read_all(paths: Vec<PathBuf>) -> OpenedBatch {
 #[tauri::command]
 pub async fn take_opened_files(app: tauri::AppHandle) -> OpenedBatch {
     read_all(app.state::<OpenedFiles>().take())
+}
+
+/// The name of the open dialog's filter for project files.
+const PROJECT_FILTER_NAME: &str = "Mockup Director project";
+
+/// Shows the open dialog for project files and reads the files picked in it; an empty batch when
+/// the user cancels. An async command, so the dialog waits off the main thread, where it must not
+/// block.
+#[tauri::command]
+pub async fn pick_project_files(window: tauri::WebviewWindow) -> OpenedBatch {
+    let dialog = window
+        .dialog()
+        .file()
+        .add_filter(PROJECT_FILTER_NAME, &[PROJECT_EXTENSION]);
+    // GTK has no parent window to give; the plugin's own open dialog leaves it out there too.
+    #[cfg(any(windows, target_os = "macos"))]
+    let dialog = dialog.set_parent(&window);
+    let paths = dialog
+        .blocking_pick_files()
+        .unwrap_or_default()
+        .into_iter()
+        .filter_map(|picked| picked.into_path().ok())
+        .collect();
+    read_all(paths)
 }
