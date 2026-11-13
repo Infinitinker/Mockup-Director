@@ -44,7 +44,7 @@
 
 If a build fails, fix it, delete the tag (`git push origin :v0.2.0` and `git tag -d v0.2.0`) and the draft, if there is one, and tag again.
 
-The macOS jobs run on GitHub's `macos-15` runners, which are sometimes scarce: a job can wait in the queue for hours or be canceled. Run it again later (**Re-run failed jobs** on the run's page); no release is drafted without the macOS file.
+The macOS jobs run on GitHub's `macos-26` runners (Apple Silicon), which are sometimes scarce: a job can wait in the queue, or be canceled with "The job was not acquired by Runner of type hosted even after multiple attempts". Run it again later (**Re-run failed jobs** on the run's page); no release is drafted without the macOS file. The runner's macOS version does not limit the app: it runs on macOS 12 and later (`minimumSystemVersion` in `src-tauri/tauri.conf.json`), on Apple Silicon and Intel.
 
 ## Testing the files
 
