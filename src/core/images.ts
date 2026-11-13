@@ -131,6 +131,36 @@ function checkHeaderSize(bytes: Uint8Array, name: string): void {
   if (size) checkArtworkPixels(name, size);
 }
 
+/** The cropped copies of each artwork's texture, by aspect ratio; freed with the artwork. */
+const croppedCopies = new WeakMap<Artwork, Map<number, THREE.Texture>>();
+
+/** The share of an image's width and height that its centered crop to the aspect ratio `aspect` keeps. */
+export function cropRepeat(imageAspect: number, aspect: number): [number, number] {
+  return imageAspect > aspect ? [aspect / imageAspect, 1] : [1, imageAspect / aspect];
+}
+
+/**
+ * A copy of the artwork's texture that shows its centered part with the aspect ratio `aspect`. The copy shares the
+ * image, so the GPU holds it once; it is kept with the artwork, for every model built from it, and freed with it.
+ */
+export function croppedTexture(asset: Artwork, aspect: number): THREE.Texture {
+  let copies = croppedCopies.get(asset);
+  if (!copies) {
+    copies = new Map();
+    croppedCopies.set(asset, copies);
+  }
+  const key = Math.round(aspect * 10_000) / 10_000;
+  let copy = copies.get(key);
+  if (!copy) {
+    copy = asset.texture.clone();
+    const [rx, ry] = cropRepeat(asset.width / asset.height, key);
+    copy.repeat.set(rx, ry);
+    copy.offset.set((1 - rx) / 2, (1 - ry) / 2);
+    copies.set(key, copy);
+  }
+  return copy;
+}
+
 /**
  * Disposes each artwork. A failure is logged and the others are still disposed: freeing memory must
  * never break the interface or a batch.
@@ -147,6 +177,8 @@ export function disposeArtworks(assets: Iterable<Artwork>): void {
 
 export function disposeArtwork(asset: Artwork): void {
   const img = asset.texture.image as unknown;
+  for (const copy of croppedCopies.get(asset)?.values() ?? []) copy.dispose();
+  croppedCopies.delete(asset);
   asset.texture.dispose();
   // WebKit has a global canvas-memory budget; shrinking the canvas frees its backing store now.
   if (typeof HTMLCanvasElement !== 'undefined' && img instanceof HTMLCanvasElement) {

@@ -7,10 +7,9 @@
 import type { ModelContext } from '../../core/types/model';
 import type { StageAPI } from '../../core/types/scene';
 import { UserError } from '../../core/errors';
-import { getPlaceholderTexture } from '../../core/placeholder';
 import { getModel } from '../../models/registry';
 import { completeParams } from '../../models/params';
-import { slotFor } from '../../models/slots';
+import { slotTexture } from '../../models/slots';
 import { createStage } from '../../scene/stage';
 import { cameraEquals, normalizeCamera } from '../../scene/camera';
 import type { Store } from '../../documents/store';
@@ -78,10 +77,11 @@ export function createPreview(store: Store, host: HTMLElement, showError: (messa
     const s = store.state;
     const model = getModel(s.modelId);
     const imgs = s.artwork[model.id] ?? {};
+    const params = completeParams(model, s.params[model.id]);
     const ctx: ModelContext = {
-      params: completeParams(model, s.params[model.id]),
+      params,
       hasArtwork: (id) => !!imgs[id],
-      getTexture: (id) => imgs[id]?.texture ?? getPlaceholderTexture(slotFor(model, id)),
+      getTexture: (id) => slotTexture(model, params, imgs, id),
     };
     try {
       stage.setModel(model.build(ctx));

@@ -345,6 +345,7 @@ export const laptopModel: ModelDefinition = {
       label: 'Screen',
       hint: 'A 16:10 screenshot, e.g. 2560 × 1600 px (or 2880 × 1800 / 3456 × 2160 px). Other proportions are cropped or stretched (see “Artwork fit”).',
       aspect: 16 / 10,
+      fitsArtwork: true,
     },
   ],
   params: [

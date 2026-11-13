@@ -96,6 +96,12 @@ export interface ImageSlotDef {
    */
   anyAspect?: boolean;
   /**
+   * The model fits artwork of another aspect ratio itself (the device screens): the app hands it the artwork as it
+   * is. For every other slot, the app crops such artwork to the slot's aspect ratio from its center
+   * (`slotTexture` in src/models/slots.ts).
+   */
+  fitsArtwork?: boolean;
+  /**
    * Print template description – used to generate a downloadable PNG template.
    * May be a function of the model's current params (e.g. box dimensions).
    */

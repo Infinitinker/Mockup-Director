@@ -84,9 +84,10 @@ A slot is one piece of artwork: a face, a wrap-around cover, a disc label, a scr
 | `hint` | `string` | no | Help under the title: the size the artwork should have, which edge meets which. |
 | `aspect` | `number` | yes | Expected width / height of the artwork. Shapes the placeholder and the aspect warning. |
 | `anyAspect` | `boolean` | no | The slot takes any aspect ratio (a screenshot whose panel follows the artwork). No warning is shown. |
+| `fitsArtwork` | `boolean` | no | The model fits artwork of another aspect ratio itself, as the device screens do: the app does not crop it. |
 | `template` | `PrintTemplate` or `(params) => PrintTemplate` | no | A downloadable print template; see [Print templates](#print-templates). |
 
-The Artwork tab warns when the artwork's aspect ratio is more than 3 % away from every expected one: the slot's `aspect`, the template's full size, and the template's size without bleed (`expectedAspects` and `aspectMismatch` in `src/models/slots.ts`).
+The Artwork tab warns when the artwork's aspect ratio is more than 3 % away from every expected one: the slot's `aspect`, the template's full size, and the template's size without bleed (`expectedAspects` and `aspectMismatch` in `src/models/slots.ts`). Such artwork is cropped from its center before the model gets it, to the template's full size at the current parameters, or else to the slot's `aspect`, so a model never stretches it (`cropAspect` and `slotTexture`). The crop is a copy of the artwork's texture with its `repeat` and `offset` set, sharing the image: a model that reads `texture.image` to fit artwork itself sees the whole image, so it sets `fitsArtwork` and gets the artwork as it is. A slot with `anyAspect` is never cropped either.
 
 `ctx.getTexture(slotId)` returns the user's artwork, or a placeholder when there is none: a gradient with the slot's label in the slot's aspect ratio, round if its template is circular (`src/core/placeholder.ts`). It never returns `null`, also not for an ID the model does not list. `ctx.hasArtwork(slotId)` says whether the user gave artwork, for models that fall back to a plain material or to another slot (a keep case uses `front`, `spine` and `back` when there is no `cover`).
 
@@ -164,7 +165,7 @@ Number helpers in `src/core/math.ts`:
 | `finite(v, fallback)` | `v` when it is a finite number, otherwise `fallback`. |
 | `round1(v)` | Rounds to one decimal, for a number shown in a text. |
 
-The app's side of the contract is in `src/models/params.ts` (`completeParams`, `sanitizeParam`, `inheritedParams`, `snapToStep`), `src/models/slots.ts` (`slotFor`, `resolveTemplate`, `expectedAspects`) and `defaultParams` in `src/core/defaults.ts`; model definitions do not use them. A template function that throws is a model bug: the print template export shows the error, and the Artwork tab's aspect ratio hint logs it and leaves the template out.
+The app's side of the contract is in `src/models/params.ts` (`completeParams`, `sanitizeParam`, `inheritedParams`, `snapToStep`), `src/models/slots.ts` (`slotFor`, `resolveTemplate`, `expectedAspects`, `cropAspect`, `slotTexture`) and `defaultParams` in `src/core/defaults.ts`; model definitions do not use them. A template function that throws is a model bug: the print template export shows the error, and the Artwork tab's aspect ratio hint logs it and leaves the template out.
 
 ## Composite models
 

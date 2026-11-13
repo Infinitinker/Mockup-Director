@@ -130,7 +130,7 @@ The notes of every release list the SHA-256 checksum of each file. To check that
 
 ## Artwork
 
-Each side of a model has its own card in the **Artwork** tab: drop an image file on it or on the preview, or choose one from disk. PNG, JPEG, WebP, GIF, SVG and AVIF are supported. A file can have up to 100 MB and 100 megapixels, enough for an A1 poster at 300 dpi. A card warns you when the artwork's proportions don't match its side.
+Each side of a model has its own card in the **Artwork** tab: drop an image file on it or on the preview, or choose one from disk. PNG, JPEG, WebP, GIF, SVG and AVIF are supported. A file can have up to 100 MB and 100 megapixels, enough for an A1 poster at 300 dpi. When the artwork's proportions don't match its side, the card warns you and the model shows the artwork's center, cropped to fit, never stretched; screens follow their **Artwork fit** setting.
 
 Print models (boxes, cases, discs, books and print) have a **Template…** button on the card of each side. It saves a 300 dpi PNG with the exact size, bleed and guide lines. Design your artwork on it and it fits the model exactly. Phones and tablets get a template of the screen without bleed; laptops, monitors, screenshots and browser windows have none.
 

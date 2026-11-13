@@ -104,7 +104,8 @@ src/
                 stored values), materials (materials.ts), shapes, UVs and placing on the floor
                 (geometry.ts), textures a model draws itself (textures.ts), the frame of the gallery icons
                 (icon.ts); and the app's side of the
-                slots (slots.ts: slot lookup, print templates, expected aspect ratios)
+                slots (slots.ts: slot lookup, print templates, expected aspect ratios, the texture a
+                model gets for a slot, cropped when the artwork does not fit)
   scene/        the three.js scene: stage/, the stage (index.ts: the renderer, the scene, preview
                 framing, still rendering and the StageAPI), with the model's measurements and the
                 points a view must keep in sight (modelInfo.ts), the lights and the environment

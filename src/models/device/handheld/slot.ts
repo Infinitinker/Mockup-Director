@@ -45,6 +45,7 @@ export function makeSlot(spec: DeviceSpec): ImageSlotDef {
     label: 'Screen',
     hint: `The artwork shown on the screen, such as a screenshot of an app or a website. Recommended size: ${px(ow)} × ${px(oh)} px ${orientation} (screen ${round1(ow)} × ${round1(oh)} mm); for ${otherOrientation}, swap the sizes. A typical screenshot (e.g. ${exampleW} × ${exampleH} px) fits too: it is cropped slightly. Other aspect ratios fill the screen with cropping, and the rounded corners clip it.`,
     aspect: ow / oh,
+    fitsArtwork: true,
     template: (params) => screenTemplate(spec, params),
   };
 }

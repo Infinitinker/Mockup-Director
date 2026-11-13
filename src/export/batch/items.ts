@@ -15,11 +15,10 @@ import type { Artwork, ArtworkMap, DocumentState } from '../../core/types/projec
 import type { SceneSettings, StageAPI } from '../../core/types/scene';
 import { cloneScene } from '../../core/defaults';
 import { UserError } from '../../core/errors';
-import { getPlaceholderTexture } from '../../core/placeholder';
 import { disposeArtwork, disposeArtworks, loadImageFile } from '../../core/images';
 import { getModel } from '../../models/registry';
 import { completeParams } from '../../models/params';
-import { slotFor } from '../../models/slots';
+import { slotTexture } from '../../models/slots';
 import { VIEW_PRESETS } from '../../scene/views';
 import { exportImage } from '../exporter';
 import { supportsWebpEncoding } from '../formats';
@@ -52,10 +51,11 @@ function buildModel(
   artwork: Record<string, Artwork>,
 ): THREE.Object3D {
   const model = getModel(modelId);
+  const complete = completeParams(model, params);
   const ctx: ModelContext = {
-    params: completeParams(model, params),
+    params: complete,
     hasArtwork: (id) => !!artwork[id],
-    getTexture: (id) => artwork[id]?.texture ?? getPlaceholderTexture(slotFor(model, id)),
+    getTexture: (id) => slotTexture(model, complete, artwork, id),
   };
   return model.build(ctx);
 }

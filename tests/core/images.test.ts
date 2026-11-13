@@ -3,16 +3,21 @@
  * over the pixel limit before they are decoded (or, when the header does not say, once decoded, before they are
  * drawn), with messages that name the file, its size and the limit; every failure to read a file or make its data URL
  * is a UserError, with texts that fit a batch export as well; one image is loaded at a time; and the steps that
- * downscale an image never make a canvas side longer than the engines can draw. Node decodes no image: the decoders
- * are stand-ins here.
+ * downscale an image never make a canvas side longer than the engines can draw; and the cropped copies of an
+ * artwork's texture, which are kept and freed with it. Node decodes no image: the decoders are stand-ins here.
  */
+import * as THREE from 'three';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { UserError } from '../../src/core/errors';
+import type { Artwork } from '../../src/core/types/project';
 import {
   MAX_ARTWORK_BYTES,
   MAX_ARTWORK_PIXELS,
   checkArtworkBytes,
   checkArtworkPixels,
+  cropRepeat,
+  croppedTexture,
+  disposeArtwork,
   downscaleSteps,
   loadImageDataUrl,
   loadImageFile,
@@ -264,5 +269,48 @@ describe('downscaleSteps', () => {
         expect(step.height).toBeGreaterThanOrEqual(last.height);
       }
     }
+  });
+});
+
+describe('cropRepeat', () => {
+  it('keeps the middle of a wider image and the middle of a taller one', () => {
+    expect(cropRepeat(2, 1)).toEqual([0.5, 1]);
+    expect(cropRepeat(0.5, 1)).toEqual([1, 0.5]);
+    expect(cropRepeat(1, 1)).toEqual([1, 1]);
+  });
+});
+
+describe('croppedTexture', () => {
+  const artwork = (width: number, height: number): Artwork => ({
+    name: 'art.png',
+    dataUrl: 'data:image/png;base64,',
+    width,
+    height,
+    texture: new THREE.Texture(),
+  });
+
+  it('shows the centered crop, sharing the image of the artwork', () => {
+    const art = artwork(2000, 1000);
+    const copy = croppedTexture(art, 1);
+    expect(copy).not.toBe(art.texture);
+    expect(copy.source).toBe(art.texture.source);
+    expect(copy.repeat.toArray()).toEqual([0.5, 1]);
+    expect(copy.offset.toArray()).toEqual([0.25, 0]);
+    expect(art.texture.repeat.toArray()).toEqual([1, 1]);
+  });
+
+  it('keeps one copy per aspect ratio for every model built from the artwork', () => {
+    const art = artwork(1000, 2000);
+    expect(croppedTexture(art, 1)).toBe(croppedTexture(art, 1.00001));
+    expect(croppedTexture(art, 1)).not.toBe(croppedTexture(art, 0.75));
+  });
+
+  it('frees the copies with the artwork', () => {
+    const art = artwork(1000, 2000);
+    const copy = croppedTexture(art, 1);
+    const freed = vi.spyOn(copy, 'dispose');
+    disposeArtwork(art);
+    expect(freed).toHaveBeenCalledOnce();
+    expect(croppedTexture(art, 1)).not.toBe(copy);
   });
 });
