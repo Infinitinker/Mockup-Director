@@ -46,7 +46,11 @@ If a build fails, fix it, delete the tag (`git push origin :v0.2.0` and `git tag
 
 The Linux build runs in an `ubuntu:22.04` container (on the `ubuntu-26.04` runner all Linux jobs use). A Linux binary runs only on systems with the same or a newer glibc than the one it was built with, so the container sets the oldest supported systems: glibc 2.35, that is Ubuntu 22.04+, Debian 12+ and Fedora 36+. Raise the container image only when dropping old distributions, and update the list in the README.
 
-## Signing and notarization (macOS, optional)
+## Signing
+
+The releases are not signed with a paid certificate: Mockup Director is free, and the certificates Windows and macOS trust cost money every year. Users allow the app once on the first launch instead (the README's questions and `tools/release-notes.md` say how), and check a download with its checksum or its build attestation. A free route for Windows is the SignPath Foundation, which signs open-source projects that have already been released; it would be applied for after the first release.
+
+### Signing and notarization (macOS, optional)
 
 Without secrets, the workflow builds an ad-hoc signed app (`signingIdentity: "-"`). It works, but users have to allow it on the first launch (see the README). For a signed and notarized app, add these in **Settings → Secrets and variables → Actions**:
 
@@ -60,8 +64,6 @@ Without secrets, the workflow builds an ad-hoc signed app (`signingIdentity: "-"
 | `APPLE_TEAM_ID` | the team ID |
 
 Signing is turned on when the first three secrets are set; notarization needs the other three too. Missing secrets are skipped, so the build still succeeds without them.
-
-Windows builds and the Linux packages are not signed.
 
 ## Repository settings
 

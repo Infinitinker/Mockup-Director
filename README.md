@@ -72,9 +72,13 @@ Download `MockupDirector-x.y.z-windows-x64-setup.exe` and run it. It installs Mo
 
 Rather not install anything? Download `MockupDirector-x.y.z-windows-x64.zip` instead, unzip it anywhere and start **mockup-director.exe** in the folder. It keeps its data in the same place as the installed app.
 
+Mockup Director is not code-signed, so the first time you run it, Windows warns that it doesn't know the app: see [Windows says "Windows protected your PC"](#questions).
+
 ### macOS
 
 Download `MockupDirector-x.y.z-macos-universal.dmg`, open it and drag **Mockup Director** to **Applications**. It runs on Apple Silicon and Intel Macs with macOS 12 (Monterey) or later.
+
+Mockup Director is not signed by Apple, so the first time you open it, macOS asks you to allow it once: see [macOS says "Apple could not verify…"](#questions).
 
 ### Linux
 
@@ -172,8 +176,14 @@ On macOS use ⌘ instead of Ctrl, except for switching tabs (Ctrl+Tab / Ctrl+Shi
 
 ## Questions
 
+**Why isn't Mockup Director signed?**
+Mockup Director is free, and the certificates that Windows and macOS trust cost money every year. So Windows and macOS warn the first time you start it, as the next two answers show. To make sure a download is the real one, compare its checksum with the list in its [release](https://github.com/Infinitinker/Mockup-Director/releases/latest), or check with the [GitHub CLI](https://cli.github.com/) that this repository built it: `gh attestation verify <file> --repo Infinitinker/Mockup-Director`.
+
 **Windows says "Windows protected your PC".**
-Mockup Director is not code-signed yet, so Windows SmartScreen doesn't know it. Choose **More info**, then **Run anyway**. You only need to do this once.
+Windows SmartScreen warns about apps it doesn't know yet. Choose **More info**, then **Run anyway**. You only need to do this once.
+
+**Windows says Smart App Control blocked Mockup Director.**
+Smart App Control, which is on for some Windows 11 PCs, runs only apps that are signed or that it knows, and it has no **Run anyway** button, so Mockup Director can't run while it is on. You can turn it off in **Windows Security → App & browser control → Smart App Control settings**. On some versions of Windows it can't be turned back on without reinstalling Windows, so check first what it means on yours.
 
 **macOS says "Apple could not verify…" and won't open it.**
 A Mac blocks apps that are not signed with an Apple Developer ID the first time. Open Mockup Director and close the message, then open **System Settings → Privacy & Security**, scroll down, and next to the message about Mockup Director click **Open Anyway**; confirm with your password or Touch ID. On macOS 15 and later, the old "right-click → Open" trick no longer works. Or run this in Terminal:
