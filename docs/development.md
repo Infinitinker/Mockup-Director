@@ -247,6 +247,20 @@ GitHub Actions builds all three systems for every pull request (`build-windows.y
 
 How `main` is protected on GitHub is described in [releasing.md](releasing.md#repository-settings).
 
+## README screenshots
+
+The README's four screenshots, `docs/images/artwork.png`, `scene.png`, `model.png` and `export.png`, are taken in the e2e build of the app (see [End-to-end tests](#end-to-end-tests)) at its window size of 1440 × 900. `tests/e2e/screenshots.spec.ts` drops the made-up artwork in `docs/images/screenshot-artwork/` on a model's slots, sets what the shot shows, opens its tab and saves the page over the PNG. Take them on Windows, so that the fonts match those of the screenshots in the README:
+
+```bash
+npm run e2e:build
+```
+
+```bash
+npm run screenshots
+```
+
+Take them again when the interface they show changes, and keep the README's descriptions of them (the `alt` texts) in step. To change what a shot shows, edit its entry in `SHOTS`; to change the artwork, edit the SVG files, whose sizes follow each slot's print template with the model's default settings (the size is in the comment at the top of each file).
+
 ## The app icon
 
 The icon is drawn by `tools/draw-icon.mjs` (a product box whose front is a film clapperboard). This writes the icons that `bundle.icon` in `src-tauri/tauri.conf.json` lists, in `src-tauri/icons/`: `32x32.png`, `128x128.png` and `128x128@2x.png` (round) for Linux, the first of them also the window icon, a round `icon.ico` for Windows and its installer, and a rounded-square `icon.icns` for macOS. It also writes the small toolbar logo `src/ui/app-logo.svg` and `docs/images/icon.png`, the icon at the top of the README:

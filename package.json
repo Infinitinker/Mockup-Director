@@ -20,6 +20,7 @@
     "app:dev": "tauri dev --config src-tauri/tauri.dev.conf.json",
     "e2e:build": "node tools/e2e-build.mjs",
     "e2e": "wdio run tests/e2e/wdio.config.ts",
+    "screenshots": "wdio run tests/e2e/screenshots.config.ts",
     "icons": "node tools/draw-icon.mjs",
     "installer": "node tools/installer.mjs"
   },

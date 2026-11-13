@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2560" height="1600" viewBox="0 0 1600 1000">
+  <!-- The Laptop's screen (16:10), for the README's screenshots: a made-up weather app. -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3f8fd6"/>
+      <stop offset="1" stop-color="#9fd3f3"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="1000" fill="url(#sky)"/>
+  <rect width="210" height="1000" fill="#1d3f66" fill-opacity="0.35"/>
+  <g font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" fill="#ffffff">
+    <text x="34" y="66" font-size="32" font-weight="700">Breeze</text>
+    <rect x="22" y="100" width="166" height="40" rx="10" fill="#ffffff" fill-opacity="0.22"/>
+    <text x="40" y="127" font-size="19">Today</text>
+    <text x="40" y="177" font-size="19" fill-opacity="0.85">10 days</text>
+    <text x="40" y="221" font-size="19" fill-opacity="0.85">Radar</text>
+    <text x="40" y="265" font-size="19" fill-opacity="0.85">Places</text>
+
+    <text x="270" y="92" font-size="26" fill-opacity="0.9">Harbor Town</text>
+    <text x="262" y="262" font-size="170" font-weight="300">21°</text>
+    <text x="272" y="312" font-size="26" fill-opacity="0.9">Sunny spells · light breeze</text>
+
+    <circle cx="1290" cy="190" r="86" fill="#f7c948"/>
+    <g fill="#ffffff">
+      <circle cx="1230" cy="262" r="58"/>
+      <circle cx="1310" cy="236" r="72"/>
+      <circle cx="1390" cy="272" r="50"/>
+      <rect x="1172" y="262" width="268" height="58" rx="29"/>
+    </g>
+
+    <rect x="262" y="370" width="1278" height="230" rx="26" fill="#ffffff" fill-opacity="0.22"/>
+    <g font-size="20" fill-opacity="0.9" text-anchor="middle">
+      <text x="366" y="420">Now</text>
+      <text x="572" y="420">1 PM</text>
+      <text x="778" y="420">2 PM</text>
+      <text x="984" y="420">3 PM</text>
+      <text x="1190" y="420">4 PM</text>
+      <text x="1396" y="420">5 PM</text>
+    </g>
+    <g fill="#f7c948">
+      <circle cx="366" cy="476" r="16"/>
+      <circle cx="572" cy="476" r="16"/>
+      <circle cx="778" cy="476" r="16"/>
+    </g>
+    <g fill="#ffffff">
+      <ellipse cx="984" cy="478" rx="26" ry="14"/>
+      <ellipse cx="1190" cy="478" rx="26" ry="14"/>
+      <ellipse cx="1396" cy="478" rx="26" ry="14"/>
+    </g>
+    <g font-size="34" text-anchor="middle">
+      <text x="366" y="560">21°</text>
+      <text x="572" y="560">22°</text>
+      <text x="778" y="560">22°</text>
+      <text x="984" y="560">20°</text>
+      <text x="1190" y="560">19°</text>
+      <text x="1396" y="560">17°</text>
+    </g>
+
+    <rect x="262" y="640" width="619" height="200" rx="26" fill="#ffffff" fill-opacity="0.22"/>
+    <text x="300" y="694" font-size="18" letter-spacing="2" fill-opacity="0.8">WIND</text>
+    <text x="300" y="784" font-size="58">12 km/h</text>
+    <rect x="921" y="640" width="619" height="200" rx="26" fill="#ffffff" fill-opacity="0.22"/>
+    <text x="959" y="694" font-size="18" letter-spacing="2" fill-opacity="0.8">HUMIDITY</text>
+    <text x="959" y="784" font-size="58">48%</text>
+  </g>
+</svg>

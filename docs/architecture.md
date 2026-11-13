@@ -174,7 +174,9 @@ tests/          unit tests (Vitest, config in vitest.config.ts); their folders m
                 identifier and data folder in tauriConfig.test.ts;
                 e2e/: the end-to-end smoke test of the desktop app (WebdriverIO; not run by npm
                 test): the test in smoke.spec.ts, its config in wdio.config.ts, the folders it uses
-                in folders.ts, and the entry of the test build of the web part in app/entry.ts
+                in folders.ts, and the entry of the test build of the web part in app/entry.ts; also
+                the README's screenshots, taken in the same app (screenshots.spec.ts, its config
+                screenshots.config.ts, npm run screenshots)
 src-tauri/      the Tauri v2 shell (Rust): main.rs starts lib.rs, which sets up the window, the dialogs,
                 a single app process and the commands; the commands' error (error.rs), saving files:
                 the open saves and their commands (saves.rs) and writing a file atomically (files.rs),
@@ -252,8 +254,9 @@ start.bat, start.sh         run the desktop app from source (npm run app:dev), s
 README.md                   for users
 CONTRIBUTING.md, SECURITY.md how to contribute, and how to report a security problem
 docs/                       this documentation
-docs/images/                the README's screenshots (the app at 1440 × 900, with made-up artwork
-                            only) and its icon, icon.png (written by tools/draw-icon.mjs)
+docs/images/                the README's screenshots (the app at 1440 × 900, written by npm run
+                            screenshots) and its icon, icon.png (written by tools/draw-icon.mjs)
+docs/images/screenshot-artwork/  the made-up artwork the screenshots show, as SVG
 ```
 
 How the folders are organized:

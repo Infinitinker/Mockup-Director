@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="3072" height="2138" viewBox="0 0 347.65 242">
+  <!-- The cover wrap of the Hardcover book (347.65 × 242 mm with 3 mm bleed): back 3–157.6, spine
+       157.6–190, front 190–344.6 mm from the left. For the README's screenshots. Made-up title. -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0f1d3d"/>
+      <stop offset="0.62" stop-color="#2b3f75"/>
+      <stop offset="0.62" stop-color="#1a2d5c"/>
+      <stop offset="1" stop-color="#14244b"/>
+    </linearGradient>
+    <linearGradient id="beam" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#fdf3c8" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#fdf3c8" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="347.65" height="242" fill="url(#sky)"/>
+
+  <!-- Back -->
+  <g fill="#f4ead2">
+    <text x="80" y="40" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="8" letter-spacing="1.2">MARA LINDEN</text>
+    <g font-family="Georgia, 'Times New Roman', serif" font-size="5.2">
+      <text x="24" y="66">Every night for forty years, Elin has lit</text>
+      <text x="24" y="74">the lamp at the end of the causeway.</text>
+      <text x="24" y="82">Then a stranger walks across the sand</text>
+      <text x="24" y="90">at low tide, carrying a letter that was</text>
+      <text x="24" y="98">never meant to reach her.</text>
+    </g>
+    <text x="80" y="124" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="5.2">“Quiet, luminous and impossible to put down.”</text>
+    <text x="80" y="133" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="3.6" letter-spacing="0.8">THE COASTAL REVIEW</text>
+  </g>
+  <circle cx="80" cy="206" r="5" fill="none" stroke="#f4ead2" stroke-width="0.6"/>
+  <text x="80" y="208" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="5" fill="#f4ead2">T</text>
+  <text x="80" y="220" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="3.2" letter-spacing="1" fill="#f4ead2">TIDEWATER PRESS</text>
+
+  <!-- Spine -->
+  <circle cx="173.8" cy="24" r="4" fill="#f1e4c0"/>
+  <text transform="translate(173.8 40) rotate(90)" x="0" y="2.8" font-family="Georgia, 'Times New Roman', serif" font-size="9" fill="#f4ead2">The Lighthouse at Low Tide</text>
+  <text transform="translate(173.8 172) rotate(90)" x="0" y="1.6" font-family="Arial, Helvetica, sans-serif" font-size="4.4" letter-spacing="1.4" fill="#f4ead2">LINDEN</text>
+  <text x="173.8" y="222" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="5" fill="#f4ead2">T</text>
+
+  <!-- Front -->
+  <text x="267.3" y="42" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="17" fill="#f4ead2">The Lighthouse</text>
+  <text x="267.3" y="62" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="17" fill="#f4ead2">at Low Tide</text>
+  <circle cx="305" cy="88" r="9" fill="#f1e4c0"/>
+  <polygon points="262,114 344.6,96 344.6,126" fill="url(#beam)"/>
+  <ellipse cx="258" cy="152" rx="44" ry="8" fill="#0d1838"/>
+  <polygon points="250,150 266,150 263,112 253,112" fill="#f4f1ea"/>
+  <polygon points="251.2,135 264.8,135 264.3,129 251.7,129" fill="#c8402f"/>
+  <polygon points="252.2,122 263.8,122 263.4,117 252.6,117" fill="#c8402f"/>
+  <rect x="253" y="104" width="10" height="8" fill="#f6d36b"/>
+  <rect x="252" y="103" width="12" height="1.6" fill="#1b1b24"/>
+  <rect x="252" y="111.4" width="12" height="1.6" fill="#1b1b24"/>
+  <polygon points="251,103 265,103 258,96" fill="#1b1b24"/>
+  <g stroke="#9fb3e0" stroke-opacity="0.6" stroke-width="0.6">
+    <line x1="208" y1="170" x2="238" y2="168"/>
+    <line x1="262" y1="167" x2="300" y2="165"/>
+    <line x1="222" y1="184" x2="252" y2="183"/>
+    <line x1="290" y1="181" x2="330" y2="179"/>
+  </g>
+  <text x="267.3" y="218" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="7" letter-spacing="2.2" fill="#f4ead2">MARA LINDEN</text>
+</svg>
