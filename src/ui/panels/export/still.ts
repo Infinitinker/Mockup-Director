@@ -77,7 +77,8 @@ export function stillSections(
   });
 
   const sizeSection = section('export.size', 'Size', [
-    h('div', { class: 'ctl' }, h('div', { class: 'ctl-label', text: 'Size presets (square)' }), rows.chips),
+    rows.aspects,
+    rows.sizes,
     rows.dims,
     h('p', { class: 'ctl-note', text: `The largest size is ${MAX_EXPORT_SIZE} × ${MAX_EXPORT_SIZE} px.` }),
     margin.el,

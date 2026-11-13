@@ -7,7 +7,6 @@
 //! standard error output; a build run from source writes them there as well. Never log artwork or
 //! file contents.
 
-use std::ffi::OsString;
 use std::fmt::Display;
 use std::fs::{self, File, OpenOptions};
 use std::io::{self, Write};
@@ -44,33 +43,6 @@ impl Level {
             Level::Warn => "WARN",
             Level::Error => "ERROR",
         }
-    }
-}
-
-/// The log folder for the app identifier, as Tauri's `app_log_dir` places it: on Windows
-/// `%LOCALAPPDATA%\<identifier>\logs`, on macOS `~/Library/Logs/<identifier>`, on Linux
-/// `$XDG_DATA_HOME/<identifier>/logs` (`~/.local/share` when XDG_DATA_HOME is not set). `var` reads
-/// an environment variable; a variable that is empty or not an absolute path counts as not set.
-/// None when the folder cannot be known.
-pub fn log_dir(identifier: &str, var: impl Fn(&str) -> Option<OsString>) -> Option<PathBuf> {
-    let absolute = |name: &str| {
-        var(name)
-            .map(PathBuf::from)
-            .filter(|path| path.is_absolute())
-    };
-    if cfg!(windows) {
-        Some(absolute("LOCALAPPDATA")?.join(identifier).join("logs"))
-    } else if cfg!(target_os = "macos") {
-        Some(
-            absolute("HOME")?
-                .join("Library")
-                .join("Logs")
-                .join(identifier),
-        )
-    } else {
-        let data = absolute("XDG_DATA_HOME")
-            .or_else(|| Some(absolute("HOME")?.join(".local").join("share")))?;
-        Some(data.join(identifier).join("logs"))
     }
 }
 
@@ -294,7 +266,7 @@ pub fn start(dir: Option<PathBuf>) -> Option<PathBuf> {
                 dir.display()
             )
         }),
-        None => Err("The log folder is not known: the environment variable that names it is not set. Entries go to the standard error output.".to_owned()),
+        None => Err("The log folder is not known: the Tauri config names no data folder, or the system has no folder for logs. Entries go to the standard error output.".to_owned()),
     };
     let folder = match opened {
         Ok(file) => {

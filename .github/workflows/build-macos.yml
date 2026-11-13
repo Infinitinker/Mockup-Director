@@ -4,9 +4,8 @@ name: Build macOS app
 # run's page under its release file name, and checks it. The Release workflow (release.yml) calls it
 # and drafts the release from it; run on its own, it shows early that a change still builds.
 #
-# It runs on every push to dev and main (a merged pull request is a push to main), from the Release
-# workflow, on demand, and for pull requests other than those from this repository's dev and main,
-# whose pushes are built already (so Dependabot's pull requests and other branches get a build too).
+# It runs for every pull request (also Dependabot's and those from forks), from the Release workflow,
+# and on demand (Actions > Build macOS app > Run workflow, on any branch); never for pushes.
 # It is not a required status check; the Checks (checks.yml) and E2E tests (e2e.yml) are.
 #
 # Signing and notarization are optional. Without secrets the app is ad-hoc signed
@@ -17,13 +16,11 @@ name: Build macOS app
 #   APPLE_SIGNING_IDENTITY      for example "Developer ID Application: Your Name (TEAMID)"
 #   APPLE_ID, APPLE_PASSWORD (an app-specific password), APPLE_TEAM_ID: for notarization
 on:
-  push:
-    branches: [main, dev]
   pull_request:
   workflow_dispatch:
   workflow_call:
 
-# A newer push cancels the build still going for the older one; a release's build is never cut short.
+# A newer push to a pull request cancels the build still going; a release's build is never cut short.
 # Called from release.yml, github.workflow is "Release".
 concurrency:
   group: build-macos-${{ github.workflow }}-${{ github.ref }}
@@ -34,22 +31,16 @@ permissions:
 
 jobs:
   build:
-    # A fork can have a branch named dev too, so forks are always built.
-    if: >-
-      github.event_name != 'pull_request' ||
-      github.event.pull_request.head.repo.fork || (github.head_ref != 'dev' && github.head_ref != 'main')
     name: macOS build (universal)
-    runs-on: macos-latest
+    runs-on: macos-26
     timeout-minutes: 60
     outputs:
       # The file, so the check downloads exactly this, whatever else the run builds.
       artifacts: ${{ steps.dmg.outputs.artifact-id }}
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
+      - name: Node.js
+        uses: ./.github/actions/node
 
       # Both macOS targets, for the universal binary.
       - uses: dtolnay/rust-toolchain@stable
@@ -125,7 +116,7 @@ jobs:
   files:
     name: macOS release files
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     steps:
       # What the check runs, and the action.
@@ -135,6 +126,7 @@ jobs:
             package.json
             tools/release.mjs
             .github/actions/release-files
+            .github/actions/node
           sparse-checkout-cone-mode: false
       - name: Release files
         uses: ./.github/actions/release-files

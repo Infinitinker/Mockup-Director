@@ -1,12 +1,23 @@
 /**
  * Tests the slot helpers in src/models/slots.ts: slot lookup, print template resolution, the
- * acceptable artwork aspect ratios and the mismatch check.
+ * acceptable artwork aspect ratios and the mismatch check, and the cropping of artwork that does not
+ * fit its slot.
  */
+import * as THREE from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { defaultParams } from '../../src/core/defaults';
-import type { ImageSlotDef, PrintTemplate } from '../../src/core/types/model';
+import type { ImageSlotDef, ModelDefinition, PrintTemplate } from '../../src/core/types/model';
+import type { Artwork } from '../../src/core/types/project';
 import { MODELS } from '../../src/models/registry';
-import { ASPECT_TOLERANCE, aspectMismatch, expectedAspects, resolveTemplate, slotFor } from '../../src/models/slots';
+import {
+  ASPECT_TOLERANCE,
+  aspectMismatch,
+  cropAspect,
+  expectedAspects,
+  resolveTemplate,
+  slotFor,
+  slotTexture,
+} from '../../src/models/slots';
 
 const slot = (overrides: Partial<ImageSlotDef> = {}): ImageSlotDef => ({
   id: 'front',
@@ -124,5 +135,60 @@ describe('aspectMismatch', () => {
     expect(aspectMismatch(0, 100, [1])).toBe(false);
     expect(aspectMismatch(100, 0, [1])).toBe(false);
     expect(aspectMismatch(Number.NaN, 100, [1])).toBe(false);
+  });
+});
+
+describe('cropAspect', () => {
+  it('leaves artwork that fits the slot, its template or its trimmed template', () => {
+    const s = slot({ template: { widthMm: 106, heightMm: 56, bleedMm: 3 } });
+    expect(cropAspect(s, {}, 500, 1000)).toBeNull();
+    expect(cropAspect(s, {}, 1060, 560)).toBeNull();
+    expect(cropAspect(s, {}, 1000, 500)).toBeNull();
+  });
+
+  it('crops other artwork to the full template, or else to the slot', () => {
+    expect(cropAspect(slot({ template: { widthMm: 106, heightMm: 56, bleedMm: 3 } }), {}, 1000, 1000)).toBeCloseTo(
+      106 / 56,
+    );
+    expect(cropAspect(slot(), {}, 1000, 1000)).toBe(0.5);
+  });
+
+  it('follows a template made from the parameters', () => {
+    const s = slot({ template: (p) => ({ widthMm: Number(p.width), heightMm: 100 }) });
+    expect(cropAspect(s, { width: 300 }, 1000, 1000)).toBe(3);
+  });
+
+  it('leaves the artwork of a slot that takes any aspect ratio or whose model fits it itself', () => {
+    expect(cropAspect(slot({ anyAspect: true }), {}, 1000, 1000)).toBeNull();
+    expect(cropAspect(slot({ fitsArtwork: true }), {}, 1000, 1000)).toBeNull();
+  });
+});
+
+describe('slotTexture', () => {
+  const model = { id: 'test', slots: [slot()] } as unknown as ModelDefinition;
+  const artwork = (width: number, height: number): Artwork => ({
+    name: 'art.png',
+    dataUrl: 'data:image/png;base64,',
+    width,
+    height,
+    texture: new THREE.Texture(),
+  });
+
+  it('gives the model the artwork itself when it fits', () => {
+    const art = artwork(500, 1000);
+    expect(slotTexture(model, {}, { front: art }, 'front')).toBe(art.texture);
+  });
+
+  it('gives the model a cropped copy when it does not fit', () => {
+    const art = artwork(1000, 1000);
+    const tex = slotTexture(model, {}, { front: art }, 'front');
+    expect(tex).not.toBe(art.texture);
+    expect(tex.repeat.toArray()).toEqual([0.5, 1]);
+  });
+
+  it('never crops a device screen: its model fits artwork itself', () => {
+    for (const m of MODELS.filter((m) => m.category === 'device')) {
+      for (const s of m.slots) expect(s.anyAspect || s.fitsArtwork, `${m.id}/${s.id}`).toBe(true);
+    }
   });
 });

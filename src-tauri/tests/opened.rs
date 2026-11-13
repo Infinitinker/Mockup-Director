@@ -102,6 +102,7 @@ fn reads_a_project_file_and_reports_a_missing_one() {
 
     let file = read_opened(&path).unwrap();
     assert_eq!(file.name, "Box.mdproj");
+    assert_eq!(file.path.as_deref(), path.to_str());
     assert_eq!(file.contents, r#"{"app":"mockup-director"}"#);
 
     let missing = dir.join("Missing.mdproj");
@@ -109,6 +110,39 @@ fn reads_a_project_file_and_reports_a_missing_one() {
     assert_eq!(error.kind, ErrorKind::NotFound);
     assert_eq!(error.path, missing.to_string_lossy());
     assert!(error.detail.is_some());
+    let _ = fs::remove_dir_all(&dir);
+}
+
+// macOS file systems refuse names that are not valid Unicode.
+#[cfg(any(target_os = "linux", windows))]
+#[test]
+fn reads_a_file_whose_path_is_not_valid_unicode_without_its_path() {
+    // "Caf\u{e9}.mdproj" in Latin-1 on Linux; a lone UTF-16 surrogate in the name on Windows.
+    #[cfg(unix)]
+    let name = {
+        use std::os::unix::ffi::OsStringExt;
+        OsString::from_vec(b"Caf\xe9.mdproj".to_vec())
+    };
+    #[cfg(windows)]
+    let name = {
+        use std::os::windows::ffi::OsStringExt;
+        let wide: Vec<u16> = [0xD800]
+            .into_iter()
+            .chain(".mdproj".encode_utf16())
+            .collect();
+        OsString::from_wide(&wide)
+    };
+    let dir = std::env::temp_dir().join(format!(
+        "mockup-director-test-opened-unicode-{}",
+        std::process::id()
+    ));
+    fs::create_dir_all(&dir).unwrap();
+    let path = dir.join(name);
+    fs::write(&path, "{}").unwrap();
+
+    let file = read_opened(&path).unwrap();
+    assert_eq!(file.path, None);
+    assert_eq!(file.contents, "{}");
     let _ = fs::remove_dir_all(&dir);
 }
 

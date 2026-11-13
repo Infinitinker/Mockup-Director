@@ -5,7 +5,7 @@
 1. Raise the version in `package.json`, the app's only version: `src-tauri/tauri.conf.json` reads it from there for the app, its packages and the Windows version resource, and `src-tauri/Cargo.toml` has none. Versions are `major.minor.patch`; a version with a hyphen, such as `0.3.0-beta.1`, is a pre-release.
 
    When updating Tauri, raise the npm packages (`@tauri-apps/api`, `@tauri-apps/plugin-dialog`, `@tauri-apps/cli`) together with the `~2.x` ranges in `src-tauri/Cargo.toml`: the Tauri CLI stops the build when the Rust crates and the npm packages differ in `major.minor`.
-2. To try the release first, start **Actions → Release → Run workflow** on `dev`. It checks the version and builds and checks every file, without a release: the files are on the run's page for 90 days. Every push to `dev` builds and checks the files of each system too.
+2. To try the release first, start **Actions → Release → Run workflow** on `dev`. It checks the version and builds and checks every file, without a release: the files are on the run's page for 90 days. Every pull request, the one from `dev` to `main` too, builds and checks the files of each system as well. Test the Windows files by hand (see [Testing the files](#testing-the-files)).
 3. Merge `dev` into `main` with a pull request, then tag the merge commit on `main` with an annotated tag and push it:
 
    ```bash
@@ -25,16 +25,18 @@
    - **Check the version:** the tag must be `v` followed by the version in `package.json`, the version must be of the form `1.2.3` or `1.2.3-beta.1`, and a release (not a pre-release) must be on `main`.
    - **Windows, macOS, Linux:** the three build workflows, called by the release; each checks its files.
    - **Third-party notices:** the license checks, and that `THIRD-PARTY-NOTICES.md` matches the dependencies; the release gets a copy (see [licenses.md](licenses.md)).
+   - **Advisories:** no npm package or Rust crate has an open security advisory (the Advisories workflow, `advisories.yml`, see [development.md](development.md#checks)); otherwise no release is drafted.
    - **Draft the release:** checks that exactly these files arrived, records a build provenance attestation for each (so anyone can check a download with `gh attestation verify <file> --repo Infinitinker/Mockup-Director`), then creates a **draft** release named "Mockup Director 0.2.0" with them, marked as a pre-release when the version has a hyphen:
 
      | File | What it is |
      | --- | --- |
      | `MockupDirector-<version>-windows-x64-setup.exe` | the Windows installer |
-     | `MockupDirector-<version>-windows-x64-portable.zip` | the portable Windows app, with `LICENSE.txt` and `README.txt` |
+     | `MockupDirector-<version>-windows-x64.zip` | the Windows app to unzip and run without installing, with `LICENSE.txt` and `README.txt` |
      | `MockupDirector-<version>-macos-universal.dmg` | the macOS app, for Apple Silicon and Intel |
      | `MockupDirector-<version>-linux-x86_64.AppImage` | the Linux app for any distribution |
      | `MockupDirector-<version>-linux-x86_64.deb` | the package for Debian, Ubuntu and Mint |
      | `MockupDirector-<version>-linux-x86_64.rpm` | the package for Fedora and openSUSE |
+     | `MockupDirector-<version>-linux-x86_64-appimage-libraries.md` | the Ubuntu libraries the AppImage carries, with their licenses and sources (see [licenses.md](licenses.md#the-linux-appimage)) |
      | `MockupDirector-<version>-third-party-notices.md` | the licenses of the libraries in the app |
 
      The notes come from `tools/release-notes.md`: a download table, first-launch help, the SHA-256 checksum of every file and how to check its attestation. `tools/release.mjs` fills them in and checks the files; `tests/tools/release.test.ts` tests it.
@@ -42,11 +44,30 @@
 
 If a build fails, fix it, delete the tag (`git push origin :v0.2.0` and `git tag -d v0.2.0`) and the draft, if there is one, and tag again.
 
+The macOS jobs run on GitHub's `macos-26` runners (Apple Silicon), which are sometimes scarce: a job can wait in the queue, or be canceled with "The job was not acquired by Runner of type hosted even after multiple attempts". Run it again later (**Re-run failed jobs** on the run's page); no release is drafted without the macOS file. The runner's macOS version does not limit the app: it runs on macOS 12 and later (`minimumSystemVersion` in `src-tauri/tauri.conf.json`), on Apple Silicon and Intel.
+
+## Testing the files
+
+Before each release, test the files of the trial run (step 2) by hand on Windows:
+
+- [ ] **The installer** (`-setup.exe`): SmartScreen warns about an unknown publisher; **More info → Run anyway** installs it, and the app starts from the Start menu.
+- [ ] **A project file:** double-clicking a `.mdproj` file opens it in the app; with the app already open, it opens in that window instead of a second one.
+- [ ] **A mockup:** add artwork to a model, export a still and an animation, save the project through the save dialog, close the app and open the project again.
+- [ ] **An update:** installing the new version over the last release keeps the looks and the session.
+- [ ] **The ZIP:** unzipped to a folder, `mockup-director.exe` starts without installing.
+- [ ] **Uninstalling** from **Settings → Apps** removes the app and its Start menu entry.
+
+Linux and macOS are not tested by hand. There, the end-to-end tests (`tests/e2e/`, run on each system for every push to `main` and `dev` and for every pull request) start the real app, show the 3D view, switch models and save a project through the save dialog; the builds check their files (the licenses in every copy, the Linux packages' file association and the AppImage's libraries). A problem a user reports on one of them that these do not catch becomes a new end-to-end test or build check.
+
 ## Linux builds
 
-The Linux build runs in an `ubuntu:22.04` container (on an `ubuntu-24.04` runner). A Linux binary runs only on systems with the same or a newer glibc than the one it was built with, so the container sets the oldest supported systems: glibc 2.35, that is Ubuntu 22.04+, Debian 12+ and Fedora 36+. Raise the container image only when dropping old distributions, and update the list in the README.
+The Linux build runs in an `ubuntu:22.04` container (on the `ubuntu-26.04` runner all Linux jobs use). A Linux binary runs only on systems with the same or a newer glibc than the one it was built with, so the container sets the oldest supported systems: glibc 2.35, that is Ubuntu 22.04+, Debian 12+ and Fedora 36+. Raise the container image only when dropping old distributions, and update the list in the README.
 
-## Signing and notarization (macOS, optional)
+## Signing
+
+The releases are not signed with a paid certificate: Mockup Director is free, and the certificates Windows and macOS trust cost money every year. Users allow the app once on the first launch instead (the README's questions and `tools/release-notes.md` say how), and check a download with its checksum or its build attestation. A free route for Windows is the SignPath Foundation, which signs open-source projects that have already been released; it would be applied for after the first release.
+
+### Signing and notarization (macOS, optional)
 
 Without secrets, the workflow builds an ad-hoc signed app (`signingIdentity: "-"`). It works, but users have to allow it on the first launch (see the README). For a signed and notarized app, add these in **Settings → Secrets and variables → Actions**:
 
@@ -61,13 +82,11 @@ Without secrets, the workflow builds an ad-hoc signed app (`signingIdentity: "-"
 
 Signing is turned on when the first three secrets are set; notarization needs the other three too. Missing secrets are skipped, so the build still succeeds without them.
 
-Windows builds and the Linux packages are not signed.
-
 ## Repository settings
 
 These settings are made on GitHub, not in files.
 
-To protect `main`, add a branch ruleset (**Settings → Rules → Rulesets → New branch ruleset**): target *Include default branch*, with the rules *Restrict deletions*, *Block force pushes*, *Require a pull request before merging* (0 approvals if you work alone) and *Require status checks to pass* with the checks `Lint`, `Web`, `Licenses`, `Release safety`, `Windows Rust checks`, `Linux Rust checks`, `macOS Rust checks`, `Windows E2E tests`, `Linux E2E tests` and `macOS E2E tests`, each from the GitHub Actions app. These are the jobs of the Checks workflow (`.github/workflows/checks.yml`) and of the E2E tests workflow (`.github/workflows/e2e.yml`). The builds are not required checks: they take ten minutes and more, and the push to `dev` builds the same commit the pull request merges. In a private repository on a free GitHub plan, rulesets are not enforced: they need a public repository or GitHub Pro.
+To protect `main`, add a branch ruleset (**Settings → Rules → Rulesets → New branch ruleset**): target *Include default branch*, with the rules *Restrict deletions*, *Block force pushes*, *Require a pull request before merging* (0 approvals if you work alone) and *Require status checks to pass* with the checks `Lint`, `Web`, `Licenses`, `Release safety`, `Windows Rust checks`, `Linux Rust checks`, `macOS Rust checks`, `Windows E2E tests`, `Linux E2E tests` and `macOS E2E tests`, each from the GitHub Actions app. These are the jobs of the Checks workflow (`.github/workflows/checks.yml`) and of the E2E tests workflow (`.github/workflows/e2e.yml`). The builds are not required checks: they take ten minutes and more. They still run for the pull request, so a failed build shows on it, and the Release workflow builds every file again before a release. In a private repository on a free GitHub plan, rulesets are not enforced: they need a public repository or GitHub Pro.
 
 Under **Settings → General → Pull Requests**, allow only merge commits, so the history of `dev` is kept on `main`.
 

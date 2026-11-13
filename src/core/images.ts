@@ -30,6 +30,7 @@ import { megabytes } from './math';
 import { parseDataUrl, sniffMime } from './mime';
 import { sizeSvgRoot, svgIntrinsicSize } from './svg';
 import type { Artwork } from './types/project';
+import { log } from '../platform/log';
 
 /**
  * The largest artwork file the app takes, in bytes (100 MB). The file is kept whole, in memory and in the project
@@ -130,8 +131,54 @@ function checkHeaderSize(bytes: Uint8Array, name: string): void {
   if (size) checkArtworkPixels(name, size);
 }
 
+/** The cropped copies of each artwork's texture, by aspect ratio; freed with the artwork. */
+const croppedCopies = new WeakMap<Artwork, Map<number, THREE.Texture>>();
+
+/** The share of an image's width and height that its centered crop to the aspect ratio `aspect` keeps. */
+export function cropRepeat(imageAspect: number, aspect: number): [number, number] {
+  return imageAspect > aspect ? [aspect / imageAspect, 1] : [1, imageAspect / aspect];
+}
+
+/**
+ * A copy of the artwork's texture that shows its centered part with the aspect ratio `aspect`. The copy shares the
+ * image, so the GPU holds it once; it is kept with the artwork, for every model built from it, and freed with it.
+ */
+export function croppedTexture(asset: Artwork, aspect: number): THREE.Texture {
+  let copies = croppedCopies.get(asset);
+  if (!copies) {
+    copies = new Map();
+    croppedCopies.set(asset, copies);
+  }
+  const key = Math.round(aspect * 10_000) / 10_000;
+  let copy = copies.get(key);
+  if (!copy) {
+    copy = asset.texture.clone();
+    const [rx, ry] = cropRepeat(asset.width / asset.height, key);
+    copy.repeat.set(rx, ry);
+    copy.offset.set((1 - rx) / 2, (1 - ry) / 2);
+    copies.set(key, copy);
+  }
+  return copy;
+}
+
+/**
+ * Disposes each artwork. A failure is logged and the others are still disposed: freeing memory must
+ * never break the interface or a batch.
+ */
+export function disposeArtworks(assets: Iterable<Artwork>): void {
+  for (const a of assets) {
+    try {
+      disposeArtwork(a);
+    } catch (e) {
+      log.warn('Cannot free the memory of an artwork', e);
+    }
+  }
+}
+
 export function disposeArtwork(asset: Artwork): void {
   const img = asset.texture.image as unknown;
+  for (const copy of croppedCopies.get(asset)?.values() ?? []) copy.dispose();
+  croppedCopies.delete(asset);
   asset.texture.dispose();
   // WebKit has a global canvas-memory budget; shrinking the canvas frees its backing store now.
   if (typeof HTMLCanvasElement !== 'undefined' && img instanceof HTMLCanvasElement) {
@@ -170,8 +217,10 @@ async function decodeRaster(blob: Blob, mime: string, name: string): Promise<HTM
     let bmp: ImageBitmap | null = null;
     try {
       bmp = await createImageBitmap(blob);
-    } catch {
-      bmp = null; // e.g. Safari < 15 or a format the bitmap decoder lacks – fall back below
+    } catch (e) {
+      // e.g. Safari < 15 or a format the bitmap decoder lacks: decoded as an image below.
+      log.warn(`Cannot decode the ${mime} image with createImageBitmap, so it is decoded as an image`, e);
+      bmp = null;
     }
     if (bmp && bmp.width > 0 && bmp.height > 0) {
       try {
@@ -285,7 +334,11 @@ function loadHtmlImage(blob: Blob): Promise<HTMLImageElement> {
     const done = () => URL.revokeObjectURL(url);
     img.onload = () => {
       // decode() guarantees the pixels are ready before drawImage (avoids blank first draws in WebKit).
-      const ready = typeof img.decode === 'function' ? img.decode().catch(() => undefined) : Promise.resolve();
+      // A failed decode() still leaves the loaded image to draw.
+      const ready =
+        typeof img.decode === 'function'
+          ? img.decode().catch((e: unknown) => log.warn('Cannot finish decoding an image before it is drawn', e))
+          : Promise.resolve();
       ready.then(() => {
         done();
         resolve(img);

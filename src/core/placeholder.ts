@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { UserError } from './errors';
 import type { ImageSlotDef } from './types/model';
+import { log } from '../platform/log';
 
 const cache = new Map<string, THREE.Texture>();
 
@@ -67,13 +68,17 @@ export function getPlaceholderTexture(slot: ImageSlotDef): THREE.Texture {
   return tex;
 }
 
-/** True when the slot's template (object, or function resolved with default params) is a disc. */
+/**
+ * True when the slot's template (object, or function resolved with default params) is a disc. A template
+ * that throws is logged and counts as not round: the placeholder is only a stand-in.
+ */
 function isCircularTemplate(slot: ImageSlotDef): boolean {
   const t = slot.template;
   if (!t) return false;
   try {
     return !!(typeof t === 'function' ? t({}) : t).circle;
-  } catch {
+  } catch (e) {
+    log.warn(`The print template of the slot ${slot.id} could not be made for its placeholder`, e);
     return false;
   }
 }

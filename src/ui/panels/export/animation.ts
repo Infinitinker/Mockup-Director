@@ -180,7 +180,8 @@ export function animationSections(
     }),
   );
   const sizeSection = section('export.anim.size', 'Size', [
-    h('div', { class: 'ctl' }, h('div', { class: 'ctl-label', text: 'Size presets (square)' }), rows.chips),
+    rows.aspects,
+    rows.sizes,
     rows.dims,
     maxNote,
     evenNote,

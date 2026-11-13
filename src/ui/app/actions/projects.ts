@@ -1,9 +1,10 @@
 /**
  * The project actions: a new project, opening project files (each in its own tab, held back while an export runs),
- * saving, closing with the unsaved-changes question, and switching tabs.
+ * saving to the tab's file or to one the user picks, closing with the unsaved-changes question, and switching tabs.
  */
 import { freshDocument } from '../../../documents/tabs';
-import { pickFiles, saveBlob } from '../../../platform/files';
+import { type SavedFile, saveBlobAs, writeBlob } from '../../../platform/files';
+import { type OpenedProject, pickProjectFiles } from '../../../platform/opened';
 import {
   PROJECT_EXT,
   PROJECT_FILE_FILTER,
@@ -21,13 +22,22 @@ import { tabLabel } from '../tabbar';
 import { notify } from '../../toast';
 
 export interface ProjectActions
-  extends Pick<Actions, 'newProject' | 'openProject' | 'saveProject' | 'closeProject' | 'switchProject'> {
+  extends Pick<
+    Actions,
+    'newProject' | 'openProject' | 'saveProject' | 'saveProjectAs' | 'closeProject' | 'switchProject'
+  > {
   /**
-   * Opens project files, each in its own tab; the first may take the place of an untouched new tab.
-   * A file that cannot be opened is reported and skipped; one whose parts were left out opens with a
-   * warning.
+   * Opens project files, each in its own tab that saves back to the file's path; the first may take the place of
+   * an untouched new tab. A file that cannot be opened is reported and skipped; one whose parts were left out
+   * opens with a warning.
    */
-  openProjectFiles(files: File[]): Promise<void>;
+  openProjectFiles(projects: OpenedProject[]): Promise<void>;
+}
+
+/** Reports a project file that could not be opened. */
+function reportOpenFailure(e: unknown, fileName?: string): void {
+  logShownError(fileName ? `Could not open the project ${fileName}` : 'Could not open the project', e);
+  notify.error('Could not open the project', fileName ? `${fileName}: ${errorMessage(e)}` : errorMessage(e));
 }
 
 /** The project actions; project files that arrive during an export open when it ends. */
@@ -37,37 +47,36 @@ export function createProjectActions({
   exportBusy,
 }: Pick<ActionContext, 'store' | 'docs' | 'exportBusy'>): ProjectActions {
   /** Project files that arrived while an export ran; they open when it ends. */
-  let waitingFiles: File[] = [];
+  let waitingFiles: OpenedProject[] = [];
 
-  const openProjectFiles = async (files: File[]): Promise<void> => {
-    if (!files.length) return;
+  const openProjectFiles = async (projects: OpenedProject[]): Promise<void> => {
+    if (!projects.length) return;
     if (exportBusy.value) {
-      waitingFiles.push(...files);
-      notify.info(`Projects to open: ${files.length}. They open when the export ends.`);
+      waitingFiles.push(...projects);
+      notify.info(`Projects to open: ${projects.length}. They open when the export ends.`);
       return;
     }
     document.body.classList.add('is-busy');
     try {
-      for (const f of files) {
+      for (const { file: f, path } of projects) {
         try {
           const { file, report } = await readProjectFile(f);
           const { state, failed } = await hydrateProject(file);
           const name = projectNameOf(f.name);
           // An export may have started while the file was read: the stage must keep its project.
           if (exportBusy.value) {
-            docs.add(state, { name, activate: false });
+            docs.add(state, { name, path, activate: false });
           } else if (docs.activeIsPristine()) {
             store.replace(state, 'project');
-            docs.markActiveOpened(name);
+            docs.markActiveOpened(name, path);
           } else {
-            docs.add(state, { name });
+            docs.add(state, { name, path });
           }
           notify.success('Project opened', f.name);
           const warning = projectWarning(report, failed, 'file');
           if (warning) notify.warning(warning, f.name);
         } catch (e) {
-          logShownError(`Could not open the project ${f.name}`, e);
-          notify.error('Could not open the project', `${f.name}: ${errorMessage(e)}`);
+          reportOpenFailure(e, f.name);
         }
       }
     } finally {
@@ -82,6 +91,38 @@ export function createProjectActions({
     void openProjectFiles(files);
   });
 
+  /**
+   * Saves the tab's project: to its file, or, with `ask` or when it has none, to a file the user picks, which
+   * becomes its file. Resolves true when it was saved.
+   */
+  const save = async (tabId: string, ask: boolean): Promise<boolean> => {
+    try {
+      // Everything is taken from the tab now: other tabs may become active while the save dialog
+      // is open (a project opened from the system), and edits may continue while it writes.
+      const tab = docs.tab(tabId);
+      if (!tab) return false;
+      docs.activate(tabId);
+      const revision = store.revision;
+      const blob = new Blob([projectFileText(toProjectFile(store.state))], { type: 'application/json' });
+      let saved: SavedFile | null;
+      if (tab.path && !ask) {
+        saved = { name: await writeBlob(blob, tab.path), path: tab.path };
+      } else {
+        // The dialog starts in the folder of the tab's file, when it has one.
+        const suggested = tab.path ?? `${tab.name || 'project'}.${PROJECT_EXT}`;
+        saved = await saveBlobAs(blob, suggested, [PROJECT_FILE_FILTER]);
+      }
+      if (!saved) return false;
+      docs.markSaved(tabId, revision, projectNameOf(saved.name), saved.path);
+      notify.success('Project saved', saved.name);
+      return true;
+    } catch (e) {
+      logShownError('Could not save the project', e);
+      notify.error('Could not save the project', errorMessage(e));
+      return false;
+    }
+  };
+
   const actions: ProjectActions = {
     openProjectFiles,
 
@@ -92,34 +133,18 @@ export function createProjectActions({
 
     async openProject(file?: File) {
       try {
-        const files = file ? [file] : await pickFiles(`.${PROJECT_EXT}`, true);
-        await openProjectFiles(files);
+        if (file) return await openProjectFiles([{ file, path: null }]);
+        const { projects, errors } = await pickProjectFiles(`.${PROJECT_EXT}`);
+        for (const error of errors) reportOpenFailure(error);
+        await openProjectFiles(projects);
       } catch (e) {
-        logShownError('Could not open the project', e);
-        notify.error('Could not open the project', errorMessage(e));
+        reportOpenFailure(e);
       }
     },
 
-    async saveProject(tabId = docs.activeId) {
-      try {
-        // Everything is taken from the tab now: other tabs may become active while the save dialog
-        // is open (a project opened from the system), and edits may continue while it writes.
-        if (!docs.tab(tabId)) return false;
-        docs.activate(tabId);
-        const revision = store.revision;
-        const blob = new Blob([projectFileText(toProjectFile(store.state))], { type: 'application/json' });
-        const suggested = `${docs.tab(tabId)?.name || 'project'}.${PROJECT_EXT}`;
-        const saved = await saveBlob(blob, suggested, [PROJECT_FILE_FILTER]);
-        if (!saved) return false;
-        docs.markSaved(tabId, revision, projectNameOf(saved));
-        notify.success('Project saved', saved);
-        return true;
-      } catch (e) {
-        logShownError('Could not save the project', e);
-        notify.error('Could not save the project', errorMessage(e));
-        return false;
-      }
-    },
+    saveProject: (tabId = docs.activeId) => save(tabId, false),
+
+    saveProjectAs: () => save(docs.activeId, true),
 
     async closeProject(tabId = docs.activeId) {
       if (exportBusy.value) return;
@@ -132,7 +157,8 @@ export function createProjectActions({
           title: `Save changes to “${tabLabel(tab)}”?`,
           message: 'Your changes will be lost if you don’t save them.',
           choices: [
-            { id: 'save', label: 'Save…', primary: true },
+            // Saving asks where only for a project without a file.
+            { id: 'save', label: tab.path ? 'Save' : 'Save…', primary: true },
             { id: 'discard', label: 'Don’t save', danger: true },
             { id: 'cancel', label: 'Cancel' },
           ],

@@ -23,14 +23,12 @@ jobs:
   # fastest runner.
   lint:
     name: Lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
+      - name: Node.js
+        uses: ./.github/actions/node
       - name: Install
         run: npm ci
       # Fails on a file Biome would format differently and on any lint warning (npm run lint).
@@ -46,14 +44,12 @@ jobs:
   # runs in Node.js, the same on every system.
   web:
     name: Web
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
+      - name: Node.js
+        uses: ./.github/actions/node
       - name: Install
         run: npm ci
       - name: Build
@@ -65,14 +61,12 @@ jobs:
   # texts of the app's dependencies) up to date with them: the same checks as a release.
   licenses:
     name: Licenses
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
+      - name: Node.js
+        uses: ./.github/actions/node
       - name: Install
         run: npm ci
       - name: Licenses and notices
@@ -83,34 +77,19 @@ jobs:
   # check can see them when they are on.
   release-safety:
     name: Release safety
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
+      - name: Node.js
+        uses: ./.github/actions/node
       - uses: dtolnay/rust-toolchain@stable
       - name: Install
         run: npm ci
       - name: Build the web UI
         run: npm run build
       - name: No test code in the release builds
-        run: |
-          # The web build of a release has no WebdriverIO code ...
-          if grep -rIl wdio dist; then echo "::error::dist contains WebdriverIO code"; exit 1; fi
-          # ... while the e2e build has it, so the grep can see the bridge at all.
-          npm run build -- --mode e2e
-          grep -rIlq wdioTauri dist-e2e || { echo "::error::dist-e2e has no WebdriverIO bridge"; exit 1; }
-          # The shell's dependency graph without features has no test plugin; with e2e it has both
-          # (so the check can see them).
-          deps() { cargo tree --manifest-path src-tauri/Cargo.toml --locked --target all -e normal,build --prefix none "$@"; }
-          test "$(deps | grep -c '^tauri-plugin-wdio')" = 0 || { echo "::error::a release build would contain a test plugin"; exit 1; }
-          test "$(deps --features e2e | grep -c '^tauri-plugin-wdio')" -ge 2 || { echo "::error::cargo tree no longer shows the test plugins"; exit 1; }
-          # No capability file or the main config names a test permission (a release build would
-          # fail on it anyway).
-          if grep -rn wdio src-tauri/capabilities src-tauri/tauri.conf.json; then echo "::error::a release capability names a test permission"; exit 1; fi
+        run: node tools/release-safety.mjs
 
   # Clippy and the Rust tests. The shell has code for each system (#[cfg(target_os)], #[cfg(unix)]),
   # and clippy and the tests only see the code of the system they run on, so they run on each: on
@@ -126,18 +105,16 @@ jobs:
           - name: Windows
             os: windows-latest
           - name: Linux
-            os: ubuntu-24.04
+            os: ubuntu-26.04
           - name: macOS
-            os: macos-latest
+            os: macos-26
     defaults:
       run:
         shell: bash
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
+      - name: Node.js
+        uses: ./.github/actions/node
       - name: Linux libraries
         if: runner.os == 'Linux'
         uses: ./.github/actions/linux-libraries

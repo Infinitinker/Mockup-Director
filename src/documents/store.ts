@@ -18,7 +18,7 @@ import type { ExportSettings } from '../core/types/export';
 import type { ParamValues } from '../core/types/model';
 import type { Artwork, ArtworkMap, DocumentState } from '../core/types/project';
 import type { SceneSettings } from '../core/types/scene';
-import { disposeArtwork } from '../core/images';
+import { disposeArtworks } from '../core/images';
 import { log } from '../platform/log';
 
 type ChangeKind = 'model' | 'params' | 'artwork' | 'scene' | 'camera' | 'export';
@@ -59,16 +59,6 @@ const ALL_KINDS: ChangeKind[] = ['model', 'params', 'artwork', 'scene', 'camera'
 
 function collectArtwork(m: ArtworkMap, into: Set<Artwork>): void {
   for (const slots of Object.values(m)) for (const a of Object.values(slots)) if (a) into.add(a);
-}
-
-function disposeAll(assets: Iterable<Artwork>): void {
-  for (const a of assets) {
-    try {
-      disposeArtwork(a);
-    } catch {
-      /* ignore – disposal must never break the UI */
-    }
-  }
 }
 
 const HISTORY_LIMIT = 80;
@@ -118,7 +108,7 @@ export class Store {
 
   /** Frees a document that was swapped out and will not come back (its tab was closed). */
   static disposeDocument(doc: StoreDocument): void {
-    disposeAll(doc.tracked);
+    disposeArtworks(doc.tracked);
     doc.tracked.clear();
   }
 
@@ -291,7 +281,7 @@ export class Store {
     dead.forEach((a) => {
       this.tracked.delete(a);
     });
-    disposeAll(dead);
+    disposeArtworks(dead);
   }
 
   private emit(kinds: ReadonlySet<ChangeKind>, source: ChangeSource): void {

@@ -1,12 +1,12 @@
 name: Build Linux app
 
-# Builds the Linux release files: the AppImage, the .deb and the .rpm package, each kept on the run's
-# page under its release file name, and checks them. The Release workflow (release.yml) calls it and
+# Builds the Linux release files: the AppImage, the .deb and the .rpm package, and the list of the
+# libraries the AppImage carries, each kept on the run's page under its release file name, and checks
+# them. The Release workflow (release.yml) calls it and
 # drafts the release from them; run on its own, it shows early that a change still builds.
 #
-# It runs on every push to dev and main (a merged pull request is a push to main), from the Release
-# workflow, on demand, and for pull requests other than those from this repository's dev and main,
-# whose pushes are built already (so Dependabot's pull requests and other branches get a build too).
+# It runs for every pull request (also Dependabot's and those from forks), from the Release workflow,
+# and on demand (Actions > Build Linux app > Run workflow, on any branch); never for pushes.
 # It is not a required status check; the Checks (checks.yml) and E2E tests (e2e.yml) are.
 #
 # Linux settings are in src-tauri/tauri.linux.conf.json. The AppImage is one file for any
@@ -16,17 +16,15 @@ name: Build Linux app
 # The build runs in an ubuntu:22.04 container: a Linux binary runs only on systems with the same or
 # a newer glibc than the one it was built with, so the container (glibc 2.35), not the runner, sets
 # the oldest supported systems: Ubuntu 22.04+, Debian 12+, Fedora 36+ and similar. The hosted
-# ubuntu-22.04 runner is deprecated (removed on 2027-04-17), hence the container on an ubuntu-24.04
-# runner. Raise the container image only when dropping old distributions, and update the list in the
-# README and docs/releasing.md.
+# ubuntu-22.04 runner is deprecated (removed on 2027-04-17), hence the container on the ubuntu-26.04
+# runner all Linux jobs use. Raise the container image only when dropping old distributions, and
+# update the list in the README and docs/releasing.md.
 on:
-  push:
-    branches: [main, dev]
   pull_request:
   workflow_dispatch:
   workflow_call:
 
-# A newer push cancels the build still going for the older one; a release's build is never cut short.
+# A newer push to a pull request cancels the build still going; a release's build is never cut short.
 # Called from release.yml, github.workflow is "Release".
 concurrency:
   group: build-linux-${{ github.workflow }}-${{ github.ref }}
@@ -37,17 +35,13 @@ permissions:
 
 jobs:
   build:
-    # A fork can have a branch named dev too, so forks are always built.
-    if: >-
-      github.event_name != 'pull_request' ||
-      github.event.pull_request.head.repo.fork || (github.head_ref != 'dev' && github.head_ref != 'main')
     name: Linux build (x86_64)
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     container: ubuntu:22.04
     timeout-minutes: 60
     outputs:
       # The three files, so the check downloads exactly these, whatever else the run builds.
-      artifacts: ${{ steps.appimage.outputs.artifact-id }},${{ steps.deb.outputs.artifact-id }},${{ steps.rpm.outputs.artifact-id }}
+      artifacts: ${{ steps.appimage.outputs.artifact-id }},${{ steps.deb.outputs.artifact-id }},${{ steps.rpm.outputs.artifact-id }},${{ steps.libraries.outputs.artifact-id }}
     env:
       DEBIAN_FRONTEND: noninteractive # tzdata, which WebKitGTK pulls in, must not ask for a time zone
     defaults:
@@ -65,10 +59,8 @@ jobs:
       # After the checkout, which brings the action.
       - name: Linux libraries
         uses: ./.github/actions/linux-libraries
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
+      - name: Node.js
+        uses: ./.github/actions/node
 
       - uses: dtolnay/rust-toolchain@stable
       - uses: swatinem/rust-cache@v2
@@ -90,6 +82,13 @@ jobs:
           cp "$bundle"/deb/*.deb "dist-release/$name.deb"
           cp "$bundle"/rpm/*.rpm "dist-release/$name.rpm"
           ls -la dist-release
+      # The AppImage carries Ubuntu's GTK and WebKitGTK libraries, many under the LGPL: the list names
+      # the package of each, its version, its source code and its copyright file (docs/licenses.md).
+      # It reads this system's package database, so it runs here, where the AppImage was made.
+      - name: List the AppImage's libraries
+        run: |
+          name="MockupDirector-$(node -p "require('./package.json').version")-linux-x86_64"
+          node tools/appimage-libraries.mjs "dist-release/$name.AppImage" "dist-release/$name-appimage-libraries.md"
       # Double-clicking a .mdproj file opens the app only if the package installs the MIME definition
       # (src-tauri/linux/mockup-director-mime.xml) and its .desktop entry takes files (%F) of that type.
       - name: Check the file association
@@ -119,7 +118,7 @@ jobs:
           done
       # Each file on its own and unzipped, so the run's page offers the files themselves. Each step
       # fails unless its pattern matches exactly one file. A download does not keep the AppImage's
-      # executable bit, so users run `chmod +x` once (see the README).
+      # executable bit, so users make it executable once (see the README).
       - id: appimage
         uses: actions/upload-artifact@v7
         with:
@@ -138,11 +137,17 @@ jobs:
           path: dist-release/*.rpm
           archive: false
           if-no-files-found: error
+      - id: libraries
+        uses: actions/upload-artifact@v7
+        with:
+          path: dist-release/*-appimage-libraries.md
+          archive: false
+          if-no-files-found: error
 
   files:
     name: Linux release files
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     steps:
       # What the check runs, and the action.
@@ -152,6 +157,7 @@ jobs:
             package.json
             tools/release.mjs
             .github/actions/release-files
+            .github/actions/node
           sparse-checkout-cone-mode: false
       - name: Release files
         uses: ./.github/actions/release-files

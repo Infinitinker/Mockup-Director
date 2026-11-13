@@ -2,7 +2,7 @@
 
 A desktop app that turns flat artwork into photorealistic 3D mockups (boxes, disc cases, books, print, devices) and exports stills, turntable animations and batches. Tauri v2 (Rust shell in `src-tauri/`) with a TypeScript + three.js web UI in `src/`, for Windows, macOS and Linux.
 
-`README.md` is for users. Developer documentation is in `docs/`: `architecture.md` (design, code map, folders, terms, files and data), `models.md` (the model contract), `development.md` (setup, checks, interface texts), `releasing.md` and `licenses.md`. Keep them current when the code changes.
+`README.md` is for users. Developer documentation is in `docs/`: `architecture.md` (design, code map, folders, terms, files and data), `first-model.md` (a first model, step by step, for readers new to the code), `models.md` (the model contract), `development.md` (setup and checks), `interface-texts.md` (the rules for the interface's texts), `releasing.md` and `licenses.md`. Keep them current when the code changes.
 
 Code written before these rules is being brought in line with them, stage by stage. Follow the rules in new and changed code, and don't extend what they replace.
 
@@ -12,13 +12,17 @@ Code written before these rules is being brought in line with them, stage by sta
 - American spelling: color, center, gray, canceled, normalize, millimeter.
 - Each concept has one name, used in the interface, code, file names, storage keys, docs and commit messages: a **look**, not a style or preset; **artwork**, not images. The names are listed in the terms table in `docs/architecture.md`.
 - The name is **Mockup Director** in prose and the interface, and `MockupDirector-<version>-…` in release file names. Elsewhere:
-  - `mockup-director` for the npm package, the binary Cargo builds and storage keys (`mockup-director.*`), and `mockup_director_lib` for the Rust library; the Windows installer and portable ZIP ship the binary as `Mockup Director.exe`;
-  - `io.github.infinitinker.mockupdirector` as the app identifier, with `.dev` added for the app run from source (`src-tauri/tauri.dev.conf.json`);
-  - project files: the `.mdproj` extension and only that one, the MIME type `application/x-mockup-director-project` and the type identifier `io.github.infinitinker.mockupdirector.project`.
+  - `mockup-director` for the npm package, the binary Cargo builds (shipped under that name everywhere, as `mockup-director.exe` on Windows) and storage keys (`mockup-director.*`), and `mockup_director_lib` for the Rust library;
+  - `io.github.infinitinker.mockupdirector` as the app identifier, with `.dev` added for the app run from source (`src-tauri/tauri.dev.conf.json`) and `.e2e` for the end-to-end tests (`src-tauri/tauri.e2e.conf.json`), and `5232673D-A21D-4A04-B4C4-6E8C5ACCFEDE` as the Windows installer's `AppId` (`tools/installer.iss`), which never changes;
+  - `Mockup Director` as the name of the app's data folder (`app > appDirectoriesOverride`), with ` Dev` and ` E2E` added for the app run from source and the end-to-end tests;
+  - project files: the `.mdproj` extension and only that one, the MIME type `application/x-mockup-director-project`, the type identifier `io.github.infinitinker.mockupdirector.project` on macOS and the file type `MockupDirector.Project` on Windows (`tools/installer.iss`);
+  - the files the app writes: the log `mockup-director.log` and its older parts `mockup-director.log.1` and `.log.2`, the exported looks `mockup-director-looks.json`, exports whose default names start `mockup-director-` (`src/export/fileNames.ts`), and the temporary files of an atomic write, which end `.mockup-director-tmp`; the session's database in the web engine and the `app` value in project files are `mockup-director` too;
+  - on Linux, the `.deb` and `.rpm` package `mockup-director`, which installs the icons `mockup-director.png`, the MIME definition `/usr/share/mime/packages/mockup-director.xml`, and the desktop entry `Mockup Director.desktop` and the folder `/usr/lib/Mockup Director`, which Tauri names after the product name.
 
   The repository is `Infinitinker/Mockup-Director`.
 - File names are camelCase in `src/` and `tests/` (`plasticCard.ts`), kebab-case in `tools/` (`draw-icon.mjs`). A module's name does not repeat its folder (`panels/looks.ts`, not `panels/looksPanel.ts`), as long as the shorter name still says what it is.
 - Model, slot and parameter ids and the values of select options are saved in project files: never rename them for style.
+- Commit scopes: `core`, `documents`, `export`, `models`, `platform`, `project`, `scene`, `styles`, `ui`, `shell` (the Rust side in `src-tauri/`), `release`. Commits follow Conventional Commits, such as `feat(models): add a vinyl sleeve`.
 
 ## Open source
 
@@ -42,7 +46,7 @@ The goal is clean code, modularity, portability, and that anyone can make a conv
 - A model is a `ModelDefinition` in `src/models/`, listed in `src/models/registry.ts`; adding one must not need UI code. See `docs/models.md`.
 - A model, panel or subsystem is one module until it needs several files, then a folder. Never put a file next to a folder of the same name. A folder that grows past about a dozen modules is split into subfolders by role. See "How the folders are organized" in `docs/architecture.md`.
 - Imports run one way: `core` ← `models` and `scene` ← `export` ← `project` ← `documents` ← `ui`; `models` and `scene` never import each other. Only `ui` and the entry point `main.ts` use `platform`, except the log (`platform/log.ts`), which every module may use; `platform` itself imports only `core`. `tests/layout.test.ts` checks this.
-- Logic lives in TypeScript. The Rust shell only does what the web engine cannot: native dialogs, atomic file writes, a single app instance, files the system opens with the app, closing the window, and the log.
+- Logic lives in TypeScript. The Rust shell only does what the web engine cannot: native dialogs, atomic file writes, a single app instance, files the system opens with the app, closing the window, the log, and the web engine's settings that must be made before it starts (its data folder, WebKitGTK's renderer on Linux).
 
 ### Portability
 - The web UI runs on three engines: WebView2, WKWebView (Safari 15+) and WebKitGTK 4.1. Use only what all of them support, or detect the feature at run time and explain in the interface when it is missing.
@@ -51,13 +55,15 @@ The goal is clean code, modularity, portability, and that anyone can make a conv
 
 ### Ease of use
 - A new user gets from download to an exported mockup without reading docs: sensible defaults for every model, its camera and its look.
-- Interface texts follow the guide in `docs/development.md`: sentence case, `…` only for commands that ask for more and for progress texts, and hints in full sentences.
+- Interface texts follow the rules in `docs/interface-texts.md`: sentence case, `…` only for commands that ask for more and for progress texts, and hints in full sentences.
 - Projects, the looks file and the session carry a `version`. A change that an older app would lose on re-save raises it and adds a migration; a file from a newer version is refused with a message to update Mockup Director. Until the first release there is no backwards-compatibility code.
 - The README and its screenshots are updated together with the features they show.
 
 ## Tooling
 
 - Node.js 22+ with npm, and the Rust stable toolchain for the desktop app; on Windows MSYS2 with Rust's GNU toolchain. See `docs/development.md`.
+- The project's own code builds with free toolchains: on Windows MSYS2 and Rust's GNU toolchain, never MSVC or Visual Studio, and build files, CI and docs offer no MSVC route. Prebuilt dependencies and tools (npm binaries, installers) may be built with MSVC.
 - Before committing: `npm run lint`, `npm run build` and `npm test` (`npm run format` fixes formatting); for Rust changes `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` (in `src-tauri/`); `npm run licenses` and `npm run notices` after changing dependencies (commit the regenerated `THIRD-PARTY-NOTICES.md`). The end-to-end tests (`npm run e2e:build`, then `npm run e2e`) are not needed before each commit: CI runs them.
+- Before pushing a change that touches Linux (platform-specific code: `src/platform/` and the `cfg(target_os)` branches in `src-tauri/`; the per-user folders, packaging, the Linux CI jobs), run the Linux checks in WSL as "Linux checks on Windows (WSL)" in `docs/development.md` lists them. Other changes leave them to CI.
 - The Windows installer is made by Inno Setup 7 from `tools/installer.iss` (`npm run installer`, after `npm run tauri build`).
 - Branches: `main` is stable, work happens on `dev`, changes reach `main` through pull requests.

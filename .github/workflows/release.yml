@@ -5,7 +5,7 @@ name: Release
 # Release → Run workflow, on any branch) does the same without drafting, to try a release before
 # tagging it; it keeps the files on the run's page for 90 days. Each system's build is a workflow of
 # its own (build-windows.yml, build-macos.yml, build-linux.yml), which also checks its files, and
-# which builds every push and pull request on its own.
+# which builds every pull request on its own.
 on:
   push:
     tags: ["v*"]
@@ -22,7 +22,7 @@ permissions:
 jobs:
   version:
     name: Check the version
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -31,9 +31,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0 # The history of main, to check that the tag is on it.
-      - uses: actions/setup-node@v7
+      - name: Node.js
+        uses: ./.github/actions/node
         with:
-          node-version: 22
+          cache: false
       # The version in package.json, of the form 1.2.3; one with a hyphen is a pre-release.
       - name: Read the version
         id: version
@@ -71,14 +72,12 @@ jobs:
   notices:
     name: Third-party notices
     needs: version
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
+      - name: Node.js
+        uses: ./.github/actions/node
       - name: Install
         run: npm ci
       - name: Licenses and notices
@@ -95,11 +94,16 @@ jobs:
           archive: false
           if-no-files-found: error
 
+  # No release is drafted while a dependency has an open security advisory.
+  advisories:
+    name: Advisories
+    uses: ./.github/workflows/advisories.yml
+
   draft:
     name: Draft the release
-    needs: [version, windows, macos, linux, notices]
+    needs: [version, windows, macos, linux, notices, advisories]
     if: github.event_name == 'push'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     permissions:
       contents: write # To create the release.
@@ -107,10 +111,11 @@ jobs:
       attestations: write # To store them.
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - name: Node.js
+        uses: ./.github/actions/node
         with:
-          node-version: 22
-      # skip-decompress keeps each file as uploaded: otherwise the portable ZIP would arrive unpacked.
+          cache: false
+      # skip-decompress keeps each file as uploaded: otherwise the Windows ZIP would arrive unpacked.
       - uses: actions/download-artifact@v8
         with:
           pattern: MockupDirector-*

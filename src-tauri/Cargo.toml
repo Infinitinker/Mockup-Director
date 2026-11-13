@@ -2,7 +2,7 @@
 name = "mockup-director"
 # No version: the app's version is the one in package.json, which tauri.conf.json reads (for the
 # app, its bundles and the Windows version resource). Cargo counts this crate as 0.0.0.
-description = "Mockup Director – photorealistic 3D mockups of packaging, books, print and devices"
+description = "Your artwork, as a real product. Photorealistic 3D mockups of boxes, disc cases, books, print and devices, made on your own computer."
 authors = ["Infinitinker"]
 license = "MIT"
 repository = "https://github.com/Infinitinker/Mockup-Director"
@@ -41,6 +41,9 @@ tauri = { version = "~2.12", features = [] }
 tauri-plugin-dialog = "~2.8"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+# The system folders the log goes in (log.rs): the log starts before Tauri's path resolver exists.
+# Tauri resolves its own folders with the same crate and version.
+dirs = "7"
 # The end-to-end test plugins (feature e2e): a WebDriver server inside the app, and the bridge that
 # lets the tests mock commands. Exact versions: they must match @wdio/tauri-service in package.json.
 tauri-plugin-wdio = { version = "=2.0.0-next.0", optional = true }

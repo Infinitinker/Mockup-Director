@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2210" height="3072" viewBox="0 0 141 196">
+  <!-- The back of the Box (141 × 196 mm with 3 mm bleed), for the README's screenshots. Made-up brand. -->
+  <rect width="141" height="196" fill="#1f5a43"/>
+  <rect x="8" y="8" width="125" height="180" fill="none" stroke="#e9c46a" stroke-width="0.8"/>
+  <rect x="10" y="10" width="121" height="176" fill="none" stroke="#e9c46a" stroke-width="0.3"/>
+  <text x="70.5" y="30" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="9" letter-spacing="1" fill="#f4ead2">FERNHILL</text>
+  <g font-family="Georgia, 'Times New Roman', serif" fill="#f4ead2">
+    <text x="22" y="52" font-size="7">How to brew</text>
+    <g font-family="Arial, Helvetica, sans-serif" font-size="4">
+      <text x="22" y="64">1. Heat fresh water to 75 °C.</text>
+      <text x="22" y="72">2. Steep one bag for 2 to 3 minutes.</text>
+      <text x="22" y="80">3. Remove the bag and enjoy.</text>
+    </g>
+    <text x="22" y="100" font-size="7">From our hills</text>
+    <g font-family="Arial, Helvetica, sans-serif" font-size="4">
+      <text x="22" y="112">Picked in early spring and gently</text>
+      <text x="22" y="120">steamed, for a fresh, grassy cup</text>
+      <text x="22" y="128">with a soft, sweet finish.</text>
+    </g>
+  </g>
+  <rect x="22" y="142" width="97" height="22" rx="1.5" fill="none" stroke="#e9c46a" stroke-width="0.4"/>
+  <g font-family="Arial, Helvetica, sans-serif" font-size="3.4" fill="#f4ead2">
+    <text x="27" y="151">Ingredients: green tea (100%).</text>
+    <text x="27" y="158">20 bags · 2 g each · NET WT 40 g</text>
+  </g>
+  <text x="70.5" y="178" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="3" letter-spacing="0.6" fill="#e9c46a">FERNHILL TEA COMPANY · HARBOR TOWN</text>
+</svg>

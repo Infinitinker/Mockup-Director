@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="721" height="3072" viewBox="0 0 46 196">
+  <!-- The left and right sides of the Box (46 × 196 mm with 3 mm bleed), for the README's screenshots. -->
+  <rect width="46" height="196" fill="#1d5440"/>
+  <line x1="8" y1="8" x2="8" y2="188" stroke="#e9c46a" stroke-width="0.6"/>
+  <line x1="38" y1="8" x2="38" y2="188" stroke="#e9c46a" stroke-width="0.6"/>
+  <g transform="rotate(-90 23 98)">
+    <text x="23" y="101" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="11" letter-spacing="1.4" fill="#f4ead2">FERNHILL</text>
+    <text x="23" y="108" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="2.8" letter-spacing="1" fill="#e9c46a">GREEN TEA · SENCHA</text>
+  </g>
+  <circle cx="23" cy="172" r="3.2" fill="#f2c14e"/>
+</svg>

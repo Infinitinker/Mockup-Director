@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "license": "MIT",
-  "description": "Mockup Director – photorealistic 3D mockups of packaging, books, print and devices for Windows, macOS and Linux",
+  "description": "Your artwork, as a real product. Photorealistic 3D mockups of boxes, disc cases, books, print and devices, made on your own computer.",
   "type": "module",
   "engines": {
     "node": ">=22"
@@ -20,6 +20,7 @@
     "app:dev": "tauri dev --config src-tauri/tauri.dev.conf.json",
     "e2e:build": "node tools/e2e-build.mjs",
     "e2e": "wdio run tests/e2e/wdio.config.ts",
+    "screenshots": "wdio run tests/e2e/screenshots.config.ts",
     "icons": "node tools/draw-icon.mjs",
     "installer": "node tools/installer.mjs"
   },
@@ -47,5 +48,14 @@
     "vite": "^8.3.5",
     "vitest": "^5.1.0",
     "webdriverio": "^10.2.0"
+  },
+  "overrides": {
+    "mocha": {
+      "glob": "^14.0.5",
+      "minimatch": "^11.0.5"
+    },
+    "readdir-glob": {
+      "minimatch": "^11.0.5"
+    }
   }
 }

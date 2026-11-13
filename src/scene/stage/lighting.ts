@@ -11,6 +11,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import type { LightSettings, SceneSettings } from '../../core/types/scene';
 import { finite } from '../../core/math';
+import { log } from '../../platform/log';
 
 const DEG = Math.PI / 180;
 
@@ -83,7 +84,8 @@ export class StudioLights {
     keyLight.target.updateMatrixWorld();
     try {
       keyLight.color.set(s.light.color);
-    } catch {
+    } catch (e) {
+      log.warn('The light color is not a color, so the light is white', e);
       keyLight.color.set(0xffffff);
     }
     const key = keyIntensity(s.light);

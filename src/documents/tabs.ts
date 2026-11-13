@@ -17,6 +17,8 @@ export interface TabInfo {
   readonly id: string;
   /** The project's name (its file name without the extension); '' for a project never saved. */
   readonly name: string;
+  /** The full path of the project's file, which Save writes to; null when there is none to write to. */
+  readonly path: string | null;
   /** For tabs without a name: 1 for the first ("Untitled"), 2 for "Untitled 2", … */
   readonly untitledNumber: number;
   readonly dirty: boolean;
@@ -27,6 +29,7 @@ export interface TabInfo {
 export interface TabSnapshot {
   readonly id: string;
   readonly name: string;
+  readonly path: string | null;
   readonly dirty: boolean;
   readonly revision: number;
   readonly state: DocumentState;
@@ -34,6 +37,8 @@ export interface TabSnapshot {
 
 interface AddOptions {
   name?: string;
+  /** The full path of the project's file. */
+  path?: string | null;
   /** The tab starts with unsaved changes (e.g. restored unsaved work). */
   dirty?: boolean;
   /** Switch to the new tab (default: true). */
@@ -47,6 +52,7 @@ interface AddOptions {
 interface Entry {
   id: string;
   name: string;
+  path: string | null;
   untitledNumber: number;
   /** The revision the tab was last saved (or opened / created) at; -1: never matches. */
   savedRevision: number;
@@ -73,7 +79,7 @@ export class Documents {
     private readonly store: Store,
     private readonly fresh: () => DocumentState,
   ) {
-    this.active = { id: newId(), name: '', untitledNumber: 1, savedRevision: store.revision, doc: null };
+    this.active = { id: newId(), name: '', path: null, untitledNumber: 1, savedRevision: store.revision, doc: null };
     this.entries = [this.active];
     this.lastDirty = false;
     store.subscribe(() => {
@@ -101,6 +107,7 @@ export class Documents {
     return this.entries.map((e) => ({
       id: e.id,
       name: e.name,
+      path: e.path,
       untitledNumber: e.untitledNumber,
       dirty: this.isDirty(e),
       active: e === this.active,
@@ -129,6 +136,7 @@ export class Documents {
     const entry: Entry = {
       id: opts.id ?? newId(),
       name: opts.name ?? '',
+      path: opts.path ?? null,
       untitledNumber: opts.name ? 0 : this.freeUntitledNumber(),
       savedRevision: opts.dirty ? -1 : doc.revision,
       doc,
@@ -180,23 +188,27 @@ export class Documents {
   }
 
   /**
-   * Records that a tab was saved under `name`, as it was at `revision` (taken before the save
-   * started: edits made while the file was written stay unsaved). Nothing happens when the tab was
-   * closed meanwhile.
+   * Records that a tab was saved under `name` to the file at `path` (null when the save could not
+   * say where), as it was at `revision` (taken before the save started: edits made while the file
+   * was written stay unsaved). Nothing happens when the tab was closed meanwhile.
    */
-  markSaved(id: string, revision: number, name: string): void {
+  markSaved(id: string, revision: number, name: string, path: string | null): void {
     const entry = this.entries.find((e) => e.id === id);
     if (!entry) return;
     entry.name = name;
+    entry.path = path;
     entry.untitledNumber = 0;
     entry.savedRevision = revision;
     if (entry === this.active) this.lastDirty = this.isDirty(entry);
     this.emit();
   }
 
-  /** Records that the active tab now holds a project opened from a file (see Store.replace). */
-  markActiveOpened(name: string): void {
-    this.markSaved(this.active.id, this.store.revision, name);
+  /**
+   * Records that the active tab now holds a project opened from a file (see Store.replace), at
+   * `path` (null when there is none to save back to).
+   */
+  markActiveOpened(name: string, path: string | null): void {
+    this.markSaved(this.active.id, this.store.revision, name, path);
   }
 
   /** Every tab with its current state, in tab order (for the session autosave). */
@@ -205,7 +217,7 @@ export class Documents {
       const isActive = e === this.active;
       const state: DocumentState = isActive ? { ...this.store.state } : this.parkedDoc(e).state;
       const revision = isActive ? this.store.revision : this.parkedDoc(e).revision;
-      return { id: e.id, name: e.name, dirty: this.isDirty(e), revision, state };
+      return { id: e.id, name: e.name, path: e.path, dirty: this.isDirty(e), revision, state };
     });
   }
 

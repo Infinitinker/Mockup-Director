@@ -1,6 +1,6 @@
 /**
  * Keyboard shortcuts: ⌘ on macOS, Ctrl elsewhere.
- *  ⌘N / ⌘T new project tab · ⌘O open · ⌘S save · ⌘W close the tab · ⌘E export · ⌘Z undo ·
+ *  ⌘N / ⌘T new project tab · ⌘O open · ⌘S save · ⇧⌘S save as · ⌘W close the tab · ⌘E export · ⌘Z undo ·
  *  ⇧⌘Z redo (also Ctrl+Y off-mac) · 1–6 preset views.
  *  Next / previous tab: Ctrl+Tab / Ctrl+Shift+Tab and Ctrl+PageDown / Ctrl+PageUp everywhere (also on
  *  macOS, like its browsers), plus ⇧⌘] / ⇧⌘[ on macOS.
@@ -47,7 +47,7 @@ export function installShortcuts(ctx: AppContext): () => void {
           return;
         case 's':
           e.preventDefault();
-          void a.saveProject();
+          void (e.shiftKey ? a.saveProjectAs() : a.saveProject());
           return;
         case 'e':
           e.preventDefault();

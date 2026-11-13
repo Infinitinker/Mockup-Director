@@ -4,6 +4,7 @@
  * (the host must implement them), so we draw our own sheet-like dialogs.
  */
 import { h } from '../dom';
+import { log } from '../../platform/log';
 
 interface DialogOptions {
   title: string;
@@ -62,8 +63,8 @@ function openDialog<T>(
       setTimeout(() => backdrop.remove(), 160);
       try {
         prevFocus?.focus();
-      } catch {
-        /* ignore */
+      } catch (e) {
+        log.warn('Cannot give the focus back after a dialog closed', e);
       }
       resolve(result);
     };

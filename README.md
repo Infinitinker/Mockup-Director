@@ -10,8 +10,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Infinitinker/Mockup-Director/releases/latest"><img src="https://img.shields.io/github/v/release/Infinitinker/Mockup-Director?label=download" alt="Latest release"></a>
-  <a href="https://github.com/Infinitinker/Mockup-Director/actions/workflows/checks.yml"><img src="https://github.com/Infinitinker/Mockup-Director/actions/workflows/checks.yml/badge.svg" alt="Checks"></a>
+  <a href="https://github.com/Infinitinker/Mockup-Director/releases/latest"><img src="https://img.shields.io/github/v/release/Infinitinker/Mockup-Director" alt="Latest release"></a>
+  <a href="https://github.com/Infinitinker/Mockup-Director/actions/workflows/checks.yml"><img src="https://img.shields.io/github/actions/workflow/status/Infinitinker/Mockup-Director/checks.yml?branch=main&label=checks" alt="Checks on main"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License: MIT"></a>
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-555" alt="Platform: Windows, macOS and Linux">
   <img src="https://img.shields.io/badge/works-offline-2ea44f" alt="Works offline">
@@ -70,21 +70,27 @@ Every [release](https://github.com/Infinitinker/Mockup-Director/releases/latest)
 
 Download `MockupDirector-x.y.z-windows-x64-setup.exe` and run it. It installs Mockup Director for you alone, so it needs no administrator rights; if you are an administrator, you can choose to install it for all users instead. It needs Windows 10 or 11 (64-bit) with Microsoft Edge WebView2, which comes with Windows; if it is missing, the installer downloads it.
 
-Rather not install anything? Download `MockupDirector-x.y.z-windows-x64-portable.zip` instead, unzip it anywhere and start **Mockup Director.exe** in the folder. It keeps its data in the same place as the installed app.
+Rather not install anything? Download `MockupDirector-x.y.z-windows-x64.zip` instead, unzip it anywhere and start **mockup-director.exe** in the folder. It keeps its data in the same place as the installed app.
+
+Mockup Director is not code-signed, so the first time you run it, Windows warns that it doesn't know the app: see [Windows says "Windows protected your PC"](#questions).
 
 ### macOS
 
 Download `MockupDirector-x.y.z-macos-universal.dmg`, open it and drag **Mockup Director** to **Applications**. It runs on Apple Silicon and Intel Macs with macOS 12 (Monterey) or later.
 
+Mockup Director is not signed by Apple, so the first time you open it, macOS asks you to allow it once: see [macOS says "Apple could not verify…"](#questions).
+
 ### Linux
 
-Mockup Director needs 64-bit Linux (x86_64) with glibc 2.35 or newer: Ubuntu 22.04+, Debian 12+, Linux Mint 21+, Fedora 36+, openSUSE Tumbleweed / Leap 16 and similar. Download one of these files and run its command in the folder you downloaded it to:
+Mockup Director needs 64-bit Linux (x86_64) with glibc 2.35 or newer: Ubuntu 22.04+, Debian 12+, Linux Mint 21+, Fedora 36+, openSUSE Tumbleweed / Leap 16 and similar. Download one of these files, then open it from your file manager or run its command in the folder you downloaded it to:
 
 - **AppImage**, for any distribution, without installing:
 
   ```bash
   chmod +x ./MockupDirector-*-linux-x86_64.AppImage && ./MockupDirector-*-linux-x86_64.AppImage
   ```
+
+  Without a terminal: a downloaded file loses its permission to run as a program, so a double-click does not start it yet. In the file manager, right-click the file, choose **Properties** and turn on **Executable as Program** (on older GNOME and in Linux Mint: the **Permissions** tab, **Allow executing file as program**; in KDE: **Permissions**, **Is executable**). Then double-click it. Started this way it shows no errors: if nothing happens, run the command above in a terminal to see why; often FUSE is missing (see [Questions](#questions)). The AppImage adds no entry to the applications menu and does not open `.mdproj` files when you double-click them.
 
 - **`.deb`**, for Debian, Ubuntu and Mint:
 
@@ -104,6 +110,8 @@ Mockup Director needs 64-bit Linux (x86_64) with glibc 2.35 or newer: Ubuntu 22.
   sudo zypper install --allow-unsigned-rpm ./MockupDirector-*-linux-x86_64.rpm
   ```
 
+Double-clicking a `.deb` or `.rpm` package opens the system's software installer, which asks for your password and installs it. If it refuses the package or fails (for example Ubuntu's App Center with a downloaded `.deb`, or a graphical installer with the unsigned `.rpm`), use the command above, or the AppImage.
+
 The `.deb` and `.rpm` packages install the system's WebKitGTK and add Mockup Director to the applications menu; the AppImage carries its own copy.
 
 The first time you start it, Windows or macOS may warn you about the app, and some Linux systems need FUSE for the AppImage: see [Questions](#questions).
@@ -122,7 +130,7 @@ The notes of every release list the SHA-256 checksum of each file. To check that
 
 ## Artwork
 
-Each side of a model has its own card in the **Artwork** tab: drop an image file on it or on the preview, or choose one from disk. PNG, JPEG, WebP, GIF, SVG and AVIF are supported. A file can have up to 100 MB and 100 megapixels, enough for an A1 poster at 300 dpi. A card warns you when the artwork's proportions don't match its side.
+Each side of a model has its own card in the **Artwork** tab: drop an image file on it or on the preview, or choose one from disk. PNG, JPEG, WebP, GIF, SVG and AVIF are supported. A file can have up to 100 MB and 100 megapixels, enough for an A1 poster at 300 dpi. When the artwork's proportions don't match its side, the card warns you and the model shows the artwork's center, cropped to fit, never stretched; screens follow their **Artwork fit** setting.
 
 Print models (boxes, cases, discs, books and print) have a **Template…** button on the card of each side. It saves a 300 dpi PNG with the exact size, bleed and guide lines. Design your artwork on it and it fits the model exactly. Phones and tablets get a template of the screen without bleed; laptops, monitors, screenshots and browser windows have none.
 
@@ -136,7 +144,7 @@ The **Looks** tab has a few built-in looks (named scene settings: light, shadow,
 
 The **Export** tab makes:
 
-- **an image:** PNG (with transparency), JPEG or WebP, up to 4000 × 4000 px, with a margin. PNG and JPEG also store the print resolution (DPI) in the file.
+- **an image:** PNG (with transparency), JPEG or WebP, up to 4000 × 4000 px, square or in another aspect ratio (4:5, 3:2, 16:9, 9:16 or your own), with a margin. PNG and JPEG also store the print resolution (DPI) in the file.
 - **an animation:** the product turning a full 360° or swinging back and forth, as a GIF, animated WebP or MP4 (H.264), 1–20 seconds long. It starts from the current view and keeps the light, shadow and reflection, with one fixed framing so nothing is cropped. You can follow the progress and cancel.
 - **a batch:** many mockups in one ZIP file: many images in one side of a model, several views of the current project, or many project files at once.
 
@@ -144,7 +152,7 @@ Some formats depend on your system's web engine: WebP export is available where 
 
 ## Projects and tabs
 
-- **Projects** are saved as `.mdproj` files, which hold the model, your artwork, the scene and the export settings. A project can hold up to 400 MB, counting the artwork of every model you used in it (artwork carried over when you switch models counts again); a file that would make it larger is refused, and artwork is not carried over to another model when it would, so remove artwork or use smaller files. Double-click one to open it in Mockup Director (the installer and the Linux packages register the file type; with the AppImage, use the app's **Open…** button).
+- **Projects** are saved as `.mdproj` files, which hold the model, your artwork, the scene and the export settings. **Save** writes the project to its file; a new project asks where to save it the first time. **Save as…** saves it to a new file, which **Save** then writes to. A project can hold up to 400 MB, counting the artwork of every model you used in it (artwork carried over when you switch models counts again); a file that would make it larger is refused, and artwork is not carried over to another model when it would, so remove artwork or use smaller files. Double-click one to open it in Mockup Director (the installer and the Linux packages register the file type; with the AppImage, use the app's **Open…** button).
 - **Tabs:** every open project is a tab above the 3D preview, with its own undo history. **New** opens a new tab; **Open…** opens each project in its own tab, taking the place of an untouched new tab. A project you double-click while the app is open arrives as a new tab in the same window (during an export, it opens when the export ends). A • marks a tab with unsaved changes; closing it asks whether to save them.
 - **Your open tabs are saved automatically** a moment after each change and when you close the window, unsaved changes included, and come back the next time you start the app. So closing the window does not ask. On macOS, quitting the app (⌘Q, **Quit** in the Dock, logging out) skips that last save, so changes from the last second or two may be missing: close the window first, or save the project.
 - **Projects that cannot be reopened are never thrown away.** If a project that was open comes from a newer version of Mockup Director, or its stored copy is damaged, a dialog at the start lists it: save it to a file, delete it, or leave it for the next start. A newer Mockup Director reopens the ones from a newer version by itself. If Mockup Director closed while reopening your projects (for example, because their artwork took more memory than the computer has, or because it was quit or the computer shut down meanwhile), the next start does not try those projects again but lists them in the same dialog: open one again there, or save it to a file.
@@ -157,7 +165,8 @@ On macOS use ⌘ instead of Ctrl, except for switching tabs (Ctrl+Tab / Ctrl+Shi
 | --- | --- |
 | Ctrl+N or Ctrl+T | New project, in a new tab |
 | Ctrl+O | Open projects, each in its own tab |
-| Ctrl+S | Save the project in the active tab |
+| Ctrl+S | Save the project in the active tab to its file (a new project asks where) |
+| Ctrl+Shift+S | Save the project in the active tab as a new file |
 | Ctrl+W | Close the active tab |
 | Ctrl+Tab / Ctrl+Shift+Tab (also Ctrl+PageDown / Ctrl+PageUp) | Next / previous tab (on macOS also ⇧⌘] / ⇧⌘[) |
 | Ctrl+E | Export an image |
@@ -167,8 +176,14 @@ On macOS use ⌘ instead of Ctrl, except for switching tabs (Ctrl+Tab / Ctrl+Shi
 
 ## Questions
 
+**Why isn't Mockup Director signed?**
+Mockup Director is free, and the certificates that Windows and macOS trust cost money every year. So Windows and macOS warn the first time you start it, as the next two answers show. To make sure a download is the real one, compare its checksum with the list in its [release](https://github.com/Infinitinker/Mockup-Director/releases/latest), or check with the [GitHub CLI](https://cli.github.com/) that this repository built it: `gh attestation verify <file> --repo Infinitinker/Mockup-Director`.
+
 **Windows says "Windows protected your PC".**
-Mockup Director is not code-signed yet, so Windows SmartScreen doesn't know it. Choose **More info**, then **Run anyway**. You only need to do this once.
+Windows SmartScreen warns about apps it doesn't know yet. Choose **More info**, then **Run anyway**. You only need to do this once.
+
+**Windows says Smart App Control blocked Mockup Director.**
+Smart App Control, which is on for some Windows 11 PCs, runs only apps that are signed or that it knows, and it has no **Run anyway** button, so Mockup Director can't run while it is on. You can turn it off in **Windows Security → App & browser control → Smart App Control settings**. On some versions of Windows it can't be turned back on without reinstalling Windows, so check first what it means on yours.
 
 **macOS says "Apple could not verify…" and won't open it.**
 A Mac blocks apps that are not signed with an Apple Developer ID the first time. Open Mockup Director and close the message, then open **System Settings → Privacy & Security**, scroll down, and next to the message about Mockup Director click **Open Anyway**; confirm with your password or Touch ID. On macOS 15 and later, the old "right-click → Open" trick no longer works. Or run this in Terminal:
@@ -177,17 +192,11 @@ A Mac blocks apps that are not signed with an Apple Developer ID the first time.
 xattr -dr com.apple.quarantine "/Applications/Mockup Director.app"
 ```
 
-**Linux: the AppImage says "No suitable fusermount binary found".**
+**Linux: the AppImage does not start, or says "No suitable fusermount binary found".**
 FUSE is missing: install the `fuse3` package, or start the AppImage with `--appimage-extract-and-run`.
 
 **Linux: the window stays blank or white, or the 3D preview is missing.**
-This is a known WebKitGTK problem with DMA-BUF rendering, common with NVIDIA graphics and Wayland. Start the app with:
-
-```bash
-WEBKIT_DISABLE_DMABUF_RENDERER=1 mockup-director
-```
-
-For the AppImage, put the same `WEBKIT_DISABLE_DMABUF_RENDERER=1` before `./MockupDirector-*-linux-x86_64.AppImage`.
+WebKitGTK's DMA-BUF renderer causes this on many systems, most often with NVIDIA graphics and Wayland, so Mockup Director turns it off itself. It leaves it on only when `WEBKIT_DISABLE_DMABUF_RENDERER` is already set in your environment: if you set it to `0`, remove it. If the window is still blank, update your graphics drivers.
 
 **It says "The 3D preview is not available: WebGL does not work on this computer".**
 Update your graphics drivers, then restart Mockup Director; on a virtual machine, enable 3D acceleration.
@@ -202,13 +211,13 @@ No. It makes no network connections: no accounts, no telemetry and no update che
 Yes. The images you export are yours, and the app contains no third-party templates, artwork or logos. If your design needs a logo such as the DVD Video, Blu-ray Disc or Apple logos, add it to your own artwork under its owner's terms.
 
 **Where are my settings and open tabs?**
-Your looks, the open tabs and a few interface choices are kept in your user profile, in a folder named after the app's identifier, `io.github.infinitinker.mockupdirector`: on Windows in `%LOCALAPPDATA%`, on Linux in `~/.local/share`, on macOS in `~/Library/WebKit`. Your projects are wherever you saved the `.mdproj` files.
+Your looks, the open tabs and a few interface choices are kept in your user profile, in the `webview` folder inside a folder named `Mockup Director`: on Windows in `%LOCALAPPDATA%`, on Linux in `~/.local/share`. On macOS the system keeps them in a folder named after the app's identifier, `~/Library/WebKit/io.github.infinitinker.mockupdirector`. Your projects are wherever you saved the `.mdproj` files.
 
 **Something went wrong. Is there a log?**
-Yes: `mockup-director.log`, on Windows in `%LOCALAPPDATA%\io.github.infinitinker.mockupdirector\logs`, on macOS in `~/Library/Logs/io.github.infinitinker.mockupdirector`, on Linux in `~/.local/share/io.github.infinitinker.mockupdirector/logs`. It records errors, never your artwork or the contents of your files, but it can name your files and folders: read it before you attach it to a bug report. It keeps about 3 MB and deletes the oldest entries.
+Yes: `mockup-director.log`, on Windows in `%LOCALAPPDATA%\Mockup Director\logs`, on macOS in `~/Library/Logs/Mockup Director`, on Linux in `~/.local/state/Mockup Director/log`. It records errors, never your artwork or the contents of your files, but it can name your files and folders: read it before you attach it to a bug report. It keeps about 3 MB and deletes the oldest entries.
 
 **How do I update or remove it?**
-To update, install the newer version over the old one: run the new installer on Windows, drag the new app to **Applications** on macOS, or install the new package or replace the AppImage on Linux; with the portable ZIP, replace its folder. Your looks and open tabs stay. To remove it, uninstall it like any other app (on Windows in Settings → Apps). Uninstalling keeps the settings folder and the log folder above; delete them yourself to remove everything. On Windows, if you installed Mockup Director for you alone, the uninstaller asks whether to delete them too.
+To update, install the newer version over the old one: run the new installer on Windows, drag the new app to **Applications** on macOS, or install the new package or replace the AppImage on Linux; with the ZIP, replace its folder. Your looks and open tabs stay. To remove it, uninstall it like any other app (on Windows in Settings → Apps). Uninstalling keeps the settings folder and the log folder above; delete them yourself to remove everything. On Windows, if you installed Mockup Director for you alone, the uninstaller asks whether to delete them too.
 
 **Which version do I have?**
 Hold the pointer over **Mockup Director** at the left of the toolbar.
@@ -221,7 +230,9 @@ Further documentation, for developers:
 
 - [docs/development.md](docs/development.md): building and running from source, checks, branches
 - [docs/architecture.md](docs/architecture.md): how the app is built and where the code lives
-- [docs/models.md](docs/models.md): adding a new 3D model
+- [docs/interface-texts.md](docs/interface-texts.md): how the interface's texts are written
+- [docs/first-model.md](docs/first-model.md): your first model, step by step, with no programming experience needed
+- [docs/models.md](docs/models.md): adding a new 3D model, the full reference
 - [docs/releasing.md](docs/releasing.md): versions, releases and code signing
 - [docs/licenses.md](docs/licenses.md): the dependency license policy and third-party notices
 

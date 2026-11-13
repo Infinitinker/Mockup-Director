@@ -29,9 +29,9 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
  * @type {Record<string, string[]>}
  */
 export const PARTS = {
-  windows: ['windows-x64-setup.exe', 'windows-x64-portable.zip'],
+  windows: ['windows-x64-setup.exe', 'windows-x64.zip'],
   macos: ['macos-universal.dmg'],
-  linux: ['linux-x86_64.AppImage', 'linux-x86_64.deb', 'linux-x86_64.rpm'],
+  linux: ['linux-x86_64.AppImage', 'linux-x86_64.deb', 'linux-x86_64.rpm', 'linux-x86_64-appimage-libraries.md'],
   notices: ['third-party-notices.md'],
 };
 

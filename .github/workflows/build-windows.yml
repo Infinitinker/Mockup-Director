@@ -1,12 +1,11 @@
 name: Build Windows app
 
-# Builds the Windows release files: the installer and the portable ZIP, each kept on the run's
+# Builds the Windows release files: the installer and the ZIP, each kept on the run's
 # page under its release file name, and checks them. The Release workflow (release.yml) calls it and
 # drafts the release from them; run on its own, it shows early that a change still builds.
 #
-# It runs on every push to dev and main (a merged pull request is a push to main), from the Release
-# workflow, on demand, and for pull requests other than those from this repository's dev and main,
-# whose pushes are built already (so Dependabot's pull requests and other branches get a build too).
+# It runs for every pull request (also Dependabot's and those from forks), from the Release workflow,
+# and on demand (Actions > Build Windows app > Run workflow, on any branch); never for pushes.
 # It is not a required status check; the Checks (checks.yml) and E2E tests (e2e.yml) are.
 #
 # Tauri builds the app without its own installers (bundle.active false in
@@ -18,15 +17,13 @@ name: Build Windows app
 # It is built with MSYS2 (MINGW64) and Rust's GNU toolchain, not with Microsoft's C++ tools: the
 # toolchain of a developer's machine (.github/actions/windows-toolchain explains why). A GNU build
 # loads WebView2Loader.dll at run time instead of linking it in: the installer installs it, and the
-# portable version is a ZIP with the DLL next to the executable.
+# ZIP has the DLL next to the executable.
 on:
-  push:
-    branches: [main, dev]
   pull_request:
   workflow_dispatch:
   workflow_call:
 
-# A newer push cancels the build still going for the older one; a release's build is never cut short.
+# A newer push to a pull request cancels the build still going; a release's build is never cut short.
 # Called from release.yml, github.workflow is "Release".
 concurrency:
   group: build-windows-${{ github.workflow }}-${{ github.ref }}
@@ -42,25 +39,19 @@ env:
 
 jobs:
   build:
-    # A fork can have a branch named dev too, so forks are always built.
-    if: >-
-      github.event_name != 'pull_request' ||
-      github.event.pull_request.head.repo.fork || (github.head_ref != 'dev' && github.head_ref != 'main')
     name: Windows build (x64)
     runs-on: windows-latest
     timeout-minutes: 60
     outputs:
       # The two files, so the check downloads exactly these, whatever else the run builds.
-      artifacts: ${{ steps.setup.outputs.artifact-id }},${{ steps.portable.outputs.artifact-id }}
+      artifacts: ${{ steps.setup.outputs.artifact-id }},${{ steps.zip.outputs.artifact-id }}
     defaults:
       run:
         shell: bash
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
+      - name: Node.js
+        uses: ./.github/actions/node
 
       - name: Windows toolchain
         uses: ./.github/actions/windows-toolchain
@@ -92,28 +83,28 @@ jobs:
 
       # The release binary embeds the whole web UI, so it also runs without installing. It needs the
       # Microsoft Edge WebView2 runtime (part of Windows 10 and 11) and, as a GNU build,
-      # WebView2Loader.dll next to it, so the portable version is a ZIP of both.
+      # WebView2Loader.dll next to it, so the ZIP holds both.
       - name: Name the release files
         run: |
           version="$(node -p "require('./package.json').version")"
           name="MockupDirector-$version-windows-x64"
           release="src-tauri/target/release"
-          folder="portable/Mockup Director"
+          folder="zip/Mockup Director"
           mkdir -p dist-release "$folder"
           cp "$release/installer/$name-setup.exe" dist-release/
-          cp "$release/mockup-director.exe" "$folder/Mockup Director.exe"
+          cp "$release/mockup-director.exe" "$folder/"
           cp "$release/WebView2Loader.dll" "$folder/"
           cp LICENSE "$folder/LICENSE.txt"
           cp THIRD-PARTY-NOTICES.md "$folder/THIRD-PARTY-NOTICES.txt"
           printf '%s\r\n' \
-            "Mockup Director $version, portable" \
+            "Mockup Director $version" \
             "" \
-            "Start Mockup Director.exe. Nothing is installed: the app keeps its open tabs and looks in" \
-            "%LOCALAPPDATA%\\io.github.infinitinker.mockupdirector, the same folder the installed app uses." \
+            "Start mockup-director.exe. Nothing is installed: the app keeps its open tabs and looks in" \
+            "%LOCALAPPDATA%\\Mockup Director, the same folder the installed app uses." \
             "" \
             "Update: replace this folder with the one from the new version." \
             "Remove: delete this folder. To remove your data too, also delete" \
-            "%LOCALAPPDATA%\\io.github.infinitinker.mockupdirector (this also clears the installed app's data)." \
+            "%LOCALAPPDATA%\\Mockup Director (this also clears the installed app's data)." \
             "" \
             "Windows 10 or 11 (64-bit) with Microsoft Edge WebView2 is needed; it comes with Windows." \
             "The app is not signed: if SmartScreen stops it, click More info, then Run anyway." \
@@ -123,7 +114,7 @@ jobs:
             "" \
             "Source and help: https://github.com/${{ github.repository }}" \
             "Built from commit $GITHUB_SHA." > "$folder/README.txt"
-          (cd portable && 7z a -tzip "../dist-release/$name-portable.zip" "Mockup Director" > /dev/null)
+          (cd zip && 7z a -tzip "../dist-release/$name.zip" "Mockup Director" > /dev/null)
           ls -la dist-release
       # Each file on its own and unzipped, so the run's page offers the files themselves. Each step
       # fails unless its pattern matches exactly one file.
@@ -133,17 +124,17 @@ jobs:
           path: dist-release/*-windows-x64-setup.exe
           archive: false
           if-no-files-found: error
-      - id: portable
+      - id: zip
         uses: actions/upload-artifact@v7
         with:
-          path: dist-release/*-windows-x64-portable.zip
+          path: dist-release/*-windows-x64.zip
           archive: false
           if-no-files-found: error
 
   files:
     name: Windows release files
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     steps:
       # What the check runs, and the action.
@@ -153,6 +144,7 @@ jobs:
             package.json
             tools/release.mjs
             .github/actions/release-files
+            .github/actions/node
           sparse-checkout-cone-mode: false
       - name: Release files
         uses: ./.github/actions/release-files

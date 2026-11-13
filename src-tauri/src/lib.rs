@@ -4,20 +4,27 @@
 //!  - the native dialog plugin (save / open panels),
 //!  - saving (`saves.rs`, `files.rs`): writes files made by the web UI (exports, project files) to
 //!    a path the user chose in the native save panel, in chunks and atomically,
-//!  - `take_opened_files`: the project files the operating system asked the app to open,
+//!  - project files to open, with their paths (`opened.rs`): `take_opened_files` for those the
+//!    operating system asked the app to open, `pick_project_files` for those picked in the open
+//!    dialog,
 //!  - a single app process: on Windows and Linux, launching the app again hands the new launch's
 //!    project files to the running app (which opens them in tabs) and brings its window forward;
 //!    on macOS the system itself sends them to the running app, as an event,
 //!  - a close watchdog (`closing.rs`): the window closes even when the page does not answer,
+//!  - the app's per-user folders (`folders.rs`): the data, log and web engine folders,
 //!  - the log (`log.rs`), with `write_log` for the page's entries, and a native message when the
-//!    app cannot start.
+//!    app cannot start,
+//!  - on Linux, turning off WebKitGTK's DMA-BUF renderer, which leaves the window blank on many
+//!    systems (`webkit.rs`).
 
 pub mod closing;
 pub mod error;
 pub mod files;
+pub mod folders;
 pub mod log;
 pub mod opened;
 pub mod saves;
+pub mod webkit;
 
 // The test plugins run an open WebDriver server inside the app: a release build must never get them,
 // even when someone passes the feature to it. `npm run e2e:build` always makes a debug build.
@@ -26,7 +33,8 @@ compile_error!("The e2e feature is only for the debug test build (npm run e2e:bu
 
 use std::path::{Path, PathBuf};
 
-use tauri::{AppHandle, Emitter, Manager, WebviewWindowBuilder, WindowEvent};
+use tauri::utils::config::WindowConfig;
+use tauri::{App, AppHandle, Emitter, Manager, WebviewWindow, WebviewWindowBuilder, WindowEvent};
 
 /// Queues project files for the web UI and tells it they arrived.
 fn hand_over(app: &AppHandle, paths: Vec<PathBuf>) {
@@ -63,11 +71,16 @@ fn on_second_launch(app: &AppHandle, args: Vec<String>, cwd: String) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // First of all, while this is the only thread and before WebKitGTK starts (see webkit::configure).
+    #[cfg(target_os = "linux")]
+    let dmabuf = webkit::configure();
     let context = tauri::generate_context!();
     let version = context.package_info().version.to_string();
-    let log_dir = log::start(log::log_dir(&context.config().identifier, |name| {
-        std::env::var_os(name)
-    }));
+    let log_dir = log::start(
+        folders::data_folder(context.config().app.app_directories_override.as_ref())
+            .zip(folders::system_log_root())
+            .map(|(folder, root)| folders::log_dir(&root, folder)),
+    );
 
     // Windows and Linux pass double-clicked project files as arguments. If the working directory
     // cannot be read, relative paths stay relative (and fail with a clear error when read).
@@ -103,6 +116,7 @@ pub fn run() {
             saves::save_commit,
             saves::save_abort,
             opened::take_opened_files,
+            opened::pick_project_files,
             log::write_log
         ])
         // The window is made here rather than by Tauri (`"create": false` in tauri.conf.json), so
@@ -115,7 +129,7 @@ pub fn run() {
                 .iter()
                 .find(|window| window.label == "main")
                 .ok_or_else(|| tauri::Error::WindowNotFound)
-                .and_then(|config| WebviewWindowBuilder::from_config(app, config)?.build());
+                .and_then(|config| build_window(app, config));
             if let Err(e) = made {
                 fail_to_start(
                     "Mockup Director could not open its window.",
@@ -141,6 +155,17 @@ pub fn run() {
         std::env::consts::OS,
         std::env::consts::ARCH
     ));
+    #[cfg(target_os = "linux")]
+    match dmabuf {
+        webkit::DmabufRenderer::TurnOff => log::info(format_args!(
+            "Turned WebKitGTK's DMA-BUF renderer off ({}=1)",
+            webkit::DISABLE_DMABUF_RENDERER
+        )),
+        webkit::DmabufRenderer::UserChoice(value) => log::info(format_args!(
+            "Left {} as it was set: {value:?}",
+            webkit::DISABLE_DMABUF_RENDERER
+        )),
+    }
     app.run(|app_handle, event| {
         // The process ends without dropping the app's state, so the temporary files of saves that
         // are still open are removed here.
@@ -158,6 +183,15 @@ pub fn run() {
             hand_over(app_handle, paths);
         }
     });
+}
+
+/// Builds a window from its config, with the web engine's data in `folders::webview_dir` on Windows
+/// and Linux.
+fn build_window(app: &App, config: &WindowConfig) -> tauri::Result<WebviewWindow> {
+    let builder = WebviewWindowBuilder::from_config(app, config)?;
+    #[cfg(not(target_os = "macos"))]
+    let builder = builder.data_directory(folders::webview_dir(app)?);
+    builder.build()
 }
 
 /// Logs why the app cannot start, says so in a native message (`what` happened, then what to do and

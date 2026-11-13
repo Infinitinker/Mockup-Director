@@ -1,7 +1,8 @@
 /**
  * Smoke test of the desktop app: it starts, shows the 3D view (or its message for missing WebGL),
- * switches models, and saves a project through a mocked save dialog; writes a report of the steps,
- * their durations and the WebGL check, which the E2E tests workflow shows in its job summary.
+ * switches models, and saves a project through a mocked save dialog, then again to the same file
+ * without it; writes a report of the steps, their durations and the WebGL check, which the E2E
+ * tests workflow shows in its job summary.
  */
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { arch, tmpdir } from 'node:os';
@@ -18,7 +19,7 @@ const CANVAS = 'main.viewport .stage-host .mockup-director-stage > canvas';
 const NO_WEBGL = 'main.viewport .viewport-error[role="alert"]:not([hidden])';
 const NO_WEBGL_TEXT = 'The 3D preview is not available: WebGL does not work on this computer.';
 const model = (id: string) => `nav.sidebar-left button.gallery-item[data-model="${id}"]`;
-const SAVE = 'header.toolbar button[aria-label^="Save project"]';
+const SAVE = 'header.toolbar button[aria-label^="Save project ("]';
 const ACTIVE_TAB_LABEL = '.doctabs .doctab.active .doctab-label';
 /**
  * How long the session restore, which starts after the toolbar appears, gets to open the recovery
@@ -186,7 +187,7 @@ describe('Mockup Director', () => {
     expect(await errorToasts()).toEqual([]);
   });
 
-  it('saves a project through the save dialog', async () => {
+  it('saves a project through the save dialog, then to the same file without it', async () => {
     const start = performance.now();
     const folder = mkdtempSync(join(tmpdir(), 'mockup-director-e2e-'));
     let dialog: Awaited<ReturnType<typeof browser.tauri.mock>> | undefined;
@@ -228,6 +229,19 @@ describe('Mockup Director', () => {
       expect(file.modelId).toBe(modelId);
       // No temporary file of the save is left next to it.
       expect(listed).toEqual(['smoke.mdproj']);
+
+      // Saving again writes the same file, without the dialog. The file is emptied first, so the
+      // new write shows.
+      writeFileSync(target, '');
+      await $(SAVE).click();
+      await browser.waitUntil(async () => statSync(target).size > 0 || (await errorToasts()).length > 0, {
+        interval: 100,
+        timeoutMsg: 'the second save neither wrote the file nor showed an error',
+      });
+      expect(await errorToasts()).toEqual([]);
+      expect(statSync(target).size).toBe(bytes);
+      await dialog.update();
+      expect(dialog.mock.calls.length).toBe(1);
     } finally {
       // Later saves reach the real dialog again, not the folder removed here.
       await dialog?.mockRestore();

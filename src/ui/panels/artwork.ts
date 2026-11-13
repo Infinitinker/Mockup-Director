@@ -11,6 +11,7 @@ import { ICONS } from '../icons';
 import { completeParams } from '../../models/params';
 import { aspectMismatch, expectedAspects } from '../../models/slots';
 import { hasAny } from '../../documents/store';
+import { log } from '../../platform/log';
 
 /** Small cached thumbnails (data URLs of a downscaled copy) so re-renders don't decode huge images. */
 const thumbCache = new WeakMap<Artwork, string>();
@@ -40,7 +41,8 @@ function thumbnailFor(a: Artwork): string {
         url = c.toDataURL('image/png');
       }
     }
-  } catch {
+  } catch (e) {
+    log.warn('Cannot draw the thumbnail of an artwork, so the artwork itself is shown', e);
     url = a.dataUrl;
   }
   thumbCache.set(a, url);
@@ -138,7 +140,12 @@ export function createArtworkPanel(ctx: AppContext): { el: HTMLElement } {
       el.classList.toggle('warn', bad);
       if (bad) {
         const exp = expected.map((x) => formatNumber(x, 3)).join(' / ');
-        badge.title = `Artwork aspect ratio (${formatNumber(asset.width / asset.height, 3)}) differs from the expected one (${exp}) by more than 3%: the artwork may look distorted.`;
+        const shown = !slot.fitsArtwork
+          ? 'its center is shown, cropped to fit. For an exact fit, design it on the print template (Template…)'
+          : model.params.some((p) => p.id === 'fit')
+            ? 'Artwork fit in the Model tab says whether it is cropped or stretched'
+            : 'its center is shown, cropped to fit the screen';
+        badge.title = `The artwork's aspect ratio (${formatNumber(asset.width / asset.height, 3)}) differs from the expected one (${exp}) by more than 3%: ${shown}.`;
       }
     };
     updateWarn();

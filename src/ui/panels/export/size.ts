@@ -1,6 +1,6 @@
 /**
- * The size controls both export types share: square size presets, width and height fields that can keep the
- * aspect ratio, and the lock that does it.
+ * The size controls both export types share: aspect ratio presets, size presets for the longer side, width and
+ * height fields that can keep the aspect ratio, and the lock that does it.
  */
 import { MAX_EXPORT_SIZE, MIN_ANIMATION_SIZE } from '../../../core/defaults';
 import { clamp } from '../../../core/math';
@@ -14,6 +14,41 @@ import { animationOf, stillOf, updateAnimation, updateStill } from './settings';
 
 const MIN_SIZE = 16;
 const LOCK_KEY = 'mockup-director.ui.lockAspect';
+
+/** An aspect ratio offered as a preset, width : height. */
+export interface AspectPreset {
+  w: number;
+  h: number;
+  title: string;
+}
+
+export const ASPECT_PRESETS: AspectPreset[] = [
+  { w: 1, h: 1, title: 'Square' },
+  { w: 4, h: 5, title: 'Portrait' },
+  { w: 3, h: 2, title: 'Landscape' },
+  { w: 16, h: 9, title: 'Widescreen' },
+  { w: 9, h: 16, title: 'Tall, as for stories' },
+];
+
+/** The width and height in the ratio of `preset` with `longSide` px on the longer side. */
+export function presetSize(longSide: number, preset: AspectPreset): [number, number] {
+  return preset.w >= preset.h
+    ? [longSide, Math.round((longSide * preset.h) / preset.w)]
+    : [Math.round((longSide * preset.w) / preset.h), longSide];
+}
+
+/** Whether the size is the aspect preset at its longer side. */
+export function hasAspect(width: number, height: number, preset: AspectPreset): boolean {
+  const [w, h2] = presetSize(Math.max(width, height), preset);
+  return w === width && h2 === height;
+}
+
+/** The size scaled so that its longer side is `longSide` px, keeping its aspect ratio. */
+export function withLongSide(width: number, height: number, longSide: number): [number, number] {
+  const long = Math.max(width, height);
+  if (long <= 0) return [longSide, longSide];
+  return [Math.round((width * longSide) / long), Math.round((height * longSide) / long)];
+}
 
 /** Width / height pair edited by the dimension fields (still image or animation). */
 export interface DimTarget {
@@ -150,42 +185,83 @@ function lockButton(lock: AspectLock): HTMLButtonElement {
   return lockBtn;
 }
 
-/** Square size preset chips; presets above the target's limit are grayed out. */
-function sizeChips(presets: number[], target: DimTarget, add: AddControl): HTMLElement {
-  const chips = h('div', { class: 'chips', attrs: { role: 'group', 'aria-label': 'Size presets (square)' } });
-  const chipButtons = presets.map((n) => {
+/** A row of preset chips with its label; `isOn` marks the chip of the current size, `isOff` grays one out. */
+function chipRow(
+  label: string,
+  chips: { text: string; title: string; apply(): void; isOn(): boolean; isOff(): boolean }[],
+  add: AddControl,
+): HTMLElement {
+  const group = h('div', { class: 'chips', attrs: { role: 'group', 'aria-label': label } });
+  const buttons = chips.map((c) => {
     const b = h('button', {
       class: 'chip',
-      text: `${n}`,
-      title: `${n} × ${n} px`,
+      text: c.text,
+      title: c.title,
       attrs: { type: 'button' },
-      on: { click: () => target.set(n, n) },
+      on: { click: c.apply },
     });
-    chips.appendChild(b);
+    group.appendChild(b);
     return b;
   });
   add({
-    el: chips,
+    el: group,
     sync: () =>
-      chipButtons.forEach((b, i) => {
-        const n = presets[i];
-        const on = target.get('width') === n && target.get('height') === n;
+      buttons.forEach((b, i) => {
+        const c = chips[i];
+        if (!c) return;
+        const on = c.isOn();
         b.classList.toggle('active', on);
         b.setAttribute('aria-pressed', String(on));
-        b.disabled = n > target.max();
+        b.disabled = c.isOff();
       }),
   });
-  return chips;
+  return h('div', { class: 'ctl' }, h('div', { class: 'ctl-label', text: label }), group);
 }
 
-/** The size preset chips, and the width × height fields with the lock button; adds chips, width, height. */
+/** The aspect ratio chips: each keeps the longer side. */
+function aspectChips(target: DimTarget, add: AddControl): HTMLElement {
+  const size = (): [number, number] => [target.get('width'), target.get('height')];
+  return chipRow(
+    'Aspect ratio',
+    ASPECT_PRESETS.map((p) => ({
+      text: `${p.w}:${p.h}`,
+      title: p.title,
+      apply: () => target.set(...presetSize(Math.max(...size()), p)),
+      isOn: () => hasAspect(...size(), p),
+      isOff: () => false,
+    })),
+    add,
+  );
+}
+
+/** The size chips: each sets the longer side and keeps the aspect ratio; sizes above the target's limit are grayed out. */
+function sizeChips(presets: number[], target: DimTarget, add: AddControl): HTMLElement {
+  const size = (): [number, number] => [target.get('width'), target.get('height')];
+  return chipRow(
+    'Size (longer side)',
+    presets.map((n) => ({
+      text: `${n}`,
+      title: `${n} px on the longer side`,
+      apply: () => target.set(...withLongSide(...size(), n)),
+      isOn: () => Math.max(...size()) === n,
+      isOff: () => n > target.max(),
+    })),
+    add,
+  );
+}
+
+/**
+ * The aspect ratio and size preset rows, and the width × height fields with the lock button; adds the chips and
+ * the fields.
+ */
 export function sizeRows(
   presets: number[],
   target: DimTarget,
   lock: AspectLock,
   add: AddControl,
-): { chips: HTMLElement; dims: HTMLElement } {
-  const chips = sizeChips(presets, target, add);
+): { aspects: HTMLElement; sizes: HTMLElement; dims: HTMLElement } {
+  const aspects = aspectChips(target, add);
+  const sizes = sizeChips(presets, target, add);
   const wField = add(dimField('width', target, lock));
   const hField = add(dimField('height', target, lock));
   const dims = h(
@@ -196,5 +272,5 @@ export function sizeRows(
     hField.el,
     lockButton(lock),
   );
-  return { chips, dims };
+  return { aspects, sizes, dims };
 }

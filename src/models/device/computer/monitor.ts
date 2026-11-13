@@ -268,6 +268,7 @@ export const monitorModel: ModelDefinition = {
       label: 'Screen',
       hint: 'A 16:9 screenshot, e.g. 2560 × 1440 px (24–32″). For the 34″ ultrawide: 21:9, e.g. 3440 × 1440 px. Other proportions are cropped or stretched (see “Artwork fit”).',
       aspect: 16 / 9,
+      fitsArtwork: true,
     },
   ],
   params: [

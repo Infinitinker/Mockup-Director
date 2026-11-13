@@ -26,7 +26,7 @@ import { documentState } from '../fixtures';
 const file = toProjectFile(documentState('box'));
 const record = { savedAt: 1, file };
 const newerRecord = { savedAt: 1, file: { ...file, version: file.version + 1 } };
-const entry = (id: string, name = '', dirty = false) => ({ id, name, dirty });
+const entry = (id: string, name = '', dirty = false, path: string | null = null) => ({ id, name, path, dirty });
 
 function errorOf(fn: () => unknown): UserError {
   try {
@@ -85,6 +85,32 @@ describe('readIndex', () => {
     expect(readIndex(raw)).toEqual({
       index: { version: SESSION_VERSION, activeId: '', tabs: [entry('a', '', true), entry('b', '', false)] },
       malformed: 5,
+    });
+  });
+
+  it("keeps a tab's file path, and reads one that is missing, empty or not text as none", () => {
+    const raw = {
+      version: SESSION_VERSION,
+      activeId: 'a',
+      tabs: [
+        { id: 'a', name: 'Box', path: '/projects/Box.mdproj', dirty: false },
+        { id: 'b', name: 'Book', path: '', dirty: false },
+        { id: 'c', name: 'Card', path: 7, dirty: false },
+        { id: 'd', name: 'Disc', dirty: false },
+      ],
+    };
+    expect(readIndex(raw)).toEqual({
+      index: {
+        version: SESSION_VERSION,
+        activeId: 'a',
+        tabs: [
+          entry('a', 'Box', false, '/projects/Box.mdproj'),
+          entry('b', 'Book'),
+          entry('c', 'Card'),
+          entry('d', 'Disc'),
+        ],
+      },
+      malformed: 0,
     });
   });
 });
@@ -299,7 +325,9 @@ describe('buildIndex', () => {
   });
 
   it('writes an index that reads back unchanged', () => {
-    const written = buildIndex([entry('a', 'Box')], 'a', [entry('k', 'Kept', true)]);
+    const written = buildIndex([entry('a', 'Box', false, '/projects/Box.mdproj')], 'a', [
+      entry('k', 'Kept', true, 'C:\\Projects\\Kept.mdproj'),
+    ]);
     expect(readIndex(JSON.parse(JSON.stringify(written)))).toEqual({ index: written, malformed: 0 });
   });
 });

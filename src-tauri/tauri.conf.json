@@ -10,6 +10,7 @@
     "frontendDist": "../dist"
   },
   "app": {
+    "appDirectoriesOverride": "$LOCALDATA/Mockup Director",
     "windows": [
       {
         "label": "main",
@@ -47,7 +48,7 @@
     },
     "copyright": "Copyright (c) 2026 Infinitinker",
     "publisher": "Infinitinker",
-    "shortDescription": "Photorealistic 3D mockups of packaging, books, print and devices",
+    "shortDescription": "Your artwork, as a real product. Photorealistic 3D mockups of boxes, disc cases, books, print and devices, made on your own computer.",
     "longDescription": "Mockup Director turns flat artwork into photorealistic 3D mockups with lighting, soft shadows and reflections: product boxes, DVD / Blu-ray / CD cases and discs, books and notebooks, print (business cards, flyers, brochures, cards) and devices and screens. Export to PNG/JPEG/WebP up to 4000 × 4000 px, GIF/WebP/MP4 animations and batch export to ZIP.",
     "macOS": {
       "minimumSystemVersion": "12.0",

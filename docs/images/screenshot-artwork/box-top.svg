@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="3072" height="1002" viewBox="0 0 141 46">
+  <!-- The top and bottom of the Box (141 × 46 mm with 3 mm bleed), for the README's screenshots. -->
+  <rect width="141" height="46" fill="#1d5440"/>
+  <rect x="8" y="8" width="125" height="30" fill="none" stroke="#e9c46a" stroke-width="0.5"/>
+  <text x="70.5" y="25" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="9" letter-spacing="1.2" fill="#f4ead2">FERNHILL</text>
+  <text x="70.5" y="32" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="2.6" letter-spacing="1" fill="#e9c46a">TEA COMPANY · SINCE 1987</text>
+</svg>

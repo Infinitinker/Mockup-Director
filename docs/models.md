@@ -1,5 +1,7 @@
 # Writing models
 
+This is the reference for writing models. New to the code? Start with [Your first model](first-model.md), a step-by-step guide that needs no programming experience.
+
 A model is one kind of product the app can show: a box, a keep case, a book, a phone. Each is a `ModelDefinition` (`src/core/types/model.ts`) in a module or folder in `src/models/`, listed in `MODELS` in `src/models/registry.ts`. The definition says what the user can change (parameters), which artwork the model takes (slots), and how to make the 3D object (`build`). The gallery, the Model tab and the Artwork tab are built from it, so adding a model never needs UI code. Every model follows the [3D conventions](architecture.md#3d-conventions); the full list is at the top of `src/core/types/model.ts`. The built-in models are the examples:
 
 | File | Models |
@@ -82,9 +84,10 @@ A slot is one piece of artwork: a face, a wrap-around cover, a disc label, a scr
 | `hint` | `string` | no | Help under the title: the size the artwork should have, which edge meets which. |
 | `aspect` | `number` | yes | Expected width / height of the artwork. Shapes the placeholder and the aspect warning. |
 | `anyAspect` | `boolean` | no | The slot takes any aspect ratio (a screenshot whose panel follows the artwork). No warning is shown. |
+| `fitsArtwork` | `boolean` | no | The model fits artwork of another aspect ratio itself, as the device screens do: the app does not crop it. |
 | `template` | `PrintTemplate` or `(params) => PrintTemplate` | no | A downloadable print template; see [Print templates](#print-templates). |
 
-The Artwork tab warns when the artwork's aspect ratio is more than 3 % away from every expected one: the slot's `aspect`, the template's full size, and the template's size without bleed (`expectedAspects` and `aspectMismatch` in `src/models/slots.ts`).
+The Artwork tab warns when the artwork's aspect ratio is more than 3 % away from every expected one: the slot's `aspect`, the template's full size, and the template's size without bleed (`expectedAspects` and `aspectMismatch` in `src/models/slots.ts`). Such artwork is cropped from its center before the model gets it, to the template's full size at the current parameters, or else to the slot's `aspect`, so a model never stretches it (`cropAspect` and `slotTexture`). The crop is a copy of the artwork's texture with its `repeat` and `offset` set, sharing the image: a model that reads `texture.image` to fit artwork itself sees the whole image, so it sets `fitsArtwork` and gets the artwork as it is. A slot with `anyAspect` is never cropped either.
 
 `ctx.getTexture(slotId)` returns the user's artwork, or a placeholder when there is none: a gradient with the slot's label in the slot's aspect ratio, round if its template is circular (`src/core/placeholder.ts`). It never returns `null`, also not for an ID the model does not list. `ctx.hasArtwork(slotId)` says whether the user gave artwork, for models that fall back to a plain material or to another slot (a keep case uses `front`, `spine` and `back` when there is no `cover`).
 
@@ -132,7 +135,7 @@ Helpers in `src/models/geometry.ts`:
 
 | Helper | What it does |
 |---|---|
-| `placeOnGround(root)` | Moves the object so its lowest point is at `y = 0` and it is centered on `x` and `z`. Uses bounding boxes of the geometry, which can be too big for rotated parts; `composites/compose.ts` measures vertices instead. |
+| `placeOnGround(root)` | Moves the object so its lowest point is at `y = 0` and it is centered on `x` and `z`, measured on its vertices, so turned and bent parts sit exactly. |
 | `castShadows(root)` | Sets `castShadow` on every mesh in the tree. |
 | `roundedRectShape(w, h, r)` | A rounded rectangle centered on the origin, for extrusions. |
 | `remapUVs(geo, u0, v0, u1, v1)` | Maps a geometry's 0–1 UVs into a rectangle of the image. |
@@ -162,7 +165,7 @@ Number helpers in `src/core/math.ts`:
 | `finite(v, fallback)` | `v` when it is a finite number, otherwise `fallback`. |
 | `round1(v)` | Rounds to one decimal, for a number shown in a text. |
 
-The app's side of the contract is in `src/models/params.ts` (`completeParams`, `sanitizeParam`, `inheritedParams`, `snapToStep`), `src/models/slots.ts` (`slotFor`, `resolveTemplate`, `expectedAspects`) and `defaultParams` in `src/core/defaults.ts`; model definitions do not use them. A template function that throws is a model bug: the print template export shows the error, and the Artwork tab's aspect ratio hint logs it and leaves the template out.
+The app's side of the contract is in `src/models/params.ts` (`completeParams`, `sanitizeParam`, `inheritedParams`, `snapToStep`), `src/models/slots.ts` (`slotFor`, `resolveTemplate`, `expectedAspects`, `cropAspect`, `slotTexture`) and `defaultParams` in `src/core/defaults.ts`; model definitions do not use them. A template function that throws is a model bug: the print template export shows the error, and the Artwork tab's aspect ratio hint logs it and leaves the template out.
 
 ## Composite models
 
@@ -184,41 +187,10 @@ To add a composite, export the base model's build function from its module, defi
 
 ## Adding a model
 
-1. Create a file in `src/models/`, for example `poster.ts`, and export a `ModelDefinition`:
-
-   ```ts
-   import * as THREE from 'three';
-   import type { ModelDefinition } from '../core/types/model';
-   import { castShadows, placeOnGround } from './geometry';
-   import { printMaterial, solidPlastic } from './materials';
-   import { mmParam, num } from './params';
-
-   export const posterModel: ModelDefinition = {
-     id: 'poster',
-     category: 'print',
-     name: 'Mounted poster',
-     icon: '<svg viewBox="0 0 64 64"><rect x="16" y="8" width="32" height="48" fill="none" stroke="currentColor" stroke-width="3"/></svg>',
-     slots: [{ id: 'front', label: 'Front', aspect: 210 / 297 }],
-     params: [
-       mmParam('width', 'Width', 210, 50, 1000),
-       mmParam('height', 'Height', 297, 50, 1000),
-       mmParam('thickness', 'Thickness', 5, 1, 30, 0.5),
-     ],
-     build(ctx) {
-       const w = num(ctx.params, 'width', 210), h = num(ctx.params, 'height', 297), t = num(ctx.params, 'thickness', 5);
-       // BoxGeometry material order: +X, -X, +Y, -Y, +Z (front), -Z (back).
-       const edge = solidPlastic('#f2f2f2', 0.6);
-       const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, t), [
-         edge, edge, edge, edge, printMaterial(ctx.getTexture('front')), edge,
-       ]);
-       return placeOnGround(castShadows(mesh));
-     },
-   };
-   ```
-
+1. Create a module in `src/models/` that exports a `ModelDefinition`. [Your first model](first-model.md) walks through a complete one, a mounted poster, line by line, for readers new to the code.
 2. Add it to the `MODELS` array in `src/models/registry.ts`, at its place in the gallery. It then appears in its category, with its Model and Artwork tabs. Raise the number of models in README.md ("Shows your artwork on N models"): `tests/readme.test.ts` checks it against `MODELS`.
 3. Where it helps, give a slot a `template` and a `hint`, and the model a `description` and a `defaultCamera`.
-4. Its new IDs and slots change the snapshots of the model tests (see [Testing](#testing)): update them with `npx vitest run -u tests/models`, and check in the diff that they only add. Add tests for what the model does beyond the contract, then run the checks:
+4. Its new IDs and slots change the snapshots of the model tests (see [Testing](#testing)): update them with `npx vitest run tests/models -u`, and check in the diff that they only add. Add tests for what the model does beyond the contract, then run the checks:
 
    ```bash
    npm run lint
@@ -246,8 +218,8 @@ The registry test checks:
 - **Front:** at the defaults, the primary slot's artwork is on faces whose normals point to `+Z`, within about 25 degrees.
 - **Placement:** built with the defaults and with all number parameters at their `min` and at their `max`, each with and without artwork, with each number parameter alone at its `min` and at its `max`, and with 20 sets of seeded random parameter values, the object has no `NaN` in any vertex position, its lowest point is at `y = 0` and it is centered on `x` and `z`, within 0.01 mm.
 - **Shared textures:** after a build with the defaults and with all number parameters at their `min` and at their `max`, with and without artwork, and with each option of each select, the textures from `getTexture` keep their state (`repeat`, `offset`, `center`, `rotation`, wrapping, `flipY`, color space, anisotropy, filters, mipmaps, `version`, `matrixAutoUpdate` and `userData`) and their image, and are not disposed, also after `disposeObject` on the result.
-- **Shown slots:** the slots whose texture is on a material at the defaults, with and without artwork, match a snapshot; update it (`npx vitest run -u tests/models`) only when a model is meant to show other slots.
+- **Shown slots:** the slots whose texture is on a material at the defaults, with and without artwork, match a snapshot; update it (`npx vitest run tests/models -u`) only when a model is meant to show other slots.
 
 A model that cannot meet a check yet is listed as an exception in the test, never left out: `PLACEMENT_EXCEPTIONS` lists models placed less exactly, for all parameter values or only for those its `when` picks, with a tolerance per axis as a fraction of the largest size (or none, which skips that axis), and `FRONT_EXCEPTIONS` lists models whose primary artwork faces `+Y` at the defaults. Every entry gives its reason; a known issue says so, and its entry goes when the issue is fixed.
 
-`tests/models/ids.test.ts` pins the IDs that project files save: every model's ID and category, its slot IDs, its parameter IDs with their kind, the range and step of number parameters, and the values of select options. They are unique, and every select's default is one of its options. A snapshot diff that removes or narrows an entry means something saved in project files was renamed or narrowed, which must not happen (see [Naming](#naming)): never update the snapshot to make the test pass. A new model, slot, parameter or option, or a wider range, only adds or widens: update the snapshots with `npx vitest run -u tests/models`, and check in the diff that this is all they do.
+`tests/models/ids.test.ts` pins the IDs that project files save: every model's ID and category, its slot IDs, its parameter IDs with their kind, the range and step of number parameters, and the values of select options. They are unique, and every select's default is one of its options. A snapshot diff that removes or narrows an entry means something saved in project files was renamed or narrowed, which must not happen (see [Naming](#naming)): never update the snapshot to make the test pass. A new model, slot, parameter or option, or a wider range, only adds or widens: update the snapshots with `npx vitest run tests/models -u`, and check in the diff that this is all they do.

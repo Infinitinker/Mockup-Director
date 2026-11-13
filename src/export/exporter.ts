@@ -20,6 +20,7 @@ import { clampInt, findAlphaBounds, fitInside, supersampleSize, type PixelRect }
 import { isJpeg, isPng, setJpegDensity, setPngPhys } from './png';
 import { paintBackground as paintSceneBackground } from '../scene/background';
 import { supportsWebpEncoding } from './formats';
+import { log } from '../platform/log';
 
 /** Print resolution written into exported files (an image editor shows a sensible print size). */
 const EXPORT_DPI = 300;
@@ -112,14 +113,18 @@ function mimeFor(format: ExportFormat): string {
 /** What the user sees when this engine cannot encode a WebP image. */
 export const WEBP_IMAGE_UNSUPPORTED = 'This system cannot encode WebP images. Choose PNG or JPEG.';
 
-/** Return a PNG blob with a pHYs chunk set to `dpi`. Non-PNG input is returned unchanged. */
+/**
+ * Return a PNG blob with a pHYs chunk set to `dpi`. Non-PNG input is returned unchanged, and so is a
+ * malformed PNG, with a log entry: the image is still worth more than a failed export.
+ */
 export async function setPngDpi(blob: Blob, dpi: number): Promise<Blob> {
   const bytes = new Uint8Array(await blob.arrayBuffer());
   if (!isPng(bytes)) return blob;
   try {
     return new Blob([setPngPhys(bytes, dpi)], { type: 'image/png' });
-  } catch {
-    return blob; // malformed – keep the original rather than failing the export
+  } catch (e) {
+    log.warn(`Cannot set the PNG's resolution to ${dpi} dpi, so it is saved without one`, e);
+    return blob;
   }
 }
 

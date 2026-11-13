@@ -2,22 +2,24 @@
 ; (ISCC.exe) from the app that `npm run tauri build` leaves in src-tauri/target/release. It installs
 ; for the current user, with no administrator rights, into %LOCALAPPDATA%\Programs\Mockup Director,
 ; or, if the user chooses and is an administrator, for all users into Program Files. Either way each
-; user's looks, settings, open tabs and log stay in their own %LOCALAPPDATA%\<identifier>.
+; user's looks, settings, open tabs and log stay in their own %LOCALAPPDATA%\Mockup Director.
 ;
 ; installer.mjs passes:
 ;   AppVersion      the release, e.g. 0.2.0 or 0.3.0-beta.1
 ;   NumericVersion  its four numbers for the Windows version resource, e.g. 0.2.0.0
-;   Identifier      the app identifier (tauri.conf.json), which names the app's data folder
+;   Identifier      the app identifier (tauri.conf.json), which names the single-instance lock
+;   DataFolder      the name of the app's data folder in %LOCALAPPDATA% (app.appDirectoriesOverride
+;                   in tauri.conf.json)
 ;   Publisher       the publisher (tauri.conf.json)
 ;   Copyright       the copyright line (tauri.conf.json)
 ;   OutputDir       where the installer is written
 
-#if !Defined(AppVersion) || !Defined(NumericVersion) || !Defined(Identifier) || !Defined(Publisher) || !Defined(Copyright) || !Defined(OutputDir)
+#if !Defined(AppVersion) || !Defined(NumericVersion) || !Defined(Identifier) || !Defined(DataFolder) || !Defined(Publisher) || !Defined(Copyright) || !Defined(OutputDir)
   #error Build the installer with npm run installer (tools/installer.mjs), which passes the values this script needs.
 #endif
 
 #define AppName "Mockup Director"
-#define AppExe "Mockup Director.exe"
+#define AppExe "mockup-director.exe"
 #define Repository "https://github.com/Infinitinker/Mockup-Director"
 #define AppGuid "5232673D-A21D-4A04-B4C4-6E8C5ACCFEDE"
 #define Build "..\src-tauri\target\release"
@@ -85,7 +87,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 [Files]
 ; A GNU build loads WebView2Loader.dll at run time, so it goes next to the app; the license texts
 ; come with every copy. Inno Setup fails on a missing file, so a build without one never ships.
-Source: "{#Build}\mockup-director.exe"; DestDir: "{app}"; DestName: "{#AppExe}"; Flags: ignoreversion
+Source: "{#Build}\{#AppExe}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#Build}\WebView2Loader.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#Build}\LICENSE.txt"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#Build}\THIRD-PARTY-NOTICES.txt"; DestDir: "{app}"; Flags: ignoreversion
@@ -195,7 +197,7 @@ begin
     RemoveProjectDefault;
   if (CurUninstallStep = usPostUninstall) and not UninstallSilent and not IsAdminInstallMode then
   begin
-    UserData := ExpandConstant('{localappdata}\{#Identifier}');
+    UserData := ExpandConstant('{localappdata}\{#DataFolder}');
     if DirExists(UserData) and
        (MsgBox(FmtMessage(CustomMessage('DeleteData'), [UserData]), mbConfirmation, MB_YESNO or MB_DEFBUTTON2) = IDYES) and
        not DelTree(UserData, True, True, True) then

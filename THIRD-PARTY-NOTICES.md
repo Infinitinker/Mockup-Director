@@ -7129,4 +7129,4 @@ the following restrictions:
 
 ## Linux AppImage
 
-The AppImage also contains libraries of the Linux system it is built on (Ubuntu 22.04): GTK 3, WebKitGTK and their dependencies, mostly under the LGPL. They are not listed here. To see them, run the AppImage with --appimage-extract and look in squashfs-root/usr/lib; each comes from an Ubuntu 22.04 package (on Ubuntu, dpkg -S <file> names it), whose license and source code are listed at https://packages.ubuntu.com.
+The AppImage also contains libraries of the Linux system it is built on (Ubuntu 22.04): GTK 3, WebKitGTK and their dependencies, many under the LGPL. They are not listed here: each release lists them in MockupDirector-<version>-linux-x86_64-appimage-libraries.md, next to the AppImage, with the package each comes from, its version, its copyright file and where to get its source code.

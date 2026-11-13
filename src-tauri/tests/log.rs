@@ -1,14 +1,10 @@
-//! Tests of `src/log.rs`: where the log goes, how an entry is written, and how the files are renamed
-//! when they get large.
+//! Tests of `src/log.rs`: how an entry is written, and how the files are renamed when they get large.
 
-use std::ffi::OsString;
 use std::fs;
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use mockup_director_lib::log::{
-    format_entry, format_time, log_dir, shorten, Level, LogFile, FILE_NAME,
-};
+use mockup_director_lib::log::{format_entry, format_time, shorten, Level, LogFile, FILE_NAME};
 
 /// A fresh folder for one test, removed when the test ends.
 struct TempDir(PathBuf);
@@ -79,59 +75,6 @@ fn reads_levels_as_the_page_sends_them() {
     let levels: Vec<Level> = serde_json::from_str(r#"["info", "warn", "error"]"#).unwrap();
     assert_eq!(levels, [Level::Info, Level::Warn, Level::Error]);
     assert!(serde_json::from_str::<Level>(r#""debug""#).is_err());
-}
-
-#[test]
-fn places_the_log_folder_like_tauri() {
-    let home = if cfg!(windows) {
-        r"C:\Users\someone"
-    } else {
-        "/home/someone"
-    };
-    let local = if cfg!(windows) {
-        r"C:\Users\someone\AppData\Local"
-    } else {
-        "/data"
-    };
-    let var = |name: &str| match name {
-        "HOME" => Some(OsString::from(home)),
-        "LOCALAPPDATA" | "XDG_DATA_HOME" => Some(OsString::from(local)),
-        _ => None,
-    };
-    let expected = if cfg!(windows) {
-        PathBuf::from(local).join("app.id").join("logs")
-    } else if cfg!(target_os = "macos") {
-        PathBuf::from(home).join("Library/Logs/app.id")
-    } else {
-        PathBuf::from(local).join("app.id/logs")
-    };
-    assert_eq!(log_dir("app.id", var), Some(expected));
-}
-
-#[cfg(all(unix, not(target_os = "macos")))]
-#[test]
-fn uses_the_home_folder_when_xdg_data_home_is_not_usable() {
-    for xdg in [None, Some(""), Some("relative/path")] {
-        let var = |name: &str| match name {
-            "HOME" => Some(OsString::from("/home/someone")),
-            "XDG_DATA_HOME" => xdg.map(OsString::from),
-            _ => None,
-        };
-        assert_eq!(
-            log_dir("app.id", var),
-            Some(PathBuf::from("/home/someone/.local/share/app.id/logs")),
-            "{xdg:?}"
-        );
-    }
-}
-
-#[test]
-fn has_no_log_folder_without_its_variable() {
-    assert_eq!(log_dir("app.id", |_| None), None);
-    assert_eq!(
-        log_dir("app.id", |_| Some(OsString::from("relative"))),
-        None
-    );
 }
 
 #[test]
