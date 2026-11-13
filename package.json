@@ -1,7 +1,7 @@
 {
   "name": "mockup-director",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.0-beta.1",
   "license": "MIT",
   "description": "Your artwork, as a real product. Photorealistic 3D mockups of boxes, disc cases, books, print and devices, made on your own computer.",
   "type": "module",
