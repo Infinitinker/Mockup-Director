@@ -91,7 +91,7 @@
   min-width: 0;
 }
 .slot-file.empty {
-  color: var(--text-3);
+  color: var(--text-2);
   font-style: italic;
 }
 .slot-filename {
@@ -150,7 +150,7 @@
   width: 70px;
 }
 .dims-x {
-  color: var(--text-3);
+  color: var(--text-2);
   padding-bottom: 4px;
 }
 .lock-btn {

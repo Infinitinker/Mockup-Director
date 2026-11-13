@@ -20,8 +20,10 @@
   --border-strong: rgba(0, 0, 0, 0.18);
   --separator: rgba(0, 0, 0, 0.08);
   --text: #1d1d1f;
+  /* Secondary text: at least 4.5:1 on every panel, as text needs. */
   --text-2: rgba(0, 0, 0, 0.56);
-  --text-3: rgba(0, 0, 0, 0.36);
+  /* Faint icons and marks, never text: at least 3:1 on every panel, as icons need. */
+  --text-3: rgba(0, 0, 0, 0.46);
   --accent: #007aff;
   --accent-hover: #0066d6;
   --accent-soft: rgba(0, 122, 255, 0.12);
@@ -61,7 +63,7 @@
     --separator: rgba(255, 255, 255, 0.08);
     --text: rgba(255, 255, 255, 0.9);
     --text-2: rgba(255, 255, 255, 0.58);
-    --text-3: rgba(255, 255, 255, 0.36);
+    --text-3: rgba(255, 255, 255, 0.4);
     --accent: #0a84ff;
     --accent-hover: #3d9bff;
     --accent-soft: rgba(10, 132, 255, 0.22);
